@@ -312,6 +312,14 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         work.stats["char_count"] = novel.char_count
         work.stats["episodes"] = len(novel.chapters)
         work.extra["text_origin"] = novel.origin
+        if getattr(args, "check_commercialization", False):
+            commercialized = source.check_commercialized(ncode)
+            work.rights["commercialized"] = commercialized
+            if commercialized:
+                work.rights["note"] = (
+                    "この作品は商業化されています。二次利用には作者および小説家になろうの"
+                    "許諾が必要です。本データセットでは公式サイトが無料公開しているWEB版のみを扱う。"
+                )
         if renderer is not None:
             pdf_path = pdf_dir / f"{ncode}.pdf"
             blocks = []
@@ -381,6 +389,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--works", type=int, default=None)
     p.add_argument("--max-episodes", type=int, default=0)
     p.add_argument("--pdf", action="store_true", help="also render PDF files")
+    p.add_argument(
+        "--check-commercialization",
+        action="store_true",
+        help="query the official information page and flag commercialised works",
+    )
     p.set_defaults(func=cmd_narou_texts)
 
     p = sub.add_parser("report", help="print statistics about the generated datasets")

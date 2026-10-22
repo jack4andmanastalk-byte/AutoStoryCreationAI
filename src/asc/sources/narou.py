@@ -73,6 +73,16 @@ GENRES: Dict[int, Dict[str, Any]] = {
     9999: {"label": "その他", "big": 99},
 }
 
+#: Markers that indicate a commercialisation notice on the official page.
+COMMERCIAL_MARKERS = (
+    "商業化",
+    "書籍化",
+    "出版",
+    "アニメ化",
+    "ゲーム化",
+    "コミカライズ",
+)
+
 #: Fields that are copied verbatim into the JSONL record.
 COPY_FIELDS = (
     "ncode",
@@ -301,6 +311,28 @@ class NarouSource:
                 break
             start += limit
         return records
+
+    # -- commercialisation ---------------------------------------------
+    def check_commercialized(self, ncode: str) -> Optional[bool]:
+        """Check the official information page for a commercialisation banner.
+
+        Commercialised works show a notice on their information page
+        (「この作品は商業化されています」「書籍化」…).  The commercial edition
+        itself is **not** downloaded - only the free web version is.
+        """
+        url = NOVEL_INFO_URL_TEMPLATE.format(ncode=ncode.lower())
+        try:
+            html = self.client.get_text(url)
+        except Exception as exc:  # pragma: no cover - network dependent
+            LOGGER.debug("cannot read the info page of %s: %s", ncode, exc)
+            return None
+        if "エラーが発生しました" in html:
+            return None
+        for marker in COMMERCIAL_MARKERS:
+            if marker in html:
+                LOGGER.info("%s looks commercialised (%s)", ncode, marker)
+                return True
+        return False
 
     # -- text ----------------------------------------------------------
     def fetch_novel_text(self, ncode: str, max_episodes: int = 0) -> NovelText:

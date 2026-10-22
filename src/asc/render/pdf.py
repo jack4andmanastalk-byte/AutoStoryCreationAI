@@ -227,9 +227,8 @@ class BookPdfRenderer:
                 if pdf.get_y() + line_h > pdf.h - pdf.b_margin:
                     pdf.add_page()
                 pdf.set_x(pdf.l_margin + (indent if first else 0))
-                pdf.cell(width, line_h, line, new_x="LMARGIN", new_y="NEXT")
+                self._draw_line(pdf, line, block.get("emphasis") or [], line_h)
                 first = False
-                self._draw_emphasis(pdf, block.get("emphasis") or [])
             pdf.ln(1.5)
 
     @staticmethod
@@ -241,13 +240,36 @@ class BookPdfRenderer:
                 text = text.replace(base, f"{base}（{reading}）", 1)
         return text
 
-    def _draw_emphasis(self, pdf: _Book, emphasis: List[str]) -> None:  # pragma: no cover
-        """Underline emphasised (bōten) passages - best effort."""
-        if not emphasis:
-            return
+    def _draw_line(
+        self, pdf: _Book, line: str, emphasis: List[str], line_h: float
+    ) -> None:
+        """Draw one line and underline the emphasised (bōten) passages."""
+        marked = None
         for word in emphasis:
-            if not word:
-                continue
+            if word and word in line:
+                marked = word
+                break
+        if marked is None:
+            pdf.cell(pdf.w - pdf.l_margin - pdf.r_margin, line_h, line, new_x="LMARGIN", new_y="NEXT")
+            return
+
+        before, _, after = line.partition(marked)
+        width = pdf.w - pdf.l_margin - pdf.r_margin
+        x = pdf.get_x()
+        if before:
+            pdf.cell(pdf.get_string_width(before), line_h, before, new_x="END")
+        marked_width = pdf.get_string_width(marked)
+        pdf.cell(marked_width, line_h, marked, new_x="END")
+        # underline the emphasised part (bōten)
+        pdf.set_draw_color(40, 40, 40)
+        pdf.set_line_width(0.15)
+        baseline = pdf.get_y() + line_h * 0.78
+        pdf.line(x + pdf.get_string_width(before), baseline, x + pdf.get_string_width(before) + marked_width, baseline)
+        if after:
+            pdf.cell(width, line_h, after, new_x="LMARGIN", new_y="NEXT")
+        else:
+            pdf.set_x(pdf.l_margin)
+            pdf.set_y(pdf.get_y() + line_h)
 
     # ------------------------------------------------------------------
     def render(

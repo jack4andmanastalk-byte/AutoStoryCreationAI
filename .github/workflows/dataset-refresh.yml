@@ -59,7 +59,10 @@ jobs:
         run: python scripts/setup_dataset.py aozora-texts --works 10 --pdf
 
       - name: Fetch texts and PDFs (Narou)
-        run: python scripts/setup_dataset.py narou-texts --works 10 --pdf
+        # only the first episodes are rendered so that the run stays bounded
+        run: |
+          python scripts/setup_dataset.py narou-texts --works 10 --max-episodes 12 --pdf \
+            --check-commercialization
 
       - name: Report
         run: python scripts/dataset_report.py
