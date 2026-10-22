@@ -1,0 +1,75 @@
+name: Debug Narou downloads
+
+# Temporary diagnostic workflow: fetches one chapter page with the very same
+# HTTP client the dataset pipeline uses and publishes the raw response so that
+# the failure can be inspected from the outside.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["arena/3f70c8da-autostorycreationai"]
+
+permissions:
+  contents: write
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Fetch one chapter page
+        run: |
+          mkdir -p debug
+          python - <<'PY' 2>&1 | tee debug/summary.txt
+          import sys, json
+          from pathlib import Path
+          sys.path.insert(0, "src")
+          from asc.config import load_config
+          from asc.http import HttpClient
+          from asc.text.narou_html import parse_chapter, parse_novel_index
+
+          cfg = load_config("configs/dataset.yaml")
+          client = HttpClient(
+              user_agent=cfg.http.user_agent,
+              timeout=cfg.http.timeout_seconds,
+              max_retries=1,
+              backoff=1,
+              request_interval=0.0,
+              cache_dir=None,
+          )
+          url = "https://ncode.syosetu.com/n9999mw/1/"
+          print("GET", url)
+          try:
+              html = client.get_text(url)
+          except Exception as exc:
+              print("ERROR", type(exc).__name__, exc)
+              html = ""
+          Path("debug/chapter.html").write_text(html[:20000], encoding="utf-8")
+          print("length:", len(html))
+          print("has novel_honbun:", "novel_honbun" in html)
+          chapter = parse_chapter(html)
+          print("paragraphs:", len(chapter.paragraphs))
+          print("first:", chapter.paragraphs[:1])
+          index_html = client.get_text("https://ncode.syosetu.com/n9999mw/")
+          Path("debug/index.html").write_text(index_html[:20000], encoding="utf-8")
+          print("index entries:", parse_novel_index(index_html, "n9999mw")[:5])
+          PY
+
+      - name: Publish the debug output
+        run: |
+          mkdir publish
+          cp -r debug publish/debug
+          cd publish
+          git init -q -b datasets
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "debug output"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
+          git push --force origin HEAD:refs/heads/datasets
