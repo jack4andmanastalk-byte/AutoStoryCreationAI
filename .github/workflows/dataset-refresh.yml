@@ -15,6 +15,16 @@ on:
       narou_works:
         description: "Number of ranked commercialised Narou full-episode PDFs to generate"
         default: "100"
+  push:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/dataset-refresh.yml"
+      - "scripts/setup_dataset.py"
+      - "scripts/fetch_narou_api.py"
+      - "src/asc/sources/narou.py"
+      - "src/asc/render/pdf.py"
+      - "configs/dataset.yaml"
   schedule:
     # every Sunday at 03:00 UTC
     - cron: "0 3 * * 0"
