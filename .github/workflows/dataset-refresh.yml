@@ -1,0 +1,65 @@
+name: dataset-refresh
+
+# Refreshes the research datasets of AutoStoryCreationAI.
+#
+# The workflow runs exactly the same pipeline as ``make data`` (see
+# ``scripts/setup_dataset.py``) but on the GitHub runners, which can reach
+# www.aozora.gr.jp and api.syosetu.com.  The generated JSONL files are
+# uploaded as artifacts so that they can be inspected without cloning the
+# repository.
+on:
+  workflow_dispatch:
+    inputs:
+      narou_works:
+        description: "Number of novels per genre/ordering"
+        default: "200"
+  push:
+    branches:
+      - "**"
+    paths:
+      - ".github/workflows/dataset-refresh.yml"
+      - "scripts/**"
+      - "src/**"
+      - "configs/**"
+  schedule:
+    # every Sunday at 03:00 UTC
+    - cron: "0 3 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Fetch the Aozora Bunko bibliographic records
+        run: python scripts/setup_dataset.py aozora-metadata
+
+      - name: Fetch the Narou bibliographic records
+        run: |
+          python scripts/fetch_narou_api.py --per-query 200 --out-dir data/cache/narou_api
+          python scripts/setup_dataset.py narou-metadata
+
+      - name: Report
+        run: python scripts/dataset_report.py
+
+      - name: Upload the datasets
+        uses: actions/upload-artifact@v4
+        with:
+          name: datasets
+          path: |
+            data/datasets/*.jsonl
+            data/datasets/manifest.json
+          retention-days: 30

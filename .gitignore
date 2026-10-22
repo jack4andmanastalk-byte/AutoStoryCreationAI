@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Generated data (regenerate with `make data`)
+data/raw/
+data/pdf/
+data/cache/
+data/datasets/*.jsonl
+!data/datasets/manifest.json
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/

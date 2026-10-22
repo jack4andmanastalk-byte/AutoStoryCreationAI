@@ -1,0 +1,12 @@
+{
+  "generated_at": "2026-10-22T14:32:35Z",
+  "steps": {
+    "aozora_metadata": {
+      "at": "2026-10-22T14:34:22Z",
+      "authors": 1064,
+      "file": "data/datasets/aozora_works.jsonl",
+      "origin": "GitHub mirror: aewshyae/aozorabunko-re-design_pages",
+      "works": 16330
+    }
+  }
+}

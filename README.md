@@ -1,1 +1,136 @@
 # AutoStoryCreationAI
+
+AI による自動創作活動（ストーリー・キャラクター・世界観・歴史など）を研究するためのリポジトリです。
+本リポジトリは **研究素材のデータセットアップ** を主眼に置き、
+
+1. 公開ドメインの日本語文学（青空文庫）
+2. Web 小説（小説家になろう）
+
+から、統一スキーマのメタデータ JSONL と閲覧用の PDF を生成するパイプラインと、
+その実行結果を収録します。
+
+> 現在のフェーズ: **Phase 0 — データセットアップ**。
+> スキル／ハーネス／パイプラインはこのフェーズで実験し、逐年拡張します。
+
+---
+
+## 1.  提供物
+
+| 成果物 | パス | 内容 |
+| --- | --- | --- |
+| 書誌メタデータ | `data/datasets/aozora_works.jsonl` | 青空文庫の作品（作品ID・タイトル・著者・NDC分類・初出・底本初版発行年・公開URLなど） |
+| 著者メタデータ | `data/datasets/aozora_authors.jsonl` | 作家・翻訳者（人物ID・氏名・ヨミガナ・生没年など） |
+| 書誌メタデータ | `data/datasets/narou_novels.jsonl` | 小説家になろうの作品（Nコード・ジャンル・掲載日・話数・文字数・評価指標など） |
+| 整形済み本文 | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・注記を除いたプレーンテキスト |
+| PDF | `data/pdf/{aozora,narou}/*.pdf` | 表紙（書誌情報）+ 本文の A5 PDF（和文組版・禁則処理つき） |
+| ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・生成時刻 |
+
+JSONL は 1 行 = 1 レコード（UTF-8 / `ensure_ascii=False` / キー順固定）です。
+スキーマの詳細は [`docs/dataset_schema.md`](docs/dataset_schema.md) を参照してください。
+
+## 2.  クイックスタート
+
+```bash
+# 1) 環境準備（Python 3.11 想定）
+make setup
+
+# 2) ユニットテスト
+make test
+
+# 3) データ取得（青空文庫 → 小説家になろう の順）
+make data
+
+# 4) 統計の確認
+make report
+```
+
+個別に実行する場合:
+
+```bash
+.venv/bin/python scripts/setup_dataset.py aozora-metadata            # 書誌データのみ
+.venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
+.venv/bin/python scripts/fetch_narou_api.py --genres 101 201 303     # 公式APIの生JSONを保存
+.venv/bin/python scripts/setup_dataset.py narou-metadata
+.venv/bin/python scripts/setup_dataset.py narou-texts --works 20 --pdf
+```
+
+## 3.  データソース
+
+### 3.1 青空文庫（aozora.gr.jp）
+
+* 書誌リスト: `https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip`
+  （毎夜更新される CSV。作品名・ヨミガナ・初出・分類番号（NDC）・文字遣い種別・
+  作品著作権フラグ・公開日・最終更新日・図書カードURL・底本情報など）
+* 本文: 作品ごとの ZIP（`/cards/<人物ID>/files/<作品ID>_<形式>_<ハッシュ>.zip`）
+* 権利: 「青空文庫収録ファイルの取り扱い規準」に従います。**作品著作権フラグが「あり」の作品
+  （著作権存続作品）は再配布できません**。本パイプラインはフラグを `rights.copyright_flag`
+  に記録し、フラグ「なし」の作品のみ本文・PDF を生成します。
+
+### 3.2 小説家になろう（syosetu.com）
+
+* 書誌 API: `https://api.syosetu.com/novelapi/api/`（公式 API。非商用・教育・研究用途での
+  利用が認められています）
+* 本文: 公式のデータダウンロード（`https://ncode.syosetu.com/txtdownload/<Nコード>/`）と
+  各話のページ（`https://ncode.syosetu.com/<Nコード>/<話数>/`）
+* 版权归作者に帰属します。**商業化されている作品の印刷版・電子書籍は本リポジトリでは
+  再配布しません**。購入先は公式ストアの URL を `rights` に記録しています。
+  詳細は [`docs/legal_and_ethics.md`](docs/legal_and_ethics.md) を参照してください。
+
+### 3.3 ミラーとオフライン再現
+
+公式ホストに到達できない環境（社内ネットワーク、オフライン研究室など）向けに、
+ミラーとキャッシュを用意しています。
+
+* `configs/dataset.yaml` の `aozora.card_list_mirrors` / `aozora.text_mirror_tarball`
+* `narou.api_response_files` … `scripts/fetch_narou_api.py` が保存した公式 API の生 JSON を再利用
+  （ネットワーク無効でもメタデータ構築が可能）
+* `narou.local_text_dir` … 事前取得済みの本文（`<Nコード>/<話数>.txt`）を再利用
+
+`.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
+生成した JSONL を artifact として公開します（`make data` のネットワーク制約回避）。
+
+## 4.  ディレクトリ構成
+
+```
+.
+├── configs/dataset.yaml        # 取得対象・件数・フォント等の設定
+├── data/                       # 生成物（大半は .gitignore 対象）
+│   ├── cache/                  # ダウンロードキャッシュ（tarball・ZIP・フォント・API生JSON）
+│   ├── datasets/               # メタデータ JSONL と manifest
+│   ├── raw/                    # 整形済み本文テキスト
+│   └── pdf/                    # レンダリングした PDF
+├── docs/                       # 設計・スキーマ・法務メモ
+├── samples/                    # リポジトリに同梱する小さなサンプル
+├── scripts/
+│   ├── setup_dataset.py        # データセットアップ CLI（主要エントリポイント）
+│   ├── fetch_narou_api.py      # 公式API生JSONの保存
+│   └── dataset_report.py       # 統計・欠損チェック
+├── src/asc/                    # ライブラリ本体
+│   ├── config.py http.py jsonl.py schema.py report.py
+│   ├── sources/aozora.py sources/narou.py
+│   ├── text/aozora_format.py text/narou_html.py
+│   ├── render/pdf.py fonts.py
+└── tests/                      # pytest
+```
+
+## 5.  品質保証
+
+* `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、PDF 描画、
+  JSONL ラウンドトリップのユニットテスト
+* `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
+* CI: `.github/workflows/dataset-refresh.yml` が公式取得からレポートまでを実行します
+
+## 6.  次フェーズ候補
+
+* スキルの定義（`skills/`）と評価ハーネスの雛形
+* 文字種・文構造・会話率などの言語統計に基づく feature 抽出
+* キャラクターシート・世界観ノートの生成と、その評価軸の設計
+* 縦組み PDF / EPUB 出力（現在は横組み A5）
+
+## 7.  ライセンスと引用
+
+* 本リポジトリのコード: MIT（`LICENSE` を参照）
+* 取得データ: 各ソースの規約に従います
+  （青空文庫 = 「青空文庫収録ファイルの取り扱い規準」、
+   小説家になろう = 「なろうデベロッパー利用ガイドライン」と作品ごとの著作権）
+* データセットを論文・学習に用いる際は、**出典 URL と取得日を明記**してください。
