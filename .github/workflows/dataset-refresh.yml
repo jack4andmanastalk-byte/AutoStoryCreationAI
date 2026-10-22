@@ -52,6 +52,12 @@ jobs:
           python scripts/fetch_narou_api.py --per-query 200 --out-dir data/cache/narou_api
           python scripts/setup_dataset.py narou-metadata
 
+      - name: Fetch texts and PDFs (Aozora)
+        run: python scripts/setup_dataset.py aozora-texts --works 10 --pdf
+
+      - name: Fetch texts and PDFs (Narou)
+        run: python scripts/setup_dataset.py narou-texts --works 10 --pdf
+
       - name: Report
         run: python scripts/dataset_report.py
 
@@ -62,4 +68,6 @@ jobs:
           path: |
             data/datasets/*.jsonl
             data/datasets/manifest.json
+            data/raw/**
+            data/pdf/**
           retention-days: 30

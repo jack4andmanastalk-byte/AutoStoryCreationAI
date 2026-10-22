@@ -7,6 +7,12 @@
       "file": "data/datasets/aozora_works.jsonl",
       "origin": "GitHub mirror: aewshyae/aozorabunko-re-design_pages",
       "works": 16330
+    },
+    "aozora_texts": {
+      "at": "2026-10-22T14:38:16Z",
+      "pdf_dir": "data/pdf/aozora",
+      "texts_dir": "data/raw/aozora/texts",
+      "works": 119
     }
   }
 }
