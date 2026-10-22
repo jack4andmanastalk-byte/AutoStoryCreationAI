@@ -160,3 +160,11 @@ def test_parse_commercialized_info_html_ignores_bookmark_modal_and_other_works()
     err_html = "<html><head><title>エラー</title></head><body>該当する小説が存在しません</body></html>"
     assert parse_commercialized_info_html(err_html) is None
 
+
+def test_normalize_novel_unescapes_html_entities():
+    rec = dict(API_RECORD, title="【書籍化&amp;コミカライズ】猫と&quot;魔法&quot;")
+    work = normalize_novel(rec)
+    assert work.title == '【書籍化&コミカライズ】猫と"魔法"'
+    assert work.rights["commercialized"] is True
+
+

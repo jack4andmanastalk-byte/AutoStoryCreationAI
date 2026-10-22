@@ -25,6 +25,7 @@ from typing import Any, Dict, List, Optional, Tuple
 SEPARATOR_RE = re.compile(r"^-{10,}\s*$")
 ANNOTATION_RE = re.compile(r"［＃(.*?)］")
 RUBY_RE = re.compile(r"｜([^《\n]{1,40})《([^》\n]{1,60})》")
+KANJI_RUBY_RE = re.compile(r"([\u4e00-\u9fff\u3400-\u4dbf々仝〆〇ヶ]+)《([^》\n]{1,60})》")
 LOOSE_RUBY_RE = re.compile(r"《([^》\n]{1,60})》")
 EMPHASIS_RE = re.compile(r"「(.+?)」に傍点")
 PAGE_BREAK_TOKENS = ("改ページ",)
@@ -69,7 +70,6 @@ def _strip_legend(lines: List[str]) -> Tuple[List[str], List[str]]:
     """Split the file into ``(header_lines, body_lines)``."""
     header: List[str] = []
     body: List[str] = []
-    index = 0
     seen_separator = False
     for index, line in enumerate(lines):
         if not seen_separator:
@@ -84,6 +84,12 @@ def _strip_legend(lines: List[str]) -> Tuple[List[str], List[str]]:
             body = lines[index + 1 :]
             break
     else:
+        if not seen_separator:
+            # No legend block: header is the leading non-blank block (up to 3 lines)
+            for idx, line in enumerate(lines):
+                if not line.strip() and idx > 0:
+                    return lines[:idx], lines[idx + 1 :]
+            return [], lines
         body = lines[len(header) :]
     return header, body
 
@@ -110,6 +116,7 @@ def _apply_annotations(line: str) -> Tuple[str, List[str], List[str], bool]:
         return base
 
     line = RUBY_RE.sub(_ruby_sub, line)
+    line = KANJI_RUBY_RE.sub(_ruby_sub, line)
 
     def _annotation_sub(match: re.Match[str]) -> str:
         nonlocal page_break
@@ -125,8 +132,21 @@ def _apply_annotations(line: str) -> Tuple[str, List[str], List[str], bool]:
     line = ANNOTATION_RE.sub(_annotation_sub, line)
 
     # loose ruby (no ｜ marker) - keep the base text, drop the reading
-    line = LOOSE_RUBY_RE.sub(r"\1", line)
+    line = LOOSE_RUBY_RE.sub("", line)
     return line, ruby, emphasis, page_break
+
+
+def _strip_colophon(body: List[str]) -> List[str]:
+    """Remove the trailing Aozora Bunko bibliographic/volunteer colophon."""
+    tail_start = max(0, len(body) - 40)
+    tail_text = "\n".join(body[tail_start:])
+    if not any(marker in tail_text for marker in ("青空文庫作成ファイル", "入力：", "校正：")):
+        return body
+    for idx in range(tail_start, len(body)):
+        stripped = body[idx].strip()
+        if stripped.startswith(("底本：", "底本:", "青空文庫作成ファイル：")):
+            return body[:idx]
+    return body
 
 
 def parse_aozora_text(raw: str) -> ParsedAozora:
@@ -134,6 +154,7 @@ def parse_aozora_text(raw: str) -> ParsedAozora:
     text = raw.replace("\r\n", "\n").replace("\r", "\n").lstrip("\ufeff")
     lines = text.split("\n")
     header, body = _strip_legend(lines)
+    body = _strip_colophon(body)
     title, author, translator = _clean_header(header)
 
     blocks: List[Dict[str, Any]] = []

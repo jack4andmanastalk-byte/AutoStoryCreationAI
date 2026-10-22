@@ -17,6 +17,7 @@ the text that the platform itself offers for download.
 
 from __future__ import annotations
 
+import html as html_lib
 import io
 import json
 import logging
@@ -324,7 +325,7 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         published_year = int(published_at[:4])
 
     tags: List[Dict[str, Any]] = []
-    keyword = (api_field(record, "keyword") or "").strip()
+    keyword = html_lib.unescape(api_field(record, "keyword") or "").strip()
     if keyword:
         tags = [{"taxonomy": "keyword", "label": part} for part in keyword.split() if part]
 
@@ -340,8 +341,9 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         if api_field(record, key):
             elements.append(label)
 
-    title = api_field(record, "title") or ""
-    synopsis = api_field(record, "story") or ""
+    title = html_lib.unescape(api_field(record, "title") or "")
+    writer = html_lib.unescape(api_field(record, "writer") or "")
+    synopsis = html_lib.unescape(api_field(record, "story") or "")
     fav_novel_cnt = api_field(record, "fav_novel_cnt")
     all_point = api_field(record, "all_point")
     commercialized, comm_markers = detect_commercialized_from_metadata(
@@ -379,7 +381,7 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         text_url=f"https://ncode.syosetu.com/txtdownload/{ncode.lower()}/",
         authors=[
             Author(
-                name=api_field(record, "writer") or "",
+                name=writer,
                 role="author",
                 id=str(userid_val) if userid_val is not None else None,
                 url=f"https://mypage.syosetu.com/{userid_val}/" if userid_val else None,

@@ -56,6 +56,24 @@ def test_ruby_is_flattened():
     assert {"base": "歳", "reading": "さい"} in ruby
 
 
+def test_unprefixed_kanji_ruby_and_colophon_are_cleaned():
+    raw = (
+        "キャラメルと飴玉\n夢野久作\n\n"
+        "キャラメルと飴玉《あめだま》とが喧嘩《けんか》をはじめました。\n\n"
+        "底本：「夢野久作全集7」三一書房\n"
+        "入力：川山隆\n校正：土屋隆\n"
+        "青空文庫作成ファイル：\n"
+        "このファイルは、インターネットの図書館、青空文庫で作られました。\n"
+    )
+    parsed = parse_aozora_text(raw)
+    assert parsed.text == "キャラメルと飴玉とが喧嘩をはじめました。"
+    assert "底本：" not in parsed.text
+    assert "青空文庫作成ファイル" not in parsed.text
+    ruby = [r for block in parsed.blocks for r in block.get("ruby", [])]
+    assert {"base": "飴玉", "reading": "あめだま"} in ruby
+    assert {"base": "喧嘩", "reading": "けんか"} in ruby
+
+
 def test_emphasis_is_captured():
     parsed = parse_aozora_text(SAMPLE)
     emphasis = [e for block in parsed.blocks for e in block.get("emphasis", [])]

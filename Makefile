@@ -30,7 +30,7 @@ data-narou: ## Syosetsuka ni Narou: bibliographic records, texts and PDFs
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 20 --pdf --check-commercialization
 
 pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
-	git fetch origin datasets
+	git fetch origin +refs/heads/datasets:refs/remotes/origin/datasets
 	mkdir -p data
 	git archive origin/datasets | tar -x -C data
 
