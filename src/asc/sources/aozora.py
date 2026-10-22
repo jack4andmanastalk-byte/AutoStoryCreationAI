@@ -454,9 +454,9 @@ def parse_pages_mirror(root: Path) -> CardList:
 
         bibclass = work_meta.get("bibclass") or ""
         ndc_code = bibclass.replace("NDC", "").strip() or None
-        url = entry.get("workHTMLURL") or (
-            CARD_URL_TEMPLATE.format(person_id=int(person_id or 0), work_id=int(work_id))
-        )
+        url = CARD_URL_TEMPLATE.format(person_id=int(person_id or 0), work_id=int(work_id))
+        # the HTML rendering of the work and the downloadable archive
+        html_url = entry.get("workHTMLURL")
         text_url = (
             FILES_URL_TEMPLATE.format(person_id=int(person_id or 0), filename=text_filename)
             if text_filename and person_id is not None
@@ -495,6 +495,7 @@ def parse_pages_mirror(root: Path) -> CardList:
                 "person_id": person_id,
                 "work_id": work_id,
                 "text_filename": text_filename,
+                "html_url": html_url,
                 "text_created_on": created_on,
                 "text_updated_on": updated_on,
                 "worker": book.get("worker"),
