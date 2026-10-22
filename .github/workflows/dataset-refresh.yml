@@ -4,9 +4,12 @@ name: dataset-refresh
 #
 # The workflow runs exactly the same pipeline as ``make data`` (see
 # ``scripts/setup_dataset.py``) but on the GitHub runners, which can reach
-# www.aozora.gr.jp and api.syosetu.com.  The generated JSONL files are
-# uploaded as artifacts so that they can be inspected without cloning the
-# repository.
+# www.aozora.gr.jp and api.syosetu.com.  The generated files are published on
+# the dedicated ``datasets`` branch (and additionally attached as an
+# artifact), so that they can be consumed without cloning the repository:
+#
+#   git fetch origin datasets
+#   git show origin/datasets:datasets/aozora_works.jsonl | head -1
 on:
   workflow_dispatch:
     inputs:
@@ -26,12 +29,12 @@ on:
     - cron: "0 3 * * 0"
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
 
@@ -60,6 +63,22 @@ jobs:
 
       - name: Report
         run: python scripts/dataset_report.py
+
+      - name: Publish the datasets to the `datasets` branch
+        run: |
+          mkdir -p publish
+          cp -r data/datasets publish/datasets
+          cp -r data/raw publish/raw
+          cp -r data/pdf publish/pdf
+          cd publish
+          git init -q
+          git config user.name "dataset-bot"
+          git config user.email "dataset-bot@users.noreply.github.com"
+          git checkout -q -b datasets
+          git add -A
+          git commit -q -m "datasets: $(date -u +%FT%TZ)"
+          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git push --force origin datasets
 
       - name: Upload the datasets
         uses: actions/upload-artifact@v4
