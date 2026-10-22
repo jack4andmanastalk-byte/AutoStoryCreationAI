@@ -71,6 +71,8 @@ narou:
   download_works: 30
   min_chars: 5000
   include_r15: false
+  # Restrict text/PDF generation to commercialised works (free web version only).
+  commercialized_only: true
   # Raw API responses stored on disk (offline import, see scripts/fetch_narou_api.py).
   api_response_files:
     - data/cache/narou_api/genre_101.json

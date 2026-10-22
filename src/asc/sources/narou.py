@@ -77,11 +77,108 @@ GENRES: Dict[int, Dict[str, Any]] = {
 COMMERCIAL_MARKERS = (
     "商業化",
     "書籍化",
-    "出版",
+    "コミカライズ",
     "アニメ化",
     "ゲーム化",
-    "コミカライズ",
+    "漫画化",
+    "文庫化",
+    "メディアミックス",
+    "単行本",
 )
+
+COMMERCIAL_TAG_SET = frozenset(
+    {
+        "商業化",
+        "書籍化",
+        "書籍化決定",
+        "電子書籍化",
+        "コミカライズ",
+        "コミカライズ決定",
+        "アニメ化",
+        "アニメ化決定",
+        "ゲーム化",
+        "漫画化",
+        "文庫化",
+        "メディアミックス",
+    }
+)
+
+TITLE_COMMERCIAL_RE = re.compile(
+    r"(書籍化|商業化|コミカライズ|アニメ化|ゲーム化|漫画化|文庫化|メディアミックス|\d+巻[^】\n]{0,12}発売)"
+)
+SYNOPSIS_COMMERCIAL_RE = re.compile(
+    r"(書籍化決定|コミカライズ決定|アニメ化決定|商業化決定|書籍発売|巻発売|発売中|"
+    r"文庫より|ブックスより|ノベルスより|ノベルズより|コミックス)"
+)
+NEGATIVE_COMMERCIAL_RE = re.compile(
+    r"(自主出版|同人|(?:書籍化|商業化|コミカライズ|アニメ化)[^\n。]{0,6}(?:目指|希望|目標|夢))"
+)
+INFO_ERROR_RE = re.compile(
+    r"(<title>\s*エラー|該当する小説が存在しません|小説が存在しません|削除されました)"
+)
+
+
+def detect_commercialized_from_metadata(
+    title: str,
+    keyword: str,
+    synopsis: str,
+    *,
+    genre_code: Optional[int] = None,
+    fav_novel_cnt: Optional[int] = None,
+    all_point: Optional[int] = None,
+) -> Tuple[Optional[bool], List[str]]:
+    """Detect commercialisation markers present in the official API metadata.
+
+    Returns ``(True, markers)`` when unambiguous commercialisation markers are
+    found, or ``(None, [])`` when unknown from metadata alone.
+    """
+    if genre_code in (9903, 9904, 9999):
+        return None, []
+    combined = f"{title}\n{keyword}\n{synopsis}"
+    if NEGATIVE_COMMERCIAL_RE.search(combined):
+        return None, []
+    # Filter out 0-bookmark spam/essays when popularity stats are present
+    if fav_novel_cnt is not None or all_point is not None:
+        if (fav_novel_cnt or 0) < 20 and (all_point or 0) < 100:
+            return None, []
+
+    markers: List[str] = []
+    kw_tokens = set(keyword.split()) if keyword else set()
+    for tag in sorted(kw_tokens & COMMERCIAL_TAG_SET):
+        markers.append(tag)
+    for match in TITLE_COMMERCIAL_RE.finditer(title or ""):
+        token = match.group(1)
+        if token not in markers:
+            markers.append(token)
+    for match in SYNOPSIS_COMMERCIAL_RE.finditer(synopsis or ""):
+        token = match.group(1)
+        if token not in markers:
+            markers.append(token)
+    if markers:
+        return True, markers
+    return None, []
+
+
+def parse_commercialized_info_html(html: str) -> Optional[bool]:
+    """Inspect a Narou ``infotop`` HTML page for commercialisation notices.
+
+    Care is taken to:
+    * ignore the hidden bookmark-modal template (which contains the literal
+      string ``エラーが発生しました`` on every live page), and
+    * strip the ``同一作者の作品`` section so other works by the same author do
+      not trigger a false positive.
+    """
+    if not html or INFO_ERROR_RE.search(html):
+        return None
+    main_section = html.split("同一作者の作品", 1)[0]
+    main_section = re.sub(r"<script\b[^>]*>.*?</script>", " ", main_section, flags=re.S | re.I)
+    text = re.sub(r"<[^>]+>", " ", main_section)
+    if NEGATIVE_COMMERCIAL_RE.search(text):
+        return False
+    for marker in COMMERCIAL_MARKERS:
+        if marker in text:
+            return True
+    return False
 
 #: Fields that are copied verbatim into the JSONL record.
 COPY_FIELDS = (
@@ -243,22 +340,49 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         if api_field(record, key):
             elements.append(label)
 
+    title = api_field(record, "title") or ""
+    synopsis = api_field(record, "story") or ""
+    fav_novel_cnt = api_field(record, "fav_novel_cnt")
+    all_point = api_field(record, "all_point")
+    commercialized, comm_markers = detect_commercialized_from_metadata(
+        title,
+        keyword,
+        synopsis,
+        genre_code=genre_code,
+        fav_novel_cnt=fav_novel_cnt,
+        all_point=all_point,
+    )
+    rights_note = (
+        "この作品は商業化されています。商業版（紙書籍・電子書籍）は再配布せず、"
+        "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
+        "二次利用には作者の許諾が必要です。"
+        if commercialized
+        else (
+            "小説家になろう利用規約に従い、公式サイトが無料公開しているWEB版のみを扱う。"
+            "二次利用には作者の許諾が必要です。"
+        )
+    )
+    rights_obj: Dict[str, Any] = {
+        "source": "Syosetsuka ni Narou",
+        "commercialized": commercialized,
+        "note": rights_note,
+    }
+    if comm_markers:
+        rights_obj["markers"] = comm_markers
+
+    userid_val = api_field(record, "userid")
     work = Work(
         id=f"narou:{ncode}",
         source=NAROU_SOURCE,
-        title=api_field(record, "title") or "",
+        title=title,
         url=NOVEL_URL_TEMPLATE.format(ncode=ncode.lower()),
         text_url=f"https://ncode.syosetu.com/txtdownload/{ncode.lower()}/",
         authors=[
             Author(
                 name=api_field(record, "writer") or "",
                 role="author",
-                id=str(api_field(record, "userid")) if api_field(record, "userid") is not None else None,
-                url=(
-                    f"https://mypage.syosetu.com/{record.get('userid')}/"
-                    if api_field(record, "userid")
-                    else None
-                ),
+                id=str(userid_val) if userid_val is not None else None,
+                url=f"https://mypage.syosetu.com/{userid_val}/" if userid_val else None,
             )
         ],
         genre={
@@ -271,22 +395,15 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         published_at=published_at,
         published_year=published_year,
         license="小説家になろう掲載作品（著作権は作者に帰属）",
-        rights={
-            "source": "Syosetsuka ni Narou",
-            "commercialized": None,
-            "note": (
-                "小説家になろう利用規約に従い、公式サイトが無料公開しているWEB版のみを扱う。"
-                "二次利用には作者の許諾が必要です。"
-            ),
-        },
+        rights=rights_obj,
         stats={
             "char_count": api_field(record, "length"),
             "episodes": api_field(record, "general_all_no"),
             "read_minutes": api_field(record, "time"),
-            "fav_novel_cnt": api_field(record, "fav_novel_cnt"),
+            "fav_novel_cnt": fav_novel_cnt,
             "impression_cnt": api_field(record, "impression_cnt"),
             "review_cnt": api_field(record, "review_cnt"),
-            "all_point": api_field(record, "all_point"),
+            "all_point": all_point,
             "all_hyoka_cnt": api_field(record, "all_hyoka_cnt"),
             "global_point": api_field(record, "global_point"),
             "comic_ratio": api_field(record, "kaiwaritu"),
@@ -296,12 +413,12 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
             "elements": elements,
         },
         extra={
-            "synopsis": api_field(record, "story"),
+            "synopsis": synopsis or None,
             "keywords": keyword,
             "first_up": first_up,
             "last_up": api_field(record, "generallastup"),
             "updated_at": api_field(record, "novelupdated_at"),
-            "userid": api_field(record, "userid"),
+            "userid": userid_val,
             "official_info_url": NOVEL_INFO_URL_TEMPLATE.format(ncode=ncode.lower()),
         },
     )
@@ -318,11 +435,43 @@ class NarouSource:
         self.api = NarouApiClient(config, client)
 
     # -- metadata ------------------------------------------------------
-    def harvest(self) -> List[Work]:
-        """Collect metadata for the configured genres / rankings."""
-        works: Dict[str, Work] = {}
-        queries: List[Dict[str, Any]] = []
+    def _accept_work(self, work: Work) -> bool:
+        if not self.config.include_r15 and "R15" in (work.stats.get("elements") or []):
+            return False
+        return True
 
+    def _load_cached_api_files(self, works: Dict[str, Work]) -> None:
+        for file_entry in self.config.api_response_files:
+            path = Path(file_entry)
+            if not path.is_absolute():
+                path = REPO_ROOT / path
+            if not path.exists():
+                continue
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as exc:
+                LOGGER.warning("cannot read cached API response %s: %s", path, exc)
+                continue
+            if isinstance(data, dict):
+                data = data.get("records") or [data]
+            if not isinstance(data, list):
+                continue
+            added = 0
+            for record in data:
+                if not isinstance(record, dict) or api_field(record, "ncode") is None:
+                    continue
+                work = normalize_novel(record)
+                if self._accept_work(work) and work.id not in works:
+                    works[work.id] = work
+                    added += 1
+            LOGGER.info("loaded %s novels from %s (total %s)", added, path.name, len(works))
+
+    def harvest(self) -> List[Work]:
+        """Collect metadata from cached API dumps and/or live API queries."""
+        works: Dict[str, Work] = {}
+        self._load_cached_api_files(works)
+
+        queries: List[Dict[str, Any]] = []
         for genre in self.config.genres:
             queries.append({"genre": genre})
             queries.append({"genre": genre, "order": "favnovelcnt"})
@@ -337,7 +486,8 @@ class NarouSource:
                 continue
             for record in records:
                 work = normalize_novel(record)
-                works.setdefault(work.id, work)
+                if self._accept_work(work):
+                    works.setdefault(work.id, work)
             LOGGER.info("query %s -> %s novels (total %s)", query, len(records), len(works))
         return list(works.values())
 
@@ -369,13 +519,10 @@ class NarouSource:
         except Exception as exc:  # pragma: no cover - network dependent
             LOGGER.debug("cannot read the info page of %s: %s", ncode, exc)
             return None
-        if "エラーが発生しました" in html:
-            return None
-        for marker in COMMERCIAL_MARKERS:
-            if marker in html:
-                LOGGER.info("%s looks commercialised (%s)", ncode, marker)
-                return True
-        return False
+        result = parse_commercialized_info_html(html)
+        if result is True:
+            LOGGER.info("%s confirmed commercialised via info page", ncode)
+        return result
 
     # -- text ----------------------------------------------------------
     def fetch_novel_text(self, ncode: str, max_episodes: int = 0) -> NovelText:

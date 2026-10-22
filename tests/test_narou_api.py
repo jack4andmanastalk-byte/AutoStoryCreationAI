@@ -5,7 +5,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from asc.sources.narou import api_field, normalize_novel  # noqa: E402
+from asc.sources.narou import (  # noqa: E402
+    api_field,
+    detect_commercialized_from_metadata,
+    normalize_novel,
+    parse_commercialized_info_html,
+)
 
 # A record as it is returned by the official API when the short codes are
 # requested (https://dev.syosetu.com/man/api/).
@@ -88,3 +93,70 @@ def test_normalize_novel_accepts_short_codes():
     assert work.stats["episodes"] == 3
     assert work.stats["is_completed"] is False
     assert "R15" in work.stats["elements"]
+
+
+def test_commercialization_detected_from_metadata():
+    comm, markers = detect_commercialized_from_metadata(
+        "【アニメ化】ループ7回目の悪役令嬢",
+        "女主人公 異世界 書籍化 アニメ化",
+        "★TVアニメスタート！",
+        genre_code=101,
+        fav_novel_cnt=150000,
+        all_point=320000,
+    )
+    assert comm is True
+    assert "書籍化" in markers
+    assert "アニメ化" in markers
+
+    # Aspirational / self-published / 0-bookmark works must not be flagged
+    comm_neg, _ = detect_commercialized_from_metadata(
+        "面白くない僕と彼女が、書籍化を目指す話",
+        "現代 青春",
+        "書籍化を目指して頑張ります！",
+        genre_code=302,
+        fav_novel_cnt=500,
+        all_point=1200,
+    )
+    assert comm_neg is None
+
+    comm_spam, _ = detect_commercialized_from_metadata(
+        "テスト書籍化",
+        "書籍化",
+        "テスト",
+        genre_code=201,
+        fav_novel_cnt=1,
+        all_point=2,
+    )
+    assert comm_spam is None
+
+
+def test_parse_commercialized_info_html_ignores_bookmark_modal_and_other_works():
+    # Live Narou infotop pages contain a hidden bookmark modal with "エラーが発生しました"
+    # and a "同一作者の作品" section at the bottom.
+    comm_html = """
+    <html><head><title>作品タイトル[作品情報]</title></head><body>
+    <h1>【アニメ化】ループ7回目の悪役令嬢</h1>
+    <div>キーワード：異世界 書籍化 アニメ化</div>
+    <h2>同一作者の作品</h2>
+    <div>別の作品</div>
+    <div class="modal">設定を保存しました エラーが発生しました</div>
+    </body></html>
+    """
+    assert parse_commercialized_info_html(comm_html) is True
+
+    # Non-commercialized work whose author has OTHER commercialized works:
+    non_comm_html = """
+    <html><head><title>短編タイトル[作品情報]</title></head><body>
+    <h1>静かな森の短編</h1>
+    <div>キーワード：ほのぼの 日常</div>
+    <h2>同一作者の作品</h2>
+    <div>【書籍化・アニメ化】別の大人気作品</div>
+    <div class="modal">エラーが発生しました</div>
+    </body></html>
+    """
+    assert parse_commercialized_info_html(non_comm_html) is False
+
+    # Actual error page:
+    err_html = "<html><head><title>エラー</title></head><body>該当する小説が存在しません</body></html>"
+    assert parse_commercialized_info_html(err_html) is None
+

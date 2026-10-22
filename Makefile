@@ -4,7 +4,7 @@ BIN     := $(VENV)/bin
 CONFIG  ?= configs/dataset.yaml
 WORK    ?= 120
 
-.PHONY: help setup test data data-aozora data-narou report clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -27,7 +27,12 @@ data-aozora: ## Aozora Bunko: bibliographic records, texts and PDFs
 data-narou: ## Syosetsuka ni Narou: bibliographic records, texts and PDFs
 	$(BIN)/python scripts/fetch_narou_api.py --config $(CONFIG)
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-metadata
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 20 --pdf
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 20 --pdf --check-commercialization
+
+pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
+	git fetch origin datasets
+	mkdir -p data
+	git archive origin/datasets | tar -x -C data
 
 report: ## print statistics about the generated datasets
 	$(BIN)/python scripts/dataset_report.py --config $(CONFIG)

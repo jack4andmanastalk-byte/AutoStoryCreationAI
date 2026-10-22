@@ -27,7 +27,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT / "src") not in sys.path:
@@ -40,8 +40,8 @@ from asc.jsonl import read_jsonl, write_jsonl  # noqa: E402
 from asc.render.pdf import BookPdfRenderer  # noqa: E402
 from asc.schema import AuthorRecord, Work  # noqa: E402
 from asc.sources.aozora import (  # noqa: E402
-    NDC_MAJOR_CLASSES,
     AozoraSource,
+    enrich_ndc_genre,
     load_ndc_map,
     sample_works,
 )
@@ -129,28 +129,14 @@ def cmd_aozora_metadata(cfg: Config, args: argparse.Namespace) -> None:
     source = AozoraSource(cfg.aozora, cfg.paths, build_client(cfg))
     card = source.fetch_card_list()
 
-    # NDC labels (code -> human readable name)
-    ndc_map: Dict[str, str] = {}
+    # NDC labels (code -> human readable name), seeded with built-in NDC table
+    ndc_map = load_ndc_map(cfg.paths.cache_dir / "ndc_class_all.json")
     for candidate in sorted(cfg.paths.cache_dir.glob("aozora_pages/**/ndc_class_all.json")):
         ndc_map.update(load_ndc_map(candidate))
         break
-    if not ndc_map:
-        ndc_map = load_ndc_map(cfg.paths.cache_dir / "ndc_class_all.json")
-    # the official card list does not ship the classification names
-    ndc_map.update(NDC_MAJOR_CLASSES)
 
     for work in card.works:
-        if not work.genre:
-            continue
-        code = work.genre.get("code")
-        if code:
-            label = ndc_map.get(code)
-            if label is None:
-                label = ndc_map.get(code[:3]) or ndc_map.get(code[:2])
-            work.genre["label"] = label
-            parent_code = (work.genre.get("parent") or {}).get("code")
-            if parent_code:
-                work.genre["parent"]["label"] = ndc_map.get(parent_code)
+        enrich_ndc_genre(work, ndc_map)
         work.extra["metadata_origin"] = card.origin
 
     if args.limit:
@@ -189,20 +175,24 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
     if not index:
         LOGGER.warning("no mirrored texts found - the official archives will be used")
 
+    target = args.works or cfg.aozora.sample_works
+    pool_size = max(target * 2, target + 25)
     chosen = sample_works(
         works,
-        count=args.works or cfg.aozora.sample_works,
+        count=pool_size,
         seed=cfg.aozora.sample_seed,
         min_chars=cfg.aozora.min_chars,
     )
-    LOGGER.info("processing %s works", len(chosen))
+    LOGGER.info("sampling up to %s public-domain works (pool %s)", target, len(chosen))
 
     renderer = build_renderer(cfg) if args.pdf else None
     raw_dir = cfg.paths.raw_dir / "aozora" / "texts"
     pdf_dir = cfg.paths.pdf_dir / "aozora"
 
     updated: List[Work] = []
-    for position, work in enumerate(chosen, start=1):
+    for work in chosen:
+        if len(updated) >= target:
+            break
         raw = source.fetch_text(work, index=index)
         if not raw:
             LOGGER.warning("no text for %s (%s)", work.id, work.title)
@@ -233,7 +223,7 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
             )
             work.pdf_path = relative(pdf_path)
         updated.append(work)
-        LOGGER.info("[%s/%s] %s", position, len(chosen), work.title)
+        LOGGER.info("[%s/%s] %s", len(updated), target, work.title)
 
     merged = {work.id: work for work in works}
     for work in updated:
@@ -276,6 +266,32 @@ def cmd_narou_metadata(cfg: Config, args: argparse.Namespace) -> None:
     )
 
 
+def _diversify_by_genre(candidates: Sequence[Work]) -> List[Work]:
+    """Interleave pre-sorted candidates across genres so multiple genres appear."""
+    buckets: Dict[Any, List[Work]] = {}
+    genre_order: List[Any] = []
+    for work in candidates:
+        gcode = (work.genre or {}).get("code")
+        if gcode not in buckets:
+            buckets[gcode] = []
+            genre_order.append(gcode)
+        buckets[gcode].append(work)
+
+    interleaved: List[Work] = []
+    idx = 0
+    while True:
+        progressed = False
+        for gcode in genre_order:
+            bucket = buckets[gcode]
+            if idx < len(bucket):
+                interleaved.append(bucket[idx])
+                progressed = True
+        if not progressed:
+            break
+        idx += 1
+    return interleaved
+
+
 def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
     works_path = cfg.paths.dataset_dir / NAROU_WORKS
     if not works_path.exists():
@@ -284,32 +300,59 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
     source = NarouSource(cfg.narou, cfg.paths, build_client(cfg))
     renderer = build_renderer(cfg) if args.pdf else None
 
+    commercialized_only = cfg.narou.commercialized_only and not getattr(
+        args, "allow_uncommercialized", False
+    )
     candidates = [
         work
         for work in works
         if (work.stats.get("char_count") or 0) >= cfg.narou.min_chars
-        and not work.stats.get("elements")
+        and (cfg.narou.include_r15 or "R15" not in (work.stats.get("elements") or []))
     ]
     if not candidates:
-        candidates = works
-    # Prefer well known works: the point lists are ordered by the API
-    # queries, not by popularity.
+        candidates = [
+            w
+            for w in works
+            if cfg.narou.include_r15 or "R15" not in (w.stats.get("elements") or [])
+        ]
+
+    # Sort commercialised works first, then by popularity.
     candidates.sort(
         key=lambda w: (
+            1 if w.rights.get("commercialized") is True else 0,
             w.stats.get("all_point") or 0,
             w.stats.get("fav_novel_cnt") or 0,
             w.stats.get("char_count") or 0,
         ),
         reverse=True,
     )
-    chosen = candidates[: (args.works or cfg.narou.download_works)]
+    comm_candidates = [w for w in candidates if w.rights.get("commercialized") is True]
+    other_candidates = [w for w in candidates if w.rights.get("commercialized") is not True]
+    ordered_pool = _diversify_by_genre(comm_candidates) + (
+        [] if commercialized_only and comm_candidates else _diversify_by_genre(other_candidates)
+    )
 
+    target = args.works or cfg.narou.download_works
     raw_dir = cfg.paths.raw_dir / "narou" / "texts"
     pdf_dir = cfg.paths.pdf_dir / "narou"
 
     updated: List[Work] = []
-    for position, work in enumerate(chosen, start=1):
+    for work in ordered_pool:
+        if len(updated) >= target:
+            break
         ncode = work.id.split(":", 1)[1]
+        if getattr(args, "check_commercialization", False) or (
+            commercialized_only and work.rights.get("commercialized") is not True
+        ):
+            info_comm = source.check_commercialized(ncode)
+            if info_comm is True:
+                work.rights["commercialized"] = True
+            elif work.rights.get("commercialized") is not True:
+                work.rights["commercialized"] = info_comm
+        if commercialized_only and work.rights.get("commercialized") is not True:
+            LOGGER.info("skipping non-commercialised candidate %s (%s)", work.id, work.title)
+            continue
+
         novel = source.fetch_novel_text(ncode, max_episodes=args.max_episodes)
         if not novel.chapters:
             LOGGER.warning("no text for %s (%s)", work.id, work.title)
@@ -322,14 +365,12 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         work.stats["char_count"] = novel.char_count
         work.stats["episodes"] = len(novel.chapters)
         work.extra["text_origin"] = novel.origin
-        if getattr(args, "check_commercialization", False):
-            commercialized = source.check_commercialized(ncode)
-            work.rights["commercialized"] = commercialized
-            if commercialized:
-                work.rights["note"] = (
-                    "この作品は商業化されています。二次利用には作者および小説家になろうの"
-                    "許諾が必要です。本データセットでは公式サイトが無料公開しているWEB版のみを扱う。"
-                )
+        if work.rights.get("commercialized") is True:
+            work.rights["note"] = (
+                "この作品は商業化されています。商業版（紙書籍・電子書籍）は再配布せず、"
+                "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
+                "二次利用には作者の許諾が必要です。"
+            )
         if renderer is not None:
             pdf_path = pdf_dir / f"{ncode}.pdf"
             blocks = []
@@ -342,11 +383,15 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
                 work,
                 blocks,
                 pdf_path,
-                note="出典: 小説家になろう (syosetu.com) — 公式サイトが無料公開しているWEB版",
+                note=(
+                    "出典: 小説家になろう (syosetu.com) — 商業化作品の無料公開WEB版"
+                    if work.rights.get("commercialized") is True
+                    else "出典: 小説家になろう (syosetu.com) — 公式サイトが無料公開しているWEB版"
+                ),
             )
             work.pdf_path = relative(pdf_path)
         updated.append(work)
-        LOGGER.info("[%s/%s] %s", position, len(chosen), work.title)
+        LOGGER.info("[%s/%s] %s", len(updated), target, work.title)
 
     merged = {work.id: work for work in works}
     for work in updated:
@@ -403,6 +448,11 @@ def main(argv: Optional[List[str]] = None) -> int:
         "--check-commercialization",
         action="store_true",
         help="query the official information page and flag commercialised works",
+    )
+    p.add_argument(
+        "--allow-uncommercialized",
+        action="store_true",
+        help="allow non-commercialised novels when selecting texts/PDFs",
     )
     p.set_defaults(func=cmd_narou_texts)
 

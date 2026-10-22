@@ -24,6 +24,8 @@ class DatasetStats:
     authors: int = 0
     with_text: int = 0
     with_pdf: int = 0
+    commercialized: int = 0
+    copyrighted: int = 0
     total_chars: int = 0
     years: Counter = field(default_factory=Counter)
     genres: Counter = field(default_factory=Counter)
@@ -59,6 +61,11 @@ class DatasetReport:
                     stats.with_text += 1
                 if row.get("pdf_path"):
                     stats.with_pdf += 1
+                rights = row.get("rights") or {}
+                if rights.get("commercialized") is True:
+                    stats.commercialized += 1
+                if rights.get("copyright_flag") is True:
+                    stats.copyrighted += 1
                 chars = (row.get("stats") or {}).get("char_count")
                 if isinstance(chars, int):
                     stats.total_chars += chars
@@ -91,6 +98,10 @@ class DatasetReport:
             if filename != "aozora_authors.jsonl":
                 lines.append(f"   with plain text  : {stats.with_text}")
                 lines.append(f"   with PDF         : {stats.with_pdf}")
+                if stats.commercialized:
+                    lines.append(f"   commercialized   : {stats.commercialized}")
+                if stats.copyrighted:
+                    lines.append(f"   copyright active : {stats.copyrighted}")
                 lines.append(f"   total characters : {stats.total_chars:,}")
                 if stats.years:
                     first = min(stats.years)
@@ -120,3 +131,7 @@ def _decades(years: Counter) -> Dict[str, int]:
     for year, count in years.items():
         buckets[f"{year // 10 * 10}s"] += count
     return dict(buckets)
+
+
+def build_report(dataset_dir: Path) -> DatasetReport:
+    return DatasetReport(dataset_dir).build()

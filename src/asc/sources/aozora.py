@@ -108,11 +108,31 @@ def _pick(row: Dict[str, str], *names: str) -> Optional[str]:
     return None
 
 
+def _split_ndc_codes(raw: Optional[str]) -> Tuple[Optional[str], List[str]]:
+    """Split a raw NDC string (e.g. ``"NDC 289 910"`` or ``"NDC K913"``)."""
+    if not raw:
+        return None, []
+    cleaned = raw.replace("NDC", "").strip()
+    tokens = [tok for tok in cleaned.split() if tok]
+    if not tokens:
+        return None, []
+    return tokens[0], tokens[1:]
+
+
+def _ndc_parent_code(code: Optional[str]) -> Optional[str]:
+    if not code:
+        return None
+    stripped = code.lstrip("K")
+    return stripped[:1] if stripped else None
+
+
 def parse_official_card_csv(payload: bytes) -> CardList:
     """Parse ``list_person_all_extended_utf8.csv`` (UTF-8, extended)."""
     text = payload.decode("utf-8-sig", errors="replace")
     reader = csv.DictReader(io.StringIO(text))
     card = CardList(origin="aozora.gr.jp (official CSV)")
+    works_by_id: Dict[str, Work] = {}
+
     for row in reader:
         work_id = _pick(row, "作品ID", "作品番号")
         title = _pick(row, "作品名")
@@ -123,11 +143,12 @@ def parse_official_card_csv(payload: bytes) -> CardList:
         surname = _pick(row, "姓") or ""
         given = _pick(row, "名") or ""
         author_name = (surname + " " + given).strip() or _pick(row, "著者名") or ""
-        title += (" " + _pick(row, "副題")).strip() if _pick(row, "副題") else ""
+        subtitle = _pick(row, "副題")
+        if subtitle:
+            title = f"{title} {subtitle}".strip()
 
-        ndc = _pick(row, "分類番号") or ""
-        ndc_code = ndc.replace("NDC", "").strip()
-        ndc_parent = ndc_code[1:] if ndc_code[:1] == "K" else ndc_code[:1]
+        ndc_code, extra_ndc_codes = _split_ndc_codes(_pick(row, "分類番号"))
+        ndc_parent = _ndc_parent_code(ndc_code)
         first_appearance = _pick(row, "初出")
         base_edition = _pick(row, "底本初版発行年1") or _pick(row, "底本初版発行年")
         published_at = _first_date(base_edition) or _first_date(first_appearance)
@@ -135,58 +156,82 @@ def parse_official_card_csv(payload: bytes) -> CardList:
             first_appearance
         )
         copyright_flag = (_pick(row, "作品著作権フラグ") or "なし") != "なし"
+        person_copyright = (_pick(row, "人物著作権フラグ") or "なし") != "なし"
 
         text_url = _pick(row, "テキストファイルURL")
+        text_filename = text_url.rsplit("/", 1)[-1] if text_url and "/" in text_url else None
         card_url = _pick(row, "図書カードURL")
         if not card_url and person_id and work_id.isdigit():
             card_url = CARD_URL_TEMPLATE.format(person_id=int(person_id), work_id=int(work_id))
 
-        work = Work(
-            id=f"aozora:{int(work_id):06d}" if work_id.isdigit() else f"aozora:{work_id}",
-            source=AOZORA_SOURCE,
-            title=title,
-            url=card_url or f"{AOZORA_HOME}/cards/{person_id}/",
-            text_url=text_url,
-            authors=[
-                Author(
-                    name=author_name,
-                    role="translator" if "訳" in role else "author",
-                    id=person_id or None,
-                    name_kana=(_pick(row, "姓読み") or "") + (_pick(row, "名読み") or "") or None,
-                    url=f"{AOZORA_HOME}/cards/{person_id}/" if person_id else None,
-                    born_on=_first_date(_pick(row, "生年月日")),
-                    died_on=_first_date(_pick(row, "没年月日")),
-                )
-            ],
-            genre={
-                "taxonomy": "NDC",
-                "code": ndc_code or None,
-                "label": None,
-                "parent": {"taxonomy": "NDC", "code": ndc_parent or None},
-            },
-            published_at=published_at,
-            published_year=published_year,
-            license="青空文庫 (aozora.gr.jp) 収録作品",
-            rights={
-                "copyright_flag": copyright_flag,
-                "source": "Aozora Bunko",
-                "note": "著作権存続作品は再配布不可のため本リポジトリでは除外する",
-            },
-            stats={"char_count": None},
-            extra={
-                "first_appearance": first_appearance,
-                "base_book": _pick(row, "底本名1") or _pick(row, "底本名"),
-                "base_publisher": _pick(row, "底本出版社名1"),
-                "kana_type": _pick(row, "文字遣い種別"),
-                "worker_input": _pick(row, "入力者"),
-                "worker_proofread": _pick(row, "校正者"),
-                "text_updated_on": _pick(row, "テキストファイル最終更新日"),
-            },
+        author_obj = Author(
+            name=author_name,
+            role="translator" if "訳" in role else "author",
+            id=person_id or None,
+            name_kana=(_pick(row, "姓読み") or "") + (_pick(row, "名読み") or "") or None,
+            url=f"{AOZORA_HOME}/cards/{person_id}/" if person_id else None,
+            born_on=_first_date(_pick(row, "生年月日")),
+            died_on=_first_date(_pick(row, "没年月日")),
         )
-        card.works.append(work)
+
+        canonical_id = f"aozora:{int(work_id):06d}" if work_id.isdigit() else f"aozora:{work_id}"
+        existing = works_by_id.get(canonical_id)
+        if existing is not None:
+            if not any(
+                a.id == author_obj.id and a.name == author_obj.name and a.role == author_obj.role
+                for a in existing.authors
+            ):
+                existing.authors.append(author_obj)
+            existing.rights["copyright_flag"] = bool(
+                existing.rights.get("copyright_flag")
+            ) or copyright_flag or person_copyright
+            if not existing.text_url and text_url:
+                existing.text_url = text_url
+        else:
+            work = Work(
+                id=canonical_id,
+                source=AOZORA_SOURCE,
+                title=title,
+                url=card_url or f"{AOZORA_HOME}/cards/{person_id}/",
+                text_url=text_url,
+                authors=[author_obj],
+                genre={
+                    "taxonomy": "NDC",
+                    "code": ndc_code,
+                    "label": None,
+                    "parent": {"taxonomy": "NDC", "code": ndc_parent},
+                },
+                genres=[
+                    {"taxonomy": "NDC", "code": extra_code, "label": None}
+                    for extra_code in extra_ndc_codes
+                ],
+                published_at=published_at,
+                published_year=published_year,
+                license="青空文庫 (aozora.gr.jp) 収録作品",
+                rights={
+                    "copyright_flag": copyright_flag or person_copyright,
+                    "source": "Aozora Bunko",
+                    "note": "著作権存続作品は再配布不可のため本リポジトリでは除外する",
+                },
+                stats={"char_count": None},
+                extra={
+                    "first_appearance": first_appearance,
+                    "base_book": _pick(row, "底本名1") or _pick(row, "底本名"),
+                    "base_publisher": _pick(row, "底本出版社名1"),
+                    "kana_type": _pick(row, "文字遣い種別"),
+                    "person_id": int(person_id) if person_id.isdigit() else (person_id or None),
+                    "work_id": int(work_id) if work_id.isdigit() else work_id,
+                    "text_filename": text_filename,
+                    "worker_input": _pick(row, "入力者"),
+                    "worker_proofread": _pick(row, "校正者"),
+                    "text_updated_on": _pick(row, "テキストファイル最終更新日"),
+                },
+            )
+            works_by_id[canonical_id] = work
+            card.works.append(work)
 
         if person_id:
-            key = f"aozora:{person_id}"
+            key = f"aozora:{int(person_id):06d}" if person_id.isdigit() else f"aozora:{person_id}"
             if key not in card.authors:
                 card.authors[key] = AuthorRecord(
                     id=key,
@@ -196,7 +241,7 @@ def parse_official_card_csv(payload: bytes) -> CardList:
                     url=f"{AOZORA_HOME}/cards/{person_id}/",
                     born_on=_first_date(_pick(row, "生年月日")),
                     died_on=_first_date(_pick(row, "没年月日")),
-                    rights={"copyright_flag": (_pick(row, "人物著作権フラグ") or "なし") != "なし"},
+                    rights={"copyright_flag": person_copyright},
                     extra={"role": role},
                 )
     LOGGER.info("parsed %s works from the official CSV", len(card.works))
@@ -454,8 +499,8 @@ def parse_pages_mirror(root: Path) -> CardList:
                 break
 
         bibclass = work_meta.get("bibclass") or ""
-        ndc_code = bibclass.replace("NDC", "").strip() or None
-        ndc_parent = (ndc_code[1:] if ndc_code[:1] == "K" else ndc_code[:1]) if ndc_code else None
+        ndc_code, extra_ndc_codes = _split_ndc_codes(bibclass)
+        ndc_parent = _ndc_parent_code(ndc_code)
         url = CARD_URL_TEMPLATE.format(person_id=int(person_id or 0), work_id=int(work_id))
         # the HTML rendering of the work and the downloadable archive
         html_url = entry.get("workHTMLURL")
@@ -478,6 +523,10 @@ def parse_pages_mirror(root: Path) -> CardList:
                 "label": None,
                 "parent": {"taxonomy": "NDC", "code": ndc_parent},
             },
+            genres=[
+                {"taxonomy": "NDC", "code": extra_code, "label": None}
+                for extra_code in extra_ndc_codes
+            ],
             published_at=published_at,
             published_year=published_year,
             license="青空文庫 (aozora.gr.jp) 収録作品",
@@ -541,6 +590,127 @@ NDC_MAJOR_CLASSES: Dict[str, str] = {
     "9": "文学",
 }
 
+#: Standard NDC 2-digit divisions (綱目表) and common 3-digit sections (要目表).
+NDC_STANDARD_CLASSES: Dict[str, str] = {
+    **NDC_MAJOR_CLASSES,
+    # 00-09 総記
+    "00": "総記", "01": "図書館・図書館情報学", "02": "図書・書誌学", "03": "百科事典",
+    "04": "一般論文集・一般講演集", "05": "逐次刊行物", "06": "団体", "07": "ジャーナリズム・新聞",
+    "08": "叢書・全集・選集", "09": "貴重書・郷土資料",
+    # 10-19 哲学
+    "10": "哲学総記", "11": "哲学各論", "12": "東洋思想", "13": "西洋哲学",
+    "14": "心理学", "15": "倫理学・道徳", "16": "宗教", "17": "神道",
+    "18": "仏教", "19": "キリスト教",
+    "121": "日本思想", "147": "超心理学・心霊研究", "188": "各宗",
+    # 20-29 歴史
+    "20": "歴史総記", "21": "日本史", "22": "アジア史・東洋史", "23": "ヨーロッパ史・西洋史",
+    "24": "アフリカ史", "25": "北アメリカ史", "26": "南アメリカ史", "27": "オセアニア史",
+    "28": "伝記", "29": "地理・地誌・紀行",
+    "210": "日本史", "222": "中国史", "281": "日本の伝記", "289": "個人の伝記",
+    "290": "地理・地誌・紀行", "291": "日本の地理・紀行", "293": "ヨーロッパの地理・紀行",
+    # 30-39 社会科学
+    "30": "社会科学総記", "31": "政治", "32": "法律", "33": "経済",
+    "34": "財政", "35": "統計", "36": "社会", "37": "教育",
+    "38": "風俗習慣・民俗学・民族学", "39": "国防・軍事",
+    "304": "社会科学論集", "309": "社会思想", "312": "政治史・事情", "319": "平和問題・国際政治",
+    "361": "社会学", "367": "家族問題・女性問題", "370": "教育",
+    "382": "風俗史・民俗誌", "386": "年中行事・祭礼", "387": "民間信仰・迷信", "388": "伝説・民話",
+    # 40-49 自然科学
+    "40": "自然科学総記", "41": "数学", "42": "物理学", "43": "化学",
+    "44": "天文学・宇宙科学", "45": "地球科学・地学", "46": "生物科学・一般生物学",
+    "47": "植物学", "48": "動物学", "49": "医学・薬学",
+    "401": "科学理論・科学哲学", "404": "科学論集・エッセイ", "451": "気象学",
+    # 50-59 技術・工学
+    "50": "技術・工学総記", "51": "建設工学・土木工学", "52": "建築学", "53": "機械工学",
+    "54": "電気工学・電子工学", "55": "海洋工学・船舶工学", "56": "金属工学・鉱山工学",
+    "57": "化学工業", "58": "製造工業", "59": "家政学・生活科学",
+    "596": "食品・料理",
+    # 60-69 産業
+    "60": "産業総記", "61": "農業", "62": "園芸", "63": "蚕糸業",
+    "64": "畜産業", "65": "林業", "66": "水産業", "67": "商業",
+    "68": "運輸・交通", "69": "通信事業",
+    # 70-79 芸術・美術
+    "70": "芸術・美術総記", "71": "彫刻", "72": "絵画・書道", "73": "版画",
+    "74": "写真・印刷", "75": "工芸", "76": "音楽・舞踊", "77": "演劇・映画",
+    "78": "スポーツ・体育", "79": "諸芸・娯楽",
+    "701": "芸術理論・美学", "712": "彫刻史", "720": "絵画", "721": "日本画",
+    "723": "洋画", "726": "漫画・挿絵・児童画", "728": "書・書道", "751": "陶磁工芸",
+    "768": "邦楽", "770": "演劇", "771": "劇場・演出・演技", "772": "演劇史",
+    "773": "能楽・狂言", "774": "歌舞伎", "775": "各種の演劇", "778": "映画",
+    "779": "大衆演芸", "786": "戸外レクリエーション・登山", "787": "釣魚・遊猟",
+    # 80-89 言語
+    "80": "言語総記", "81": "日本語", "82": "中国語・東洋諸語", "83": "英語",
+    "84": "ドイツ語", "85": "フランス語", "86": "スペイン語", "87": "イタリア語",
+    "88": "ロシア語", "89": "その他の諸言語",
+    # 90-99 文学（3桁要目を網羅）
+    "90": "文学総記", "91": "日本文学", "92": "中国文学・東洋文学", "93": "英米文学",
+    "94": "ドイツ文学", "95": "フランス文学", "96": "スペイン文学", "97": "イタリア文学",
+    "98": "ロシア・ソビエト文学", "99": "その他の諸文学",
+    "901": "文学理論・詩学", "902": "文学史・文芸思潮史", "904": "文学論集・エッセイ",
+    "908": "世界文学叢書・全集", "909": "児童文学研究",
+    "910": "日本文学", "911": "詩歌（日本文学）", "912": "戯曲（日本文学）",
+    "913": "小説・物語（日本文学）", "914": "評論・エッセイ・随筆（日本文学）",
+    "915": "日記・書簡・紀行（日本文学）", "916": "記録・手記・ルポルタージュ（日本文学）",
+    "917": "諷刺・ユーモア・アフォリズム（日本文学）", "918": "作品集（日本文学）",
+    "920": "中国文学・東洋文学", "921": "中国詩歌・漢詩", "922": "中国戯曲",
+    "923": "中国小説・物語", "924": "中国評論・随筆", "929": "その他の東洋文学",
+    "930": "英米文学", "931": "英米詩", "932": "英米戯曲", "933": "英米小説・物語",
+    "934": "英米エッセイ・随筆", "935": "英米日記・書簡・紀行", "936": "英米記録・手記",
+    "940": "ドイツ文学", "941": "ドイツ詩", "942": "ドイツ戯曲", "943": "ドイツ小説・物語",
+    "944": "ドイツエッセイ・随筆", "949": "その他のゲルマン文学（北欧文学等）",
+    "950": "フランス文学", "951": "フランス詩", "952": "フランス戯曲", "953": "フランス小説・物語",
+    "954": "フランスエッセイ・随筆", "955": "フランス日記・書簡・紀行",
+    "960": "スペイン文学", "963": "スペイン小説・物語",
+    "970": "イタリア文学", "971": "イタリア詩", "973": "イタリア小説・物語",
+    "980": "ロシア・ソビエト文学", "981": "ロシア詩", "982": "ロシア戯曲",
+    "983": "ロシア小説・物語", "984": "ロシアエッセイ・随筆",
+    "990": "その他の諸文学", "991": "ギリシア文学", "992": "ラテン文学",
+}
+
+
+def resolve_ndc_label(code: Optional[str], ndc_map: Dict[str, str]) -> Optional[str]:
+    """Resolve an NDC code (including ``K`` juvenile prefix or decimals) to a label."""
+    if not code:
+        return None
+    raw = code.strip()
+    if raw in ndc_map:
+        return ndc_map[raw]
+    is_juvenile = raw.startswith("K")
+    stripped = raw.lstrip("K").split(".", 1)[0]
+    label = (
+        ndc_map.get(stripped)
+        or (ndc_map.get(stripped[:3]) if len(stripped) >= 3 else None)
+        or (ndc_map.get(stripped[:2]) if len(stripped) >= 2 else None)
+        or (ndc_map.get(stripped[:1]) if stripped else None)
+    )
+    if label and is_juvenile and "児童" not in label:
+        return f"{label}（児童書）"
+    return label
+
+
+def enrich_ndc_genre(work: Work, ndc_map: Dict[str, str]) -> None:
+    """Populate human-readable NDC labels on ``work.genre`` and ``work.genres``."""
+    if work.genre:
+        raw_code = work.genre.get("code")
+        primary, extras = _split_ndc_codes(raw_code)
+        if primary:
+            work.genre["code"] = primary
+            work.genre["label"] = resolve_ndc_label(primary, ndc_map)
+            parent_code = _ndc_parent_code(primary)
+            work.genre["parent"] = {
+                "taxonomy": "NDC",
+                "code": parent_code,
+                "label": ndc_map.get(parent_code) if parent_code else None,
+            }
+        existing_codes = {g.get("code") for g in work.genres}
+        for extra_code in extras:
+            if extra_code not in existing_codes:
+                work.genres.append({"taxonomy": "NDC", "code": extra_code, "label": None})
+                existing_codes.add(extra_code)
+    for item in work.genres:
+        if item.get("taxonomy") == "NDC" and item.get("code") and not item.get("label"):
+            item["label"] = resolve_ndc_label(item["code"], ndc_map)
+
 
 def _flatten_ndc(node: Any, mapping: Dict[str, str]) -> None:
     """Walk the nested NDC classification tree."""
@@ -568,13 +738,14 @@ def _flatten_ndc(node: Any, mapping: Dict[str, str]) -> None:
                 _flatten_ndc(child, mapping)
 
 
-def load_ndc_map(path: Path) -> Dict[str, str]:
+def load_ndc_map(path: Optional[Path] = None) -> Dict[str, str]:
     """Load the NDC code -> label mapping (JSON) if available.
 
-    The mapping is always seeded with the ten major classes so that every
-    work has at least a coarse genre even without the external file.
+    The mapping is always seeded with the built-in standard NDC major classes,
+    divisions, and sections so that every work gets a human-readable genre
+    even without an external file.
     """
-    mapping: Dict[str, str] = dict(NDC_MAJOR_CLASSES)
+    mapping: Dict[str, str] = dict(NDC_STANDARD_CLASSES)
     if not path or not Path(path).exists():
         return mapping
     try:
@@ -735,15 +906,21 @@ class AozoraSource:
         return index
 
     def fetch_text(self, work: Work, index: Optional[Dict[int, Path]] = None) -> Optional[str]:
-        """Download (or read) the plain text of a single work."""
+        """Download (or read) the plain text of a single public-domain work."""
+        if work.rights.get("copyright_flag") is True:
+            LOGGER.warning("skipping copyrighted work %s (%s)", work.id, work.title)
+            return None
+
         work_id = work.extra.get("work_id")
         if work_id is None and work.id.split(":")[-1].isdigit():
             work_id = int(work.id.split(":")[-1])
+        elif isinstance(work_id, str) and work_id.isdigit():
+            work_id = int(work_id)
 
         # 1) mirrored text archive
         if index is None:
             index = self.text_index()
-        if work_id is not None and work_id in index:
+        if isinstance(work_id, int) and work_id in index:
             path = index[work_id]
             payload = path.read_bytes()
             for encoding in ("utf-8", "cp932", "shift_jis"):
@@ -754,16 +931,18 @@ class AozoraSource:
             return payload.decode("utf-8", errors="replace")
 
         # 2) official per-work archive
-        filename = work.extra.get("text_filename")
-        person_id = work.extra.get("person_id")
-        if not filename:
-            return None
-        if person_id is None:
-            match = re.search(r"/cards/(\d{6})/", work.url or "")
-            person_id = match.group(1) if match else None
-        if person_id is None:
-            return None
-        url = FILES_URL_TEMPLATE.format(person_id=int(person_id), filename=filename)
+        url = work.text_url if (work.text_url and work.text_url.endswith(".zip")) else None
+        if not url:
+            filename = work.extra.get("text_filename")
+            person_id = work.extra.get("person_id")
+            if not filename:
+                return None
+            if person_id is None:
+                match = re.search(r"/cards/(\d{6})/", work.url or "")
+                person_id = match.group(1) if match else None
+            if person_id is None:
+                return None
+            url = FILES_URL_TEMPLATE.format(person_id=int(person_id), filename=filename)
         try:
             payload = self.client.get(url)
         except Exception as exc:  # pragma: no cover - network dependent
@@ -791,16 +970,18 @@ def sample_works(
     seed: int = 20240101,
     min_chars: int = 0,
 ) -> List[Work]:
-    """Pick a deterministic, diverse sample of works.
+    """Pick a deterministic, diverse sample of public-domain works.
 
+    Works whose ``rights.copyright_flag`` is ``True`` are strictly excluded.
     The sample is spread over the available authors and publication years so
     that the corpus is not dominated by a single prolific writer.
     """
     import random
 
-    candidates = [w for w in works if (w.stats.get("char_count") or 0) >= min_chars]
+    public_domain = [w for w in works if w.rights.get("copyright_flag") is not True]
+    candidates = [w for w in public_domain if (w.stats.get("char_count") or 0) >= min_chars]
     if not candidates:
-        candidates = list(works)
+        candidates = list(public_domain)
     rng = random.Random(seed)
 
     by_author: Dict[str, List[Work]] = {}

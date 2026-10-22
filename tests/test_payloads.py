@@ -5,7 +5,17 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from asc.sources.aozora import parse_nuxt_payload, parse_pages_mirror  # noqa: E402
+from asc.config import AozoraConfig, PathsConfig  # noqa: E402
+from asc.http import HttpClient  # noqa: E402
+from asc.sources.aozora import (  # noqa: E402
+    AozoraSource,
+    enrich_ndc_genre,
+    load_ndc_map,
+    parse_nuxt_payload,
+    parse_official_card_csv,
+    parse_pages_mirror,
+    sample_works,
+)
 
 PAYLOAD = (
     '__NUXT_JSONP__("/works/10", (function(a,b,c,d,e,f,g,h){'
@@ -52,3 +62,39 @@ def test_parse_pages_mirror(tmp_path: Path):
     assert work.genre["code"] == "913"
     assert work.extra["text_filename"] == "10_ruby_20387.zip"
     assert work.rights["copyright_flag"] is False
+
+
+def test_official_csv_deduplicates_translators_and_preserves_copyright(tmp_path: Path):
+    csv_text = (
+        "作品ID,作品名,副題,人物ID,姓,名,役割フラグ,分類番号,初出,作品著作権フラグ,人物著作権フラグ,テキストファイルURL\n"
+        "57302,フランダースの犬,,001044,ウィーダ,,著者,NDC K933,1872年,なし,なし,https://www.aozora.gr.jp/cards/001044/files/57302_ruby.zip\n"
+        "57302,フランダースの犬,,001500,山田,太郎,翻訳者,NDC K933,1872年,あり,あり,https://www.aozora.gr.jp/cards/001044/files/57302_ruby.zip\n"
+        "000148,吾輩は猫である,,000148,夏目,漱石,著者,NDC 913,「ホトトギス」1905（明治38）年1月,なし,なし,https://www.aozora.gr.jp/cards/000148/files/789_ruby.zip\n"
+    )
+    card = parse_official_card_csv(csv_text.encode("utf-8"))
+    assert len(card.works) == 2
+    by_id = card.by_id()
+
+    flanders = by_id["aozora:057302"]
+    assert len(flanders.authors) == 2
+    assert flanders.rights["copyright_flag"] is True
+
+    cat = by_id["aozora:000148"]
+    assert cat.rights["copyright_flag"] is False
+
+    # NDC enrichment resolves both K933 and 913 without external JSON files
+    ndc_map = load_ndc_map()
+    enrich_ndc_genre(flanders, ndc_map)
+    enrich_ndc_genre(cat, ndc_map)
+    assert flanders.genre["label"] == "英米小説・物語（児童書）"
+    assert flanders.genre["parent"]["label"] == "文学"
+    assert cat.genre["label"] == "小説・物語（日本文学）"
+    assert cat.genre["parent"]["label"] == "文学"
+
+    # sample_works and fetch_text must strictly skip copyright_flag=True works
+    sampled = sample_works(card.works, count=10)
+    assert [w.id for w in sampled] == ["aozora:000148"]
+
+    source = AozoraSource(AozoraConfig(), PathsConfig(cache_dir=tmp_path), HttpClient())
+    assert source.fetch_text(flanders, index={57302: tmp_path / "dummy.txt"}) is None
+

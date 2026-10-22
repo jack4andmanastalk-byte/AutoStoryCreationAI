@@ -38,7 +38,7 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 ```
 
 * サンプリングは `--seed`（既定 `aozora.sample_seed`）で再現可能。
-  著者と出版年に分散するよう Acquiring 選定します（太少な作家に偏ることを避けるため）。
+  著者と出版年に分散するよう選定します（多作な作家に偏ることを避けるため）。
 * 本文は青空文庫記法（`｜漢字《かんじ》` のルビ、`［＃...］` の注記）を解析して
   ルビ・注記を除去したプレーンテキストとして `data/raw/aozora/texts/<作品ID>.txt` に保存します。
 * `--pdf` を付けると `data/pdf/aozora/<作品ID>.pdf` に A5 PDF を出力します
@@ -69,8 +69,12 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 ## 4. 小説家になろうの本文と PDF
 
 ```bash
-.venv/bin/python scripts/setup_dataset.py narou-texts --works 20 --pdf
+.venv/bin/python scripts/setup_dataset.py narou-texts --works 20 --pdf --check-commercialization
 ```
+
+既定設定（`narou.commercialized_only: true`）では、公式メタデータおよび作品情報ページから
+商業化（書籍化・コミカライズ・アニメ化等）が確認できた作品の**無料公開 WEB 版**のみを対象とし、
+複数ジャンルに分散させて本文・PDF を生成します（`--allow-uncommercialized` で全作品対象に変更可能）。
 
 取得の優先順位:
 
@@ -93,12 +97,15 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 * ジャンル・メディア別の分布
 * 必須フィールドの欠損件数
 
-## 6. CI での再現
+## 6. CI での再現と構築済みデータの取得
 
 `.github/workflows/dataset-refresh.yml` は同じコマンドを GitHub Actions 上で実行し、
-`data/datasets/*.jsonl` を artifact として保存します。取得例:
+生成した JSONL・テキスト・PDF を専用ブランチ `datasets` および Actions artifact に公開します。
+公式ホストへ直接接続できない環境では `make pull-datasets` 一発で `data/` 配下に展開できます。
 
 ```bash
+make pull-datasets
+# または artifact から取得する場合:
 gh run download --name datasets
 ```
 

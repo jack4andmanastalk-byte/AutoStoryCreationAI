@@ -62,6 +62,8 @@ class NarouConfig:
     download_works: int = 20
     min_chars: int = 5000
     include_r15: bool = False
+    #: Only download texts/PDFs of commercialised Narou works (free web edition).
+    commercialized_only: bool = True
     #: Local JSON files with raw API responses (offline import).
     api_response_files: List[str] = field(default_factory=list)
     #: Directory with already downloaded novel texts (``<ncode>/<index>.txt``).

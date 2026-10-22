@@ -56,12 +56,12 @@ jobs:
           python scripts/setup_dataset.py narou-metadata
 
       - name: Fetch texts and PDFs (Aozora)
-        run: python scripts/setup_dataset.py aozora-texts --works 10 --pdf
+        run: python scripts/setup_dataset.py aozora-texts --works 15 --pdf
 
       - name: Fetch texts and PDFs (Narou)
         # only the first episodes are rendered so that the run stays bounded
         run: |
-          python scripts/setup_dataset.py narou-texts --works 10 --max-episodes 12 --pdf \
+          python scripts/setup_dataset.py narou-texts --works 15 --max-episodes 12 --pdf \
             --check-commercialization
 
       - name: Report

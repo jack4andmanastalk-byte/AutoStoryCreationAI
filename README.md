@@ -72,7 +72,7 @@ make report
   利用が認められています）
 * 本文: 公式のデータダウンロード（`https://ncode.syosetu.com/txtdownload/<Nコード>/`）と
   各話のページ（`https://ncode.syosetu.com/<Nコード>/<話数>/`）
-* 版权归作者に帰属します。**商業化されている作品の印刷版・電子書籍は本リポジトリでは
+* 作品の著作権は作者に帰属します。**商業化されている作品の印刷版・電子書籍は本リポジトリでは
   再配布しません**。購入先は公式ストアの URL を `rights` に記録しています。
   詳細は [`docs/legal_and_ethics.md`](docs/legal_and_ethics.md) を参照してください。
 
@@ -87,7 +87,8 @@ make report
 * `narou.local_text_dir` … 事前取得済みの本文（`<Nコード>/<話数>.txt`）を再利用
 
 `.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
-生成した JSONL を artifact として公開します（`make data` のネットワーク制約回避）。
+生成した JSONL・本文・PDF を `datasets` ブランチおよび artifact として公開します
+（`make data` のネットワーク制約がある環境では `make pull-datasets` で即座に展開可能）。
 
 ## 4.  ディレクトリ構成
 
