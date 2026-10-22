@@ -1,0 +1,114 @@
+# Dataset setup configuration for AutoStoryCreationAI
+#
+# Every value can be overridden on the command line, e.g.
+#   python scripts/setup_dataset.py aozora-metadata --config configs/dataset.yaml
+#
+paths:
+  raw_dir: data/raw
+  pdf_dir: data/pdf
+  dataset_dir: data/datasets
+  cache_dir: data/cache
+  font_dir: data/cache/fonts
+
+http:
+  user_agent: "AutoStoryCreationAI-dataset-builder/0.1 (research; https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI)"
+  timeout_seconds: 30
+  max_retries: 3
+  backoff_seconds: 2
+  request_interval_seconds: 1.0
+  cache_dir: data/cache/http
+  cache_ttl_seconds: 604800
+
+aozora:
+  enabled: true
+  # Official bibliographic list (updated every night by the Aozora Bunko project).
+  card_list_urls:
+    - https://www.aozora.gr.jp/index_pages/list_person_all_extended_utf8.zip
+  # Mirrors used when the official host is not reachable.
+  card_list_mirrors:
+    - https://codeload.github.com/aewshyae/aozorabunko-re-design_pages/tar.gz/refs/heads/master
+    - https://registry.npmjs.org/aozora/-/aozora-0.2.2.tgz
+  # Plain text mirror (one .txt per work, Aozora notation).
+  text_mirror_tarball: https://codeload.github.com/aozorahack/aozorabunko_text/tar.gz/refs/heads/master
+  # Number of works that receive a text + PDF rendering.
+  sample_works: 120
+  sample_seed: 20240101
+  min_chars: 3000
+
+narou:
+  enabled: true
+  api_base: https://api.syosetu.com/novelapi/api/
+  web_base: https://ncode.syosetu.com
+  # Genre ids of the official API (see https://dev.syosetu.com/man/api/).
+  genres:
+    - 101
+    - 102
+    - 201
+    - 202
+    - 301
+    - 302
+    - 303
+    - 304
+    - 305
+    - 306
+    - 307
+    - 401
+    - 402
+    - 403
+    - 404
+    - 9901
+    - 9903
+    - 9999
+  # Ranking orders that are harvested in addition to the genre queries.
+  orders:
+    - hyoka
+    - favnovelcnt
+    - lengthdesc
+    - generalfirstup
+  per_query: 200
+  max_start: 600
+  # Number of novels that receive a text + PDF rendering.
+  download_works: 30
+  min_chars: 5000
+  include_r15: false
+  # Restrict text/PDF generation to commercialised works (free web version only).
+  commercialized_only: true
+  # Raw API responses stored on disk (offline import, see scripts/fetch_narou_api.py).
+  api_response_files:
+    - data/cache/narou_api/genre_101.json
+    - data/cache/narou_api/genre_102.json
+    - data/cache/narou_api/genre_201.json
+    - data/cache/narou_api/genre_202.json
+    - data/cache/narou_api/genre_301.json
+    - data/cache/narou_api/genre_302.json
+    - data/cache/narou_api/genre_303.json
+    - data/cache/narou_api/genre_304.json
+    - data/cache/narou_api/genre_305.json
+    - data/cache/narou_api/genre_306.json
+    - data/cache/narou_api/genre_307.json
+    - data/cache/narou_api/genre_401.json
+    - data/cache/narou_api/genre_402.json
+    - data/cache/narou_api/genre_403.json
+    - data/cache/narou_api/genre_404.json
+    - data/cache/narou_api/genre_9901.json
+    - data/cache/narou_api/genre_9903.json
+    - data/cache/narou_api/genre_9999.json
+    - data/cache/narou_api/order_hyoka.json
+    - data/cache/narou_api/order_favnovelcnt.json
+    - data/cache/narou_api/order_lengthdesc.json
+    - data/cache/narou_api/order_generalfirstup.json
+  # Novel texts that were downloaded before (directory per N-code).
+  local_text_dir: data/cache/narou_texts
+  # auto | download | local
+  text_source: auto
+
+pdf:
+  page_size: A5
+  font_size: 10.5
+  heading_font_size: 16
+  margin_mm: 18
+  line_height: 1.75
+  body_font: ZenOldMincho-Regular.ttf
+  body_bold_font: ZenOldMincho-Bold.ttf
+  heading_font: ZenKakuGothicNew-Bold.ttf
+  font_source: google-fonts
