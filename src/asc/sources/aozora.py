@@ -127,6 +127,7 @@ def parse_official_card_csv(payload: bytes) -> CardList:
 
         ndc = _pick(row, "分類番号") or ""
         ndc_code = ndc.replace("NDC", "").strip()
+        ndc_parent = ndc_code[1:] if ndc_code[:1] == "K" else ndc_code[:1]
         first_appearance = _pick(row, "初出")
         base_edition = _pick(row, "底本初版発行年1") or _pick(row, "底本初版発行年")
         published_at = _first_date(base_edition) or _first_date(first_appearance)
@@ -161,7 +162,7 @@ def parse_official_card_csv(payload: bytes) -> CardList:
                 "taxonomy": "NDC",
                 "code": ndc_code or None,
                 "label": None,
-                "parent": {"taxonomy": "NDC", "code": ndc_code[:1] or None},
+                "parent": {"taxonomy": "NDC", "code": ndc_parent or None},
             },
             published_at=published_at,
             published_year=published_year,
@@ -454,6 +455,7 @@ def parse_pages_mirror(root: Path) -> CardList:
 
         bibclass = work_meta.get("bibclass") or ""
         ndc_code = bibclass.replace("NDC", "").strip() or None
+        ndc_parent = (ndc_code[1:] if ndc_code[:1] == "K" else ndc_code[:1]) if ndc_code else None
         url = CARD_URL_TEMPLATE.format(person_id=int(person_id or 0), work_id=int(work_id))
         # the HTML rendering of the work and the downloadable archive
         html_url = entry.get("workHTMLURL")
@@ -474,7 +476,7 @@ def parse_pages_mirror(root: Path) -> CardList:
                 "taxonomy": "NDC",
                 "code": ndc_code,
                 "label": None,
-                "parent": {"taxonomy": "NDC", "code": ndc_code[:1] if ndc_code else None},
+                "parent": {"taxonomy": "NDC", "code": ndc_parent},
             },
             published_at=published_at,
             published_year=published_year,
@@ -525,15 +527,60 @@ def parse_pages_mirror(root: Path) -> CardList:
 # ---------------------------------------------------------------------------
 # NDC classification
 # ---------------------------------------------------------------------------
+#: The ten major classes of the Nippon Decimal Classification (NDC).
+NDC_MAJOR_CLASSES: Dict[str, str] = {
+    "0": "総記",
+    "1": "哲学",
+    "2": "歴史・地理・旅行",
+    "3": "社会科学",
+    "4": "自然科学",
+    "5": "技術・工学",
+    "6": "産業",
+    "7": "芸術・美術",
+    "8": "言語",
+    "9": "文学",
+}
+
+
+def _flatten_ndc(node: Any, mapping: Dict[str, str]) -> None:
+    """Walk the nested NDC classification tree."""
+    if not isinstance(node, dict):
+        return
+    label = node.get("name") or node.get("label")
+    code = node.get("code") or node.get("ndc")
+    if code and label:
+        mapping[str(code)] = str(label)
+    children = node.get("classes") or node.get("children") or {}
+    if isinstance(children, dict):
+        for child_code, child in children.items():
+            if isinstance(child, dict):
+                child_label = child.get("name") or child.get("label")
+                if child_label:
+                    mapping[str(child_code)] = str(child_label)
+                _flatten_ndc(child, mapping)
+    elif isinstance(children, list):
+        for child in children:
+            if isinstance(child, dict):
+                child_code = child.get("code") or child.get("ndc")
+                child_label = child.get("name") or child.get("label")
+                if child_code and child_label:
+                    mapping[str(child_code)] = str(child_label)
+                _flatten_ndc(child, mapping)
+
+
 def load_ndc_map(path: Path) -> Dict[str, str]:
-    """Load the NDC code -> label mapping (JSON) if available."""
-    if not path.exists():
-        return {}
+    """Load the NDC code -> label mapping (JSON) if available.
+
+    The mapping is always seeded with the ten major classes so that every
+    work has at least a coarse genre even without the external file.
+    """
+    mapping: Dict[str, str] = dict(NDC_MAJOR_CLASSES)
+    if not path or not Path(path).exists():
+        return mapping
     try:
-        data = json.loads(path.read_text(encoding="utf-8"))
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):  # pragma: no cover - defensive
-        return {}
-    mapping: Dict[str, str] = {}
+        return mapping
     if isinstance(data, dict):
         for key, value in data.items():
             if isinstance(value, str):
@@ -541,14 +588,16 @@ def load_ndc_map(path: Path) -> Dict[str, str]:
             elif isinstance(value, dict):
                 label = value.get("name") or value.get("label")
                 if label:
-                    mapping[str(key)] = label
+                    mapping[str(key)] = str(label)
+                _flatten_ndc(value, mapping)
     elif isinstance(data, list):
         for item in data:
             if isinstance(item, dict):
                 code = item.get("code") or item.get("ndc")
                 label = item.get("name") or item.get("label")
                 if code and label:
-                    mapping[str(code)] = label
+                    mapping[str(code)] = str(label)
+                _flatten_ndc(item, mapping)
     return mapping
 
 

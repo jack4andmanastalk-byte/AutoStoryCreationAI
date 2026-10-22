@@ -39,7 +39,12 @@ from asc.http import HttpClient  # noqa: E402
 from asc.jsonl import read_jsonl, write_jsonl  # noqa: E402
 from asc.render.pdf import BookPdfRenderer  # noqa: E402
 from asc.schema import AuthorRecord, Work  # noqa: E402
-from asc.sources.aozora import AozoraSource, load_ndc_map, sample_works  # noqa: E402
+from asc.sources.aozora import (  # noqa: E402
+    NDC_MAJOR_CLASSES,
+    AozoraSource,
+    load_ndc_map,
+    sample_works,
+)
 from asc.sources.narou import NarouSource  # noqa: E402
 from asc.text.aozora_format import parse_aozora_text  # noqa: E402
 
@@ -131,6 +136,8 @@ def cmd_aozora_metadata(cfg: Config, args: argparse.Namespace) -> None:
         break
     if not ndc_map:
         ndc_map = load_ndc_map(cfg.paths.cache_dir / "ndc_class_all.json")
+    # the official card list does not ship the classification names
+    ndc_map.update(NDC_MAJOR_CLASSES)
 
     for work in card.works:
         if not work.genre:

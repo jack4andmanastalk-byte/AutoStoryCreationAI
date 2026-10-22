@@ -1,0 +1,4 @@
+{
+  "note": "Sample subset of the datasets, see docs/data_setup.md for the full pipeline.",
+  "generated_by": "scripts/make_samples.py"
+}

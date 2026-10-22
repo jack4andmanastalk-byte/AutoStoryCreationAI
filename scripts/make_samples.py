@@ -38,6 +38,7 @@ def main() -> int:
     parser.add_argument("--config", default=None)
     parser.add_argument("--records", type=int, default=200)
     parser.add_argument("--pdfs", type=int, default=4)
+    parser.add_argument("--max-pdf-bytes", type=int, default=400_000)
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -70,6 +71,9 @@ def main() -> int:
                 continue
             source_pdf = REPO_ROOT / pdf_path
             if not source_pdf.exists():
+                continue
+            # keep the repository small: prefer compact PDFs
+            if source_pdf.stat().st_size > args.max_pdf_bytes:
                 continue
             shutil.copy2(source_pdf, sample_dir / "pdf" / source_pdf.name)
             copied += 1

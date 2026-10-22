@@ -66,7 +66,7 @@ narou:
     - lengthdesc
     - generalfirstup
   per_query: 200
-  max_start: 1000
+  max_start: 600
   # Number of novels that receive a text + PDF rendering.
   download_works: 30
   min_chars: 5000

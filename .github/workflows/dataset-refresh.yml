@@ -77,10 +77,11 @@ jobs:
           git checkout -q -b datasets
           git add -A
           git commit -q -m "datasets: $(date -u +%FT%TZ)"
-          git remote add origin "https://github.com/${GITHUB_REPOSITORY}.git"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push --force origin datasets
 
       - name: Upload the datasets
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: datasets
