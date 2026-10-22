@@ -10,6 +10,16 @@ A chapter page looks like::
       <p>second paragraph</p>
     </div>
 
+The website was redesigned in 2025; the current markup is::
+
+    <div class="p-novel__body">
+      <div class="js-novel-text p-novel__text">
+        <p id="L1">first paragraph</p>
+      </div>
+    </div>
+
+Both variants are supported.
+
 The parser is intentionally forgiving: if the container cannot be located the
 largest text block of the document is used instead.
 """
@@ -23,7 +33,16 @@ from html.parser import HTMLParser
 from typing import Dict, List, Optional, Tuple
 
 _BLOCK_TAGS = {"p", "div", "li", "blockquote", "h1", "h2", "h3", "h4"}
-_WS_RE = re.compile(r"[ \t　]+")
+
+#: Classes / ids that mark the container of the novel text.  The first entry
+#: is the old layout, the others belong to the current design.
+BODY_MARKERS = ("novel_honbun", "js-novel-text", "p-novel__text")
+
+#: Classes that mark the title of an episode.
+TITLE_MARKERS = ("chap_title", "p-novel__title")
+#: ASCII blanks are collapsed; the ideographic space (U+3000) is kept because
+#: it is used as a meaningful separator inside Japanese sentences.
+_WS_RE = re.compile(r"[ \t]+")
 
 
 @dataclass
@@ -72,12 +91,14 @@ class _NarouParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs_list) -> None:
         attrs = dict(attrs_list)
         if not self._in_body:
-            if attrs.get("id") == "novel_honbun" or self._has_class(attrs, "novel_honbun"):
+            if attrs.get("id") == "novel_honbun" or any(
+                self._has_class(attrs, marker) for marker in BODY_MARKERS
+            ):
                 self._in_body = True
                 self._body_depth = 1
                 self._seen_body = True
                 return
-            if self._has_class(attrs, "chap_title"):
+            if any(self._has_class(attrs, marker) for marker in TITLE_MARKERS):
                 self._in_title = True
                 self._title_chunks = []
                 return
@@ -93,7 +114,7 @@ class _NarouParser(HTMLParser):
             self._flush_break(2)
 
     def handle_endtag(self, tag: str) -> None:
-        if self._in_title and tag in {"div", "h1", "h2", "span"}:
+        if self._in_title and tag in {"div", "h1", "h2", "span", "p"}:
             text = "".join(self._title_chunks).strip()
             if text:
                 self.chapter_title = text

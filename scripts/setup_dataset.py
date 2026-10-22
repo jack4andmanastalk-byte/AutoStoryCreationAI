@@ -292,6 +292,16 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
     ]
     if not candidates:
         candidates = works
+    # Prefer well known works: the point lists are ordered by the API
+    # queries, not by popularity.
+    candidates.sort(
+        key=lambda w: (
+            w.stats.get("all_point") or 0,
+            w.stats.get("fav_novel_cnt") or 0,
+            w.stats.get("char_count") or 0,
+        ),
+        reverse=True,
+    )
     chosen = candidates[: (args.works or cfg.narou.download_works)]
 
     raw_dir = cfg.paths.raw_dir / "narou" / "texts"

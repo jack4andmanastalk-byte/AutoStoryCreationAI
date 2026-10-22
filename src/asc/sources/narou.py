@@ -169,22 +169,65 @@ class NarouApiClient:
         return 0
 
 
+#: The official API accepts short codes in the ``of=`` parameter and answers
+#: with the long field names below.  Hand written fixtures and cached
+#: responses may use the short codes or slightly different spellings, so every
+#: field is looked up through a list of aliases.
+FIELD_ALIASES: Dict[str, Tuple[str, ...]] = {
+    "title": ("title", "t"),
+    "ncode": ("ncode", "n"),
+    "userid": ("userid", "u"),
+    "writer": ("writer", "w"),
+    "story": ("story", "s"),
+    "keyword": ("keyword", "k"),
+    "biggenre": ("biggenre", "bg"),
+    "genre": ("genre", "g"),
+    "generalfirstup": ("general_firstup", "generalfirstup", "gf"),
+    "generallastup": ("general_lastup", "generallastup", "gl"),
+    "noveltype": ("noveltype", "novel_type", "nt"),
+    "end": ("end", "e"),
+    "general_all_no": ("general_all_no", "ga"),
+    "length": ("length", "l"),
+    "time": ("time", "ti"),
+    "isr15": ("isr15", "ir"),
+    "isbl": ("isbl", "ibl"),
+    "isgl": ("isgl", "igl"),
+    "iszankoku": ("iszankoku", "izk"),
+    "istensei": ("istensei", "its"),
+    "istenni": ("istenni", "iti"),
+    "fav_novel_cnt": ("fav_novel_cnt", "f"),
+    "all_point": ("all_point", "a"),
+    "all_hyoka_cnt": ("all_hyoka_cnt", "ah"),
+    "sasie_cnt": ("sasie_cnt", "sa"),
+    "kaiwaritu": ("kaiwaritu", "ka"),
+}
+
+
+def api_field(record: Dict[str, Any], name: str, default: Any = None) -> Any:
+    """Read one field of an API record, tolerating the different spellings."""
+    for alias in FIELD_ALIASES.get(name, (name,)):
+        value = record.get(alias)
+        if value is not None:
+            return value
+    return default
+
+
 def normalize_novel(record: Dict[str, Any]) -> Work:
     """Convert one API record into the shared :class:`Work` schema."""
-    ncode = record.get("ncode") or ""
-    genre_code = record.get("genre")
-    big_code = record.get("biggenre")
+    ncode = api_field(record, "ncode") or ""
+    genre_code = api_field(record, "genre")
+    big_code = api_field(record, "biggenre")
     genre_info = GENRES.get(genre_code, {})
     big_label = BIG_GENRES.get(big_code, "")
 
-    first_up = record.get("generalfirstup") or ""
+    first_up = api_field(record, "generalfirstup") or ""
     published_at = first_up.split(" ")[0] if first_up else None
     published_year = None
     if published_at and published_at[:4].isdigit():
         published_year = int(published_at[:4])
 
     tags: List[Dict[str, Any]] = []
-    keyword = (record.get("keyword") or "").strip()
+    keyword = (api_field(record, "keyword") or "").strip()
     if keyword:
         tags = [{"taxonomy": "keyword", "label": part} for part in keyword.split() if part]
 
@@ -197,23 +240,23 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
         ("istensei", "異世界転生"),
         ("istenni", "異世界転移"),
     ):
-        if record.get(key):
+        if api_field(record, key):
             elements.append(label)
 
     work = Work(
         id=f"narou:{ncode}",
         source=NAROU_SOURCE,
-        title=record.get("title") or "",
+        title=api_field(record, "title") or "",
         url=NOVEL_URL_TEMPLATE.format(ncode=ncode.lower()),
         text_url=f"https://ncode.syosetu.com/txtdownload/{ncode.lower()}/",
         authors=[
             Author(
-                name=record.get("writer") or "",
+                name=api_field(record, "writer") or "",
                 role="author",
-                id=str(record.get("userid")) if record.get("userid") is not None else None,
+                id=str(api_field(record, "userid")) if api_field(record, "userid") is not None else None,
                 url=(
                     f"https://mypage.syosetu.com/{record.get('userid')}/"
-                    if record.get("userid")
+                    if api_field(record, "userid")
                     else None
                 ),
             )
@@ -232,33 +275,33 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
             "source": "Syosetsuka ni Narou",
             "commercialized": None,
             "note": (
-                "商業化されています。二次利用には作者および小説家になろうの許諾が必要です。"
-                "本データセットでは公式サイトが無料公開しているWEB版のみを扱う。"
+                "小説家になろう利用規約に従い、公式サイトが無料公開しているWEB版のみを扱う。"
+                "二次利用には作者の許諾が必要です。"
             ),
         },
         stats={
-            "char_count": record.get("length"),
-            "episodes": record.get("general_all_no"),
-            "read_minutes": record.get("time"),
-            "fav_novel_cnt": record.get("fav_novel_cnt"),
-            "impression_cnt": record.get("impression_cnt"),
-            "review_cnt": record.get("review_cnt"),
-            "all_point": record.get("all_point"),
-            "all_hyoka_cnt": record.get("all_hyoka_cnt"),
-            "global_point": record.get("global_point"),
-            "comic_ratio": record.get("kaiwaritu"),
-            "illustrations": record.get("sasie_cnt"),
-            "is_completed": bool(record.get("end")),
-            "is_stopped": bool(record.get("isstop")),
+            "char_count": api_field(record, "length"),
+            "episodes": api_field(record, "general_all_no"),
+            "read_minutes": api_field(record, "time"),
+            "fav_novel_cnt": api_field(record, "fav_novel_cnt"),
+            "impression_cnt": api_field(record, "impression_cnt"),
+            "review_cnt": api_field(record, "review_cnt"),
+            "all_point": api_field(record, "all_point"),
+            "all_hyoka_cnt": api_field(record, "all_hyoka_cnt"),
+            "global_point": api_field(record, "global_point"),
+            "comic_ratio": api_field(record, "kaiwaritu"),
+            "illustrations": api_field(record, "sasie_cnt"),
+            "is_completed": bool(api_field(record, "end")),
+            "is_stopped": bool(api_field(record, "isstop")),
             "elements": elements,
         },
         extra={
-            "synopsis": record.get("story"),
+            "synopsis": api_field(record, "story"),
             "keywords": keyword,
             "first_up": first_up,
-            "last_up": record.get("generallastup"),
-            "updated_at": record.get("novelupdated_at"),
-            "userid": record.get("userid"),
+            "last_up": api_field(record, "generallastup"),
+            "updated_at": api_field(record, "novelupdated_at"),
+            "userid": api_field(record, "userid"),
             "official_info_url": NOVEL_INFO_URL_TEMPLATE.format(ncode=ncode.lower()),
         },
     )

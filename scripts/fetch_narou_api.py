@@ -30,36 +30,36 @@ from asc.http import HttpClient  # noqa: E402
 
 LOGGER = logging.getLogger("fetch_narou_api")
 
-#: fields that are stored for every novel
+#: Short codes of the official API (see https://dev.syosetu.com/man/api/).
+#: The long field names are rejected by the API for some queries, the short
+#: codes always work and the answer uses the long names as keys.
 FIELDS = [
-    "title",
-    "ncode",
-    "userid",
-    "writer",
-    "story",
-    "keyword",
-    "biggenre",
-    "genre",
-    "generalfirstup",
-    "generallastup",
-    "novel_type",
-    "general_all_no",
-    "length",
-    "time",
-    "isstop",
-    "isr15",
-    "isbl",
-    "isgl",
-    "iszankoku",
-    "istensei",
-    "istenni",
-    "sasie_cnt",
-    "kaiwaritu",
-    "fav_novel_cnt",
-    "impression_cnt",
-    "review_cnt",
-    "all_point",
-    "all_hyoka_cnt",
+    "t",  # title
+    "n",  # ncode
+    "u",  # userid
+    "w",  # writer
+    "s",  # story
+    "k",  # keyword
+    "bg",  # big genre
+    "g",  # genre
+    "gf",  # first posted
+    "gl",  # last updated
+    "nt",  # novel type
+    "e",  # completed
+    "ga",  # number of episodes
+    "l",  # character count
+    "ti",  # reading time
+    "ir",  # R15
+    "ibl",  # boys love
+    "igl",  # girls love
+    "izk",  # cruel description
+    "its",  # isekai reincarnation
+    "iti",  # isekai transfer
+    "f",  # bookmarks
+    "a",  # all point
+    "ah",  # evaluations
+    "sa",  # illustrations
+    "ka",  # illustration rate
 ]
 
 

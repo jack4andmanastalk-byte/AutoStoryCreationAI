@@ -49,3 +49,29 @@ def test_index_is_parsed_and_sorted():
     assert [entry[0] for entry in entries] == [1, 2, 10]
     assert entries[0][1] == "一、待てど来ぬ人"
     assert entries[0][2].endswith("/n3558ml/1/")
+
+
+# The website was redesigned in 2025 - the body now lives in "p-novel__text".
+NEW_CHAPTER_HTML = """
+<html><body>
+<div class="p-novel__number js-siori">1/4</div>
+<h1 class="p-novel__title p-novel__title--rensai">第一部　婚約破棄の後始末</h1>
+<div class="p-novel__body">
+<div class="js-novel-text p-novel__text">
+<p id="L1">第一章　抜かれた剣</p>
+<p id="L2">　謝恩会の席で婚約を破棄されるとは、オリヴィア・ローランは考えたこともなかった。</p>
+</div>
+</div>
+<div id="footer">フッター</div>
+</body></html>
+"""
+
+
+def test_new_design_is_parsed():
+    chapter = parse_chapter(NEW_CHAPTER_HTML)
+    assert chapter.paragraphs == [
+        "第一章　抜かれた剣",
+        "謝恩会の席で婚約を破棄されるとは、オリヴィア・ローランは考えたこともなかった。",
+    ]
+    assert chapter.title == "第一部　婚約破棄の後始末"
+    assert all("フッター" not in p for p in chapter.paragraphs)
