@@ -6,10 +6,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from asc.sources.narou import (  # noqa: E402
+    NarouSource,
     api_field,
+    compute_popularity_ranking_score,
     detect_commercialized_from_metadata,
+    estimate_volumes_from_text,
+    extract_syuppan_search_word,
     normalize_novel,
+    parse_anime_commercialization_html,
     parse_commercialized_info_html,
+    parse_syuppan_list_html,
 )
 
 # A record as it is returned by the official API when the short codes are
@@ -166,5 +172,96 @@ def test_normalize_novel_unescapes_html_entities():
     work = normalize_novel(rec)
     assert work.title == '【書籍化&コミカライズ】猫と"魔法"'
     assert work.rights["commercialized"] is True
+
+
+def test_syuppan_and_anime_parsers_and_ranking_score():
+    assert extract_syuppan_search_word("【アニメ化決定！】お気楽領主の楽しい領地防衛 ～生産系魔術～") == "お気楽領主の楽しい領"
+    assert extract_syuppan_search_word("Ｒｅ：ゼロから始める異世界生活") == "ゼロから始める異世界"
+    assert extract_syuppan_search_word("無職転生　- 異世界行ったら本気だす -") == "無職転生"
+
+    anime_html = """
+    <a href="https://ncode.syosetu.com/n6316bn/">転生したらスライムだった件</a>
+    <a href="https://ncode.syosetu.com/N9669BK/">無職転生</a>
+    """
+    assert parse_anime_commercialization_html(anime_html) == {"n6316bn", "n9669bk"}
+
+    syuppan_html = """
+    <div class="p-syuppan">
+      <a href="/syuppan/view/bookid/9689/">無職転生 24</a>
+      <a href="https://mypage.syosetu.com/288399/">理不尽な孫の手</a>
+      <div>出版社KADOKAWA/メディアファクトリー</div>
+      <div>レーベルMFブックス</div>
+      <a href="/syuppan/view/bookid/9690/">無職転生 25</a>
+      <a href="https://mypage.syosetu.com/288399/">理不尽な孫の手</a>
+      <a href="/syuppan/view/bookid/9999/">別作者の無職転生パロディ</a>
+      <a href="https://mypage.syosetu.com/111111/">別人</a>
+    </div>
+    <h3>書報を探す</h3>
+    """
+    parsed = parse_syuppan_list_html(syuppan_html, userid="288399")
+    assert parsed["matched"] is True
+    assert parsed["volumes"] == 2
+    assert parsed["publisher"] == "KADOKAWA/メディアファクトリー"
+    assert parsed["label"] == "MFブックス"
+
+    assert estimate_volumes_from_text("オーバーラップノベルス様より書籍１７巻まで発売中！") == 17
+    assert estimate_volumes_from_text("ヒーロー文庫さんで現在十五巻まででております。") == 15
+
+    w1 = normalize_novel(
+        dict(
+            API_RECORD,
+            ncode="N2710DB",
+            title="とんでもスキルで異世界放浪メシ",
+            story="オーバーラップノベルス様より書籍１７巻まで発売中！アニメ1期・2期放送済",
+            fav_novel_cnt=275336,
+            all_point=490936,
+            global_point=1041608,
+        )
+    )
+    w2 = normalize_novel(
+        dict(
+            API_RECORD,
+            ncode="N0001AA",
+            title="【書籍化】小規模作品",
+            fav_novel_cnt=5000,
+            all_point=10000,
+            global_point=20000,
+        )
+    )
+    s1 = compute_popularity_ranking_score(w1)
+    s2 = compute_popularity_ranking_score(w2)
+    assert s1["is_anime"] is True
+    assert s1["estimated_volumes"] == 17
+    assert s1["ranking_score"] > s2["ranking_score"]
+
+
+def test_fetch_novel_text_paginates_all_toc_pages():
+    from asc.config import NarouConfig, PathsConfig
+
+    pages = {
+        "https://ncode.syosetu.com/n9999zz/": """
+            <a href="/n9999zz/1/">第1話</a>
+            <a href="/n9999zz/2/">第2話</a>
+            <a href="/n9999zz/?p=2">次へ</a>
+            <a href="/n9999zz/?p=3">最後へ</a>
+        """,
+        "https://ncode.syosetu.com/n9999zz/?p=2": '<a href="/n9999zz/101/">第101話</a>',
+        "https://ncode.syosetu.com/n9999zz/?p=3": '<a href="/n9999zz/201/">第201話</a>',
+        "https://ncode.syosetu.com/n9999zz/1/": '<div class="p-novel__text"><p>一話本文。</p></div>',
+        "https://ncode.syosetu.com/n9999zz/2/": '<div class="p-novel__text"><p>二話本文。</p></div>',
+        "https://ncode.syosetu.com/n9999zz/101/": '<div class="p-novel__text"><p>百一話本文。</p></div>',
+        "https://ncode.syosetu.com/n9999zz/201/": '<div class="p-novel__text"><p>二百一話本文。</p></div>',
+    }
+
+    class DummyClient:
+        def get_text(self, url: str, **kwargs) -> str:
+            return pages[url]
+
+    cfg = NarouConfig(text_source="download", use_txtdownload=False)
+    src = NarouSource(cfg, PathsConfig(), DummyClient())  # type: ignore[arg-type]
+    novel = src.fetch_novel_text("N9999ZZ", max_episodes=0)
+    assert [c["index"] for c in novel.chapters] == [1, 2, 101, 201]
+    assert novel.char_count == len("一話本文。") + len("二話本文。") + len("百一話本文。") + len("二百一話本文。")
+
 
 

@@ -65,14 +65,18 @@ narou:
     - favnovelcnt
     - lengthdesc
     - generalfirstup
-  per_query: 200
-  max_start: 600
+  per_query: 500
+  max_start: 1000
   # Number of novels that receive a text + PDF rendering.
-  download_works: 30
+  download_works: 100
   min_chars: 5000
-  include_r15: false
+  # General-audience novelapi cautionary R15 flag (required for flagship works
+  # such as 無職転生, 転スラ, 薬屋のひとりごと, Re:ゼロ, 本好きの下剋上; adult R18
+  # novel18api remains excluded).
+  include_r15: true
   # Restrict text/PDF generation to commercialised works (free web version only).
   commercialized_only: true
+  use_txtdownload: false
   # Raw API responses stored on disk (offline import, see scripts/fetch_narou_api.py).
   api_response_files:
     - data/cache/narou_api/genre_101.json

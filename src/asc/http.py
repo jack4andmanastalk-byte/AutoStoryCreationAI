@@ -116,6 +116,20 @@ class HttpClient:
                 if use_cache:
                     self._write_cache(url, payload)
                 return payload
+            except urllib.error.HTTPError as exc:
+                last_error = exc
+                if exc.code == 404:
+                    raise HttpError(f"GET {url} failed: {exc}") from exc
+                LOGGER.warning("HTTP %s (%s/%s) for %s", exc.code, attempt, self.max_retries, url)
+                if attempt < self.max_retries:
+                    retry_after = exc.headers.get("Retry-After") if exc.headers else None
+                    if retry_after and retry_after.isdigit():
+                        delay = min(float(retry_after), 60.0)
+                    elif exc.code in (403, 429, 503):
+                        delay = self.backoff * (2 ** (attempt - 1))
+                    else:
+                        delay = self.backoff * attempt
+                    time.sleep(delay)
             except (urllib.error.URLError, OSError, ValueError) as exc:
                 last_error = exc
                 LOGGER.warning("request failed (%s/%s): %s", attempt, self.max_retries, exc)

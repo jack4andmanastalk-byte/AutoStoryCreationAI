@@ -1,29 +1,20 @@
 name: dataset-refresh
 
-# Refreshes the research datasets of AutoStoryCreationAI.
+# Builds and refreshes the research datasets of AutoStoryCreationAI:
+#   1. Aozora Bunko full bibliographic catalog + public-domain sample PDFs
+#   2. Syosetsuka ni Narou bibliographic catalog + multi-signal commercialisation
+#      ranking + 100 full-episode (no episode cap) commercialised WEB PDFs
+#      executed in descending order of popularity / evaluation / fame / sales
 #
-# The workflow runs exactly the same pipeline as ``make data`` (see
-# ``scripts/setup_dataset.py``) but on the GitHub runners, which can reach
-# www.aozora.gr.jp and api.syosetu.com.  The generated files are published on
-# the dedicated ``datasets`` branch (and additionally attached as an
-# artifact), so that they can be consumed without cloning the repository:
-#
-#   git fetch origin datasets
-#   git show origin/datasets:datasets/aozora_works.jsonl | head -1
+# Published to:
+#   - `datasets` branch (`git fetch origin datasets`)
+#   - GitHub Release `datasets-narou-top100`
 on:
   workflow_dispatch:
     inputs:
       narou_works:
-        description: "Number of novels per genre/ordering"
-        default: "200"
-  push:
-    branches:
-      - "**"
-    paths:
-      - ".github/workflows/dataset-refresh.yml"
-      - "scripts/**"
-      - "src/**"
-      - "configs/**"
+        description: "Number of ranked commercialised Narou full-episode PDFs to generate"
+        default: "100"
   schedule:
     # every Sunday at 03:00 UTC
     - cron: "0 3 * * 0"
@@ -32,9 +23,11 @@ permissions:
   contents: write
 
 jobs:
-  refresh:
+  prepare:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -47,50 +40,162 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Fetch the Aozora Bunko bibliographic records
-        run: python scripts/setup_dataset.py aozora-metadata
-
-      - name: Fetch the Narou bibliographic records
+      - name: Fetch Aozora Bunko metadata & PDFs
         run: |
-          python scripts/fetch_narou_api.py --per-query 200 --out-dir data/cache/narou_api
-          python scripts/setup_dataset.py narou-metadata
+          python scripts/setup_dataset.py aozora-metadata
+          python scripts/setup_dataset.py aozora-texts --works 15 --pdf
 
-      - name: Fetch texts and PDFs (Aozora)
-        run: python scripts/setup_dataset.py aozora-texts --works 15 --pdf
-
-      - name: Fetch texts and PDFs (Narou)
-        # only the first episodes are rendered so that the run stays bounded
+      - name: Fetch Narou bibliographic records & rank commercialised works
         run: |
-          python scripts/setup_dataset.py narou-texts --works 15 --max-episodes 12 --pdf \
-            --check-commercialization
+          TARGET="${{ github.event.inputs.narou_works || '100' }}"
+          POOL=$(( TARGET + 15 ))
+          SCAN=$(( TARGET + 150 ))
+          python scripts/fetch_narou_api.py --per-query 500 --order-pages 2 --out-dir data/cache/narou_api
+          python scripts/setup_dataset.py narou-metadata --cached-only
+          python scripts/setup_dataset.py narou-rank --top "$POOL" --scan-limit "$SCAN" --request-interval 0.45
 
-      - name: Report
-        run: python scripts/dataset_report.py
+      - name: Bundle prepared datasets & fonts
+        run: |
+          tar -czf prepared.tar.gz data/datasets data/raw/aozora data/pdf/aozora data/cache/fonts
 
-      - name: Publish the datasets to the `datasets` branch
+      - name: Upload prepared bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: prepared-bundle
+          path: prepared.tar.gz
+          retention-days: 7
+
+  render-narou:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download prepared bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-bundle
+
+      - name: Extract prepared bundle
+        run: tar -xzf prepared.tar.gz
+
+      - name: Fetch all episodes & render PDFs (Shard ${{ matrix.shard }}/20)
+        run: |
+          TARGET="${{ github.event.inputs.narou_works || '100' }}"
+          python scripts/setup_dataset.py narou-texts \
+            --works "$TARGET" \
+            --max-episodes 0 \
+            --pdf \
+            --rank-order \
+            --shard-index "${{ matrix.shard }}" \
+            --shard-count 20 \
+            --request-interval 0.25
+
+      - name: Bundle shard outputs
+        run: |
+          mkdir -p data/datasets/shards data/pdf/narou data/raw/narou/texts
+          tar -czf "shard-${{ matrix.shard }}.tar.gz" \
+            data/datasets/shards data/pdf/narou data/raw/narou
+
+      - name: Upload shard bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: narou-shard-${{ matrix.shard }}
+          path: shard-${{ matrix.shard }}.tar.gz
+          retention-days: 7
+
+  publish:
+    needs: [prepare, render-narou]
+    if: always() && needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download prepared bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: prepared-bundle
+
+      - name: Download all Narou shard bundles
+        uses: actions/download-artifact@v4
+        with:
+          pattern: narou-shard-*
+          path: shards_dl
+          merge-multiple: true
+
+      - name: Merge shards, backfill if needed, and verify count
+        run: |
+          TARGET="${{ github.event.inputs.narou_works || '100' }}"
+          tar -xzf prepared.tar.gz
+          for f in shards_dl/shard-*.tar.gz; do
+            [ -f "$f" ] && tar -xzf "$f"
+          done
+          python scripts/setup_dataset.py narou-merge-shards \
+            --works "$TARGET" \
+            --backfill \
+            --strict-count
+          rm -rf data/datasets/shards
+          python scripts/dataset_report.py
+
+      - name: Publish datasets & PDFs to the `datasets` branch
         run: |
           mkdir -p publish
           cp -r data/datasets publish/datasets
           cp -r data/raw publish/raw
           cp -r data/pdf publish/pdf
+          # Remove any individual file >= 95 MiB so GitHub blob limit is never hit
+          find publish -type f -size +95M -print -delete || true
           cd publish
           git init -q
           git config user.name "dataset-bot"
           git config user.email "dataset-bot@users.noreply.github.com"
+          git config http.postBuffer 524288000
           git checkout -q -b datasets
           git add -A
-          git commit -q -m "datasets: $(date -u +%FT%TZ)"
+          git commit -q -m "datasets: top-100 full-episode commercialized Narou PDFs ($(date -u +%FT%TZ))"
           git remote add origin "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
           git push --force origin HEAD:refs/heads/datasets
 
-      - name: Upload the datasets
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: datasets
-          path: |
-            data/datasets/*.jsonl
-            data/datasets/manifest.json
-            data/raw/**
-            data/pdf/**
-          retention-days: 30
+      - name: Publish GitHub Release `datasets-narou-top100`
+        run: |
+          tar -czf narou_top100_pdfs.tar.gz -C data/pdf narou
+          TAG="datasets-narou-top100"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" \
+              --title "Syosetsuka ni Narou Top 100 Commercialized Full-Episode PDFs" \
+              --notes "Ranked Top 100 commercialized Syosetsuka ni Narou free WEB editions rendered with all episodes (no episode cap)."
+          fi
+          gh release upload "$TAG" \
+            narou_top100_pdfs.tar.gz \
+            data/datasets/narou_commercialized_top100.jsonl \
+            data/datasets/narou_top100_ranking.md \
+            data/datasets/manifest.json \
+            --clobber

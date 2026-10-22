@@ -31,7 +31,12 @@ NO_LINE_START = set("、。，．）」』】〕〉》”’ゝゞーァィゥ�
 NO_LINE_END = set("（「『【〔〈《“‘([{")
 
 
-def wrap_text(pdf: FPDF, text: str, width: float) -> List[str]:
+def wrap_text(
+    pdf: FPDF,
+    text: str,
+    width: float,
+    width_cache: Optional[Dict[str, float]] = None,
+) -> List[str]:
     """Wrap ``text`` into lines of at most ``width`` millimetres.
 
     The function is character based (Japanese text has no spaces) and applies
@@ -40,11 +45,15 @@ def wrap_text(pdf: FPDF, text: str, width: float) -> List[str]:
     """
     if not text:
         return []
+    cache = width_cache if width_cache is not None else {}
     lines: List[str] = []
     current = ""
     current_width = 0.0
     for char in text:
-        char_width = pdf.get_string_width(char)
+        char_width = cache.get(char)
+        if char_width is None:
+            char_width = pdf.get_string_width(char)
+            cache[char] = char_width
         if current and current_width + char_width > width:
             if char in NO_LINE_START and len(current) > 1:
                 # keep the closing punctuation on the current line
@@ -59,9 +68,12 @@ def wrap_text(pdf: FPDF, text: str, width: float) -> List[str]:
                 current = current[:-1]
                 lines.append(current)
                 current = moved
-                current_width = pdf.get_string_width(current)
+                moved_w = cache.get(moved)
+                if moved_w is None:
+                    moved_w = pdf.get_string_width(moved)
+                    cache[moved] = moved_w
+                current_width = moved_w + char_width
                 current += char
-                current_width += char_width
                 continue
             lines.append(current)
             current = char
@@ -190,6 +202,7 @@ class BookPdfRenderer:
     def _metadata_rows(work: Work) -> List[tuple]:
         genre = work.genre or {}
         parent = genre.get("parent") or {}
+        ranking = (work.extra or {}).get("ranking") or {}
         rows = [
             ("データセット", work.source),
             ("URL", work.url),
@@ -199,6 +212,12 @@ class BookPdfRenderer:
         ]
         if work.stats.get("episodes"):
             rows.append(("話数", str(work.stats["episodes"])))
+        if ranking.get("rank"):
+            score_detail = f"第{ranking['rank']}位（総合評価 {work.stats.get('global_point', 0):,} pt / ブックマーク {work.stats.get('fav_novel_cnt', 0):,} 件）"
+            rows.append(("人気・評価順位", score_detail))
+        if ranking.get("publisher") or ranking.get("label"):
+            pub = " / ".join(filter(None, [ranking.get("publisher"), ranking.get("label")]))
+            rows.append(("商業刊行情報", pub))
         license_text = work.license or ""
         if license_text:
             rows.append(("ライセンス", license_text))
@@ -212,6 +231,8 @@ class BookPdfRenderer:
         line_h = self.font_size * self.line_height * 0.3528  # pt -> mm
         indent = self.font_size * 0.3528
         pdf.set_font("body", size=self.font_size)
+        body_width_cache: Dict[str, float] = {}
+        chapter_width_cache: Dict[str, float] = {}
 
         for block in blocks:
             if block.get("type") == "page_break":
@@ -220,12 +241,26 @@ class BookPdfRenderer:
             text = block.get("text", "")
             if not text:
                 continue
+            if block.get("chapter"):
+                pdf.ln(3.0)
+                pdf.set_font("heading", size=self.font_size + 1.5)
+                chap_h = (self.font_size + 1.5) * 1.5 * 0.3528
+                for line in wrap_text(pdf, text, width, width_cache=chapter_width_cache):
+                    if pdf.get_y() + chap_h > pdf.h - pdf.b_margin:
+                        pdf.add_page()
+                        pdf.set_font("heading", size=self.font_size + 1.5)
+                    pdf.set_x(pdf.l_margin)
+                    pdf.cell(width, chap_h, line, new_x="LMARGIN", new_y="NEXT")
+                pdf.ln(1.5)
+                pdf.set_font("body", size=self.font_size)
+                continue
             if self.show_ruby and block.get("ruby"):
                 text = self._annotate_ruby(text, block["ruby"])
             first = True
-            for line in wrap_text(pdf, text, width - indent):
+            for line in wrap_text(pdf, text, width - indent, width_cache=body_width_cache):
                 if pdf.get_y() + line_h > pdf.h - pdf.b_margin:
                     pdf.add_page()
+                    pdf.set_font("body", size=self.font_size)
                 pdf.set_x(pdf.l_margin + (indent if first else 0))
                 self._draw_line(pdf, line, block.get("emphasis") or [], line_h)
                 first = False

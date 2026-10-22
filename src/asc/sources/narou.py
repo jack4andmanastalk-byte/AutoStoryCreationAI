@@ -22,22 +22,25 @@ import io
 import json
 import logging
 import re
+import unicodedata
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
-from urllib.parse import urlencode
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
+from urllib.parse import quote, urlencode
 
 from ..config import REPO_ROOT, NarouConfig, PathsConfig
 from ..http import HttpClient
 from ..schema import NAROU_SOURCE, Author, Work
-from ..text.narou_html import parse_chapter, parse_novel_index
+from ..text.narou_html import parse_chapter, parse_index_max_page, parse_novel_index
 
 LOGGER = logging.getLogger(__name__)
 
 NAROU_HOME = "https://syosetu.com"
 NOVEL_URL_TEMPLATE = "https://ncode.syosetu.com/{ncode}/"
 NOVEL_INFO_URL_TEMPLATE = "https://ncode.syosetu.com/novelview/infotop/ncode/{ncode}/"
+ANIME_LIST_URL = "https://syosetu.com/commercialization/anime/"
+SYUPPAN_SEARCH_URL = "https://syosetu.com/syuppan/list/?word={word}"
 
 BIG_GENRES: Dict[int, str] = {
     0: "未選択",
@@ -105,17 +108,23 @@ COMMERCIAL_TAG_SET = frozenset(
 )
 
 TITLE_COMMERCIAL_RE = re.compile(
-    r"(書籍化|商業化|コミカライズ|アニメ化|ゲーム化|漫画化|文庫化|メディアミックス|\d+巻[^】\n]{0,12}発売)"
+    r"(書籍化|商業化|コミカライズ|アニメ化|ゲーム化|漫画化|文庫化|メディアミックス|映画化|劇場版|\d+巻[^】\n]{0,12}発売)"
 )
 SYNOPSIS_COMMERCIAL_RE = re.compile(
-    r"(書籍化決定|コミカライズ決定|アニメ化決定|商業化決定|書籍発売|巻発売|発売中|"
-    r"文庫より|ブックスより|ノベルスより|ノベルズより|コミックス)"
+    r"(書籍化|商業化|コミカライズ|アニメ化|ゲーム化|漫画化|文庫化|メディアミックス|映画化|劇場版|ドラマCD化|"
+    r"書籍[：:\s]*[^\n]{1,24}(?:巻|発売|刊行)|アニメ\s*[1-9１-９一二三四]期|"
+    r"書籍発売|巻発売|発売中|重版出来|"
+    r"文庫(?:より|にて|様|さん|から)|ブックス(?:より|にて|様|さん|から)|"
+    r"ノベル[スズ](?:より|にて|様|さん|から)|コミックス)"
 )
 NEGATIVE_COMMERCIAL_RE = re.compile(
-    r"(自主出版|同人|(?:書籍化|商業化|コミカライズ|アニメ化)[^\n。]{0,6}(?:目指|希望|目標|夢))"
+    r"(自主出版|同人|(?:書籍化|商業化|コミカライズ|アニメ化)[^\n。]{0,8}(?:目指|希望|目標|夢|したい|できたら))"
 )
 INFO_ERROR_RE = re.compile(
-    r"(<title>\s*エラー|該当する小説が存在しません|小説が存在しません|削除されました)"
+    r"(<title>\s*エラー|該当する小説が存在しません|小説が存在しません|削除されました|投稿済作品が見つかりません)"
+)
+DIGEST_STUB_RE = re.compile(
+    r"(ダイジェスト版のため削除|書籍化に伴い[^\n。]{0,20}削除|試し読み版のみ)"
 )
 
 
@@ -180,6 +189,220 @@ def parse_commercialized_info_html(html: str) -> Optional[bool]:
         if marker in text:
             return True
     return False
+
+
+def parse_anime_commercialization_html(html: str) -> Set[str]:
+    """Extract lowercase N-codes linked on ``syosetu.com/commercialization/anime/``."""
+    if not html:
+        return set()
+    return {
+        m.group(1).lower()
+        for m in re.finditer(r"ncode\.syosetu\.com/(n[0-9a-z]+)/?", html, flags=re.I)
+    }
+
+
+def extract_syuppan_search_word(title: str) -> str:
+    """Extract a clean core Japanese title prefix safe for ``syuppan/list/?word=``.
+
+    Strips promotional brackets (``【アニメ化！】``), subtitles after ``～`` / ``-``,
+    and ASCII punctuation (such as ``:``) that trigger WAF 403 responses on
+    ``syosetu.com/syuppan/list/``.
+    """
+    if not title:
+        return ""
+    norm = unicodedata.normalize("NFKC", html_lib.unescape(title)).strip()
+    # Remove bracketed promotional tags at start/end or inline 【...】
+    norm = re.sub(r"【[^】]*】|\[[^\]]*\]|［[^］]*］", " ", norm).strip()
+    # Split before subtitle markers when core prefix is meaningful
+    for sep in ("~", "～", "〜", " - ", " ―", " —", "サブタイトル"):
+        if sep in norm:
+            head = norm.split(sep, 1)[0].strip()
+            if len(head) >= 3:
+                norm = head
+                break
+    # Split on ':' or '/' and pick the first segment with >=3 Japanese chars
+    segments = [seg.strip() for seg in re.split(r"[:：/／!！?？]+", norm) if seg.strip()]
+    chosen = ""
+    for seg in segments:
+        cleaned = re.sub(r"[A-Za-z0-9_\-+*&^%$#@=~`'\"<>|\\\s]+", "", seg)
+        if len(cleaned) >= 3:
+            chosen = cleaned
+            break
+    if not chosen:
+        chosen = re.sub(r"[^\u3040-\u30ff\u3400-\u9fff\uff66-\uff9fー々〆〇]+", "", norm)
+    return chosen[:10]
+
+
+def parse_syuppan_list_html(html: str, userid: Optional[str] = None) -> Dict[str, Any]:
+    """Parse ``syosetu.com/syuppan/list/?word=...`` results.
+
+    When ``userid`` is given, only entries linking ``mypage.syosetu.com/<userid>/``
+    are counted so homonymous titles by other authors never cause false matches.
+    """
+    result: Dict[str, Any] = {
+        "matched": False,
+        "volumes": 0,
+        "publisher": None,
+        "label": None,
+    }
+    if not html or "検索条件に一致する書報がありません" in html:
+        return result
+
+    main = html.split("書報を探す", 1)[0]
+    # Group chunks by unique bookid
+    matches = list(re.finditer(r"/syuppan/view/bookid/(\d+)/?", main))
+    if not matches:
+        return result
+
+    book_Order: List[str] = []
+    book_spans: Dict[str, List[int]] = {}
+    for m in matches:
+        bid = m.group(1)
+        if bid not in book_spans:
+            book_Order.append(bid)
+            book_spans[bid] = [m.start(), m.end()]
+        else:
+            book_spans[bid][1] = m.end()
+
+    matched_count = 0
+    for idx, bid in enumerate(book_Order):
+        start = book_spans[bid][0]
+        end = book_spans[book_Order[idx + 1]][0] if idx + 1 < len(book_Order) else len(main)
+        chunk = main[start:end]
+        if userid:
+            uid_pat = rf"mypage\.syosetu\.com/(?:mypage/top/userid/)?{re.escape(str(userid))}/?"
+            if not re.search(uid_pat, chunk):
+                continue
+        matched_count += 1
+        if result["publisher"] is None:
+            plain = re.sub(r"<[^>]+>", "\n", html_lib.unescape(chunk))
+            lines = [ln.strip() for ln in plain.splitlines() if ln.strip()]
+            for i, ln in enumerate(lines):
+                if ln.startswith("出版社"):
+                    val = ln[len("出版社") :].strip(" ：:")
+                    if not val and i + 1 < len(lines):
+                        val = lines[i + 1]
+                    if val:
+                        result["publisher"] = val
+                elif ln.startswith("レーベル"):
+                    val = ln[len("レーベル") :].strip(" ：:")
+                    if not val and i + 1 < len(lines):
+                        val = lines[i + 1]
+                    if val:
+                        result["label"] = val
+
+    result["matched"] = matched_count > 0
+    result["volumes"] = matched_count
+    return result
+
+
+def _kanji_number_to_int(token: str) -> int:
+    norm = unicodedata.normalize("NFKC", token)
+    if norm.isdigit():
+        return int(norm)
+    kanji_digits = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+    if norm == "十":
+        return 10
+    if "十" in norm:
+        left, _, right = norm.partition("十")
+        tens = kanji_digits.get(left, 1) if left else 1
+        ones = kanji_digits.get(right, 0) if right else 0
+        return tens * 10 + ones
+    return kanji_digits.get(norm, 0)
+
+
+def estimate_volumes_from_text(text: str) -> int:
+    """Estimate published book volume count mentioned in title/synopsis."""
+    if not text:
+        return 0
+    norm = unicodedata.normalize("NFKC", text)
+    best = 0
+    for m in re.finditer(
+        r"(?:書籍|文庫|単行本|ノベル[スズ]?|ブックス|既刊|現在|全)[^\n。]{0,16}?(\d{1,2}|[一二三四五六七八九十]{1,3})\s*巻",
+        norm,
+    ):
+        val = _kanji_number_to_int(m.group(1))
+        if 1 <= val <= 60:
+            best = max(best, val)
+    for m in re.finditer(r"(\d{1,2})\s*巻[^\n。]{0,8}(?:発売|刊行)", norm):
+        val = int(m.group(1))
+        if 1 <= val <= 60:
+            best = max(best, val)
+    return best
+
+
+def compute_popularity_ranking_score(work: Work) -> Dict[str, Any]:
+    """Compute a composite fame / sales-longevity / popularity / evaluation score.
+
+    Components:
+    * ``global_point`` (Narou official 総合評価 = ``fav_novel_cnt * 2 + all_point``)
+    * ``anime_bonus`` (+60,000 when TV/theatrical anime adaptation is confirmed)
+    * ``game_bonus`` (+25,000 when game adaptation is confirmed)
+    * ``comic_bonus`` (+15,000 when comic adaptation is confirmed)
+    * ``volume_bonus`` (``min(estimated_volumes, 30) * 2,500``, up to +75,000 as a
+      sales/series-longevity proxy from official 書報 & synopsis volume counts)
+    * ``review_bonus`` (``min(review_cnt, 500) * 20``, up to +10,000)
+    """
+    stats = work.stats or {}
+    rights = work.rights or {}
+    extra = work.extra or {}
+    existing = extra.get("ranking") or {}
+
+    fav = int(stats.get("fav_novel_cnt") or 0)
+    all_pt = int(stats.get("all_point") or 0)
+    global_pt = int(stats.get("global_point") or (fav * 2 + all_pt))
+    hyoka_cnt = int(stats.get("all_hyoka_cnt") or 0)
+    review_cnt = int(stats.get("review_cnt") or 0)
+
+    markers = set(rights.get("markers") or [])
+    combined_text = "\n".join(
+        filter(None, [work.title, extra.get("keywords"), extra.get("synopsis")])
+    )
+    is_anime = bool(
+        existing.get("is_anime")
+        or any("アニメ" in m or "劇場版" in m or "映画" in m for m in markers)
+        or re.search(r"(アニメ化|TVアニメ|アニメ\s*[1-9１-９一二三四]期|劇場版|アニメ放送)", combined_text)
+    )
+    is_game = bool(
+        existing.get("is_game")
+        or any("ゲーム" in m for m in markers)
+        or "ゲーム化" in combined_text
+    )
+    is_comic = bool(
+        existing.get("is_comic")
+        or any("コミカライズ" in m or "漫画" in m or "コミック" in m for m in markers)
+        or re.search(r"(コミカライズ|漫画化|コミック)", combined_text)
+    )
+
+    syuppan_vols = int(existing.get("syuppan_volumes") or 0)
+    text_vols = estimate_volumes_from_text(combined_text)
+    est_vols = max(syuppan_vols, text_vols, 1 if rights.get("commercialized") is True else 0)
+
+    score = (
+        float(global_pt)
+        + (60_000.0 if is_anime else 0.0)
+        + (25_000.0 if is_game else 0.0)
+        + (15_000.0 if is_comic else 0.0)
+        + min(est_vols, 30) * 2_500.0
+        + min(review_cnt, 500) * 20.0
+    )
+    return {
+        "rank": existing.get("rank"),
+        "ranking_score": round(score, 1),
+        "global_point": global_pt,
+        "fav_novel_cnt": fav,
+        "all_point": all_pt,
+        "all_hyoka_cnt": hyoka_cnt,
+        "review_cnt": review_cnt,
+        "syuppan_volumes": syuppan_vols,
+        "estimated_volumes": est_vols,
+        "is_anime": is_anime,
+        "is_comic": is_comic,
+        "is_game": is_game,
+        "publisher": existing.get("publisher"),
+        "label": existing.get("label"),
+        "signals": list(existing.get("signals") or []),
+    }
 
 #: Fields that are copied verbatim into the JSONL record.
 COPY_FIELDS = (
@@ -294,8 +517,11 @@ FIELD_ALIASES: Dict[str, Tuple[str, ...]] = {
     "istensei": ("istensei", "its"),
     "istenni": ("istenni", "iti"),
     "fav_novel_cnt": ("fav_novel_cnt", "f"),
+    "impression_cnt": ("impression_cnt", "i"),
+    "review_cnt": ("review_cnt", "r"),
     "all_point": ("all_point", "a"),
     "all_hyoka_cnt": ("all_hyoka_cnt", "ah"),
+    "global_point": ("global_point", "gp"),
     "sasie_cnt": ("sasie_cnt", "sa"),
     "kaiwaritu": ("kaiwaritu", "ka"),
 }
@@ -346,6 +572,9 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
     synopsis = html_lib.unescape(api_field(record, "story") or "")
     fav_novel_cnt = api_field(record, "fav_novel_cnt")
     all_point = api_field(record, "all_point")
+    global_point = api_field(record, "global_point")
+    if global_point is None and (fav_novel_cnt is not None or all_point is not None):
+        global_point = int(fav_novel_cnt or 0) * 2 + int(all_point or 0)
     commercialized, comm_markers = detect_commercialized_from_metadata(
         title,
         keyword,
@@ -407,7 +636,7 @@ def normalize_novel(record: Dict[str, Any]) -> Work:
             "review_cnt": api_field(record, "review_cnt"),
             "all_point": all_point,
             "all_hyoka_cnt": api_field(record, "all_hyoka_cnt"),
-            "global_point": api_field(record, "global_point"),
+            "global_point": global_point,
             "comic_ratio": api_field(record, "kaiwaritu"),
             "illustrations": api_field(record, "sasie_cnt"),
             "is_completed": bool(api_field(record, "end")),
@@ -443,10 +672,25 @@ class NarouSource:
         return True
 
     def _load_cached_api_files(self, works: Dict[str, Work]) -> None:
+        candidate_paths: List[Path] = []
+        seen_paths: Set[Path] = set()
         for file_entry in self.config.api_response_files:
             path = Path(file_entry)
             if not path.is_absolute():
                 path = REPO_ROOT / path
+            resolved = path.resolve()
+            if resolved not in seen_paths:
+                seen_paths.add(resolved)
+                candidate_paths.append(path)
+        api_cache_dir = self.paths.cache_dir / "narou_api"
+        if api_cache_dir.is_dir():
+            for path in sorted(api_cache_dir.glob("*.json")):
+                resolved = path.resolve()
+                if resolved not in seen_paths:
+                    seen_paths.add(resolved)
+                    candidate_paths.append(path)
+
+        for path in candidate_paths:
             if not path.exists():
                 continue
             try:
@@ -468,10 +712,12 @@ class NarouSource:
                     added += 1
             LOGGER.info("loaded %s novels from %s (total %s)", added, path.name, len(works))
 
-    def harvest(self) -> List[Work]:
+    def harvest(self, cached_only: bool = False) -> List[Work]:
         """Collect metadata from cached API dumps and/or live API queries."""
         works: Dict[str, Work] = {}
         self._load_cached_api_files(works)
+        if cached_only and works:
+            return list(works.values())
 
         queries: List[Dict[str, Any]] = []
         for genre in self.config.genres:
@@ -508,6 +754,30 @@ class NarouSource:
         return records
 
     # -- commercialisation ---------------------------------------------
+    def fetch_anime_ncodes(self) -> Set[str]:
+        """Fetch official anime-adapted N-codes from syosetu.com."""
+        try:
+            html = self.client.get_text(ANIME_LIST_URL)
+            codes = parse_anime_commercialization_html(html)
+            LOGGER.info("loaded %s anime-adapted N-codes from %s", len(codes), ANIME_LIST_URL)
+            return codes
+        except Exception as exc:  # pragma: no cover - network dependent
+            LOGGER.warning("cannot read %s: %s", ANIME_LIST_URL, exc)
+            return set()
+
+    def check_syuppan(self, title: str, userid: Optional[str] = None) -> Dict[str, Any]:
+        """Search official 書報 (``syosetu.com/syuppan/list/``) for a work."""
+        word = extract_syuppan_search_word(title)
+        if len(word) < 3:
+            return {"matched": False, "volumes": 0, "publisher": None, "label": None}
+        url = SYUPPAN_SEARCH_URL.format(word=quote(word, safe=""))
+        try:
+            html = self.client.get_text(url)
+        except Exception as exc:  # pragma: no cover - network dependent
+            LOGGER.debug("syuppan lookup failed for %s (%s): %s", title, word, exc)
+            return {"matched": False, "volumes": 0, "publisher": None, "label": None}
+        return parse_syuppan_list_html(html, userid=userid)
+
     def check_commercialized(self, ncode: str) -> Optional[bool]:
         """Check the official information page for a commercialisation banner.
 
@@ -526,9 +796,87 @@ class NarouSource:
             LOGGER.info("%s confirmed commercialised via info page", ncode)
         return result
 
+    def verify_web_text_available(self, work: Work) -> bool:
+        """Confirm that the free WEB edition is live and non-stubbed."""
+        ncode = work.id.split(":", 1)[1].lower()
+        synopsis = (work.extra or {}).get("synopsis") or ""
+        if DIGEST_STUB_RE.search(synopsis) and (work.stats.get("episodes") or 0) <= 3:
+            return False
+        index_url = NOVEL_URL_TEMPLATE.format(ncode=ncode)
+        try:
+            html = self.client.get_text(index_url)
+        except Exception as exc:  # pragma: no cover - network dependent
+            LOGGER.warning("cannot reach index page of %s: %s", ncode, exc)
+            return False
+        if INFO_ERROR_RE.search(html):
+            return False
+        entries = parse_novel_index(html, ncode)
+        if entries:
+            return True
+        chapter = parse_chapter(html, index=1, url=index_url)
+        return bool(chapter.paragraphs)
+
+    def verify_and_enrich_commercialization(
+        self,
+        work: Work,
+        *,
+        anime_ncodes: Optional[Set[str]] = None,
+        check_syuppan: bool = True,
+        check_infotop: bool = True,
+    ) -> bool:
+        """Run multi-signal commercialisation verification and enrich ranking data."""
+        ncode = work.id.split(":", 1)[1].lower()
+        userid = str((work.extra or {}).get("userid") or "") or None
+        signals: List[str] = []
+        ranking = dict((work.extra or {}).get("ranking") or {})
+
+        if work.rights.get("commercialized") is True:
+            signals.append("api_metadata")
+
+        if anime_ncodes and ncode in anime_ncodes:
+            work.rights["commercialized"] = True
+            ranking["is_anime"] = True
+            signals.append("official_anime_page")
+
+        if check_syuppan and userid:
+            syuppan = self.check_syuppan(work.title, userid=userid)
+            if syuppan.get("matched"):
+                work.rights["commercialized"] = True
+                ranking["syuppan_volumes"] = syuppan.get("volumes") or 1
+                if syuppan.get("publisher"):
+                    ranking["publisher"] = syuppan["publisher"]
+                if syuppan.get("label"):
+                    ranking["label"] = syuppan["label"]
+                signals.append(f"syuppan({syuppan.get('volumes')}vols)")
+
+        if work.rights.get("commercialized") is not True and check_infotop:
+            info_res = self.check_commercialized(ncode)
+            if info_res is True:
+                work.rights["commercialized"] = True
+                signals.append("infotop_page")
+            elif work.rights.get("commercialized") is None:
+                work.rights["commercialized"] = info_res
+
+        if work.rights.get("commercialized") is True:
+            work.rights["note"] = (
+                "この作品は商業化されています。商業版（紙書籍・電子書籍）は再配布せず、"
+                "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
+                "二次利用には作者の許諾が必要です。"
+            )
+            ranking["signals"] = signals
+            work.extra["ranking"] = ranking
+            work.extra["ranking"] = compute_popularity_ranking_score(work)
+            return True
+        return False
+
     # -- text ----------------------------------------------------------
-    def fetch_novel_text(self, ncode: str, max_episodes: int = 0) -> NovelText:
-        """Download the text of a novel (official data download or chapters)."""
+    def fetch_novel_text(
+        self,
+        ncode: str,
+        max_episodes: int = 0,
+        expected_episodes: int = 0,
+    ) -> NovelText:
+        """Download the text of a novel (all TOC pages + all episodes when ``max_episodes=0``)."""
         ncode = ncode.lower()
         novel = NovelText(ncode=ncode)
 
@@ -543,18 +891,21 @@ class NarouSource:
         if self.config.text_source == "local":
             return novel
 
-        # 1) official bulk text download
-        url = f"https://ncode.syosetu.com/txtdownload/{ncode}/"
-        try:
-            payload = self.client.get(url)
-            novel.chapters = self._chapters_from_zip(payload)
-            if novel.chapters:
-                novel.origin = "official data download"
-                return novel
-        except Exception as exc:  # pragma: no cover - network dependent
-            LOGGER.debug("txtdownload unavailable for %s: %s", ncode, exc)
+        # 1) optional legacy bulk text download
+        if getattr(self.config, "use_txtdownload", False):
+            url = f"https://ncode.syosetu.com/txtdownload/{ncode}/"
+            try:
+                payload = self.client.get(url)
+                novel.chapters = self._chapters_from_zip(payload)
+                if max_episodes:
+                    novel.chapters = novel.chapters[:max_episodes]
+                if novel.chapters:
+                    novel.origin = "official data download"
+                    return novel
+            except Exception as exc:  # pragma: no cover - network dependent
+                LOGGER.debug("txtdownload unavailable for %s: %s", ncode, exc)
 
-        # 2) chapter pages
+        # 2) chapter pages (with full ?p=2..N TOC pagination for 100+ episode works)
         index_url = NOVEL_URL_TEMPLATE.format(ncode=ncode)
         try:
             index_html = self.client.get_text(index_url)
@@ -562,11 +913,59 @@ class NarouSource:
             LOGGER.warning("cannot read the index of %s: %s", ncode, exc)
             return novel
 
-        entries = parse_novel_index(index_html, ncode)
+        if INFO_ERROR_RE.search(index_html):
+            LOGGER.warning("novel %s index returned an error page", ncode)
+            return novel
+
+        entries_by_idx: Dict[int, Tuple[int, Optional[str], str]] = {}
+        for idx, title, curl in parse_novel_index(index_html, ncode):
+            entries_by_idx.setdefault(idx, (idx, title, curl))
+
+        max_page = parse_index_max_page(index_html, ncode)
+        if expected_episodes > 100:
+            max_page = max(max_page, (expected_episodes + 99) // 100)
+        if max_episodes > 0:
+            needed_pages = (max_episodes + 99) // 100
+            max_page = min(max_page, max(1, needed_pages))
+
+        for page_num in range(2, max_page + 1):
+            page_url = f"{index_url}?p={page_num}"
+            try:
+                page_html = self.client.get_text(page_url)
+            except Exception as exc:  # pragma: no cover - network dependent
+                LOGGER.warning("cannot read TOC page %s of %s: %s", page_num, ncode, exc)
+                continue
+            page_entries = parse_novel_index(page_html, ncode)
+            if not page_entries:
+                break
+            for idx, title, curl in page_entries:
+                entries_by_idx.setdefault(idx, (idx, title, curl))
+
+        entries = [entries_by_idx[k] for k in sorted(entries_by_idx)]
+
+        # Short story (短編) whose body lives directly on the index URL
         if not entries:
+            direct_chapter = parse_chapter(index_html, index=1, url=index_url)
+            if direct_chapter.paragraphs:
+                novel.chapters.append(
+                    {
+                        "index": 1,
+                        "title": direct_chapter.title,
+                        "url": index_url,
+                        "paragraphs": direct_chapter.paragraphs,
+                        "text": direct_chapter.text,
+                        "char_count": direct_chapter.char_count,
+                    }
+                )
+                novel.origin = "chapter pages"
+                return novel
             entries = [(1, None, f"{index_url}1/")]
-        for index, title, chapter_url in entries:
-            if max_episodes and index > max_episodes:
+
+        total_target = (
+            min(len(entries), max_episodes) if max_episodes else len(entries)
+        )
+        for count, (index, title, chapter_url) in enumerate(entries, start=1):
+            if max_episodes and len(novel.chapters) >= max_episodes:
                 break
             try:
                 html = self.client.get_text(chapter_url)
@@ -574,6 +973,8 @@ class NarouSource:
                 LOGGER.warning("cannot download %s: %s", chapter_url, exc)
                 continue
             chapter = parse_chapter(html, index=index, url=chapter_url)
+            if not chapter.paragraphs:
+                continue
             novel.chapters.append(
                 {
                     "index": index,
@@ -584,6 +985,14 @@ class NarouSource:
                     "char_count": chapter.char_count,
                 }
             )
+            if count % 100 == 0 or count == total_target:
+                LOGGER.info(
+                    "%s: fetched %s/%s episodes (%s chars)",
+                    ncode,
+                    len(novel.chapters),
+                    total_target,
+                    novel.char_count,
+                )
         novel.origin = "chapter pages"
         return novel
 
