@@ -572,3 +572,10 @@ def test_judge_adapter_fails_loudly_on_garbage(tmp_path):
         input=json.dumps(request, ensure_ascii=False), capture_output=True, text=True)
     assert completed.returncode == 1
     assert "no JSON" in completed.stderr
+
+
+def test_run_ids_do_not_collide_within_a_second():
+    from asc.pipeline import make_run_id
+
+    ids = {make_run_id("t01", "s1", 0) for _ in range(50)}
+    assert len(ids) == 50
