@@ -488,3 +488,87 @@ def test_build_story_without_canon_uses_the_baseline_prompt(tmp_path, task):
     assert len(draft.chapters) == 3
     manifest = json.loads((ledger.path / "manifest.json").read_text(encoding="utf-8"))
     assert "draft-baseline" in manifest["prompt_hashes"]
+
+
+# -- experiment and judge adapters ----------------------------------------
+
+def test_experiment_runs_the_matrix_and_writes_a_note(tmp_path):
+    completed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "run_experiment.py"),
+         "--id", "demo", "--tasks", "t01", "--systems", "s0", "s1",
+         "--seeds", "0", "1", "--runs", str(tmp_path / "runs"),
+         "--out", str(tmp_path / "exp"), "--quiet"],
+        capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+    results = json.loads((tmp_path / "exp" / "results.json").read_text(encoding="utf-8"))
+    assert results["by_system"]["s1"]["n"] == 2
+    assert results["by_system"]["s0"]["n"] == 2
+    assert results["paired_vs_s0"]["n_pairs"] == 2
+    assert results["experiment"]["protocol"] == "protocol-v1"
+    note = (tmp_path / "exp" / "note.md").read_text(encoding="utf-8")
+    assert "配線検証であり、モデルの性能ではありません" in note
+    assert "S0 は canon を持たないため" in note
+
+
+def load_script(name: str):
+    import importlib.util
+
+    path = REPO_ROOT / "scripts" / f"{name}.py"
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_bootstrap_interval_brackets_the_mean():
+    module = load_script("run_experiment")
+    values = [1.0, 2.0, 3.0, 4.0, 5.0]
+    lo, hi = module.bootstrap_ci(values, samples=500, seed=1)
+    assert lo < 3.0 < hi
+
+
+def test_judge_adapter_dry_run_builds_a_prompt():
+    request = {
+        "mode": "score",
+        "rubric": {"id": "r", "dimensions": [{"id": "coherence", "question_ja": "因果が追えるか"}]},
+        "story": "アリアは灯台にいた。",
+    }
+    completed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "judge_adapter.py"), "--dry-run"],
+        input=json.dumps(request, ensure_ascii=False), capture_output=True, text=True)
+    assert completed.returncode == 0
+    assert "coherence" in completed.stdout
+    assert "アリアは灯台にいた" in completed.stdout
+    assert "総合点は出さない" in completed.stdout
+
+
+def test_judge_adapter_parses_a_model_answer(tmp_path):
+    answer = tmp_path / "model.py"
+    answer.write_text(
+        "import sys\n"
+        "sys.stdin.read()\n"
+        "print('採点します。')\n"
+        "print('{\"dimensions\": [{\"dimension\": \"coherence\", \"score\": 4, "
+        "\"evidence\": [{\"path\": \"ch01.md\", \"line\": 2, \"quote\": \"灯台\"}], "
+        "\"rationale_ja\": \"因果が追える\"}]}')\n", encoding="utf-8")
+    request = {"mode": "score", "rubric": {"dimensions": [{"id": "coherence"}]}, "story": "x"}
+    completed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "judge_adapter.py"),
+         "--llm-command", f"{sys.executable} {answer}"],
+        input=json.dumps(request, ensure_ascii=False), capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+    payload = json.loads(completed.stdout)
+    assert payload["dimensions"][0]["score"] == 4
+    assert payload["dimensions"][0]["evidence"][0]["path"] == "ch01.md"
+
+
+def test_judge_adapter_fails_loudly_on_garbage(tmp_path):
+    answer = tmp_path / "model.py"
+    answer.write_text("print('no json here')\n", encoding="utf-8")
+    request = {"mode": "score", "rubric": {"dimensions": [{"id": "x"}]}, "story": "x"}
+    completed = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts" / "judge_adapter.py"),
+         "--llm-command", f"{sys.executable} {answer}"],
+        input=json.dumps(request, ensure_ascii=False), capture_output=True, text=True)
+    assert completed.returncode == 1
+    assert "no JSON" in completed.stderr

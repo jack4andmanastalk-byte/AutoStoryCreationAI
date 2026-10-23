@@ -182,6 +182,16 @@ make protocol-check # 凍結した評価プロトコル（タスクセット・�
 make plan           # 固定タスク t01 から canon だけを生成
 make story          # S1: 企画 → canon → 3 章 → 監査を一括実行
 make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
+make experiment     # S0/S1 × seed の行列を回し、実験ノートの雛形を出す
+```
+
+判定器は外部コマンドとして接続します（このリポジトリは鍵を持ちません）。
+
+```bash
+# どのモデル CLI でも、stdin にプロンプト / stdout に応答を返すものであれば使えます
+python3 scripts/run_evaluation.py --candidate build/runs/<id>/text \
+  --rubric harness/rubrics/story-quality-v0.yaml \
+  --judge-command "python3 scripts/judge_adapter.py --llm-command 'my-model --json'"
 ```
 
 ### 4.3 生成パイプライン（Phase 2-A: Plan / Draft）
