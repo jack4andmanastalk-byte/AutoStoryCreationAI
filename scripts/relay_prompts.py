@@ -109,6 +109,9 @@ def render_prompt_markdown(items: list[dict], total: int, done: int) -> str:
             item["prompt"].rstrip(),
             "```",
             "",
+            f"タグは必ずこの 4 文字 **`{item['tag']}`** を使ってください"
+            "（`ch01` やファイル名を使わないでください）。",
+            "",
             "回答はこの形で返ってきます（そのまま貼り返してください）。",
             "",
             "```text",
@@ -144,7 +147,8 @@ def export(directory: Path, out: Path | None = None) -> dict:
     return {"pending": len(items), "done": done, "out": str(out)}
 
 
-def ingest(directory: Path, text: str, *, model: str, model_version: str) -> dict:
+def ingest(directory: Path, text: str, *, model: str, model_version: str,
+           tag_map: dict[str, str] | None = None) -> dict:
     # An answer is accepted for any known request, even one already answered:
     # re-ingesting is how a bad paste gets corrected.
     by_tag = {item["tag"]: item for item in all_requests(directory)}
@@ -153,14 +157,19 @@ def ingest(directory: Path, text: str, *, model: str, model_version: str) -> dic
     for match in ERROR.finditer(text):
         errors.append({"tag": match.group(1), "reason": match.group(2).strip()})
 
+    tag_map = tag_map or {}
     seen: set[str] = set()
+    remapped: list[dict] = []
     written: list[str] = []
     rejected: list[dict] = []
     for match in ANSWER.finditer(text):
-        tag, body = match.group(1), match.group(2).strip()
+        raw, body = match.group(1), match.group(2).strip()
+        tag = tag_map.get(raw, raw)
+        if tag != raw:
+            remapped.append({"from": raw, "to": tag})
         item = by_tag.get(tag)
         if item is None:
-            rejected.append({"tag": tag, "reason": "unknown tag"})
+            rejected.append({"tag": raw, "reason": "unknown tag"})
             continue
         if tag in seen:
             rejected.append({"tag": tag, "reason": "duplicate tag in the same file"})
@@ -178,7 +187,7 @@ def ingest(directory: Path, text: str, *, model: str, model_version: str) -> dic
         written.append(item["key"])
 
     return {"written": written, "errors": errors, "rejected": rejected,
-            "still_pending": len(pending(directory))}
+            "remapped": remapped, "still_pending": len(pending(directory))}
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -196,6 +205,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     ingester.add_argument("--model", default="arena-chat-worker")
     ingester.add_argument("--model-version", default=None,
                           help="default: unversioned-<today>")
+    ingester.add_argument("--map", action="append", default=[], metavar="FROM=TO",
+                          help="accept a mistyped tag explicitly, e.g. --map ch01=9234. "
+                               "Repeatable; ingest never guesses which request an answer means")
     return parser.parse_args(argv)
 
 
@@ -219,8 +231,16 @@ def main(argv: list[str] | None = None) -> int:
         print(f"error: no such file: {path}", file=sys.stderr)
         return 2
     version = args.model_version or datetime.now(timezone.utc).strftime("unversioned-%Y-%m-%d")
+    tag_map: dict[str, str] = {}
+    for entry in args.map:
+        if "=" not in entry:
+            print(f"error: --map expects FROM=TO, got {entry!r}", file=sys.stderr)
+            return 2
+        source, target = entry.split("=", 1)
+        tag_map[source.strip()] = target.strip()
+
     summary = ingest(directory, path.read_text(encoding="utf-8"),
-                     model=args.model, model_version=version)
+                     model=args.model, model_version=version, tag_map=tag_map)
     print(json.dumps(summary, ensure_ascii=False, indent=2))
     if summary["rejected"] or summary["errors"]:
         return 1

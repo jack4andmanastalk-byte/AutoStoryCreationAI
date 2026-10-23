@@ -147,3 +147,42 @@ def test_answered_requests_drop_out_of_the_next_export(tmp_path):
     assert summary == {"pending": 1, "done": 1, "out": str(root / "relay")}
     prompts = (root / "relay" / "PROMPTS.md").read_text(encoding="utf-8")
     assert f"<<<ANSWER {tag}>>>" not in prompts
+
+
+def test_a_mistyped_tag_is_accepted_only_when_mapped(tmp_path):
+    """A chat sometimes tags the answer 'ch01' instead of the given tag.
+
+    Guessing would defeat the point, so the mapping has to be explicit; when it
+    is, the answer is stored under the right key and the remap is reported.
+    """
+    root = make_operator(tmp_path)
+    export(root)
+    index = json.loads((root / "relay" / "index.json").read_text(encoding="utf-8"))
+    target = index["pending"][0]
+
+    answers = tmp_path / "answers.txt"
+    answers.write_text("<<<ANSWER ch01>>>\n本文です。\n<<<END ch01>>>\n", encoding="utf-8")
+
+    without = cli("ingest", "--dir", str(root), "--file", str(answers))
+    assert without.returncode == 1
+    assert json.loads(without.stdout)["rejected"][0]["reason"] == "unknown tag"
+
+    with_map = cli("ingest", "--dir", str(root), "--file", str(answers),
+                   "--map", f"ch01={target['tag']}")
+    assert with_map.returncode == 0, with_map.stderr
+    summary = json.loads(with_map.stdout)
+    assert summary["remapped"] == [{"from": "ch01", "to": target["tag"]}]
+    assert summary["written"] == [target["key"]]
+
+    stored = json.loads((root / "responses" / f"{target['key']}.json").read_text(encoding="utf-8"))
+    assert stored["text"] == "本文です。"
+    assert stored["prompt_hash"] == target["prompt_hash"]
+
+
+def test_a_map_without_an_equals_sign_is_a_usage_error(tmp_path):
+    root = make_operator(tmp_path)
+    answers = tmp_path / "answers.txt"
+    answers.write_text("<<<ANSWER ch01>>>\n本文。\n<<<END ch01>>>\n", encoding="utf-8")
+    result = cli("ingest", "--dir", str(root), "--file", str(answers), "--map", "ch01")
+    assert result.returncode == 2
+    assert "FROM=TO" in result.stderr
