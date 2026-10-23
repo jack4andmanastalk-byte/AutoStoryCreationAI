@@ -49,6 +49,7 @@ from asc.sources.aozora import (  # noqa: E402
     load_ndc_map,
     sample_works,
 )
+from asc.sources.media_verify import MediaVerificationResult  # noqa: E402
 from asc.sources.narou import (  # noqa: E402
     NarouSource,
     compute_popularity_ranking_score,
@@ -166,7 +167,7 @@ def render_narou_ranking_markdown(
     lines = [
         heading,
         "",
-        "自己申告キーワードのみに依存せず、**CiNii Books 書誌・ISBN 検索（書籍・マンガ）** および **日本語版 Wikipedia 作品・メディアミックス検証（書籍・マンガ・アニメ・ゲーム）**・公式アニメ一覧等を実際に検索し、商業化が外部データベースで実在確認された作品のみを抽出したランキングです（一般向け `novelapi` の **`R15` フラグ付与作品を含む**／18禁ノクターン等は除外）。",
+        "自己申告キーワードのみに依存せず、**CiNii Books 書誌・ISBN 検索（書籍・マンガ）**・**日本語版 Wikipedia 作品・メディアミックス検証（書籍・マンガ・アニメ・ゲーム）**・**Apple Books Japan 商業配信書誌検索（書籍・マンガ）**・公式アニメ一覧等を実際に検索し、商業化が外部データベースで実在確認された作品のみを抽出したランキングです（一般向け `novelapi` の **`R15` フラグ付与作品を含む**／18禁ノクターン等は除外）。",
         "",
         f"- **収録作品数**: {len(works)} 作品（PDF 生成済: {pdf_count} 作品・全話収録 / 話数制限なし）",
         f"- **R15 フラグ付与作品数**: {r15_count} 作品（全体の {r15_count * 100.0 / max(len(works), 1):.1f}%）",
@@ -394,7 +395,7 @@ def _write_ranked_catalogs(
     works: Sequence[Work],
     out_path: Optional[Path] = None,
 ) -> Tuple[Path, Path]:
-    """Write full ranked JSONL/Markdown plus Top-100 and Rank-101+ slices."""
+    """Write full ranked JSONL/Markdown plus Top-100 and 100-work continuation slices."""
     primary_jsonl = out_path or (cfg.paths.dataset_dir / NAROU_RANKED)
     store_works(primary_jsonl, works)
 
@@ -412,15 +413,25 @@ def _write_ranked_catalogs(
             encoding="utf-8",
         )
 
-    rank101_plus = list(works[100:])
-    if rank101_plus:
-        last_rank = ((rank101_plus[-1].extra or {}).get("ranking") or {}).get("rank") or len(works)
-        store_works(cfg.paths.dataset_dir / NAROU_RANK101_PLUS, rank101_plus)
-        (cfg.paths.dataset_dir / NAROU_RANK101_PLUS_MD).write_text(
+    for start_idx in range(100, len(works), 100):
+        bracket = list(works[start_idx : start_idx + 100])
+        if not bracket:
+            continue
+        start_rank = start_idx + 1
+        end_label = start_idx + 100
+        actual_last = (
+            ((bracket[-1].extra or {}).get("ranking") or {}).get("rank")
+            or (start_idx + len(bracket))
+        )
+        slice_jsonl = cfg.paths.dataset_dir / f"narou_commercialized_rank{start_rank}_{end_label}.jsonl"
+        slice_md = cfg.paths.dataset_dir / f"narou_rank{start_rank}_{end_label}_ranking.md"
+        store_works(slice_jsonl, bracket)
+        slice_md.write_text(
             render_narou_ranking_markdown(
-                rank101_plus,
+                bracket,
                 heading=(
-                    f"# 小説家になろう 外部実在確認済・商業化作品 人気・評価・知名度ランキング 第101位以降（第101位〜第{last_rank}位）"
+                    f"# 小説家になろう 外部実在確認済・商業化作品 人気・評価・知名度ランキング "
+                    f"第{start_rank}位〜第{actual_last}位"
                 ),
             ),
             encoding="utf-8",
@@ -438,32 +449,114 @@ def _load_reuse_maps(
     if not reuse_dir or not reuse_dir.exists():
         return pdfs, txts, prev_works
 
-    for sub in ("pdf/narou", "data/pdf/narou"):
+    for sub in ("pdf/narou", "data/pdf/narou", "narou", "."):
         pdir = reuse_dir / sub
         if pdir.is_dir():
             for p in pdir.glob("*.pdf"):
                 if p.stat().st_size > 2048:
                     pdfs.setdefault(p.stem.lower(), p)
 
-    for sub in ("raw/narou/texts", "data/raw/narou/texts"):
+    for sub in ("raw/narou/texts", "data/raw/narou/texts", "texts", "."):
         tdir = reuse_dir / sub
         if tdir.is_dir():
             for p in tdir.glob("*.txt"):
                 if p.stat().st_size > 256:
                     txts.setdefault(p.stem.lower(), p)
 
-    for sub in (
-        "datasets/narou_commercialized_ranked.jsonl",
-        "datasets/narou_commercialized_top100.jsonl",
-        "data/datasets/narou_commercialized_ranked.jsonl",
-        "data/datasets/narou_commercialized_top100.jsonl",
-    ):
-        jpath = reuse_dir / sub
+    candidate_jsonls = [
+        reuse_dir / "datasets" / "narou_commercialized_ranked.jsonl",
+        reuse_dir / "datasets" / "narou_commercialized_top100.jsonl",
+        reuse_dir / "data" / "datasets" / "narou_commercialized_ranked.jsonl",
+        reuse_dir / "data" / "datasets" / "narou_commercialized_top100.jsonl",
+        reuse_dir / "narou_commercialized_ranked.jsonl",
+        REPO_ROOT / "samples" / "narou_commercialized_ranked.jsonl",
+    ]
+    for jpath in candidate_jsonls:
         if jpath.is_file():
             for w in load_works(jpath):
                 prev_works.setdefault(w.id.lower(), w)
+    for shard_jpath in sorted(reuse_dir.glob("**/narou_shard_*.jsonl")):
+        if shard_jpath.is_file():
+            for w in load_works(shard_jpath):
+                prev_works.setdefault(w.id.lower(), w)
 
     return pdfs, txts, prev_works
+
+
+def _try_reuse_cached_work(
+    work: Work,
+    *,
+    reuse_pdfs: Dict[str, Path],
+    reuse_txts: Dict[str, Path],
+    reuse_prev: Dict[str, Work],
+    raw_dir: Path,
+    pdf_dir: Path,
+    renderer: Optional[BookPdfRenderer],
+    cover_note: str,
+) -> bool:
+    """Reuse a previously rendered full-episode PDF (+ text or PDF text extraction)."""
+    ncode = work.id.split(":", 1)[1]
+    ncode_lower = ncode.lower()
+    if ncode_lower not in reuse_pdfs:
+        return False
+
+    src_pdf = reuse_pdfs[ncode_lower]
+    src_txt = reuse_txts.get(ncode_lower)
+    prev_w = reuse_prev.get(work.id.lower())
+    prev_eps = int((prev_w.stats if prev_w else {}).get("episodes") or 0)
+    prev_chars = int((prev_w.stats if prev_w else {}).get("char_count") or 0)
+    expected_eps = int(work.stats.get("episodes") or 0)
+    expected_chars = int(work.stats.get("char_count") or 0)
+
+    txt_content: Optional[str] = None
+    if src_txt is not None and src_txt.exists():
+        txt_content = src_txt.read_text(encoding="utf-8")
+        episodes_fresh = (
+            (prev_eps > 0 and expected_eps <= prev_eps + 3)
+            or (prev_eps == 0 and len(txt_content) >= max(1000, int(expected_chars * 0.70)))
+        )
+    else:
+        # Release tarball reuse (PDF + catalog metadata without separate .txt)
+        episodes_fresh = prev_eps > 0 and expected_eps <= prev_eps + 3
+
+    if not episodes_fresh:
+        return False
+
+    text_path = raw_dir / f"{ncode}.txt"
+    text_path.parent.mkdir(parents=True, exist_ok=True)
+    if src_txt is not None and src_txt.exists():
+        if src_txt.resolve() != text_path.resolve():
+            shutil.copy2(src_txt, text_path)
+    elif not text_path.exists():
+        from pypdf import PdfReader
+
+        reader = PdfReader(str(src_pdf))
+        extracted = "\n\n".join(
+            (page.extract_text() or "").strip() for page in reader.pages[1:]
+        ).strip()
+        text_path.write_text(extracted or work.title, encoding="utf-8")
+        txt_content = extracted
+
+    work.text_path = relative(text_path)
+    work.stats["char_count"] = prev_chars or (
+        sum(len(ln) for ln in (txt_content or "").splitlines() if ln.strip()) or expected_chars
+    )
+    work.stats["episodes"] = prev_eps or expected_eps
+    work.extra["text_origin"] = "reused full-episode cache"
+    work.extra["all_episodes_rendered"] = True
+
+    if renderer is not None:
+        pdf_path = pdf_dir / f"{ncode}.pdf"
+        try:
+            renderer.refresh_cover(work, src_pdf, pdf_path, note=cover_note)
+        except Exception as exc:
+            LOGGER.warning("cover refresh fallback copy for %s: %s", ncode, exc)
+            if src_pdf.resolve() != pdf_path.resolve():
+                pdf_path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(src_pdf, pdf_path)
+        work.pdf_path = relative(pdf_path)
+        work.extra["pdf_bytes"] = pdf_path.stat().st_size
+    return True
 
 
 def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
@@ -494,17 +587,33 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
     )
 
     top_target = args.top
-    scan_limit = max(args.scan_limit, top_target * 2 + 120)
+    scan_limit = max(args.scan_limit, top_target * 3 + 150)
     strict_flag = (
         cfg.narou.strict_external_verification
         if getattr(args, "strict_external", None) is None
         else bool(args.strict_external)
     )
+
+    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
+    reuse_pdfs, _, reuse_prev = _load_reuse_maps(reuse_dir)
+
+    seed_verifications: Dict[str, MediaVerificationResult] = {}
+    seed_sources: List[Work] = list(reuse_prev.values())
+    repo_sample_ranked = REPO_ROOT / "samples" / NAROU_RANKED
+    if repo_sample_ranked.is_file() and not getattr(args, "no_seed_verified", False):
+        seed_sources.extend(load_works(repo_sample_ranked))
+    for sw in seed_sources:
+        ext_dict = (sw.rights or {}).get("external_verification")
+        if isinstance(ext_dict, dict) and ext_dict.get("verified"):
+            ncode_key = sw.id.split(":", 1)[1].lower()
+            seed_verifications.setdefault(ncode_key, MediaVerificationResult.from_dict(ext_dict))
+
     LOGGER.info(
-        "externally verifying commercialisation (books/manga/anime/games, R15=%s, strict=%s) "
+        "externally verifying commercialisation (books/manga/anime/games, R15=%s, strict=%s, seeded=%s) "
         "across up to %s top Narou candidates (target=%s)",
         cfg.narou.include_r15,
         strict_flag,
+        len(seed_verifications),
         min(scan_limit, len(candidates)),
         top_target,
     )
@@ -514,6 +623,9 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
         anime_ncodes=anime_ncodes,
         strict=strict_flag,
         check_syuppan=getattr(args, "check_syuppan", False),
+        seed_verifications=seed_verifications,
+        target_verified_pool=top_target + 35,
+        min_scan_before_stop=max(700, top_target * 2 + 50),
     )
 
     verified.sort(
@@ -525,9 +637,6 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
         ),
         reverse=True,
     )
-
-    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
-    reuse_pdfs, _, _ = _load_reuse_maps(reuse_dir)
 
     selected: List[Work] = []
     for work in verified:
@@ -747,57 +856,29 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
             )
         )
 
-        # Fast incremental reuse when an already-rendered full-episode PDF + text exist
-        if (
-            args.max_episodes == 0
-            and ncode_lower in reuse_pdfs
-            and ncode_lower in reuse_txts
+        # Fast incremental reuse when an already-rendered full-episode PDF exists
+        if args.max_episodes == 0 and _try_reuse_cached_work(
+            work,
+            reuse_pdfs=reuse_pdfs,
+            reuse_txts=reuse_txts,
+            reuse_prev=reuse_prev,
+            raw_dir=raw_dir,
+            pdf_dir=pdf_dir,
+            renderer=renderer,
+            cover_note=cover_note,
         ):
-            prev_w = reuse_prev.get(work.id.lower())
-            prev_eps = int((prev_w.stats if prev_w else {}).get("episodes") or 0)
-            prev_chars = int((prev_w.stats if prev_w else {}).get("char_count") or 0)
-            src_txt = reuse_txts[ncode_lower]
-            src_pdf = reuse_pdfs[ncode_lower]
-            txt_content = src_txt.read_text(encoding="utf-8")
-            episodes_fresh = (
-                (prev_eps > 0 and expected_eps <= prev_eps + 3)
-                or (prev_eps == 0 and len(txt_content) >= max(1000, int(expected_chars * 0.70)))
+            updated.append(work)
+            LOGGER.info(
+                "[%s/%s] Rank #%s %s -> REUSED (%s episodes, %s chars, pdf=%s)",
+                len(updated),
+                target,
+                rank_label or "-",
+                work.title,
+                work.stats["episodes"],
+                f"{work.stats['char_count']:,}",
+                work.pdf_path,
             )
-            if episodes_fresh:
-                text_path = raw_dir / f"{ncode}.txt"
-                text_path.parent.mkdir(parents=True, exist_ok=True)
-                if src_txt.resolve() != text_path.resolve():
-                    shutil.copy2(src_txt, text_path)
-                work.text_path = relative(text_path)
-                work.stats["char_count"] = prev_chars or sum(
-                    len(ln) for ln in txt_content.splitlines() if ln.strip()
-                )
-                work.stats["episodes"] = prev_eps or expected_eps
-                work.extra["text_origin"] = "reused full-episode cache"
-                work.extra["all_episodes_rendered"] = True
-                if renderer is not None:
-                    pdf_path = pdf_dir / f"{ncode}.pdf"
-                    try:
-                        renderer.refresh_cover(work, src_pdf, pdf_path, note=cover_note)
-                    except Exception as exc:
-                        LOGGER.warning("cover refresh fallback copy for %s: %s", ncode, exc)
-                        if src_pdf.resolve() != pdf_path.resolve():
-                            pdf_path.parent.mkdir(parents=True, exist_ok=True)
-                            shutil.copy2(src_pdf, pdf_path)
-                    work.pdf_path = relative(pdf_path)
-                    work.extra["pdf_bytes"] = pdf_path.stat().st_size
-                updated.append(work)
-                LOGGER.info(
-                    "[%s/%s] Rank #%s %s -> REUSED (%s episodes, %s chars, pdf=%s)",
-                    len(updated),
-                    target,
-                    rank_label or "-",
-                    work.title,
-                    work.stats["episodes"],
-                    f"{work.stats['char_count']:,}",
-                    work.pdf_path,
-                )
-                continue
+            continue
 
         LOGGER.info(
             "fetching %s (Rank #%s, expected %s episodes): %s",
@@ -927,14 +1008,33 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
     if getattr(args, "backfill", False) and len(updated_by_id) < args.works and ranked_pool:
         needed = args.works - len(updated_by_id)
         LOGGER.info("backfilling %s works from spare ranked candidates", needed)
+        reuse_dir = (
+            Path(args.reuse_existing_dir)
+            if getattr(args, "reuse_existing_dir", None)
+            else None
+        )
+        reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
         source = NarouSource(cfg.narou, cfg.paths, build_client(cfg, request_interval=0.25))
         renderer = build_renderer(cfg)
         raw_dir = cfg.paths.raw_dir / "narou" / "texts"
         pdf_dir = cfg.paths.pdf_dir / "narou"
+        cover_note = "出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版（全話収録）"
         for spare in ranked_pool:
             if len(updated_by_id) >= args.works:
                 break
             if spare.id in updated_by_id:
+                continue
+            if _try_reuse_cached_work(
+                spare,
+                reuse_pdfs=reuse_pdfs,
+                reuse_txts=reuse_txts,
+                reuse_prev=reuse_prev,
+                raw_dir=raw_dir,
+                pdf_dir=pdf_dir,
+                renderer=renderer,
+                cover_note=cover_note,
+            ):
+                updated_by_id[spare.id] = spare
                 continue
             ncode = spare.id.split(":", 1)[1]
             expected_eps = int(spare.stats.get("episodes") or 0)
@@ -960,7 +1060,7 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
                 spare,
                 blocks,
                 pdf_path,
-                note="出典: 小説家になろう (syosetu.com) — 商業化作品の無料公開WEB版（全話収録）",
+                note=cover_note,
             )
             spare.pdf_path = relative(pdf_path)
             spare.extra["pdf_bytes"] = pdf_path.stat().st_size
@@ -1088,8 +1188,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.set_defaults(func=cmd_narou_metadata)
 
     p = sub.add_parser("narou-rank", help="externally verify & rank commercialised Narou works")
-    p.add_argument("--top", type=int, default=200, help="number of top ranked works to select")
-    p.add_argument("--scan-limit", type=int, default=600, help="max top candidates to inspect")
+    p.add_argument("--top", type=int, default=300, help="number of top ranked works to select")
+    p.add_argument("--scan-limit", type=int, default=1100, help="max top candidates to inspect")
     p.add_argument("--min-chars", type=int, default=10000)
     p.add_argument("--min-episodes", type=int, default=1)
     p.add_argument("--request-interval", type=float, default=0.20)
@@ -1099,6 +1199,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--no-strict-external", dest="strict_external", action="store_false")
     p.add_argument("--verify-web", action="store_true", default=True)
     p.add_argument("--no-verify-web", dest="verify_web", action="store_false")
+    p.add_argument("--no-seed-verified", action="store_true", default=False)
     p.add_argument("--reuse-existing-dir", default=None)
     p.add_argument("--out-file", default=None)
     p.set_defaults(func=cmd_narou_rank)
@@ -1130,7 +1231,8 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     p = sub.add_parser("narou-merge-shards", help="merge sharded narou-texts outputs")
     p.add_argument("--shard-dir", default=None)
-    p.add_argument("--works", type=int, default=200)
+    p.add_argument("--works", type=int, default=300)
+    p.add_argument("--reuse-existing-dir", default=None)
     p.add_argument("--backfill", action="store_true", help="backfill from spare ranked works")
     p.add_argument("--strict-count", action="store_true", help="exit non-zero if count < --works")
     p.set_defaults(func=cmd_narou_merge_shards)

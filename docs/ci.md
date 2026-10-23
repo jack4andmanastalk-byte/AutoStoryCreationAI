@@ -123,7 +123,7 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 
 * `dataset-refresh` のシャード数を増やすなら `max-parallel` も見直す。
   `シャード数 - max-parallel + 2` が常時使う枠。**8 以上は空ける**こと。
-* `publish` の `if` から `needs.render-narou.result != 'cancelled'` を消さない。
+* `publish` の `if` は `(!cancelled()) && needs.prepare.result == 'success' && needs.render-narou.result != 'cancelled'` を維持する（`always()` を使うと Web UI の Cancel が効かなくなるため `!cancelled()` とする）。
   キャンセルされた実行の部分的な PDF で `datasets` ブランチを上書きしてしまう。
 * `dataset-refresh` の頻度を週次に戻すなら、分数を計算し直すこと（1 回 700 分）。
 * `research-check` に path フィルタを戻さない。**列挙漏れで CI が走らない**のが

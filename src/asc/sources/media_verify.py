@@ -14,13 +14,15 @@ catalogs** by title, author pen name, and N-code across four media categories:
    commercial imprint categories.
 2. **Manga (マンガ)** — NII **CiNii Books** comic imprints / mangaka credits
    plus **Japanese Wikipedia** ``Infobox animanga/Manga`` & comic categories.
-3. **Anime (アニメ)** — **Japanese Wikipedia** TV/theatrical/OVA/Web anime
-   infoboxes, categories, and split ``(アニメ)`` articles, plus official
+3. **Commercial Ebook & Comic Storefront (Apple Books Japan)** — Official
+   ``https://itunes.apple.com/search?country=JP&media=ebook`` catalog as a
+   strict author+title Tier-3 fallback for commercial light-novel & comic
+   imprints not yet deposited in university libraries (CiNii) or Wikipedia.
+4. **Anime & Games (アニメ・ゲーム)** — **Japanese Wikipedia** TV/theatrical/OVA/Web
+   anime and console/PC/mobile/TRPG game infoboxes, sections, and release
+   categories (explicitly excluding VRMMO *theme* categories such as
+   ``コンピュータゲームを題材とした小説``), plus official
    ``syosetu.com/commercialization/anime/`` when reachable.
-4. **Games (ゲーム)** — **Japanese Wikipedia** ``Infobox animanga/Game``,
-   dedicated game sections (console / PC / mobile / TRPG), and video-game
-   release categories (explicitly excluding VRMMO *theme* categories such as
-   ``コンピュータゲームを題材とした小説``).
 """
 
 from __future__ import annotations
@@ -29,6 +31,7 @@ import html as html_lib
 import json
 import logging
 import re
+import time
 import unicodedata
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Set, Tuple
@@ -41,6 +44,7 @@ LOGGER = logging.getLogger(__name__)
 
 CINII_OPEN_SEARCH_URL = "https://ci.nii.ac.jp/books/opensearch/search"
 JA_WIKIPEDIA_API_URL = "https://ja.wikipedia.org/w/api.php"
+APPLE_BOOKS_SEARCH_URL = "https://itunes.apple.com/search"
 #: Fixed pageid of ``Category:小説家になろうの小説`` on Japanese Wikipedia.
 NAROU_WIKI_CATEGORY_PAGEID = 4521544
 
@@ -183,6 +187,8 @@ class MediaVerificationResult:
     cinii_book_hits: int = 0
     cinii_manga_hits: int = 0
     cinii_total_results: int = 0
+    apple_book_hits: int = 0
+    apple_manga_hits: int = 0
     wikipedia_volumes: int = 0
     syuppan_volumes: int = 0
     sources: List[str] = field(default_factory=list)
@@ -219,10 +225,42 @@ class MediaVerificationResult:
             "cinii_book_hits": self.cinii_book_hits,
             "cinii_manga_hits": self.cinii_manga_hits,
             "cinii_total_results": self.cinii_total_results,
+            "apple_book_hits": self.apple_book_hits,
+            "apple_manga_hits": self.apple_manga_hits,
             "wikipedia_volumes": self.wikipedia_volumes,
             "syuppan_volumes": self.syuppan_volumes,
             "sources": list(self.sources),
         }
+
+    @classmethod
+    def from_dict(cls, payload: Dict[str, Any]) -> "MediaVerificationResult":
+        return cls(
+            verified=bool(payload.get("verified")),
+            has_book=bool(payload.get("has_book")),
+            has_manga=bool(payload.get("has_manga")),
+            has_anime=bool(payload.get("has_anime")),
+            has_game=bool(payload.get("has_game")),
+            publisher=payload.get("publisher"),
+            label=payload.get("label"),
+            isbn_sample=payload.get("isbn_sample"),
+            manga_publisher=payload.get("manga_publisher"),
+            manga_label=payload.get("manga_label"),
+            manga_isbn_sample=payload.get("manga_isbn_sample"),
+            wikipedia_title=payload.get("wikipedia_title"),
+            wikipedia_pageid=(
+                int(payload["wikipedia_pageid"])
+                if payload.get("wikipedia_pageid") is not None
+                else None
+            ),
+            cinii_book_hits=int(payload.get("cinii_book_hits") or 0),
+            cinii_manga_hits=int(payload.get("cinii_manga_hits") or 0),
+            cinii_total_results=int(payload.get("cinii_total_results") or 0),
+            apple_book_hits=int(payload.get("apple_book_hits") or 0),
+            apple_manga_hits=int(payload.get("apple_manga_hits") or 0),
+            wikipedia_volumes=int(payload.get("wikipedia_volumes") or 0),
+            syuppan_volumes=int(payload.get("syuppan_volumes") or 0),
+            sources=list(payload.get("sources") or []),
+        )
 
 
 def normalize_match_key(text: str) -> str:
@@ -718,6 +756,134 @@ def parse_wikipedia_page_media(
     return out
 
 
+APPLE_TRIAL_OR_BUNDLE_RE = re.compile(
+    r"(お試し|試し読み|無料版|期間限定無料|合本版|まとめ買い|セット版|分冊版)"
+)
+APPLE_ARTIST_IMPRINT_RE = re.compile(r"[（(]([^）)]{2,40})[）)]")
+
+
+def _extract_apple_imprint(artist_name: str) -> Tuple[Optional[str], Optional[str]]:
+    """Extract ``(label, publisher)`` from Apple Books artist strings when present.
+
+    Example: ``"氷樹一世, 蘇我捨恥(ヒーロー文庫/イマジカインフォス) & 四季童子"``
+    -> ``("ヒーロー文庫", "イマジカインフォス")``.
+    """
+    for m in APPLE_ARTIST_IMPRINT_RE.finditer(artist_name or ""):
+        inner = m.group(1).strip()
+        if "/" in inner or "／" in inner:
+            parts = [p.strip() for p in re.split(r"[/／]", inner, maxsplit=1) if p.strip()]
+            if len(parts) == 2:
+                return parts[0][:40], parts[1][:40]
+        if re.search(r"(文庫|ブックス|ノベル|BOOKS|コミックス|COMICS)", inner, flags=re.I):
+            return inner[:40], None
+    return None, None
+
+
+def parse_apple_books_response(
+    data: Dict[str, Any],
+    *,
+    search_titles: Sequence[str],
+    author_variants: Sequence[str],
+) -> Dict[str, Any]:
+    """Validate and classify Apple Books Japan Search API ebook records into book vs manga."""
+    out: Dict[str, Any] = {
+        "matched": False,
+        "has_book": False,
+        "has_manga": False,
+        "publisher": None,
+        "label": None,
+        "manga_publisher": None,
+        "manga_label": None,
+        "book_hits": 0,
+        "manga_hits": 0,
+    }
+    results = data.get("results")
+    if not isinstance(results, list) or not results:
+        return out
+
+    search_keys = [normalize_match_key(t) for t in search_titles if normalize_match_key(t)]
+    if not search_keys or not author_variants:
+        return out
+
+    seen_book_ids: Set[str] = set()
+    seen_manga_ids: Set[str] = set()
+
+    for item in results:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get("kind") or "") != "ebook":
+            continue
+        track_name = str(item.get("trackName") or "")
+        track_censored = str(item.get("trackCensoredName") or "")
+        artist_name = str(item.get("artistName") or "")
+        desc_head = str(item.get("description") or "")[:300]
+        if not track_name or not artist_name:
+            continue
+        if SELF_PUBLISHED_RE.search(artist_name) or SELF_PUBLISHED_RE.search(desc_head):
+            continue
+
+        # Require BOTH strict author pen-name match AND title match
+        if not _creator_matches_author(artist_name, author_variants):
+            continue
+
+        cleaned_track = _clean_bracket_segments(track_name)
+        cleaned_censored = _clean_bracket_segments(track_censored) if track_censored else ""
+        title_prefix_ok, _, _ = _titles_match(
+            [cleaned_track, track_name, cleaned_censored],
+            search_keys,
+        )
+        norm_track = normalize_match_key(cleaned_track or track_name)
+        distinct_sub_ok = any(len(sk) >= 6 and sk in norm_track for sk in search_keys)
+        if not (title_prefix_ok or distinct_sub_ok):
+            continue
+
+        genres = [str(g) for g in (item.get("genres") or []) if g]
+        genres_joined = " ".join(genres)
+        is_artbook = bool(ARTBOOK_RE.search(track_name))
+        if is_artbook:
+            continue
+
+        is_manga = bool(
+            any("マンガ" in g or "コミック" in g or "Manga" in g for g in genres)
+            or MANGA_LABEL_RE.search(track_name)
+            or MANGA_LABEL_RE.search(artist_name)
+            or re.search(r"【コミック版?】|\(コミック\)", track_name)
+        )
+        is_book_genre = bool(
+            any(
+                kw in genres_joined
+                for kw in ("ライトノベル", "小説", "文学", "フィクション", "ファンタジー", "SF")
+            )
+            or not is_manga
+        )
+
+        label_hint, pub_hint = _extract_apple_imprint(artist_name)
+        dedup_id = str(item.get("trackId") or track_name)
+        is_trial_or_bundle = bool(APPLE_TRIAL_OR_BUNDLE_RE.search(track_name))
+
+        if is_manga:
+            out["has_manga"] = True
+            if not is_trial_or_bundle:
+                seen_manga_ids.add(dedup_id)
+            if out["manga_label"] is None and label_hint:
+                out["manga_label"] = label_hint
+            if out["manga_publisher"] is None and pub_hint:
+                out["manga_publisher"] = pub_hint
+        elif is_book_genre:
+            out["has_book"] = True
+            if not is_trial_or_bundle:
+                seen_book_ids.add(dedup_id)
+            if out["label"] is None and label_hint:
+                out["label"] = label_hint
+            if out["publisher"] is None and pub_hint:
+                out["publisher"] = pub_hint
+
+    out["book_hits"] = max(len(seen_book_ids), 1 if out["has_book"] else 0)
+    out["manga_hits"] = max(len(seen_manga_ids), 1 if out["has_manga"] else 0)
+    out["matched"] = bool(out["has_book"] or out["has_manga"])
+    return out
+
+
 class ExternalMediaVerifier:
     """Batch & per-work external commercialisation verifier across 4 media types."""
 
@@ -727,14 +893,20 @@ class ExternalMediaVerifier:
         *,
         cinii_url: str = CINII_OPEN_SEARCH_URL,
         wikipedia_api_url: str = JA_WIKIPEDIA_API_URL,
+        apple_books_url: str = APPLE_BOOKS_SEARCH_URL,
+        apple_books_interval: float = 3.1,
     ) -> None:
         self.client = client
         self.cinii_url = cinii_url
         self.wikipedia_api_url = wikipedia_api_url
+        self.apple_books_url = apple_books_url
+        self.apple_books_interval = apple_books_interval
         self._wiki_ncode_pageids: Dict[str, Set[int]] = {}
         self._wiki_title_pageids: Dict[str, Set[int]] = {}
         self._wiki_page_cache: Dict[int, Dict[str, Any]] = {}
         self._cinii_cache: Dict[str, Dict[str, Any]] = {}
+        self._apple_cache: Dict[str, Dict[str, Any]] = {}
+        self._last_apple_req_ts: float = 0.0
         self._indexes_warmed: bool = False
 
     # -- Wikipedia API helpers -----------------------------------------
@@ -756,7 +928,7 @@ class ExternalMediaVerifier:
         # 1) External link index: ncode.syosetu.com (both https and http)
         for proto in ("https", "http"):
             eucontinue: Optional[str] = None
-            for _ in range(12):
+            for _ in range(25):
                 params: Dict[str, Any] = {
                     "action": "query",
                     "list": "exturlusage",
@@ -786,7 +958,7 @@ class ExternalMediaVerifier:
 
         # 2) Category:小説家になろうの小説 members
         cmcontinue: Optional[str] = None
-        for _ in range(12):
+        for _ in range(25):
             params = {
                 "action": "query",
                 "list": "categorymembers",
@@ -972,6 +1144,78 @@ class ExternalMediaVerifier:
             "total_results": 0,
         }
 
+    # -- Apple Books Japan Store API helpers ---------------------------
+    def _query_apple_books(self, term: str) -> Dict[str, Any]:
+        q = unicodedata.normalize("NFC", term.strip())[:80]
+        if q in self._apple_cache:
+            return self._apple_cache[q]
+        if self.apple_books_interval > 0 and self._last_apple_req_ts > 0:
+            elapsed = time.monotonic() - self._last_apple_req_ts
+            if elapsed < self.apple_books_interval:
+                time.sleep(self.apple_books_interval - elapsed)
+        url = self.apple_books_url + "?" + urlencode(
+            {"country": "JP", "media": "ebook", "limit": 15, "term": q}
+        )
+        self._last_apple_req_ts = time.monotonic()
+        try:
+            payload = self.client.get(url)
+            data = json.loads(payload.decode("utf-8"))
+        except Exception as exc:  # pragma: no cover - network dependent
+            LOGGER.debug("Apple Books lookup failed for %s: %s", q, exc)
+            data = {}
+        self._apple_cache[q] = data
+        return data
+
+    def verify_work_apple_books(
+        self,
+        *,
+        search_titles: Sequence[str],
+        author_variants: Sequence[str],
+    ) -> Dict[str, Any]:
+        """Search Apple Books Japan for commercial ebook/manga releases by title + author."""
+        empty = {
+            "matched": False,
+            "has_book": False,
+            "has_manga": False,
+            "publisher": None,
+            "label": None,
+            "manga_publisher": None,
+            "manga_label": None,
+            "book_hits": 0,
+            "manga_hits": 0,
+        }
+        if not search_titles or not author_variants:
+            return empty
+        primary = search_titles[0]
+        if len(normalize_match_key(primary)) < 2:
+            return empty
+        # Combine short titles with primary pen name so 15-item window isn't swamped
+        term = (
+            f"{primary} {author_variants[0]}"
+            if len(normalize_match_key(primary)) < 7
+            else primary[:45]
+        )
+        raw = self._query_apple_books(term)
+        parsed = parse_apple_books_response(
+            raw,
+            search_titles=search_titles,
+            author_variants=author_variants,
+        )
+        if parsed["matched"]:
+            return parsed
+        if len(search_titles) > 1 and normalize_match_key(search_titles[1]) != normalize_match_key(primary):
+            alt = search_titles[1][:45]
+            if len(normalize_match_key(alt)) >= 3:
+                raw_alt = self._query_apple_books(f"{alt} {author_variants[0]}")
+                parsed_alt = parse_apple_books_response(
+                    raw_alt,
+                    search_titles=search_titles,
+                    author_variants=author_variants,
+                )
+                if parsed_alt["matched"]:
+                    return parsed_alt
+        return empty
+
     # -- Combined multi-media verification -----------------------------
     def verify_candidates(
         self,
@@ -979,16 +1223,28 @@ class ExternalMediaVerifier:
         *,
         anime_ncodes: Optional[Set[str]] = None,
         use_wikipedia_search_fallback: bool = True,
+        use_apple_books_fallback: bool = True,
+        max_apple_queries: int = 135,
+        seed_verifications: Optional[Dict[str, MediaVerificationResult]] = None,
+        target_verified_pool: int = 0,
+        min_scan_before_stop: int = 700,
     ) -> Dict[str, MediaVerificationResult]:
-        """Verify a batch of candidate works across CiNii Books + Wikipedia + official lists."""
-        self.warm_bulk_indexes()
+        """Verify a batch of candidate works across Wikipedia + CiNii Books + Apple Books."""
+        seeded_map = {k.lower(): v for k, v in (seed_verifications or {}).items() if v.verified}
+        unseeded_candidates = [
+            w for w in candidates if w.id.split(":", 1)[1].lower() not in seeded_map
+        ]
+
+        if unseeded_candidates:
+            self.warm_bulk_indexes()
 
         work_meta: Dict[str, Tuple[str, List[str], List[str], Set[int], bool]] = {}
         all_needed_pageids: Set[int] = set()
 
-        for work in candidates:
+        for rank_idx, work in enumerate(unseeded_candidates, start=1):
             ncode = work.id.split(":", 1)[1].lower()
             synopsis = str((work.extra or {}).get("synopsis") or "")
+            keywords = str((work.extra or {}).get("keywords") or "")
             author_name = work.authors[0].name if work.authors else ""
             search_titles = extract_search_titles(work.title, synopsis)
             author_variants = extract_author_variants(author_name)
@@ -1001,7 +1257,14 @@ class ExternalMediaVerifier:
                     title_pids.update(self._wiki_title_pageids[skey])
 
             pids = ncode_pids | title_pids
-            if not pids and use_wikipedia_search_fallback:
+            # Smart Wikipedia search fallback: run upfront for top-260 works or works
+            # mentioning anime/game/movie adaptations (others run post-CiNii/Apple if needed)
+            mentions_screen_or_game = bool(
+                re.search(r"(アニメ|劇場版|映画化|ゲーム化)", f"{work.title}\n{keywords}\n{synopsis}")
+            )
+            if not pids and use_wikipedia_search_fallback and (
+                rank_idx <= 260 or mentions_screen_or_game
+            ):
                 pids = self._search_wikipedia_title(search_titles, author_variants)
 
             all_needed_pageids.update(pids)
@@ -1018,7 +1281,19 @@ class ExternalMediaVerifier:
             self._fetch_wikipedia_pages(all_needed_pageids)
 
         results: Dict[str, MediaVerificationResult] = {}
+        apple_queries_used = 0
+
         for idx, work in enumerate(candidates, start=1):
+            ncode = work.id.split(":", 1)[1].lower()
+            if ncode in seeded_map:
+                seeded = MediaVerificationResult.from_dict(seeded_map[ncode].to_dict())
+                if anime_ncodes and ncode in anime_ncodes and not seeded.has_anime:
+                    seeded.has_anime = True
+                    if "official_anime_page" not in seeded.sources:
+                        seeded.sources.append("official_anime_page")
+                results[work.id] = seeded
+                continue
+
             ncode, search_titles, author_variants, pids, has_ncode_pid = work_meta[work.id]
             res = MediaVerificationResult()
 
@@ -1057,9 +1332,15 @@ class ExternalMediaVerifier:
                 res.sources.append("wikipedia")
 
             # 3) CiNii Books OpenSearch verification (ISBN-backed Books & Manga)
+            # If Wikipedia already confirmed both book & manga + publisher, query primary title once for ISBN
+            cinii_titles = (
+                search_titles[:1]
+                if (res.has_book and res.has_manga and res.publisher)
+                else search_titles
+            )
             cinii = self.verify_work_cinii(
                 work,
-                search_titles=search_titles,
+                search_titles=cinii_titles,
                 author_variants=author_variants,
                 trusted_ncode=(has_ncode_pid or wiki_matched or res.has_anime),
             )
@@ -1078,15 +1359,90 @@ class ExternalMediaVerifier:
                 if "cinii_books" not in res.sources:
                     res.sources.append("cinii_books")
 
+            # 4) Tier-3 Apple Books Japan official store fallback for commercial
+            #    light-novel / comic imprints not yet held by university libraries
+            if (
+                not (res.has_book or res.has_manga or res.has_anime or res.has_game)
+                and use_apple_books_fallback
+                and apple_queries_used < max_apple_queries
+                and work.rights.get("commercialized") is not False
+            ):
+                before_cache_size = len(self._apple_cache)
+                apple = self.verify_work_apple_books(
+                    search_titles=search_titles,
+                    author_variants=author_variants,
+                )
+                apple_queries_used += max(0, len(self._apple_cache) - before_cache_size)
+                if apple["matched"]:
+                    res.has_book = res.has_book or apple["has_book"]
+                    res.has_manga = res.has_manga or apple["has_manga"]
+                    res.apple_book_hits = apple["book_hits"]
+                    res.apple_manga_hits = apple["manga_hits"]
+                    res.publisher = res.publisher or apple["publisher"]
+                    res.label = res.label or apple["label"]
+                    res.manga_publisher = res.manga_publisher or apple["manga_publisher"]
+                    res.manga_label = res.manga_label or apple["manga_label"]
+                    if "apple_books_jp" not in res.sources:
+                        res.sources.append("apple_books_jp")
+
+            # If newly verified via CiNii/Apple without prior Wikipedia lookup, check Wikipedia once
+            # so anime/game/manga adaptations are not missed on non-Category articles
+            if (
+                not pids
+                and use_wikipedia_search_fallback
+                and (res.has_book or res.has_manga)
+            ):
+                extra_pids = self._search_wikipedia_title(search_titles, author_variants)
+                if extra_pids:
+                    self._fetch_wikipedia_pages(extra_pids)
+                    for pid in sorted(extra_pids):
+                        page_obj = self._wiki_page_cache.get(pid)
+                        if not page_obj:
+                            continue
+                        parsed_wiki = parse_wikipedia_page_media(
+                            page_obj,
+                            ncode=ncode,
+                            search_titles=search_titles,
+                            author_variants=author_variants,
+                            matched_by_ncode=False,
+                        )
+                        if parsed_wiki["matched"]:
+                            res.has_book = res.has_book or parsed_wiki["has_book"]
+                            res.has_manga = res.has_manga or parsed_wiki["has_manga"]
+                            res.has_anime = res.has_anime or parsed_wiki["has_anime"]
+                            res.has_game = res.has_game or parsed_wiki["has_game"]
+                            res.publisher = res.publisher or parsed_wiki["publisher"]
+                            res.label = res.label or parsed_wiki["label"]
+                            res.wikipedia_volumes = max(res.wikipedia_volumes, parsed_wiki["volumes"])
+                            if res.wikipedia_title is None:
+                                res.wikipedia_title = parsed_wiki["wikipedia_title"]
+                                res.wikipedia_pageid = parsed_wiki["wikipedia_pageid"]
+                            if "wikipedia" not in res.sources:
+                                res.sources.append("wikipedia")
+
             res.verified = bool(res.has_book or res.has_manga or res.has_anime or res.has_game)
             results[work.id] = res
+
+            verified_so_far = sum(1 for r in results.values() if r.verified)
             if idx % 50 == 0 or idx == len(candidates):
-                verified_so_far = sum(1 for r in results.values() if r.verified)
                 LOGGER.info(
-                    "external media verification progress: %s/%s scanned (%s verified)",
+                    "external media verification progress: %s/%s scanned (%s verified, apple_queries=%s)",
                     idx,
                     len(candidates),
                     verified_so_far,
+                    apple_queries_used,
                 )
+            if (
+                target_verified_pool > 0
+                and idx >= min_scan_before_stop
+                and verified_so_far >= target_verified_pool
+            ):
+                LOGGER.info(
+                    "reached verified pool target (%s >= %s) after scanning top %s candidates",
+                    verified_so_far,
+                    target_verified_pool,
+                    idx,
+                )
+                break
 
         return results
