@@ -14,6 +14,11 @@ name: research-check
 #   2. This workflow has its own concurrency group, so a superseded commit is
 #      cancelled instead of queueing behind itself.
 #
+# The repository is public (since 2026-10-23), so standard hosted runners no
+# longer consume paid minutes; the billing block that stopped every job is gone.
+# The concurrency budget (20 jobs) remains, which is why the dataset build
+# still caps its matrix.
+#
 # Set the repository variable `CI_RUNNER_LABEL` to a self-hosted runner label
 # to take CI off the shared budget entirely; nothing else needs to change.
 # See docs/ci.md.
@@ -40,9 +45,9 @@ jobs:
     runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
