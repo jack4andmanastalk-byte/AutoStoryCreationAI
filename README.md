@@ -184,6 +184,7 @@ make plan           # 固定タスク t01 から canon だけを生成
 make story          # S1: 企画 → canon → 3 章 → 監査を一括実行
 make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
 make experiment     # S0/S1 × seed の行列を回し、実験ノートの雛形を出す
+make blind-pairs    # runs/ の S0/S1 から、来歴を消した A/B ペアを作る（判定用）
 ```
 
 判定器は外部コマンドとして接続します（このリポジトリは鍵を持ちません）。
@@ -194,6 +195,22 @@ python3 scripts/run_evaluation.py --candidate build/runs/<id>/text \
   --rubric harness/rubrics/story-quality-v0.yaml \
   --judge-command "python3 scripts/judge_adapter.py --llm-command 'my-model --json'"
 ```
+
+L3（選好・識別）は、**どちらがどちらの系かを隠した**ペアでなければ意味を持ちません。
+`scripts/make_blind_pairs.py` が `runs/` から判定用の束を作ります。
+
+```bash
+python3 scripts/make_blind_pairs.py --runs-root runs \
+  --baseline s0 --candidate s1 --out build/pairs/2026-10-pilot
+#   pairs/pair-001.json  {"pair_id","a","b"}   ← 評定者に渡すのはこれだけ
+#   key.json                                    ← どちらが s1 か。評定者に見せない
+#   judge_prompt.md / manifest.json             ← 判定手順と、除外したペアの理由
+```
+
+* 本文から**マーカー（`{{time: …}}` 等）と見出し**を除きます（S1 にしか無い手がかりを消す）
+* 文字数の差が `--max-length-diff`（既定 25%）を超えるペアは、理由つきで除外します（§4）
+* `a` が常に S1 にならないよう、**半分ずつ入れ替えてからシャッフル**します
+* 同じ `--seed` なら同じ束ができます
 
 ### 4.3 生成パイプライン（Phase 2-A: Plan / Draft）
 
@@ -221,7 +238,8 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 * `scripts/model_adapter.py` は、**版を固定した実モデル**を繋ぐ経路です（OpenAI 互換の
   `/chat/completions`。ローカルのゲートウェイも `--base-url` で使えます）。鍵は環境変数から読み、
   標準出力には本文だけを返します。`--dry-run` で送信内容を確認でき、`--model-version` を渡すと
-  `manifest.json` の `model_version` が固定されます（これが §5 G5 を判定できる唯一の経路）
+  `manifest.json` の `model_version` が固定されます（これが §5 G5 を判定できる唯一の経路）。
+  `--json-mode`（既定 `auto`）は plan のときだけ `response_format=json_object` を付けます
 * `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
   プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
   応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。

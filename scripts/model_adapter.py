@@ -40,6 +40,10 @@ DEFAULT_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_KEY_ENV = "OPENAI_API_KEY"
 RETRY_STATUS = {408, 409, 429, 500, 502, 503, 504}
 
+#: Purposes whose prompt asks for JSON only. Asking the endpoint to constrain the
+#: output is cheaper than repairing a canon that arrives wrapped in prose.
+JSON_PURPOSES = {"plan", "plan-repair"}
+
 
 class ConfigError(RuntimeError):
     """Raised when the adapter cannot be configured; exits 2."""
@@ -68,7 +72,9 @@ def build_body(request: dict, args: argparse.Namespace) -> dict:
         body[args.max_tokens_param] = int(max_tokens)
     if not args.no_seed:
         body["seed"] = int(request.get("seed") or 0)
-    if args.json_mode:
+    wants_json = args.json_mode == "on" or (
+        args.json_mode == "auto" and request.get("purpose") in JSON_PURPOSES)
+    if wants_json:
         body["response_format"] = {"type": "json_object"}
     return body
 
@@ -155,8 +161,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         choices=["max_tokens", "max_completion_tokens"])
     parser.add_argument("--no-seed", action="store_true",
                         help="omit 'seed' for endpoints that reject it")
-    parser.add_argument("--json-mode", action="store_true",
-                        help="send response_format=json_object (the plan step asks for JSON)")
+    parser.add_argument("--json-mode", choices=["auto", "on", "off"], default="auto",
+                        help="response_format=json_object: auto = only for the plan "
+                             "purposes, on = always, off = never")
     parser.add_argument("--dry-run", action="store_true",
                         help="print the request body and exit; needs no key")
     return parser.parse_args(argv)
