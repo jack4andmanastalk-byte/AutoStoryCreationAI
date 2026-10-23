@@ -116,6 +116,8 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
    `prompt_hashes`, `git_commit`, `protocol_version`, `started_at`, `finished_at`, `cost`.
 3. L1 は全 run に実行する。L2 は L1 を通過した run にだけ実行する（費用のため）。
 4. L3 は層化抽出する（タスク × 系 × 3 ペア、合計 60 ペア以上）。評定者は 2 名以上。
+   判定用の束は `scripts/make_blind_pairs.py` で作る（マーカー・見出し・run id を除去、
+   文字数差 25% 超は除外、a/b は半々にしてシャッフル）。`key.json` は評定者に渡さない。
 5. 結果は `experiments/<id>/results.json` と `note.md` に置く（`experiments/README.md` の規約、`run_experiment.py` の既定出力）。`note.md` には
    **仮説・条件・N・結果・限界**を書く。生の run 出力はコミットしない。
 6. 集計は `scripts/summarize_experiment.py` で行い、平均だけでなく 95% CI と N を出す。

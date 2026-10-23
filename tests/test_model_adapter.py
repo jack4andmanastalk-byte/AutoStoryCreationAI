@@ -181,7 +181,7 @@ def test_an_answer_without_text_is_an_error():
 def test_dry_run_shows_the_body_without_a_key():
     result = subprocess.run(
         [sys.executable, str(SCRIPT), "--model", "gpt-4.1", "--dry-run",
-         "--json-mode", "--max-tokens-param", "max_completion_tokens"],
+         "--json-mode", "on", "--max-tokens-param", "max_completion_tokens"],
         input=json.dumps(request(), ensure_ascii=False), capture_output=True, text=True,
         env={"PATH": "/usr/bin:/bin", "HOME": "/tmp"},
     )
@@ -190,6 +190,25 @@ def test_dry_run_shows_the_body_without_a_key():
     assert body["model"] == "gpt-4.1"
     assert body["max_completion_tokens"] == 2500
     assert body["response_format"] == {"type": "json_object"}
+
+
+def dry_run(payload: dict, *extra: str) -> dict:
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--model", "gpt-4.1", "--dry-run", *extra],
+        input=json.dumps(payload, ensure_ascii=False), capture_output=True, text=True,
+        env={"PATH": "/usr/bin:/bin", "HOME": "/tmp"},
+    )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def test_json_mode_is_on_for_the_plan_purposes_and_off_for_drafts():
+    assert dry_run(request(purpose="plan"))["response_format"] == {"type": "json_object"}
+    assert dry_run(request(purpose="plan-repair"))["response_format"] == {"type": "json_object"}
+    assert "response_format" not in dry_run(request(purpose="draft:ch01"))
+    assert "response_format" not in dry_run(request(purpose="plan"), "--json-mode", "off")
+    assert dry_run(request(purpose="draft:ch01"), "--json-mode", "on")["response_format"] == {
+        "type": "json_object"}
 
 
 def test_seed_can_be_omitted_for_endpoints_that_reject_it():
