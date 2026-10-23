@@ -224,7 +224,7 @@ python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配�
 python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 my_model_adapter.py" --out runs           # 実モデルを接続
 python3 scripts/run_pipeline.py --task t01 --provider command \
-    --command "python3 scripts/chat_operator.py --dir build/operator/pilot"  # 鍵なし
+    --command "python3 scripts/chat_operator.py --dir runs/operator/pilot"  # 鍵なし
 OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 scripts/model_adapter.py --model gpt-4.1" \
     --model gpt-4.1 --model-version 2025-04-14 --out runs       # 版を固定した実モデル
@@ -243,9 +243,14 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
   標準出力には本文だけを返します。`--dry-run` で送信内容を確認でき、`--model-version` を渡すと
   `manifest.json` の `model_version` が固定されます（これが §5 G5 を判定できる唯一の経路）。
   `--json-mode`（既定 `auto`）は plan のときだけ `response_format=json_object` を付けます
+* `--dir` は **`build/` の下に置かないでください**。`build/` はセッションを越えて残らず、
+  `responses/` を失うと**同じ本文をチャットに書き直してもらう**ことになります。
+  `runs/operator/<名前>` は git 管理外ですが残ります
 * `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
   プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
   応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。
+  チャットに貼って返してもらう場合の受け渡しは `scripts/relay_prompts.py` が担当します
+  （`export` でタグ付きの貼り付け用ファイル、`ingest` で返答案の取り込み）
   モデル版を固定できないため **G5 は満たさず**、値は参考値です
   （例: [`experiments/2026-10-pilot-t01-s0s1/`](experiments/2026-10-pilot-t01-s0s1/note.md)）
 * `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon を使う系です

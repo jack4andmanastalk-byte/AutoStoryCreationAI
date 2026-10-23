@@ -16,11 +16,15 @@ The command reads one ``GenerationRequest`` JSON object on stdin and prints
 is missing it exits 3 and says which file to write, so the caller can stop at
 the exact prompt that has no text yet instead of inventing one.
 
+The ``--dir`` must not live under ``build/``: ``build/`` is scratch and is not
+kept across sessions, and losing ``responses/`` means paying for the same text
+twice. ``runs/operator/<name>`` is git-ignored and survives.
+
     # one call, as the pipeline makes it
-    python3 scripts/chat_operator.py --dir build/operator/pilot < request.json
+    python3 scripts/chat_operator.py --dir runs/operator/pilot < request.json
 
     # what is still missing
-    python3 scripts/chat_operator.py --dir build/operator/pilot --status
+    python3 scripts/chat_operator.py --dir runs/operator/pilot --status
 
 Exit codes: 0 ok, 2 bad input, 3 response missing, 4 response is stale
 (the prompt changed after the answer was written, so the text no longer
