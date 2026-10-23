@@ -1,0 +1,5 @@
+foreshadowing:
+  - id: fs-001
+    description: 鍵の在処を示す合図
+    setup: ch01
+    payoff: ch02

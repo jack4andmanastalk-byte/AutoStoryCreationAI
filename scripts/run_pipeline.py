@@ -28,9 +28,10 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
-    CommandProvider, DraftError, PlanError, ProviderError, RunLedger,
-    ScriptedProvider, TaskError, build_plan, build_story, canon_coverage,
-    load_scripted_responses, load_tasks,
+    CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
+    ScriptedProvider, TaskError, VoicePassError, build_plan, build_revision,
+    build_story, build_voice_pass, canon_coverage, load_scripted_responses,
+    load_tasks,
 )
 from asc.story.canon import CanonError, load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
@@ -51,6 +52,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
     parser.add_argument("--canon", help="reuse an existing canon instead of planning")
+    parser.add_argument("--max-rounds", type=int, default=1,
+                        help="revision rounds for s2/s3 (default: 1)")
+    parser.add_argument("--voice", default=None,
+                        help="voice.yaml for the s3 voice pass "
+                             "(default: a generic guide)")
     parser.add_argument("--model", default=None)
     parser.add_argument("--temperature", type=float, default=None,
                         help="default: 0.6 for planning, 0.8 for drafting")
@@ -61,6 +67,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report-only", action="store_true",
                         help="always exit 0 and report the gates (for demos and docs)")
     return parser.parse_args(argv)
+
+
+def _measure_text_dir(text_dir: Path, task) -> dict:
+    """Chars and must_include hits of the final text (after revise/voice)."""
+    import re
+
+    bodies = []
+    for path in sorted(text_dir.iterdir()):
+        if path.is_file() and path.suffix.lower() in {".md", ".txt"}:
+            bodies.append(path.read_text(encoding="utf-8"))
+    joined = "\n\n".join(bodies)
+    chars = len(re.sub(r"\s", "", re.sub(r"\{\{[^{}]*\}\}", "", joined)))
+    hits = {term: term in joined for term in task.must_include}
+    return {"chars": chars,
+            "must_include": {"hits": hits, "rate": round(
+                sum(hits.values()) / len(hits), 3) if hits else 1.0}}
 
 
 def make_provider(args: argparse.Namespace):
@@ -164,7 +186,41 @@ def main(argv: list[str] | None = None) -> int:
         summary["draft"] = draft.as_dict()
         summary["chars"] = draft.chars
 
-    # -- audit ------------------------------------------------------------
+    # -- revise (s2/s3) -----------------------------------------------------
+    if args.system in {"s2", "s3"} and args.stage in {"draft", "all"}:
+        if canon is None:
+            print("error: revision requires a canon (plan first, or --canon)",
+                  file=sys.stderr)
+            return 2
+        try:
+            revision = build_revision(
+                task, provider, ledger, canon, temperature=temperature,
+                seed=args.seed, max_rounds=args.max_rounds,
+            )
+        except RevisionError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            print(f"run: {ledger.path}", file=sys.stderr)
+            return 2
+        summary["revision"] = revision.as_dict()
+
+    # -- voice (s3) ---------------------------------------------------------
+    if args.system == "s3" and args.stage in {"draft", "all"}:
+        try:
+            voice = build_voice_pass(
+                task, provider, ledger, canon, voice_path=args.voice,
+                temperature=temperature, seed=args.seed,
+            )
+        except (VoicePassError, ValueError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            print(f"run: {ledger.path}", file=sys.stderr)
+            return 2
+        summary["voice"] = voice.as_dict()
+
+    # -- final text stats (s2/s3 rewrite the draft, so re-measure) --------
+    if "draft" in summary and args.system in {"s2", "s3"}:
+        summary["final"] = _measure_text_dir(ledger.path / "text", task)
+
+    # -- audit (always against the final text) ------------------------------
     if canon is not None and args.stage in {"draft", "all"}:
         report = audit_texts(ledger.path / "canon", ledger.path / "text")
         ledger.write_json("audit.json", report)
@@ -177,9 +233,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- gates ------------------------------------------------------------
     gates: dict[str, bool] = {}
-    if "draft" in summary:
-        gates["must_include"] = summary["draft"]["must_include"]["rate"] >= 1.0
-        gates["length"] = summary["draft"]["chars"] >= tasks.target_chars[0]
+    text_stats = summary.get("final", summary.get("draft"))
+    if text_stats is not None:
+        gates["must_include"] = text_stats["must_include"]["rate"] >= 1.0
+        gates["length"] = text_stats["chars"] >= tasks.target_chars[0]
     if "audit" in summary:
         gates["no_high_severity"] = summary["audit"]["by_severity"].get("high", 0) == 0
         gates["all_checks_ran"] = summary["audit"]["checks_skipped"] == 0

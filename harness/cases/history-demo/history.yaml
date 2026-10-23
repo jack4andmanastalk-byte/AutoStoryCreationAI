@@ -1,0 +1,49 @@
+# seed-03 の受け入れデモ: 所見 0 件の年表。
+# 知識地図の照合先は harness/cases/demo/canon（人物=aria・boris・celia）。
+eras:
+  - id: founding
+    name: 開闢期
+    begins: 1
+    ends: 100
+  - id: lamp
+    name: 灯火期
+    begins: 101
+    ends: 300
+events:
+  - id: E-01
+    year: 12
+    title: 最初の灯台の点火
+    effect: 岬の航路が夜も使えるようになった。
+    trace: 初代の灯芯が灯台守組合に保管されている。
+    era: founding
+  - id: E-02
+    year: 150
+    title: 鍵の貸借の制度化
+    cause: E-01
+    effect: 無断の貸借が罰せられるようになった。
+    trace: 最古の帳面が組合の蔵に残る。
+    era: lamp
+  - id: E-03
+    year: 290
+    title: 嵐の夜の火の消失
+    cause: E-02
+    effect: 灯りを絶やさない掟ができた。
+    trace: 消えた夜の航海日誌が港に残る。
+    era: lamp
+sources:
+  - id: S-01
+    kind: 帳面
+    holder: 灯台守組合
+    origin: invented
+  - id: S-02
+    kind: 航海日誌
+    holder: 王都の港
+    origin: adapted
+apocrypha: []
+knowledge:
+  aria:
+    knows: [E-01, E-02]
+    unknown: [E-03]
+  boris:
+    knows: [E-01, E-02, E-03]
+    unknown: []

@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan story baseline skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan story story-s2 story-s3 baseline brief world history voice revise calibrate skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -69,6 +69,47 @@ baseline: ## run S0 (single prompt, no canon) for the same task
 	$(RUN) scripts/run_pipeline.py --task t01 --system s0 --out build/runs \
 		--script benchmarks/protocol-v1/fixtures/draft-baseline-demo.json --report-only
 
+story-s2: ## run S2 end to end (S1 + revision) with the scripted fixture
+	$(RUN) scripts/run_pipeline.py --task t01 --system s2 --out build/runs \
+		--script benchmarks/protocol-v1/fixtures/pipeline-s2s3-demo.json --report-only
+
+story-s3: ## run S3 end to end (S2 + voice pass) with the scripted fixture
+	$(RUN) scripts/run_pipeline.py --task t01 --system s3 --out build/runs \
+		--script benchmarks/protocol-v1/fixtures/pipeline-s2s3-demo.json --report-only
+
+brief: ## check the premise-brief demo (good: 0 findings / bad: 6 failed checks)
+	$(RUN) scripts/check_brief.py --brief harness/cases/brief-demo/brief.yaml
+	-$(RUN) scripts/check_brief.py --brief harness/cases/brief-demo/brief-bad.yaml --fail-on none
+
+world: ## check the world-rules demo against the demo canon
+	$(RUN) scripts/check_world.py --world harness/cases/world-demo/world.yaml \
+		--canon harness/cases/demo/canon
+
+history: ## check the history-timeline demo against the demo canon
+	$(RUN) scripts/check_history.py --history harness/cases/history-demo/history.yaml \
+		--canon harness/cases/demo/canon
+
+voice: ## check the voice-style demo (4 seeded findings)
+	-$(RUN) scripts/check_voice.py --voice harness/cases/voice-demo/voice.yaml \
+		--text harness/cases/voice-demo/text --fail-on none
+
+revise: ## run the revision-loop demo (critique -> patch -> re-audit -> compare)
+	$(RUN) scripts/audit_continuity.py --canon harness/cases/revision-demo/canon \
+		--text harness/cases/revision-demo/text --out build/revise/before.json \
+		--fail-on none --quiet
+	$(RUN) scripts/revise.py --mode plan --audit build/revise/before.json \
+		--out build/revise/critique.json --quiet
+	$(RUN) scripts/revise.py --mode apply --text harness/cases/revision-demo/text \
+		--patch harness/cases/revision-demo/patch.json --out build/revise/text --quiet
+	$(RUN) scripts/audit_continuity.py --canon harness/cases/revision-demo/canon \
+		--text build/revise/text --out build/revise/after.json --fail-on none --quiet
+	$(RUN) scripts/revise.py --mode compare --before build/revise/before.json \
+		--after build/revise/after.json
+
+calibrate: ## run the L2/L3 calibration demo (kappa 0.5 fixture)
+	$(RUN) scripts/calibrate_judge.py --labels harness/fixtures/labels-demo \
+		--verdicts harness/fixtures/verdicts-demo.json
+
 plan: ## run only the Plan step (task -> canon)
 	$(RUN) scripts/run_pipeline.py --task t01 --stage plan --out build/runs \
 		--script benchmarks/protocol-v1/fixtures/plan-demo.json
@@ -96,12 +137,14 @@ blind-pairs: ## build provenance-free A/B packets from runs/ (L3 judging)
 	$(RUN) scripts/make_blind_pairs.py --runs-root $(RUNS_ROOT) \
 		--baseline $(BASELINE) --candidate $(CANDIDATE) --out $(PAIRS_OUT)
 
-pilot-model: ## run t01 x seed 0-2 x S0/S1 against a pinned model (needs MODEL + key)
+SYSTEMS       ?= s0 s1
+
+pilot-model: ## run t01 x seed 0-2 x $(SYSTEMS) against a pinned model (needs MODEL + key)
 	@test -n "$(MODEL)" || { echo "error: set MODEL, e.g. make pilot-model MODEL=gpt-4.1"; exit 2; }
 	@test ! -e experiments/$(EXPERIMENT)/results.json || test -n "$(FORCE)" || \
 		{ echo "error: experiments/$(EXPERIMENT)/results.json exists; pick a new id (or FORCE=1 to overwrite)"; exit 2; }
 	$(RUN) scripts/run_experiment.py --id $(EXPERIMENT) --tasks t01 \
-		--systems s0 s1 --seeds 0 1 2 --provider command \
+		--systems $(SYSTEMS) --seeds 0 1 2 --provider command \
 		--command "$(RUN) scripts/model_adapter.py --model $(MODEL) --model-version $(MODEL_VERSION) --base-url $(BASE_URL)" \
 		--model $(MODEL) --model-version $(MODEL_VERSION) \
 		--out experiments/$(EXPERIMENT)
@@ -120,8 +163,11 @@ ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
 protocol-check: ## verify the frozen evaluation protocol and its task set
 	$(RUN) -m pytest tests/test_protocol.py -q
 
-skills-check: ## validate SKILL.md files, run the demo audit and the evaluation tests
-	$(RUN) -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q
+skills-check: ## validate SKILL.md files and run every skill's tests
+	$(RUN) -m pytest tests/test_skills_spec.py tests/test_continuity.py \
+		tests/test_evaluation.py tests/test_premise_brief.py tests/test_world_rules.py \
+		tests/test_history_timeline.py tests/test_voice_style.py tests/test_revision_loop.py \
+		tests/test_pipeline_s2s3.py tests/test_calibration.py -q
 
 clean: ## remove the generated texts and PDFs
 	rm -rf data/raw data/pdf

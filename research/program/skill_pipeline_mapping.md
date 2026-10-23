@@ -281,8 +281,10 @@ CLI は `scripts/run_evaluation.py`、デモは `harness/cases/demo{-baseline}`�
 | --- | --- | --- |
 | P1-a ✅ | `continuity-ledger` の `SKILL.md` と `scripts/audit_continuity.py` | 3 作品以上で、既知の矛盾を再現率高く検出。**デモ 1 作品で 7/7 を検出。作品数の拡充は未了。** |
 | P1-b ✅ | `evaluation-harness` の L1 検査 + ルーブリック v0 | ベースラインとの比較で、改善/悪化を判定できる。**L2 は記録済み判定のみ（実モデル未接続）。** |
-| P1-c | `premise-brief` / `voice-style` | 出力の検証条件を満たし、人間評価でベースライン以上。 |
-| P1-d | 世界観・歴史スキル | 年表・規則の矛盾検出が動く。 |
+| P1-c ✅ | `premise-brief` / `voice-style` / `revision-loop` | 出力の検証条件を満たし、人間評価でベースライン以上。**構造検査のみ実装。意味の判定（L2 較正）は未実施。** |
+| P1-d ✅ | 世界観・歴史スキル（`world-rules` / `history-timeline`） | 年表・規則の矛盾検出が動く。**canon との照合まで。** |
+| P1-e ✅ | S2 改稿・S3 文体のパイプライン配線 | `run_pipeline --system s2/s3` が台本で完走。**実モデル未接続。** |
+| P1-f ✅ | L2/L3 較正の道具（`judge_pairs` / `calibrate_judge`） | κ と判定器一致率の計算。**評定は未実施。** |
 | P2 | 参照資料の昇格（世界観日本 22、キャラ日本 118） | カタログへ正規化し、スキルの `references/` に接続。 |
 | P2 | 外部較正（ConStory/LitBench） | 自前検査器の一致率・再現性を記録。 |
 

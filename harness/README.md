@@ -9,14 +9,21 @@ harness/
 ├── rubrics/
 │   └── story-quality-v0.yaml  # 6 次元のルーブリック（L2）
 ├── fixtures/
-│   └── judgements-demo.json   # 記録済み判定（オフライン再現・テスト用）
+│   ├── judgements-demo.json   # 記録済み判定（オフライン再現・テスト用）
+│   ├── labels-demo/           # 2 名×3 ペアの人間ラベル（κ=0.5 の検証用）
+│   └── verdicts-demo.json     # 盲検ペアへの判定器の verdict（較正用）
 └── cases/
     ├── demo/                  # 矛盾を 7 件仕込んだ 5 章の作品
     │   ├── canon/             # 設定台帳
     │   ├── text/              # 本文（ch01〜ch05）
     │   └── EXPECTED.md        # 期待される検出結果
-    └── demo-baseline/         # 比較用の初稿（要約調・マーカーなし）
-        └── text/
+    ├── demo-baseline/         # 比較用の初稿（要約調・マーカーなし）
+    │   └── text/
+    ├── brief-demo/            # 企画核の良好／不良デモ（premise-brief）
+    ├── world-demo/            # 世界規則の良好／不良デモ（world-rules）
+    ├── history-demo/          # 年表の良好／不良デモ（history-timeline）
+    ├── voice-demo/            # 文体仕様＋2 章（4 件の仕込み、voice-style）
+    └── revision-demo/         # 2 章＋パッチ（改稿で 2 件解消、revision-loop）
 ```
 
 ## 実行

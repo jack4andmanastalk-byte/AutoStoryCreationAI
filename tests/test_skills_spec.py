@@ -30,8 +30,21 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
     return data, body
 
 
-def test_two_skills_exist():
-    assert [p.parent.name for p in SKILLS] == ["continuity-ledger", "evaluation-harness"]
+#: The implemented skills. Adding a skill means adding it here, with its
+#: SKILL.md, references/, demo case and tests — never the name alone.
+EXPECTED_SKILLS = [
+    "continuity-ledger",
+    "evaluation-harness",
+    "history-timeline",
+    "premise-brief",
+    "revision-loop",
+    "voice-style",
+    "world-rules",
+]
+
+
+def test_expected_skills_exist():
+    assert [p.parent.name for p in SKILLS] == EXPECTED_SKILLS
 
 
 @pytest.mark.parametrize("path", SKILLS, ids=lambda p: p.parent.name)

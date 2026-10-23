@@ -1,0 +1,10 @@
+characters:
+  - id: jirou
+    name: ジロウ
+    status: dead
+    status_since: ch01
+    location: 灯台
+  - id: hana
+    name: ハナ
+    status: alive
+    location: 灯台

@@ -1,0 +1,23 @@
+{
+  "_note": "2 件の所見を解消するパッチ。CR-001 は台詞の削除、CR-002 は回収マーカーの追加で解く。",
+  "patches": [
+    {
+      "id": "P-001",
+      "critique_id": "CR-001",
+      "chapter": "ch02.md",
+      "line": 2,
+      "anchor": "ジロウは扉の陰から現れ、「鍵を返せ」と言った。死んだはずの声だった。",
+      "replacement": "扉の陰で、風の音がした気がした。ハナは振り返らなかった。",
+      "reason": "死亡後の発話を除去。回想として残す場合は suppressions への登録が別解。"
+    },
+    {
+      "id": "P-002",
+      "critique_id": "CR-002",
+      "chapter": "ch02.md",
+      "line": 3,
+      "anchor": "ハナは後ずさった。鍵はまだ手の中にあった。",
+      "replacement": "ハナは後ずさった。鍵はまだ手の中にあった。{{foreshadow: fs-001 payoff}}",
+      "reason": "canon が宣言する回収（ch02）を本文に書く。"
+    }
+  ]
+}

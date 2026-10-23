@@ -250,14 +250,23 @@ def test_implemented_seeds_point_at_existing_files(seeds):
     """When a seed claims to be implemented, the files it names must exist."""
     implemented = [s for s in seeds if s["status"] == "implemented"]
     assert {s["id"] for s in implemented} == {
-        "seed-08-continuity-ledger", "seed-13-evaluation-harness"}
+        "seed-01-premise-brief", "seed-02-world-rules",
+        "seed-03-history-timeline", "seed-08-continuity-ledger",
+        "seed-09-voice-style", "seed-10-revision-loop",
+        "seed-13-evaluation-harness"}
     for seed in implemented:
         impl = seed["implementation"]
         assert seed["acceptance_written"], seed["id"]
         assert seed["design_change_ja"], seed["id"]
-        for key in ("skill", "cli", "tests"):
+        for key in ("skill", "cli"):
             assert (ROOT / impl[key]).is_file(), f"{seed['id']}: {impl[key]}"
-        for path in impl["library"]:
-            assert (ROOT / path).is_file(), f"{seed['id']}: {path}"
+        for key in ("library", "tests"):
+            paths = impl[key] if isinstance(impl[key], list) else [impl[key]]
+            for path in paths:
+                assert (ROOT / path).is_file(), f"{seed['id']}: {path}"
+        cases = impl["demo_case"]
+        cases = cases if isinstance(cases, list) else [cases]
+        for case in cases:
+            assert (ROOT / case).is_dir(), f"{seed['id']}: {case}"
     statuses = {s["id"]: s["status"] for s in seeds}
     assert all(v in {"seed", "implemented"} for v in statuses.values())

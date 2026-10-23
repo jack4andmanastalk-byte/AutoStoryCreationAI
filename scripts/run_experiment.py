@@ -28,8 +28,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
-    CommandProvider, DraftError, PlanError, ProviderError, RunLedger, ScriptedProvider,
-    TaskError, build_plan, build_story, git_commit, load_scripted_responses, load_tasks,
+    CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
+    ScriptedProvider, TaskError, VoicePassError, build_plan, build_revision,
+    build_story, build_voice_pass, git_commit, load_scripted_responses, load_tasks,
 )
 from asc.story.canon import load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
@@ -54,14 +55,28 @@ def bootstrap_ci(values: list[float], samples: int = 1000, seed: int = 0) -> lis
     return [round(lo, 3), round(hi, 3)]
 
 
-def run_cell(task, system, seed, provider, tasks, runs_root, temperature) -> dict:
+def _measure_final_text(text_dir, task) -> tuple[int, float]:
+    import re
+
+    bodies = [p.read_text(encoding="utf-8") for p in sorted(text_dir.iterdir())
+              if p.is_file() and p.suffix.lower() in {".md", ".txt"}]
+    joined = "\n\n".join(bodies)
+    chars = len(re.sub(r"\s", "", re.sub(r"\{\{[^{}]*\}\}", "", joined)))
+    hits = [term in joined for term in task.must_include]
+    rate = round(sum(hits) / len(hits), 3) if hits else 1.0
+    return chars, rate
+
+
+def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
+             max_rounds: int = 1) -> dict:
     ledger = RunLedger.create(
         runs_root, task_id=task.id, system=system, seed=seed,
         protocol_version=tasks.protocol, model=provider.model,
         provider=provider.name, temperature=temperature,
     )
     summary: dict = {"run_id": ledger.run_id, "run_dir": str(ledger.path),
-                     "task": task.id, "system": system, "seed": seed}
+                     "task": task.id, "system": system, "seed": seed,
+                     "revision_rounds": None, "voice_applied": False}
     canon = None
     try:
         if system != "s0":
@@ -70,10 +85,23 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature) -> dic
             canon = load_canon(ledger.path / "canon")
         draft = build_story(task, provider, ledger, canon=canon, chapters=tasks.chapters,
                             temperature=temperature, seed=seed)
-        summary["chars"] = draft.chars
-        summary["must_include_rate"] = draft.must_include_hits()["rate"]
         summary["warnings"] = len(draft.warnings)
         summary["injected_markers"] = sum(len(c.injected) for c in draft.chapters)
+        if system in {"s2", "s3"}:
+            revision = build_revision(
+                task, provider, ledger, canon, temperature=temperature,
+                seed=seed, max_rounds=max_rounds)
+            summary["revision_rounds"] = revision.rounds
+            summary["revision_converged"] = revision.converged
+        if system == "s3":
+            voice = build_voice_pass(
+                task, provider, ledger, canon, temperature=temperature, seed=seed)
+            summary["voice_applied"] = True
+            summary["voice_warnings"] = len(voice.warnings)
+        # S2/S3 rewrite the draft: measure the final text, not the first one.
+        chars, rate = _measure_final_text(ledger.path / "text", task)
+        summary["chars"] = chars
+        summary["must_include_rate"] = rate
         if canon is not None:
             report = audit_texts(ledger.path / "canon", ledger.path / "text")
             ledger.write_json("audit.json", report)
@@ -89,7 +117,8 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature) -> dic
         ledger.write_json("cell-summary.json", summary)
         ledger.finish("ok")
         summary["status"] = "ok"
-    except (PlanError, DraftError, ProviderError) as exc:
+    except (PlanError, DraftError, RevisionError, VoicePassError,
+            ProviderError) as exc:
         ledger.fail(str(exc))
         summary["status"] = "failed"
         summary["error"] = str(exc)
@@ -107,7 +136,7 @@ def aggregate(cells: list[dict]) -> dict:
         entry: dict = {"n": len(ok), "failed": len(rows) - len(ok)}
         for metric in ("chars", "must_include_rate", "violations", "high",
                        "checks_skipped", "ced_per_10k_chars", "warnings",
-                       "injected_markers"):
+                       "injected_markers", "revision_rounds"):
             values = [row[metric] for row in ok if row.get(metric) is not None]
             if not values:
                 continue
@@ -120,27 +149,34 @@ def aggregate(cells: list[dict]) -> dict:
         by_system_summary[system] = entry
 
     result: dict = {"by_system": by_system_summary}
-    if "s0" in by_system and "s1" in by_system:
+    if "s0" in by_system:
         base = {(c["task"], c["seed"]): c for c in by_system["s0"] if c["status"] == "ok"}
-        pairs = []
-        for cell in by_system["s1"]:
-            key = (cell["task"], cell["seed"])
-            if cell["status"] == "ok" and key in base:
-                pairs.append((base[key], cell))
-        paired: dict = {"n_pairs": len(pairs)}
-        for metric in ("chars", "must_include_rate", "violations", "high",
-                       "ced_per_10k_chars", "warnings"):
-            diffs = [float(b[metric]) - float(a[metric])
-                     for a, b in pairs if a.get(metric) is not None and b.get(metric) is not None]
-            if diffs:
-                paired[metric] = {
-                    "mean_s1_minus_s0": round(statistics.fmean(diffs), 3),
-                    "ci95": bootstrap_ci(diffs),
-                    "n": len(diffs),
-                    "direction": "lower_is_better" if metric in {
-                        "violations", "high", "ced_per_10k_chars", "warnings"} else "descriptive",
-                }
-        result["paired_vs_s0"] = paired
+        for candidate in ("s1", "s2", "s3"):
+            if candidate not in by_system:
+                continue
+            pairs = []
+            for cell in by_system[candidate]:
+                key = (cell["task"], cell["seed"])
+                if cell["status"] == "ok" and key in base:
+                    pairs.append((base[key], cell))
+            paired: dict = {"n_pairs": len(pairs), "candidate": candidate}
+            for metric in ("chars", "must_include_rate", "violations", "high",
+                           "ced_per_10k_chars", "warnings"):
+                diffs = [float(b[metric]) - float(a[metric])
+                         for a, b in pairs
+                         if a.get(metric) is not None and b.get(metric) is not None]
+                if diffs:
+                    paired[metric] = {
+                        f"mean_{candidate}_minus_s0": round(statistics.fmean(diffs), 3),
+                        "ci95": bootstrap_ci(diffs),
+                        "n": len(diffs),
+                        "direction": "lower_is_better" if metric in {
+                            "violations", "high", "ced_per_10k_chars", "warnings"
+                        } else "descriptive",
+                    }
+            # "paired_vs_s0" stays the s1 comparison (existing notes rely on it).
+            key = "paired_vs_s0" if candidate == "s1" else f"paired_vs_s0_{candidate}"
+            result[key] = paired
     return result
 
 
@@ -174,14 +210,20 @@ def render_note(experiment: dict, results: dict, scripted: bool) -> str:
             f"{cell('must_include_rate')} | {cell('violations')} | {cell('high')} | "
             f"{cell('ced_per_10k_chars')} | {cell('warnings')} |")
 
-    paired = results.get("paired_vs_s0")
-    if paired and paired.get("n_pairs"):
-        lines += ["", f"S0 との対応差（N={paired['n_pairs']}、95% 区間はブートストラップ）", ""]
-        lines += ["| 指標 | 平均差 (S1−S0) | 95% CI | 向き |", "| --- | ---: | --- | --- |"]
+    for key in ("paired_vs_s0", "paired_vs_s0_s2", "paired_vs_s0_s3"):
+        paired = results.get(key)
+        if not paired or not paired.get("n_pairs"):
+            continue
+        candidate = paired.get("candidate", "s1").upper()
+        lines += ["", f"S0 との対応差（{candidate}、N={paired['n_pairs']}、"
+                      "95% 区間はブートストラップ）", ""]
+        lines += [f"| 指標 | 平均差 ({candidate}−S0) | 95% CI | 向き |",
+                  "| --- | ---: | --- | --- |"]
+        mean_key = f"mean_{paired.get('candidate', 's1')}_minus_s0"
         for metric, entry in paired.items():
             if not isinstance(entry, dict):
                 continue
-            lines.append(f"| {metric} | {entry['mean_s1_minus_s0']:+} | "
+            lines.append(f"| {metric} | {entry[mean_key]:+} | "
                          f"{entry['ci95']} | {entry['direction']} |")
 
     lines += [
@@ -215,7 +257,8 @@ def main(argv: list[str] | None = None) -> int:
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--id", required=True, help="experiment id (directory name)")
     parser.add_argument("--tasks", nargs="+", default=["t01"])
-    parser.add_argument("--systems", nargs="+", default=["s0", "s1"], choices=["s0", "s1"])
+    parser.add_argument("--systems", nargs="+", default=["s0", "s1"],
+                        choices=["s0", "s1", "s2", "s3"])
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
     parser.add_argument("--provider", default="scripted", choices=["scripted", "command"])
@@ -230,6 +273,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--model-version", default=None,
                         help="model version to record (with --provider command)")
     parser.add_argument("--temperature", type=float, default=0.8)
+    parser.add_argument("--max-rounds", type=int, default=1,
+                        help="revision rounds for s2/s3 (default: 1)")
     parser.add_argument("--runs", default=str(REPO_ROOT / "runs"))
     parser.add_argument("--out", default=None, help="default: experiments/<id>")
     parser.add_argument("--quiet", action="store_true")
@@ -272,7 +317,8 @@ def main(argv: list[str] | None = None) -> int:
         for system in args.systems:
             for seed in args.seeds:
                 cells.append(run_cell(task, system, seed, providers[system], tasks,
-                                      runs_root, args.temperature))
+                                      runs_root, args.temperature,
+                                      max_rounds=args.max_rounds))
 
     experiment = {
         "id": args.id,

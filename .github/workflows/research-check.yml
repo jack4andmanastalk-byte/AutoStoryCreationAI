@@ -68,7 +68,7 @@ jobs:
       - name: Run the test suite
         run: python -m pytest tests -q
 
-      # The demo cases are the acceptance criteria of the two skills; run them
+      # The demo cases are the acceptance criteria of the seven skills; run them
       # explicitly so a regression names the failing artifact in the log.
       - name: Audit the demo story (continuity-ledger)
         run: |
@@ -77,6 +77,42 @@ jobs:
             --text harness/cases/demo/text \
             --out /tmp/audit.json --ledger /tmp/ledger.json \
             --markdown /tmp/audit.md --fail-on none --quiet
+
+      - name: Check the design demos (premise/world/history/voice)
+        run: |
+          python scripts/check_brief.py --brief harness/cases/brief-demo/brief.yaml --quiet
+          python scripts/check_world.py --world harness/cases/world-demo/world.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_history.py --history harness/cases/history-demo/history.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_voice.py --voice harness/cases/voice-demo/voice.yaml \
+            --text harness/cases/voice-demo/text --fail-on none --quiet
+
+      - name: Run the revision demo (revision-loop)
+        run: |
+          python scripts/audit_continuity.py --canon harness/cases/revision-demo/canon \
+            --text harness/cases/revision-demo/text --out /tmp/rev-before.json \
+            --fail-on none --quiet
+          python scripts/revise.py --mode apply --text harness/cases/revision-demo/text \
+            --patch harness/cases/revision-demo/patch.json --out /tmp/rev-text --quiet
+          python scripts/audit_continuity.py --canon harness/cases/revision-demo/canon \
+            --text /tmp/rev-text --out /tmp/rev-after.json --fail-on none --quiet
+          python scripts/revise.py --mode compare --before /tmp/rev-before.json \
+            --after /tmp/rev-after.json --quiet
+
+      - name: Run the S2/S3 scripted pipeline
+        run: |
+          python scripts/run_pipeline.py --task t01 --system s2 --out /tmp/runs-ci \
+            --script benchmarks/protocol-v1/fixtures/pipeline-s2s3-demo.json \
+            --report-only --quiet
+          python scripts/run_pipeline.py --task t01 --system s3 --out /tmp/runs-ci \
+            --script benchmarks/protocol-v1/fixtures/pipeline-s2s3-demo.json \
+            --report-only --quiet
+
+      - name: Calibrate the demo labels (L2/L3 tooling)
+        run: |
+          python scripts/calibrate_judge.py --labels harness/fixtures/labels-demo \
+            --verdicts harness/fixtures/verdicts-demo.json --quiet
 
       - name: Evaluate the demo story (evaluation-harness)
         run: |
