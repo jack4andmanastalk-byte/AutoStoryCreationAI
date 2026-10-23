@@ -350,3 +350,103 @@ def test_cmd_narou_genre_supplement_end_to_end(tmp_path: Path, monkeypatch):
     assert len(combined) == 11  # 1 Top-300 + 10 supplement, zero overlap
     assert list(tmp_path.rglob("*.pdf")) == []
 
+
+def test_sharded_genre_supplement_and_merge(tmp_path: Path, monkeypatch):
+    cfg = Config(
+        paths=PathsConfig(
+            raw_dir=tmp_path / "raw",
+            pdf_dir=tmp_path / "pdf",
+            dataset_dir=tmp_path / "datasets",
+            cache_dir=tmp_path / "cache",
+            font_dir=tmp_path / "cache" / "fonts",
+        )
+    )
+    cfg.paths.dataset_dir.mkdir(parents=True, exist_ok=True)
+    ranked_w = Work(
+        id="narou:N0001TOP",
+        source="narou",
+        title="既存ランキング1位",
+        url="https://ncode.syosetu.com/n0001top/",
+        genre={"code": 201, "label": "ハイファンタジー〔ファンタジー〕"},
+        text_path=str(cfg.paths.raw_dir / "narou" / "texts" / "N0001TOP.txt"),
+        stats={"episodes": 100, "char_count": 300000, "global_point": 99999},
+        rights={"commercialized": True},
+        extra={"ranking": {"rank": 1, "is_book": True}},
+    )
+    sd.store_works(cfg.paths.dataset_dir / sd.NAROU_RANKED, [ranked_w])
+
+    pool: list[Work] = [ranked_w]
+    for cat_idx, gcode in enumerate((303, 304, 302, 402, 305), start=1):
+        for k in range(1, 3):
+            ncode = f"N{cat_idx}99{k}ZZ"
+            pool.append(
+                Work(
+                    id=f"narou:{ncode}",
+                    source="narou",
+                    title=f"並列シャード作品_{gcode}_{k}",
+                    url=f"https://ncode.syosetu.com/{ncode.lower()}/",
+                    authors=[Author(name=f"作家_{gcode}", role="author")],
+                    genre={"code": gcode, "label": f"ジャンル{gcode}"},
+                    stats={"episodes": 10, "char_count": 50000, "global_point": 14000 - k * 100},
+                    rights={"commercialized": True},
+                    extra={"synopsis": "文庫化発売中"},
+                )
+            )
+    sd.store_works(cfg.paths.dataset_dir / sd.NAROU_WORKS, pool)
+
+    class _DummyNovel:
+        def __init__(self) -> None:
+            self.text = "第一章\n\n　並列シャードのプレーンテキスト本文です。" * 25
+            self.char_count = len(self.text)
+            self.chapters = [{"title": f"第{i}話", "paragraphs": ["本文"]} for i in range(1, 11)]
+            self.origin = "https://ncode.syosetu.com/mock/"
+
+    def _fake_verify(self, candidates, **kwargs):
+        out = []
+        for w in candidates:
+            w.rights["commercialized"] = True
+            w.rights["external_verification"] = {"verified": True, "verified_media": ["book"]}
+            w.extra["ranking"] = {
+                "ranking_score": float(w.stats.get("global_point") or 0),
+                "verified_media": ["book"],
+                "is_book": True,
+                "publisher": "新潮文庫",
+            }
+            out.append(w)
+        return out
+
+    monkeypatch.setattr(sd.NarouSource, "fetch_anime_ncodes", lambda self: set())
+    monkeypatch.setattr(sd.NarouSource, "verify_candidates_external", _fake_verify)
+    monkeypatch.setattr(sd.NarouSource, "verify_web_text_available", lambda self, w: True)
+    monkeypatch.setattr(sd.NarouSource, "fetch_novel_text", lambda self, ncode, **kw: _DummyNovel())
+
+    for c_idx in range(5):
+        sd.cmd_narou_genre_supplement(
+            cfg,
+            argparse.Namespace(
+                per_genre=2,
+                min_per_genre=2,
+                scan_limit_per_genre=40,
+                category_index=c_idx,
+                min_chars=5000,
+                min_episodes=1,
+                request_interval=0.01,
+                verify_web=True,
+                strict_count=True,
+                reuse_existing_dir=None,
+            ),
+        )
+        assert (cfg.paths.dataset_dir / "shards" / f"narou_supplement_cat_{c_idx:02d}.jsonl").exists()
+
+    sd.cmd_narou_merge_supplement_shards(
+        cfg,
+        argparse.Namespace(shard_dir=None, per_genre=2, min_per_genre=2, strict_count=True),
+    )
+    supp = sd.load_works(cfg.paths.dataset_dir / sd.NAROU_GENRE_SUPP)
+    assert len(supp) == 10
+    assert [w.extra["supplement_category"] for w in supp] == [
+        "歴史", "歴史", "推理", "推理", "現代", "現代", "SF", "SF", "ホラー", "ホラー"
+    ]
+    combined = sd.load_works(cfg.paths.dataset_dir / sd.NAROU_ALL_COMM)
+    assert len(combined) == 11
+

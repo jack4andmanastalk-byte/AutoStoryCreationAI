@@ -63,17 +63,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Convert/stage existing plain texts, harvest deep 5-genre metadata, & build 5-genre supplement
+      - name: Stage existing catalogs & Aozora plain texts, & harvest deep 5-genre metadata
         run: |
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
-          PER_GENRE="${{ github.event.inputs.supplement_per_genre || '15' }}"
           POOL=$(( TARGET + 35 ))
           SCAN=$(( TARGET * 3 + 200 ))
 
           mkdir -p data/datasets data/raw/aozora/texts data/raw/narou/texts reuse_existing/datasets
 
-          # 1) Stage existing catalogs & plain texts from `datasets` branch; if any legacy
-          #    PDF lacks a .txt counterpart, stage only that PDF and convert it to .txt.
+          # 1) Stage existing catalogs & Aozora plain texts (or legacy Aozora PDFs for conversion)
           if git fetch --depth=1 --filter=blob:none origin datasets 2>/dev/null; then
             git --work-tree=reuse_existing checkout FETCH_HEAD -- datasets raw/aozora 2>/dev/null || true
             [ -d reuse_existing/datasets ] && cp -rn reuse_existing/datasets/* data/datasets/ 2>/dev/null || true
@@ -83,21 +81,6 @@ jobs:
             python - <<'PY'
           import pathlib, subprocess
 
-          ls_txt = set(
-              pathlib.PurePosixPath(p).stem.lower()
-              for p in subprocess.check_output(
-                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/narou/texts"],
-                  text=True,
-              ).splitlines()
-              if p.endswith(".txt")
-          )
-          ls_pdf = [
-              p for p in subprocess.check_output(
-                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "pdf/narou", "pdf/aozora"],
-                  text=True,
-              ).splitlines()
-              if p.endswith(".pdf")
-          ]
           ls_aozora_txt = set(
               pathlib.PurePosixPath(p).stem.lower()
               for p in subprocess.check_output(
@@ -106,18 +89,15 @@ jobs:
               ).splitlines()
               if p.endswith(".txt")
           )
-          missing_pdfs = []
-          for p in ls_pdf:
-              stem = pathlib.PurePosixPath(p).stem.lower()
-              if p.startswith("pdf/narou/") and stem not in ls_txt:
-                  missing_pdfs.append(p)
-              elif p.startswith("pdf/aozora/") and stem not in ls_aozora_txt:
-                  missing_pdfs.append(p)
-          if missing_pdfs:
-              print(f"Checking out {len(missing_pdfs)} text-less PDFs for conversion to .txt")
-              subprocess.run(["git", "--work-tree=reuse_existing", "checkout", "FETCH_HEAD", "--", *missing_pdfs], check=False)
-          else:
-              print(f"All existing works already have .txt files on datasets branch (narou={len(ls_txt)}, aozora={len(ls_aozora_txt)})")
+          ls_aozora_pdf = [
+              p for p in subprocess.check_output(
+                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "pdf/aozora"],
+                  text=True,
+              ).splitlines()
+              if p.endswith(".pdf") and pathlib.PurePosixPath(p).stem.lower() not in ls_aozora_txt
+          ]
+          if ls_aozora_pdf:
+              subprocess.run(["git", "--work-tree=reuse_existing", "checkout", "FETCH_HEAD", "--", *ls_aozora_pdf], check=False)
           PY
           fi
 
@@ -148,35 +128,12 @@ jobs:
               --request-interval 0.20
           fi
 
-          # 4) Stage any already-downloaded supplement texts from `datasets` branch if present
-          if [ -f data/datasets/narou_commercialized_genre_supplement.jsonl ] && git rev-parse --verify FETCH_HEAD >/dev/null 2>&1; then
-            python - <<'PY'
-          import json, pathlib, subprocess
-          p = pathlib.Path("data/datasets/narou_commercialized_genre_supplement.jsonl")
-          wanted = {json.loads(ln)["id"].split(":", 1)[1].lower() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()}
-          ls_out = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/narou/texts"], text=True).splitlines()
-          matches = [rel for rel in ls_out if pathlib.PurePosixPath(rel).stem.lower() in wanted]
-          if matches:
-              subprocess.run(["git", "--work-tree=reuse_existing", "checkout", "FETCH_HEAD", "--", *matches], check=False)
-          PY
-          fi
-
-          # 5) Externally verify & fetch all episodes (plain text) for 10-15 works per genre
-          #    across 歴史・推理・現代・SF・ホラー (total 50-75 works, zero overlap with Top 300)
-          python scripts/setup_dataset.py narou-genre-supplement \
-            --per-genre "$PER_GENRE" \
-            --min-per-genre 10 \
-            --scan-limit-per-genre 260 \
-            --strict-count \
-            --reuse-existing-dir reuse_existing \
-            --request-interval 0.22
-
-          # 6) Convert any staged text-less PDFs to .txt and delete all PDFs
+          # 4) Convert any text-less Aozora PDFs and purge PDFs from prepared bundle
           git reset -q HEAD || true
           python scripts/setup_dataset.py purge-pdfs --reuse-existing-dir reuse_existing
           rm -rf reuse_existing data/pdf
 
-          tar -czf prepared.tar.gz data/datasets data/raw/aozora data/raw/narou
+          tar -czf prepared.tar.gz data/datasets data/raw/aozora
 
       - name: Upload prepared bundle
         uses: actions/upload-artifact@v4
@@ -315,18 +272,34 @@ jobs:
           print(f"Shard {shard}: {len(existing_cached_ncodes() & wanted_ncodes)}/{len(wanted_ncodes)} assigned texts ready in reuse_cache")
           PY
 
-      - name: Fetch all episodes as plain UTF-8 text (Shard ${{ matrix.shard }}/20, no PDF)
+      - name: Fetch all episodes as plain UTF-8 text (Shard ${{ matrix.shard }}/20, no PDF) & parallel 5-genre supplement
         run: |
           git reset -q HEAD || true
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
+          PER_GENRE="${{ github.event.inputs.supplement_per_genre || '15' }}"
+          SHARD="${{ matrix.shard }}"
+
           python scripts/setup_dataset.py narou-texts \
             --works "$TARGET" \
             --max-episodes 0 \
             --rank-order \
             --reuse-existing-dir reuse_cache \
-            --shard-index "${{ matrix.shard }}" \
+            --shard-index "$SHARD" \
             --shard-count 20 \
             --request-interval 0.22
+
+          # Shards 0..4 run the 5 supplement genres (0=歴史, 1=推理, 2=現代, 3=SF, 4=ホラー)
+          # 5-ways in parallel across 5 separate runner VMs / IPs (~12-20 min per shard).
+          if [ "$SHARD" -lt 5 ]; then
+            python scripts/setup_dataset.py narou-genre-supplement \
+              --category-index "$SHARD" \
+              --per-genre "$PER_GENRE" \
+              --min-per-genre 10 \
+              --scan-limit-per-genre 150 \
+              --strict-count \
+              --reuse-existing-dir reuse_cache \
+              --request-interval 0.22
+          fi
 
       - name: Bundle text-only shard outputs
         run: |
@@ -385,10 +358,17 @@ jobs:
       - name: Merge shards, purge any PDFs, verify counts, & print report
         run: |
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
+          PER_GENRE="${{ github.event.inputs.supplement_per_genre || '15' }}"
           tar -xzf prepared.tar.gz
           for f in shards_dl/shard-*.tar.gz; do
             [ -f "$f" ] && tar -xzf "$f"
           done
+
+          # Merge 5-genre supplement shards first so narou-merge-shards preserves all supplement .txt files
+          python scripts/setup_dataset.py narou-merge-supplement-shards \
+            --per-genre "$PER_GENRE" \
+            --min-per-genre 10 \
+            --strict-count
 
           mkdir -p reuse_cache
           python scripts/setup_dataset.py narou-merge-shards \

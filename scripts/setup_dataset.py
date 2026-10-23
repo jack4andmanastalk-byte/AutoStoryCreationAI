@@ -1436,14 +1436,14 @@ def _build_genre_candidate_queue(
                     break
                 idx += 1
 
-    # Put top 20 novel-length high-point works + all explicit commercialisation-cue works
-    # + remaining high-point works so stealth commercialised hits and bunko hits both verify fast.
+    # Put explicit commercialisation-cue works first + top 15 novel-length high-point works
+    # + remaining high-point works so each genre verifies in ~2-4 minutes.
     seen: Set[str] = set()
     ordered: List[Work] = []
     novel_length_other = [
         w for w in other_flat if (w.stats.get("char_count") or 0) >= 25000
     ]
-    for w in novel_length_other[:20]:
+    for w in novel_length_other[:15]:
         if w.id not in seen:
             seen.add(w.id)
             ordered.append(w)
@@ -1689,10 +1689,20 @@ def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
     pdf_dir = cfg.paths.pdf_dir / "narou"
     raw_dir.mkdir(parents=True, exist_ok=True)
 
+    cat_idx_arg = getattr(args, "category_index", None)
+    if cat_idx_arg is not None:
+        if not (0 <= int(cat_idx_arg) < len(SUPPLEMENT_GENRE_SPECS)):
+            raise SystemExit(
+                f"--category-index must be in 0..{len(SUPPLEMENT_GENRE_SPECS) - 1}, got {cat_idx_arg}"
+            )
+        active_specs = [SUPPLEMENT_GENRE_SPECS[int(cat_idx_arg)]]
+    else:
+        active_specs = SUPPLEMENT_GENRE_SPECS
+
     all_supplement: List[Work] = []
     category_counts: Dict[str, int] = {}
 
-    for spec in SUPPLEMENT_GENRE_SPECS:
+    for spec in active_specs:
         cat_name = spec["category"]
         gcodes = spec["genre_codes"]
         req_non_isekai = bool(spec["require_non_isekai"])
@@ -1722,8 +1732,8 @@ def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
             strict=True,
             check_syuppan=False,
             seed_verifications=seed_verifications,
-            target_verified_pool=per_genre + 8,
-            min_scan_before_stop=min(len(queue), max(55, per_genre * 3 + 10)),
+            target_verified_pool=per_genre + 5,
+            min_scan_before_stop=min(len(queue), max(35, per_genre * 2 + 5)),
         )
         verified.sort(
             key=lambda w: (
@@ -1833,6 +1843,39 @@ def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
             )
         all_supplement.extend(cat_selected)
 
+    if cat_idx_arg is not None:
+        shard_dir = cfg.paths.dataset_dir / "shards"
+        shard_file = shard_dir / f"narou_supplement_cat_{int(cat_idx_arg):02d}.jsonl"
+        store_works(shard_file, all_supplement)
+        LOGGER.info(
+            "wrote %s genre-supplement shard records (category_index=%s) to %s",
+            len(all_supplement),
+            cat_idx_arg,
+            shard_file,
+        )
+        return
+
+    _finalize_genre_supplement_catalogs(
+        cfg,
+        all_supplement,
+        works_path=works_path,
+        per_genre=per_genre,
+        min_per_genre=min_per_genre,
+        category_counts=category_counts,
+        raw_dir=raw_dir,
+    )
+
+
+def _finalize_genre_supplement_catalogs(
+    cfg: Config,
+    all_supplement: Sequence[Work],
+    *,
+    works_path: Path,
+    per_genre: int,
+    min_per_genre: int,
+    category_counts: Dict[str, int],
+    raw_dir: Path,
+) -> None:
     supp_jsonl = cfg.paths.dataset_dir / NAROU_GENRE_SUPP
     supp_md = cfg.paths.dataset_dir / NAROU_GENRE_SUPP_MD
     store_works(supp_jsonl, all_supplement)
@@ -1845,10 +1888,12 @@ def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
         encoding="utf-8",
     )
 
-    merged = {w.id: w for w in works}
-    for w in all_supplement:
-        merged[w.id] = w
-    store_works(works_path, merged.values())
+    if works_path.exists():
+        works = load_works(works_path)
+        merged = {w.id: w for w in works}
+        for w in all_supplement:
+            merged[w.id] = w
+        store_works(works_path, merged.values())
     all_comm_path = _write_combined_commercialized_catalog(cfg)
 
     total_eps = sum(int(w.stats.get("episodes") or 0) for w in all_supplement)
@@ -1877,6 +1922,63 @@ def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         },
+    )
+
+
+def cmd_narou_merge_supplement_shards(cfg: Config, args: argparse.Namespace) -> None:
+    """Merge 5 parallel genre-supplement shard outputs into the unified supplement catalog."""
+    shard_dir = Path(args.shard_dir) if args.shard_dir else (cfg.paths.dataset_dir / "shards")
+    shard_files = sorted(shard_dir.glob("narou_supplement_cat_*.jsonl"))
+    if not shard_files:
+        raise SystemExit(f"no supplement shard files found in {shard_dir}")
+
+    ranked_path = cfg.paths.dataset_dir / NAROU_RANKED
+    exclude_ids = {
+        w.id.lower() for w in (load_works(ranked_path) if ranked_path.exists() else [])
+    }
+    by_cat: Dict[str, List[Work]] = {spec["category"]: [] for spec in SUPPLEMENT_GENRE_SPECS}
+    seen_ids: Set[str] = set(exclude_ids)
+
+    for sfile in shard_files:
+        for w in load_works(sfile):
+            if w.id.lower() in seen_ids:
+                continue
+            if not w.text_path:
+                continue
+            txt_full = REPO_ROOT / w.text_path
+            if not txt_full.exists() or txt_full.stat().st_size <= 128:
+                continue
+            w.extra["text_bytes"] = txt_full.stat().st_size
+            w.pdf_path = None
+            w.extra.pop("pdf_bytes", None)
+            cat = str((w.extra or {}).get("supplement_category") or "")
+            if cat in by_cat and len(by_cat[cat]) < int(args.per_genre):
+                seen_ids.add(w.id.lower())
+                grank = len(by_cat[cat]) + 1
+                w.extra["genre_rank"] = grank
+                w.extra.setdefault("ranking", {})["rank"] = grank
+                by_cat[cat].append(w)
+
+    ordered: List[Work] = []
+    category_counts: Dict[str, int] = {}
+    for spec in SUPPLEMENT_GENRE_SPECS:
+        cat = spec["category"]
+        items = by_cat[cat]
+        category_counts[cat] = len(items)
+        if getattr(args, "strict_count", False) and len(items) < int(args.min_per_genre):
+            raise SystemExit(
+                f"supplement category '{cat}' has {len(items)} works (< min_per_genre={args.min_per_genre})"
+            )
+        ordered.extend(items)
+
+    _finalize_genre_supplement_catalogs(
+        cfg,
+        ordered,
+        works_path=cfg.paths.dataset_dir / NAROU_WORKS,
+        per_genre=int(args.per_genre),
+        min_per_genre=int(args.min_per_genre),
+        category_counts=category_counts,
+        raw_dir=cfg.paths.raw_dir / "narou" / "texts",
     )
 
 
@@ -1977,7 +2079,13 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     p.add_argument("--per-genre", type=int, default=15, help="target works per genre (default 15)")
     p.add_argument("--min-per-genre", type=int, default=10, help="minimum works per genre (default 10)")
-    p.add_argument("--scan-limit-per-genre", type=int, default=260)
+    p.add_argument("--scan-limit-per-genre", type=int, default=150)
+    p.add_argument(
+        "--category-index",
+        type=int,
+        default=None,
+        help="optional 0..4 shard index (0=歴史, 1=推理, 2=現代, 3=SF, 4=ホラー)",
+    )
     p.add_argument("--min-chars", type=int, default=5000)
     p.add_argument("--min-episodes", type=int, default=1)
     p.add_argument("--request-interval", type=float, default=0.22)
@@ -1986,6 +2094,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--strict-count", action="store_true", default=False)
     p.add_argument("--reuse-existing-dir", default=None)
     p.set_defaults(func=cmd_narou_genre_supplement)
+
+    p = sub.add_parser(
+        "narou-merge-supplement-shards",
+        help="merge parallel genre-supplement shard outputs into final supplement catalog",
+    )
+    p.add_argument("--shard-dir", default=None)
+    p.add_argument("--per-genre", type=int, default=15)
+    p.add_argument("--min-per-genre", type=int, default=10)
+    p.add_argument("--strict-count", action="store_true", default=False)
+    p.set_defaults(func=cmd_narou_merge_supplement_shards)
 
     p = sub.add_parser("report", help="print statistics about the generated datasets")
     p.set_defaults(func=cmd_report)
