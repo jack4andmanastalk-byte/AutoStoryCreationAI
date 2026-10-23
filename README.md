@@ -23,8 +23,8 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 | 書誌メタデータ | `data/datasets/aozora_works.jsonl` | 青空文庫の作品（作品ID・タイトル・著者・NDC分類・初出・底本初版発行年・公開URLなど） |
 | 著者メタデータ | `data/datasets/aozora_authors.jsonl` | 作家・翻訳者（人物ID・氏名・ヨミガナ・生没年など） |
 | 書誌メタデータ | `data/datasets/narou_novels.jsonl` | 小説家になろうの作品（Nコード・ジャンル・R15要素・掲載日・話数・文字数・評価指標など） |
-| 外部確認済・商業化200作品メタデータ | `samples/narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` も同梱) | CiNii Books (ISBN)・Wikipedia により書籍・マンガ・アニメ・ゲームの実在を確認した上位 200 作品カタログ（R15 対象作品を含む） |
-| 外部確認済・商業化ランキング表 | `docs/narou_commercialized_ranking.md` (`docs/narou_top100_ranking.md`, `docs/narou_rank101_200_ranking.md`) | 第1位〜第200位の順位・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・PDFサイズ一覧 |
+| 外部確認済・商業化300作品メタデータ | `samples/narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` / `rank201_300` も同梱) | CiNii Books (ISBN)・Wikipedia・Apple Books Japan により書籍・マンガ・アニメ・ゲームの実在を確認した上位 300 作品カタログ（R15 対象作品を含む） |
+| 外部確認済・商業化ランキング表 | `docs/narou_commercialized_ranking.md` (`docs/narou_top100_ranking.md`, `docs/narou_rank101_200_ranking.md`, `docs/narou_rank201_300_ranking.md`) | 第1位〜第300位の順位・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・PDFサイズ一覧 |
 | 整形済み本文 | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いたプレーンテキスト |
 | PDF | `data/pdf/{aozora,narou}/*.pdf` | 表紙（書誌・外部メディア確認・ISBN・ランキング情報）+ 全話本文の A5 PDF（和文組版・禁則処理つき） |
 | ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・生成時刻 |
@@ -55,19 +55,19 @@ make report
 .venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
 .venv/bin/python scripts/fetch_narou_api.py --per-query 500 --order-pages 4
 .venv/bin/python scripts/setup_dataset.py narou-metadata --cached-only
-.venv/bin/python scripts/setup_dataset.py narou-rank --top 200 --strict-external   # 書籍・漫画・アニメ・ゲームの外部実在検証＋ランキング
-.venv/bin/python scripts/setup_dataset.py narou-texts --works 200 --max-episodes 0 --pdf --rank-order
-# さらに続き（例: 第201位〜第300位）をダウンロードする場合:
-.venv/bin/python scripts/setup_dataset.py narou-texts --start-rank 201 --works 100 --max-episodes 0 --pdf --rank-order
+.venv/bin/python scripts/setup_dataset.py narou-rank --top 300 --strict-external   # 書籍・漫画・アニメ・ゲームの外部実在検証＋ランキング
+.venv/bin/python scripts/setup_dataset.py narou-texts --works 300 --max-episodes 0 --pdf --rank-order
+# さらに続き（例: 第301位〜第400位）をダウンロードする場合:
+.venv/bin/python scripts/setup_dataset.py narou-texts --start-rank 301 --works 100 --max-episodes 0 --pdf --rank-order
 ```
 
-事前ビルド済みの全 200 作品・全話（86,007 話 / 約 3.64 億文字 / 1.22 GiB、R15 対象作品を含む外部確認済・商業化作品）PDF セットを取得する場合:
+事前ビルド済みの全 300 作品・全話（120,599 話 / 約 5.04 億文字 / 1.72 GiB、R15 対象作品を含む外部確認済・商業化作品）PDF セットを取得する場合:
 
 ```bash
 # 方法 A: datasets ブランチから展開
 make pull-datasets
 
-# 方法 B: GitHub Release から PDF アーカイブ (第1〜100位 / 第101〜200位) を直接取得
+# 方法 B: GitHub Release から PDF アーカイブ (第1〜100位 / 第101〜200位 / 第201〜300位) を直接取得
 gh release download datasets-narou-commercialized
 ```
 
