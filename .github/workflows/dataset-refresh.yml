@@ -70,20 +70,30 @@ jobs:
           SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39937814414' }}"
 
           reused_prep=0
-          if [ -n "$SEED_RUN" ]; then
+          # Artifacts expire after 7 days, so a pinned run id eventually stops
+          # working. Try it first, then the newest successful runs, then fall
+          # back to a full rebuild (slow but correct).
+          SEED_CANDIDATES=$(printf '%s\n' "$SEED_RUN" \
+            "$(gh run list --workflow dataset-refresh.yml --status success \
+                 --limit 3 --json databaseId --jq '.[].databaseId' 2>/dev/null)" \
+            | awk 'NF && !seen[$0]++')
+          for candidate in $SEED_CANDIDATES; do
+            rm -rf seed_prep
             mkdir -p seed_prep
-            if gh run download "$SEED_RUN" -n prepared-bundle -D seed_prep 2>/dev/null && [ -f seed_prep/prepared.tar.gz ]; then
+            if gh run download "$candidate" -n prepared-bundle -D seed_prep 2>/dev/null \
+               && [ -f seed_prep/prepared.tar.gz ]; then
               tar -xzf seed_prep/prepared.tar.gz
               if [ -f data/datasets/narou_commercialized_ranked.jsonl ]; then
                 READY_CNT=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
                 if [ "$READY_CNT" -ge "$TARGET" ]; then
                   cp seed_prep/prepared.tar.gz prepared.tar.gz
                   reused_prep=1
-                  echo "Reused verified prepared-bundle ($READY_CNT ranked works >= $TARGET) from run $SEED_RUN"
+                  echo "Reused verified prepared-bundle ($READY_CNT ranked works >= $TARGET) from run $candidate"
+                  break
                 fi
               fi
             fi
-          fi
+          done
 
           if [ "$reused_prep" -eq 0 ]; then
             python scripts/setup_dataset.py aozora-metadata
@@ -479,7 +489,13 @@ jobs:
           else
             gh release edit "$TAG_MAIN" --title "$TITLE_MAIN" --notes "$NOTES_MAIN" || true
           fi
-          ASSETS=(
+          # Build the asset list defensively: one entry per file, never twice.
+          # Passing a duplicate name to `gh release upload` aborts the whole
+          # upload with HTTP 422, and because --clobber deletes the old asset
+          # first, the release ends up empty. That is how the Ranks 1-200
+          # bundles disappeared on 2026-10-23: `narou_commercialized_rank*.jsonl`
+          # also matched `narou_commercialized_ranked.jsonl`.
+          CANDIDATES=(
             data/datasets/narou_commercialized_ranked.jsonl
             data/datasets/narou_commercialized_ranking.md
             data/datasets/narou_commercialized_top100.jsonl
@@ -487,39 +503,95 @@ jobs:
             data/datasets/manifest.json
           )
           for tar_f in narou_rank_*_pdfs.tar.gz; do
-            [ -f "$tar_f" ] && ASSETS+=("$tar_f")
+            [ -f "$tar_f" ] && CANDIDATES+=("$tar_f")
           done
+          # `rank[0-9]*` cannot match `ranked.jsonl`; keep the character class.
           for slice_f in data/datasets/narou_commercialized_rank[0-9]*.jsonl data/datasets/narou_rank[0-9]*_ranking.md; do
-            [ -f "$slice_f" ] && ASSETS+=("$slice_f")
+            [ -f "$slice_f" ] && CANDIDATES+=("$slice_f")
           done
+          mapfile -t ASSETS < <(printf '%s\n' "${CANDIDATES[@]}" | awk 'NF && !seen[$0]++')
+          echo "Publishing ${#ASSETS[@]} assets to ${TAG_MAIN}"
+
+          # Preflight before anything is deleted: a missing, empty, oversized or
+          # corrupt file must fail here, not halfway through a destructive
+          # --clobber upload.
           for asset in "${ASSETS[@]}"; do
-            for attempt in 1 2 3; do
-              if gh release upload "$TAG_MAIN" "$asset" --clobber; then
-                break
-              fi
-              [ "$attempt" -eq 3 ] && exit 1
-              sleep 5
-            done
+            size=$(stat -c%s "$asset")
+            if [ "$size" -le 0 ] || [ "$size" -ge 2147483648 ]; then
+              echo "::error::$asset has an unusable size ($size bytes)"
+              exit 1
+            fi
+            case "$asset" in
+              *.tar.gz|*.tgz)
+                if ! gzip -t "$asset"; then
+                  echo "::error::$asset is not a valid gzip archive"
+                  exit 1
+                fi
+                ;;
+            esac
           done
 
-          # Keep `datasets-narou-top100` updated with the strictly verified R15-inclusive Top 100
-          cp narou_rank_001_100_pdfs.tar.gz narou_top100_pdfs.tar.gz
-          TAG_TOP100="datasets-narou-top100"
-          if ! gh release view "$TAG_TOP100" >/dev/null 2>&1; then
-            gh release create "$TAG_TOP100" \
-              --title "Syosetsuka ni Narou Top 100 Commercialized Full-Episode PDFs" \
-              --notes "Ranked Top 100 externally verified commercialized Syosetsuka ni Narou free WEB editions (R15 included)."
-          fi
-          for top_asset in \
-            narou_top100_pdfs.tar.gz \
-            data/datasets/narou_commercialized_top100.jsonl \
-            data/datasets/narou_top100_ranking.md \
-            data/datasets/manifest.json; do
-            for attempt in 1 2 3; do
-              if gh release upload "$TAG_TOP100" "$top_asset" --clobber; then
-                break
+          upload_with_retry() {
+            tag=$1
+            file=$2
+            attempt=1
+            while [ "$attempt" -le 3 ]; do
+              if gh release upload "$tag" "$file" --clobber; then
+                return 0
               fi
-              [ "$attempt" -eq 3 ] && exit 1
-              sleep 5
+              echo "upload attempt $attempt failed: $file"
+              attempt=$(( attempt + 1 ))
+              [ "$attempt" -le 3 ] && sleep 10
             done
+            return 1
+          }
+
+          # Verify remote sizes. A release that silently lost a bundle looks
+          # healthy here but turns every later run into a full cache miss.
+          verify_release() {
+            tag=$1
+            shift
+            bad=0
+            for file in "$@"; do
+              name=$(basename "$file")
+              size=$(stat -c%s "$file")
+              remote=$(gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${tag}" \
+                --jq ".assets[] | select(.name == \"${name}\") | .size" 2>/dev/null)
+              if [ "$remote" != "$size" ]; then
+                echo "::error::${tag}/${name}: local ${size} bytes, remote ${remote:-missing}"
+                bad=1
+              fi
+            done
+            if [ "$bad" -eq 0 ]; then
+              echo "verified $# assets in ${tag}"
+            fi
+            return "$bad"
+          }
+
+          for asset in "${ASSETS[@]}"; do
+            upload_with_retry "$TAG_MAIN" "$asset" || exit 1
           done
+          verify_release "$TAG_MAIN" "${ASSETS[@]}" || exit 1
+
+          # Keep `datasets-narou-top100` updated with the strictly verified R15-inclusive Top 100
+          TAG_TOP100="datasets-narou-top100"
+          if [ -f narou_rank_001_100_pdfs.tar.gz ]; then
+            cp narou_rank_001_100_pdfs.tar.gz narou_top100_pdfs.tar.gz
+            TOP_ASSETS=(
+              narou_top100_pdfs.tar.gz
+              data/datasets/narou_commercialized_top100.jsonl
+              data/datasets/narou_top100_ranking.md
+              data/datasets/manifest.json
+            )
+            if ! gh release view "$TAG_TOP100" >/dev/null 2>&1; then
+              gh release create "$TAG_TOP100" \
+                --title "Syosetsuka ni Narou Top 100 Commercialized Full-Episode PDFs" \
+                --notes "Ranked Top 100 externally verified commercialized Syosetsuka ni Narou free WEB editions (R15 included)."
+            fi
+            for top_asset in "${TOP_ASSETS[@]}"; do
+              upload_with_retry "$TAG_TOP100" "$top_asset" || exit 1
+            done
+            verify_release "$TAG_TOP100" "${TOP_ASSETS[@]}" || exit 1
+          else
+            echo "::warning::no Ranks 1-100 bundle was rendered; skipping ${TAG_TOP100}"
+          fi
