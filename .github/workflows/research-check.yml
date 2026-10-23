@@ -21,6 +21,9 @@ on:
       - "tests/test_continuity.py"
       - "tests/test_evaluation.py"
       - "tests/test_skills_spec.py"
+      - "benchmarks/**"
+      - "docs/protocol.md"
+      - "tests/test_protocol.py"
       - ".github/workflows/research-check.yml"
   pull_request:
     paths:
@@ -61,3 +64,6 @@ jobs:
       # demo case is re-audited so that the seeded defects are still detected.
       - name: Run the skill and harness tests
         run: python -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q
+
+      - name: Run the protocol tests
+        run: python -m pytest tests/test_protocol.py -q

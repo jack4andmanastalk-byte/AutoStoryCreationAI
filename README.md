@@ -156,6 +156,7 @@ gh release download datasets-narou-commercialized
 | [`research/program/skill_pipeline_mapping.md`](research/program/skill_pipeline_mapping.md) | 技法 → `SKILL.md`／評価ハーネスへの変換設計 |
 
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
+| [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
 
 ```bash
 make research         # research/curated/ から統一カタログを再生成
@@ -176,6 +177,7 @@ make research-check   # コミット済みカタログとの差分検査（CI �
 make audit      # デモ作品（矛盾を 7 件仕込んだ 5 章）を監査して、検出結果を表示
 make evaluate   # デモ作品と初稿を比較（L2 は記録済み判定を再生／ネットワーク不要）
 make skills-check   # SKILL.md の仕様検査＋両スキルのテスト
+make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
 ```
 
 * デモ: [`harness/README.md`](harness/README.md)、期待値: `harness/cases/demo/EXPECTED.md`

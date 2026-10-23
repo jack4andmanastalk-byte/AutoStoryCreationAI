@@ -1,0 +1,97 @@
+# Evaluation protocol v1: the frozen task set.
+#
+# Changing anything in this file is a protocol version bump (docs/protocol.md §9).
+# Fields: id, genre, title_ja, logline, must_include, avoid, control, target_chars.
+protocol: protocol-v1
+frozen: 2026-10-23
+target_chars: [3000, 4200]      # a three-chapter short story, 1000-1400 chars each
+chapters: 3
+genres:
+  fantasy: 幻想
+  contemporary: 現代
+  history: 歴史・神話
+controls:
+  fantasy: 幻想・怪奇（青空文庫）
+  contemporary: 近代の私小説・生活（青空文庫）
+  history: 時代小説・説話（青空文庫）
+
+tasks:
+  - id: t01
+    genre: fantasy
+    title_ja: 灯台の鍵
+    logline: 嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。
+    must_include: [灯台, 鍵, 嵐]
+    avoid: [選ばれし者, 古代の予言]
+    control: fantasy
+
+  - id: t02
+    genre: fantasy
+    title_ja: 借り物の影
+    logline: 影を質に入れて金を得た男が、返済期限の朝、自分の影が他人の足元に落ちているのを見る。影を取り戻すには、その他人の影を誰かに引き渡さなければならない。
+    must_include: [影, 質屋, 返済]
+    avoid: [悪魔との契約, 魂を売る]
+    control: fantasy
+
+  - id: t03
+    genre: fantasy
+    title_ja: 三百年前の手紙
+    logline: 封をされたまま届いた手紙の宛先は、まだ生まれていない人物だった。郵便局員は差出人を探すうちに、自分がその手紙を書くことになる未来に近づいていく。
+    must_include: [手紙, 郵便, 消印]
+    avoid: [タイムマシン, 並行世界]
+    control: fantasy
+
+  - id: t04
+    genre: fantasy
+    title_ja: 歌わない鳥
+    logline: 歌を忘れた鳥の代わりに、村人が歌を教える。だが教えた歌は、村人が共有していた記憶を少しずつ書き換えていく。
+    must_include: [鳥, 歌, 記憶]
+    avoid: [魔法の杖, 呪文]
+    control: fantasy
+
+  - id: t05
+    genre: contemporary
+    title_ja: 最終便の車掌
+    logline: 廃線前夜の最終列車で、車掌は乗客の数を何度数えても合わない。彼は時刻表を守るか、数え直すのをやめるかを迫られる。
+    must_include: [列車, 車掌, 切符]
+    avoid: [幽霊の正体, 夢だった]
+    control: contemporary
+
+  - id: t06
+    genre: contemporary
+    title_ja: 母のレシピ
+    logline: 亡くなった母のレシピ通りに作っても味が再現できない娘が、「ひとつまみ」という分量の意味を、台所の道具と記憶から探る。
+    must_include: [台所, レシピ, 計量]
+    avoid: [幽霊が出る, 奇跡]
+    control: contemporary
+
+  - id: t07
+    genre: contemporary
+    title_ja: 二十四時間の図書館
+    logline: 閉館作業中の司書が、返却期限が明日の本の貸出カードに自分の名前を見つける。本を返すべきか、誰が借りたのかを確かめるべきかを選ぶ。
+    must_include: [図書館, 返却, 署名]
+    avoid: [夢オチ, タイムリープ]
+    control: contemporary
+
+  - id: t08
+    genre: history
+    title_ja: 渡し守の帳面
+    logline: 渡し守は、乗せた人数と降ろした人数を帳面に付ける。ある夜、帳面の数字が合わないまま、対岸で待つ者がいると告げられる。
+    must_include: [川, 舟, 帳面]
+    avoid: [神の声, 生贄]
+    control: history
+
+  - id: t09
+    genre: history
+    title_ja: 火の番
+    logline: 消してはいけない火を守る番人が、火を消さずに村を救う方法を探す。村人は火を分けることを求め、番人は手順を破ることになる。
+    must_include: [火, 見張り, 村]
+    avoid: [生贄, 予言]
+    control: history
+
+  - id: t10
+    genre: history
+    title_ja: 記録係の誤字
+    logline: 王の年代記を写す記録係が、写すたびに年号が変わることに気づく。誤字を直すことは、記録を守ることになるのか、書き換えることになるのか。
+    must_include: [年代記, 筆, 年号]
+    avoid: [王の暗殺, 陰謀]
+    control: history

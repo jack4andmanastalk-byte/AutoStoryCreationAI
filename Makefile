@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate skills-check clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate skills-check protocol-check clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -58,6 +58,9 @@ evaluate: ## run the evaluation harness on the demo story (L1 + recorded L2)
 		--canon harness/cases/demo/canon --patterns harness/patterns.yaml \
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/eval/demo \
 		--report-only
+
+protocol-check: ## verify the frozen evaluation protocol and its task set
+	$(RUN) -m pytest tests/test_protocol.py -q
 
 skills-check: ## validate SKILL.md files, run the demo audit and the evaluation tests
 	$(RUN) -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q
