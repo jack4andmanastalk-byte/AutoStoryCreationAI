@@ -77,6 +77,15 @@ def test_ci_can_move_to_another_runner_without_a_code_change(ci):
     assert "ubuntu-latest" in runs_on
 
 
+def test_actions_use_current_majors(ci):
+    """Node 20 deprecation warnings appeared on checkout@v4 / setup-python@v5."""
+    uses = [step["uses"] for step in ci["jobs"]["check"]["steps"] if "uses" in step]
+    checkout = next(u for u in uses if u.startswith("actions/checkout@"))
+    setup = next(u for u in uses if u.startswith("actions/setup-python@"))
+    assert int(checkout.split("@v")[1]) >= 5
+    assert int(setup.split("@v")[1]) >= 6
+
+
 def test_ci_runs_the_whole_test_suite(ci):
     steps = ci["jobs"]["check"]["steps"]
     commands = " ".join(step.get("run", "") for step in steps)
@@ -161,3 +170,6 @@ def test_docs_describe_the_budget():
     # the billing incident and the arithmetic behind the schedule change
     assert "2,000" in text
     assert "700" in text
+    # and the resolution: the repository is public, so hosted minutes are free
+    assert "公開" in text
+    assert "17 秒" in text
