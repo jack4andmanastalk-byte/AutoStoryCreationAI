@@ -1,0 +1,567 @@
+Game narrative research catalog — offline validation
+Release: 1.0 / 2026-10-23 Asia/Tokyo
+
+Sources: 61 (included 55, supplementary 3, excluded 3)
+Practices: 42
+Included review scope: {'selected_sections': 47, 'full_text': 7, 'abstract_only': 1}
+
+Checks passed: 552
+Failures: 0
+
+Scope: schema, UTF-8/JSONL, IDs, crossreferences, citations, dates, URL shape, evidence-scope safeguards.
+Not checked: current remote-link liveness, independent re-reading of every claim, causal efficacy, or US-wide coverage.
+Source texts/PDFs/images are not part of the deliverable archive.
+
+Detailed checks:
+PASS: sources.jsonl: UTF-8 without BOM
+PASS: sources.jsonl: terminal newline
+PASS: sources.jsonl: no blank records
+PASS: practices.jsonl: UTF-8 without BOM
+PASS: practices.jsonl: terminal newline
+PASS: practices.jsonl: no blank records
+PASS: sources: JSON Schema and formats valid
+PASS: practices: JSON Schema and formats valid
+PASS: 61 candidate sources
+PASS: 42 practice records
+PASS: source IDs unique, complete, stable order S001–S061
+PASS: practice IDs unique, complete, stable order P01–P42
+PASS: inclusion counts 55 / 3 / 3
+PASS: supplementary source identities
+PASS: excluded source identities
+PASS: included review extents 7 / 47 / 1
+PASS: P01: source IDs exist
+PASS: P01: no excluded/index-only source used as practice evidence
+PASS: P01: reverse source links agree
+PASS: P02: source IDs exist
+PASS: P02: no excluded/index-only source used as practice evidence
+PASS: P02: reverse source links agree
+PASS: P03: source IDs exist
+PASS: P03: no excluded/index-only source used as practice evidence
+PASS: P03: reverse source links agree
+PASS: P04: source IDs exist
+PASS: P04: no excluded/index-only source used as practice evidence
+PASS: P04: reverse source links agree
+PASS: P05: source IDs exist
+PASS: P05: no excluded/index-only source used as practice evidence
+PASS: P05: reverse source links agree
+PASS: P06: source IDs exist
+PASS: P06: no excluded/index-only source used as practice evidence
+PASS: P06: reverse source links agree
+PASS: P07: source IDs exist
+PASS: P07: no excluded/index-only source used as practice evidence
+PASS: P07: reverse source links agree
+PASS: P08: source IDs exist
+PASS: P08: no excluded/index-only source used as practice evidence
+PASS: P08: reverse source links agree
+PASS: P09: source IDs exist
+PASS: P09: no excluded/index-only source used as practice evidence
+PASS: P09: reverse source links agree
+PASS: P10: source IDs exist
+PASS: P10: no excluded/index-only source used as practice evidence
+PASS: P10: reverse source links agree
+PASS: P11: source IDs exist
+PASS: P11: no excluded/index-only source used as practice evidence
+PASS: P11: reverse source links agree
+PASS: P12: source IDs exist
+PASS: P12: no excluded/index-only source used as practice evidence
+PASS: P12: reverse source links agree
+PASS: P13: source IDs exist
+PASS: P13: no excluded/index-only source used as practice evidence
+PASS: P13: reverse source links agree
+PASS: P14: source IDs exist
+PASS: P14: no excluded/index-only source used as practice evidence
+PASS: P14: reverse source links agree
+PASS: P15: source IDs exist
+PASS: P15: no excluded/index-only source used as practice evidence
+PASS: P15: reverse source links agree
+PASS: P16: source IDs exist
+PASS: P16: no excluded/index-only source used as practice evidence
+PASS: P16: reverse source links agree
+PASS: P17: source IDs exist
+PASS: P17: no excluded/index-only source used as practice evidence
+PASS: P17: reverse source links agree
+PASS: P18: source IDs exist
+PASS: P18: no excluded/index-only source used as practice evidence
+PASS: P18: reverse source links agree
+PASS: P19: source IDs exist
+PASS: P19: no excluded/index-only source used as practice evidence
+PASS: P19: reverse source links agree
+PASS: P20: source IDs exist
+PASS: P20: no excluded/index-only source used as practice evidence
+PASS: P20: reverse source links agree
+PASS: P21: source IDs exist
+PASS: P21: no excluded/index-only source used as practice evidence
+PASS: P21: reverse source links agree
+PASS: P22: source IDs exist
+PASS: P22: no excluded/index-only source used as practice evidence
+PASS: P22: reverse source links agree
+PASS: P23: source IDs exist
+PASS: P23: no excluded/index-only source used as practice evidence
+PASS: P23: reverse source links agree
+PASS: P24: source IDs exist
+PASS: P24: no excluded/index-only source used as practice evidence
+PASS: P24: reverse source links agree
+PASS: P25: source IDs exist
+PASS: P25: no excluded/index-only source used as practice evidence
+PASS: P25: reverse source links agree
+PASS: P26: source IDs exist
+PASS: P26: no excluded/index-only source used as practice evidence
+PASS: P26: reverse source links agree
+PASS: P27: source IDs exist
+PASS: P27: no excluded/index-only source used as practice evidence
+PASS: P27: reverse source links agree
+PASS: P28: source IDs exist
+PASS: P28: no excluded/index-only source used as practice evidence
+PASS: P28: reverse source links agree
+PASS: P29: source IDs exist
+PASS: P29: no excluded/index-only source used as practice evidence
+PASS: P29: reverse source links agree
+PASS: P30: source IDs exist
+PASS: P30: no excluded/index-only source used as practice evidence
+PASS: P30: reverse source links agree
+PASS: P31: source IDs exist
+PASS: P31: no excluded/index-only source used as practice evidence
+PASS: P31: reverse source links agree
+PASS: P32: source IDs exist
+PASS: P32: no excluded/index-only source used as practice evidence
+PASS: P32: reverse source links agree
+PASS: P33: source IDs exist
+PASS: P33: no excluded/index-only source used as practice evidence
+PASS: P33: reverse source links agree
+PASS: P34: source IDs exist
+PASS: P34: no excluded/index-only source used as practice evidence
+PASS: P34: reverse source links agree
+PASS: P35: source IDs exist
+PASS: P35: no excluded/index-only source used as practice evidence
+PASS: P35: reverse source links agree
+PASS: P36: source IDs exist
+PASS: P36: no excluded/index-only source used as practice evidence
+PASS: P36: reverse source links agree
+PASS: P37: source IDs exist
+PASS: P37: no excluded/index-only source used as practice evidence
+PASS: P37: reverse source links agree
+PASS: P38: source IDs exist
+PASS: P38: no excluded/index-only source used as practice evidence
+PASS: P38: reverse source links agree
+PASS: P39: source IDs exist
+PASS: P39: no excluded/index-only source used as practice evidence
+PASS: P39: reverse source links agree
+PASS: P40: source IDs exist
+PASS: P40: no excluded/index-only source used as practice evidence
+PASS: P40: reverse source links agree
+PASS: P41: source IDs exist
+PASS: P41: no excluded/index-only source used as practice evidence
+PASS: P41: reverse source links agree
+PASS: P42: source IDs exist
+PASS: P42: no excluded/index-only source used as practice evidence
+PASS: P42: reverse source links agree
+PASS: all source-to-practice backreferences agree
+PASS: all PDCA mappings explicitly analytical
+PASS: synthesized recommendations explicitly identified
+PASS: S001: publication date parses
+PASS: S001: publication precision matches
+PASS: S001: publication not later than access cutoff
+PASS: S001: access date and timezone correct
+PASS: S001: url has valid HTTP(S) shape
+PASS: S001: resolved_url has valid HTTP(S) shape
+PASS: S001: doi_url has valid HTTP(S) shape
+PASS: S001: DOI and DOI URL agree
+PASS: S002: publication date parses
+PASS: S002: publication precision matches
+PASS: S002: publication not later than access cutoff
+PASS: S002: access date and timezone correct
+PASS: S002: url has valid HTTP(S) shape
+PASS: S002: resolved_url has valid HTTP(S) shape
+PASS: S002: doi_url has valid HTTP(S) shape
+PASS: S002: DOI and DOI URL agree
+PASS: S003: publication date parses
+PASS: S003: publication precision matches
+PASS: S003: access date and timezone correct
+PASS: S003: url has valid HTTP(S) shape
+PASS: S003: resolved_url has valid HTTP(S) shape
+PASS: S004: publication date parses
+PASS: S004: publication precision matches
+PASS: S004: access date and timezone correct
+PASS: S004: url has valid HTTP(S) shape
+PASS: S004: resolved_url has valid HTTP(S) shape
+PASS: S005: publication date parses
+PASS: S005: publication precision matches
+PASS: S005: access date and timezone correct
+PASS: S005: url has valid HTTP(S) shape
+PASS: S005: resolved_url has valid HTTP(S) shape
+PASS: S006: publication date parses
+PASS: S006: publication precision matches
+PASS: S006: access date and timezone correct
+PASS: S006: url has valid HTTP(S) shape
+PASS: S006: resolved_url has valid HTTP(S) shape
+PASS: S007: publication date parses
+PASS: S007: publication precision matches
+PASS: S007: access date and timezone correct
+PASS: S007: url has valid HTTP(S) shape
+PASS: S007: resolved_url has valid HTTP(S) shape
+PASS: S008: publication date parses
+PASS: S008: publication precision matches
+PASS: S008: access date and timezone correct
+PASS: S008: url has valid HTTP(S) shape
+PASS: S008: resolved_url has valid HTTP(S) shape
+PASS: S009: publication date parses
+PASS: S009: publication precision matches
+PASS: S009: publication not later than access cutoff
+PASS: S009: access date and timezone correct
+PASS: S009: url has valid HTTP(S) shape
+PASS: S009: resolved_url has valid HTTP(S) shape
+PASS: S010: publication date parses
+PASS: S010: publication precision matches
+PASS: S010: publication not later than access cutoff
+PASS: S010: access date and timezone correct
+PASS: S010: url has valid HTTP(S) shape
+PASS: S010: resolved_url has valid HTTP(S) shape
+PASS: S011: publication date parses
+PASS: S011: publication precision matches
+PASS: S011: access date and timezone correct
+PASS: S011: url has valid HTTP(S) shape
+PASS: S011: resolved_url has valid HTTP(S) shape
+PASS: S012: publication date parses
+PASS: S012: publication precision matches
+PASS: S012: publication not later than access cutoff
+PASS: S012: modification not later than cutoff
+PASS: S012: modification not before publication
+PASS: S012: access date and timezone correct
+PASS: S012: url has valid HTTP(S) shape
+PASS: S012: resolved_url has valid HTTP(S) shape
+PASS: S013: publication date parses
+PASS: S013: publication precision matches
+PASS: S013: publication not later than access cutoff
+PASS: S013: access date and timezone correct
+PASS: S013: url has valid HTTP(S) shape
+PASS: S013: resolved_url has valid HTTP(S) shape
+PASS: S014: publication date parses
+PASS: S014: publication precision matches
+PASS: S014: publication not later than access cutoff
+PASS: S014: modification not later than cutoff
+PASS: S014: modification not before publication
+PASS: S014: access date and timezone correct
+PASS: S014: url has valid HTTP(S) shape
+PASS: S014: resolved_url has valid HTTP(S) shape
+PASS: S015: publication date parses
+PASS: S015: publication precision matches
+PASS: S015: publication not later than access cutoff
+PASS: S015: access date and timezone correct
+PASS: S015: url has valid HTTP(S) shape
+PASS: S015: resolved_url has valid HTTP(S) shape
+PASS: S016: publication date parses
+PASS: S016: publication precision matches
+PASS: S016: publication not later than access cutoff
+PASS: S016: access date and timezone correct
+PASS: S016: url has valid HTTP(S) shape
+PASS: S016: resolved_url has valid HTTP(S) shape
+PASS: S017: publication date parses
+PASS: S017: publication precision matches
+PASS: S017: publication not later than access cutoff
+PASS: S017: access date and timezone correct
+PASS: S017: url has valid HTTP(S) shape
+PASS: S017: resolved_url has valid HTTP(S) shape
+PASS: S018: publication date parses
+PASS: S018: publication precision matches
+PASS: S018: publication not later than access cutoff
+PASS: S018: access date and timezone correct
+PASS: S018: url has valid HTTP(S) shape
+PASS: S018: resolved_url has valid HTTP(S) shape
+PASS: S018: doi_url has valid HTTP(S) shape
+PASS: S018: DOI and DOI URL agree
+PASS: S019: publication date parses
+PASS: S019: publication precision matches
+PASS: S019: publication not later than access cutoff
+PASS: S019: modification not later than cutoff
+PASS: S019: modification not before publication
+PASS: S019: access date and timezone correct
+PASS: S019: url has valid HTTP(S) shape
+PASS: S019: resolved_url has valid HTTP(S) shape
+PASS: S020: publication date parses
+PASS: S020: publication precision matches
+PASS: S020: access date and timezone correct
+PASS: S020: url has valid HTTP(S) shape
+PASS: S020: resolved_url has valid HTTP(S) shape
+PASS: S021: publication date parses
+PASS: S021: publication precision matches
+PASS: S021: access date and timezone correct
+PASS: S021: url has valid HTTP(S) shape
+PASS: S021: resolved_url has valid HTTP(S) shape
+PASS: S022: publication date parses
+PASS: S022: publication precision matches
+PASS: S022: access date and timezone correct
+PASS: S022: url has valid HTTP(S) shape
+PASS: S022: resolved_url has valid HTTP(S) shape
+PASS: S022: version_url has valid HTTP(S) shape
+PASS: S023: publication date parses
+PASS: S023: publication precision matches
+PASS: S023: access date and timezone correct
+PASS: S023: url has valid HTTP(S) shape
+PASS: S023: resolved_url has valid HTTP(S) shape
+PASS: S024: publication date parses
+PASS: S024: publication precision matches
+PASS: S024: publication not later than access cutoff
+PASS: S024: access date and timezone correct
+PASS: S024: url has valid HTTP(S) shape
+PASS: S024: resolved_url has valid HTTP(S) shape
+PASS: S025: publication date parses
+PASS: S025: publication precision matches
+PASS: S025: publication not later than access cutoff
+PASS: S025: modification not later than cutoff
+PASS: S025: modification not before publication
+PASS: S025: access date and timezone correct
+PASS: S025: url has valid HTTP(S) shape
+PASS: S025: resolved_url has valid HTTP(S) shape
+PASS: S026: publication date parses
+PASS: S026: publication precision matches
+PASS: S026: access date and timezone correct
+PASS: S026: url has valid HTTP(S) shape
+PASS: S026: resolved_url has valid HTTP(S) shape
+PASS: S027: publication date parses
+PASS: S027: publication precision matches
+PASS: S027: publication not later than access cutoff
+PASS: S027: modification not later than cutoff
+PASS: S027: modification not before publication
+PASS: S027: access date and timezone correct
+PASS: S027: url has valid HTTP(S) shape
+PASS: S027: resolved_url has valid HTTP(S) shape
+PASS: S028: publication date parses
+PASS: S028: publication precision matches
+PASS: S028: publication not later than access cutoff
+PASS: S028: access date and timezone correct
+PASS: S028: url has valid HTTP(S) shape
+PASS: S028: resolved_url has valid HTTP(S) shape
+PASS: S029: publication date parses
+PASS: S029: publication precision matches
+PASS: S029: publication not later than access cutoff
+PASS: S029: access date and timezone correct
+PASS: S029: url has valid HTTP(S) shape
+PASS: S029: resolved_url has valid HTTP(S) shape
+PASS: S030: publication date parses
+PASS: S030: publication precision matches
+PASS: S030: access date and timezone correct
+PASS: S030: url has valid HTTP(S) shape
+PASS: S030: resolved_url has valid HTTP(S) shape
+PASS: S030: no blocked/index text hash mislabelled as evidence
+PASS: S031: publication date parses
+PASS: S031: publication precision matches
+PASS: S031: publication not later than access cutoff
+PASS: S031: modification not later than cutoff
+PASS: S031: modification not before publication
+PASS: S031: access date and timezone correct
+PASS: S031: url has valid HTTP(S) shape
+PASS: S031: resolved_url has valid HTTP(S) shape
+PASS: S032: publication date parses
+PASS: S032: publication precision matches
+PASS: S032: publication not later than access cutoff
+PASS: S032: access date and timezone correct
+PASS: S032: url has valid HTTP(S) shape
+PASS: S032: resolved_url has valid HTTP(S) shape
+PASS: S033: publication date parses
+PASS: S033: publication precision matches
+PASS: S033: publication not later than access cutoff
+PASS: S033: access date and timezone correct
+PASS: S033: url has valid HTTP(S) shape
+PASS: S033: resolved_url has valid HTTP(S) shape
+PASS: S034: publication date parses
+PASS: S034: publication precision matches
+PASS: S034: publication not later than access cutoff
+PASS: S034: modification not later than cutoff
+PASS: S034: modification not before publication
+PASS: S034: access date and timezone correct
+PASS: S034: url has valid HTTP(S) shape
+PASS: S034: resolved_url has valid HTTP(S) shape
+PASS: S035: publication date parses
+PASS: S035: publication precision matches
+PASS: S035: publication not later than access cutoff
+PASS: S035: access date and timezone correct
+PASS: S035: url has valid HTTP(S) shape
+PASS: S035: resolved_url has valid HTTP(S) shape
+PASS: S036: publication date parses
+PASS: S036: publication precision matches
+PASS: S036: publication not later than access cutoff
+PASS: S036: access date and timezone correct
+PASS: S036: url has valid HTTP(S) shape
+PASS: S036: resolved_url has valid HTTP(S) shape
+PASS: S037: publication date parses
+PASS: S037: publication precision matches
+PASS: S037: publication not later than access cutoff
+PASS: S037: modification not later than cutoff
+PASS: S037: modification not before publication
+PASS: S037: access date and timezone correct
+PASS: S037: url has valid HTTP(S) shape
+PASS: S037: resolved_url has valid HTTP(S) shape
+PASS: S038: publication date parses
+PASS: S038: publication precision matches
+PASS: S038: publication not later than access cutoff
+PASS: S038: modification not later than cutoff
+PASS: S038: modification not before publication
+PASS: S038: access date and timezone correct
+PASS: S038: url has valid HTTP(S) shape
+PASS: S038: resolved_url has valid HTTP(S) shape
+PASS: S039: publication date parses
+PASS: S039: publication precision matches
+PASS: S039: publication not later than access cutoff
+PASS: S039: access date and timezone correct
+PASS: S039: url has valid HTTP(S) shape
+PASS: S039: resolved_url has valid HTTP(S) shape
+PASS: S040: publication date parses
+PASS: S040: publication precision matches
+PASS: S040: modification not later than cutoff
+PASS: S040: access date and timezone correct
+PASS: S040: url has valid HTTP(S) shape
+PASS: S040: resolved_url has valid HTTP(S) shape
+PASS: S041: publication date parses
+PASS: S041: publication precision matches
+PASS: S041: access date and timezone correct
+PASS: S041: url has valid HTTP(S) shape
+PASS: S041: resolved_url has valid HTTP(S) shape
+PASS: S041: version_url has valid HTTP(S) shape
+PASS: S042: publication date parses
+PASS: S042: publication precision matches
+PASS: S042: access date and timezone correct
+PASS: S042: url has valid HTTP(S) shape
+PASS: S042: resolved_url has valid HTTP(S) shape
+PASS: S043: publication date parses
+PASS: S043: publication precision matches
+PASS: S043: publication not later than access cutoff
+PASS: S043: access date and timezone correct
+PASS: S043: url has valid HTTP(S) shape
+PASS: S043: resolved_url has valid HTTP(S) shape
+PASS: S044: publication date parses
+PASS: S044: publication precision matches
+PASS: S044: modification not later than cutoff
+PASS: S044: access date and timezone correct
+PASS: S044: url has valid HTTP(S) shape
+PASS: S044: resolved_url has valid HTTP(S) shape
+PASS: S045: publication date parses
+PASS: S045: publication precision matches
+PASS: S045: access date and timezone correct
+PASS: S045: url has valid HTTP(S) shape
+PASS: S045: resolved_url has valid HTTP(S) shape
+PASS: S045: doi_url has valid HTTP(S) shape
+PASS: S045: DOI and DOI URL agree
+PASS: S046: publication date parses
+PASS: S046: publication precision matches
+PASS: S046: publication not later than access cutoff
+PASS: S046: access date and timezone correct
+PASS: S046: url has valid HTTP(S) shape
+PASS: S046: resolved_url has valid HTTP(S) shape
+PASS: S047: publication date parses
+PASS: S047: publication precision matches
+PASS: S047: access date and timezone correct
+PASS: S047: url has valid HTTP(S) shape
+PASS: S047: resolved_url has valid HTTP(S) shape
+PASS: S048: publication date parses
+PASS: S048: publication precision matches
+PASS: S048: access date and timezone correct
+PASS: S048: url has valid HTTP(S) shape
+PASS: S048: resolved_url has valid HTTP(S) shape
+PASS: S048: no blocked/index text hash mislabelled as evidence
+PASS: S049: publication date parses
+PASS: S049: publication precision matches
+PASS: S049: access date and timezone correct
+PASS: S049: url has valid HTTP(S) shape
+PASS: S049: resolved_url has valid HTTP(S) shape
+PASS: S049: no blocked/index text hash mislabelled as evidence
+PASS: S050: publication date parses
+PASS: S050: publication precision matches
+PASS: S050: publication not later than access cutoff
+PASS: S050: modification not later than cutoff
+PASS: S050: modification not before publication
+PASS: S050: access date and timezone correct
+PASS: S050: url has valid HTTP(S) shape
+PASS: S050: resolved_url has valid HTTP(S) shape
+PASS: S051: publication date parses
+PASS: S051: publication precision matches
+PASS: S051: access date and timezone correct
+PASS: S051: url has valid HTTP(S) shape
+PASS: S051: resolved_url has valid HTTP(S) shape
+PASS: S051: no blocked/index text hash mislabelled as evidence
+PASS: S052: publication date parses
+PASS: S052: publication precision matches
+PASS: S052: access date and timezone correct
+PASS: S052: url has valid HTTP(S) shape
+PASS: S052: resolved_url has valid HTTP(S) shape
+PASS: S052: no blocked/index text hash mislabelled as evidence
+PASS: S053: publication date parses
+PASS: S053: publication precision matches
+PASS: S053: access date and timezone correct
+PASS: S053: url has valid HTTP(S) shape
+PASS: S053: resolved_url has valid HTTP(S) shape
+PASS: S054: publication date parses
+PASS: S054: publication precision matches
+PASS: S054: publication not later than access cutoff
+PASS: S054: modification not later than cutoff
+PASS: S054: modification not before publication
+PASS: S054: access date and timezone correct
+PASS: S054: url has valid HTTP(S) shape
+PASS: S054: resolved_url has valid HTTP(S) shape
+PASS: S055: publication date parses
+PASS: S055: publication precision matches
+PASS: S055: access date and timezone correct
+PASS: S055: url has valid HTTP(S) shape
+PASS: S055: resolved_url has valid HTTP(S) shape
+PASS: S056: publication date parses
+PASS: S056: publication precision matches
+PASS: S056: publication not later than access cutoff
+PASS: S056: access date and timezone correct
+PASS: S056: url has valid HTTP(S) shape
+PASS: S056: resolved_url has valid HTTP(S) shape
+PASS: S057: publication date parses
+PASS: S057: publication precision matches
+PASS: S057: publication not later than access cutoff
+PASS: S057: access date and timezone correct
+PASS: S057: url has valid HTTP(S) shape
+PASS: S057: resolved_url has valid HTTP(S) shape
+PASS: S058: publication date parses
+PASS: S058: publication precision matches
+PASS: S058: publication not later than access cutoff
+PASS: S058: modification not later than cutoff
+PASS: S058: modification not before publication
+PASS: S058: access date and timezone correct
+PASS: S058: url has valid HTTP(S) shape
+PASS: S058: resolved_url has valid HTTP(S) shape
+PASS: S059: publication date parses
+PASS: S059: publication precision matches
+PASS: S059: publication not later than access cutoff
+PASS: S059: access date and timezone correct
+PASS: S059: url has valid HTTP(S) shape
+PASS: S059: resolved_url has valid HTTP(S) shape
+PASS: S059: doi_url has valid HTTP(S) shape
+PASS: S059: DOI and DOI URL agree
+PASS: S060: publication date parses
+PASS: S060: publication precision matches
+PASS: S060: publication not later than access cutoff
+PASS: S060: modification not later than cutoff
+PASS: S060: modification not before publication
+PASS: S060: access date and timezone correct
+PASS: S060: url has valid HTTP(S) shape
+PASS: S060: resolved_url has valid HTTP(S) shape
+PASS: S061: publication date parses
+PASS: S061: publication precision matches
+PASS: S061: access date and timezone correct
+PASS: S061: url has valid HTTP(S) shape
+PASS: S061: resolved_url has valid HTTP(S) shape
+PASS: S061: no blocked/index text hash mislabelled as evidence
+PASS: S045 is abstract-only, not full paper review
+PASS: S026: blocked response separated from inspected fetch chunk
+PASS: S059: blocked response separated from inspected fetch chunk
+PASS: S051 correctly downgraded to index-only after 404
+PASS: Steam preview and released patch publication dates separated
+PASS: S014: API publication time and distinct API hash present
+PASS: S015: API publication time and distinct API hash present
+PASS: IGDA original draft date separated from hosting year
+PASS: ink fixed version recorded
+PASS: no unsupported claim that talks were watched
+PASS: report has no unexpanded template variables
+PASS: all 61 source footnote definitions present exactly once
+PASS: all source references defined; exclusions referenced for transparency
+PASS: report-reference flags agree
+PASS: report practice table matches all 42 catalog rows
+PASS: Markdown code fences balanced
+PASS: report headline counts agree with catalogs
+PASS: README.md: access/cutoff date present
+PASS: research_log.md: access/cutoff date present
+PASS: report_ja.md: access/cutoff date present
+PASS: source snapshot redistribution flags false

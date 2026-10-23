@@ -1,0 +1,41 @@
+{
+  "validated_on": "2026-10-22",
+  "schema_version": "1.0",
+  "status": "pass",
+  "catalog_entry_count": 84,
+  "source_record_count": 76,
+  "entry_type_counts": {
+    "T": 64,
+    "P": 15,
+    "R": 5
+  },
+  "evidence_grade_counts": {
+    "A": 59,
+    "B": 24,
+    "C": 1
+  },
+  "source_review_level_counts": {
+    "publisher_description": 10,
+    "selected_full_text": 43,
+    "abstract": 17,
+    "partial_text": 2,
+    "metadata_only": 4
+  },
+  "jsonl_valid": true,
+  "json_schema_valid": true,
+  "unique_ids": true,
+  "source_reference_integrity": true,
+  "related_entry_reference_integrity": true,
+  "internal_markdown_links_valid": true,
+  "future_issue_handled_as_advance_online": true,
+  "unresolved_template_tokens": false,
+  "scope_note": "機械的整合性の検証であり、完全網羅・全編精読・効果の因果証明を保証しない。",
+  "excluded_candidate_ids": [
+    "S016",
+    "S024",
+    "S030",
+    "S031",
+    "S035",
+    "S049"
+  ]
+}

@@ -1,0 +1,531 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Source catalog record / 情報源台帳1行",
+  "description": "Version 1.0. One object per UTF-8 JSONL line. Metadata and review scope, not a causal efficacy rating.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "source_id": {
+      "type": "string",
+      "pattern": "^S[0-9]{3}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "author_status": {
+      "enum": [
+        "displayed_byline_or_issuing_body",
+        "conference_presenters",
+        "collective_wiki_authorship_not_individually_verified",
+        "not_verified"
+      ]
+    },
+    "publisher": {
+      "type": "string",
+      "minLength": 1
+    },
+    "publication_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+    },
+    "publication_date_precision": {
+      "enum": [
+        "year",
+        "month",
+        "day",
+        "unknown"
+      ]
+    },
+    "date_modified": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "date_note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bibliographic_details": {
+      "type": "object",
+      "properties": {
+        "container_title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "volume": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issue": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pages": {
+          "type": "string",
+          "minLength": 1
+        },
+        "series": {
+          "type": "string",
+          "minLength": 1
+        },
+        "edition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "edition_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "conference_location": {
+          "type": "string",
+          "minLength": 1
+        },
+        "issue_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+        },
+        "editors": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "author_roles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "resolved_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "doi": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^10\\.\\d{4,9}/\\S+$"
+    },
+    "doi_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "language": {
+      "const": "en"
+    },
+    "source_type": {
+      "enum": [
+        "conference_abstract",
+        "conference_index",
+        "conference_reporting",
+        "corporate_process_statement",
+        "developer_first_person",
+        "developer_interview",
+        "developer_postmortem_method",
+        "developer_slides",
+        "developer_tool_tutorial",
+        "institutional_method",
+        "official_hosted_authoring_guide",
+        "official_patch_notes",
+        "official_press_kit",
+        "official_talk_announcement",
+        "official_tool_documentation",
+        "peer_reviewed_conference",
+        "peer_reviewed_journal",
+        "platform_guideline",
+        "practitioner_method",
+        "professional_association_description",
+        "professional_guideline",
+        "scholarly_book_chapter",
+        "sponsored_conference_abstract",
+        "studio_development_blog",
+        "studio_faq",
+        "studio_policy_update",
+        "studio_release_update",
+        "vendor_press_release",
+        "workshop_framework"
+      ]
+    },
+    "source_relationship": {
+      "enum": [
+        "primary",
+        "secondary_with_developer_testimony",
+        "scholarly",
+        "scholarly_developer_self_report",
+        "index_or_abstract"
+      ]
+    },
+    "geographic_applicability": {
+      "enum": [
+        "international_guideline",
+        "international_research",
+        "international_tool_reference",
+        "method_reference",
+        "non_us_comparison",
+        "non_us_research",
+        "non_us_tool_reference",
+        "us_case",
+        "us_conceptual",
+        "us_platform_guideline",
+        "us_publisher_author_case",
+        "us_tool_and_publisher",
+        "us_vendor"
+      ]
+    },
+    "domains": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "story",
+          "character",
+          "world",
+          "history",
+          "canon",
+          "production"
+        ]
+      },
+      "uniqueItems": true
+    },
+    "accessed_on": {
+      "type": "string",
+      "format": "date"
+    },
+    "access_timezone": {
+      "const": "Asia/Tokyo"
+    },
+    "inclusion_status": {
+      "enum": [
+        "included",
+        "supplementary",
+        "excluded"
+      ]
+    },
+    "inclusion_rationale_ja": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verification": {
+      "type": "object",
+      "properties": {
+        "review_extent": {
+          "enum": [
+            "full_text",
+            "selected_sections",
+            "abstract_only",
+            "index_only",
+            "unavailable"
+          ]
+        },
+        "reviewed_locators": {
+          "type": "string",
+          "minLength": 1
+        },
+        "retrieval_scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "http_status": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 100,
+          "maximum": 599
+        },
+        "retrieval_method": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verified_metadata_fields": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "pdf_page_count": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "full_talk_video_watched": {
+          "const": false
+        },
+        "captured_response_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "hash_role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "extracted_text_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "copyrighted_source_snapshot_redistributed": {
+          "const": false
+        },
+        "reviewed_fetch_chunk": {
+          "type": "string",
+          "minLength": 1
+        },
+        "api_url": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uri"
+        },
+        "api_response_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "event_gid": {
+          "type": "string",
+          "pattern": "^[0-9]+$"
+        },
+        "published_datetime_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cover_image_visually_reviewed": {
+          "type": "boolean"
+        },
+        "pinned_response_sha256": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "review_extent",
+        "reviewed_locators",
+        "retrieval_scope",
+        "http_status",
+        "retrieval_method",
+        "verified_metadata_fields",
+        "pdf_page_count",
+        "full_talk_video_watched",
+        "captured_response_sha256",
+        "hash_role",
+        "extracted_text_sha256",
+        "copyrighted_source_snapshot_redistributed"
+      ],
+      "additionalProperties": false
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "locator": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paraphrase_ja": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence_kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "does_not_establish": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "locator",
+          "paraphrase_ja",
+          "evidence_kind",
+          "does_not_establish"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "limitations_ja": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "practice_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^P[0-9]{2}$"
+      },
+      "uniqueItems": true
+    },
+    "interviewees_or_presenters": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "citation_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "alternative_titles": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "version_url": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "uri"
+    },
+    "version_identifier": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version_date": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "first_publication_metadata_unverified": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+    },
+    "document_ms_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+    },
+    "event_date_from_index": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date"
+    },
+    "original_author_website_credited": {
+      "type": "string",
+      "minLength": 1
+    },
+    "original_post_date": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}(?:-\\d{2}(?:-\\d{2})?)?$"
+    },
+    "referenced_in_report": {
+      "type": "boolean"
+    },
+    "report_reference_role": {
+      "enum": [
+        "evidence_or_method_or_context",
+        "discovery_or_exclusion_transparency"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "source_id",
+    "title",
+    "authors",
+    "author_status",
+    "publisher",
+    "publication_date",
+    "publication_date_precision",
+    "date_modified",
+    "date_note",
+    "bibliographic_details",
+    "url",
+    "resolved_url",
+    "doi",
+    "doi_url",
+    "language",
+    "source_type",
+    "source_relationship",
+    "geographic_applicability",
+    "domains",
+    "accessed_on",
+    "access_timezone",
+    "inclusion_status",
+    "inclusion_rationale_ja",
+    "verification",
+    "evidence",
+    "limitations_ja",
+    "practice_ids",
+    "interviewees_or_presenters",
+    "citation_text",
+    "referenced_in_report",
+    "report_reference_role"
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "sources.schema.json",
+  "title": "Narrative catalog source record",
+  "type": "object",
+  "required": [
+    "source_id",
+    "authors",
+    "title",
+    "year",
+    "url",
+    "accessed_date",
+    "source_type",
+    "relation_to_us",
+    "verification_level",
+    "verified_scope",
+    "cited_by_technique_ids"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^S[0-9]{3}$"
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "editors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "year": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "format": "uri"
+    },
+    "doi": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "isbn": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "accessed_date": {
+      "const": "2026-10-22"
+    },
+    "verification_level": {
+      "enum": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ]
+    },
+    "verified_scope": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cited_by_technique_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^T[0-9]{3}$"
+      }
+    }
+  },
+  "additionalProperties": true
+}

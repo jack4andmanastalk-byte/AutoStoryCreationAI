@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "China storytelling source record v1",
+  "type": "object",
+  "required": [
+    "source_id",
+    "title",
+    "authors",
+    "publication_year",
+    "source_type",
+    "url",
+    "accessed_date",
+    "content_review",
+    "support_scope_ja",
+    "limitations_ja",
+    "cited_by_entry_ids"
+  ],
+  "properties": {
+    "source_id": {
+      "type": "string",
+      "pattern": "^S[0-9]{3}$"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "editors": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "publication_year": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "doi": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "url": {
+      "type": "string",
+      "pattern": "^https?://"
+    },
+    "access_urls": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^https?://"
+      }
+    },
+    "accessed_date": {
+      "type": "string",
+      "const": "2026-10-22"
+    },
+    "content_review": {
+      "type": "object",
+      "required": [
+        "level",
+        "all_content_close_read"
+      ],
+      "properties": {
+        "level": {
+          "enum": [
+            "selected_full_text",
+            "partial_text",
+            "abstract",
+            "publisher_description",
+            "metadata_only"
+          ]
+        },
+        "all_content_close_read": {
+          "const": false
+        }
+      }
+    },
+    "cited_by_entry_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-L][0-9]{2}$"
+      }
+    }
+  },
+  "additionalProperties": true
+}

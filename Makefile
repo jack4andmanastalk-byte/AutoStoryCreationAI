@@ -4,7 +4,7 @@ BIN     := $(VENV)/bin
 CONFIG  ?= configs/dataset.yaml
 WORK    ?= 120
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -36,6 +36,12 @@ pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
 
 report: ## print statistics about the generated datasets
 	$(BIN)/python scripts/dataset_report.py --config $(CONFIG)
+
+research: ## rebuild the unified research catalog from research/curated
+	$(PYTHON) scripts/build_research_catalog.py
+
+research-check: ## verify the committed research catalog is up to date
+	$(PYTHON) scripts/build_research_catalog.py --check
 
 clean: ## remove the generated texts and PDFs
 	rm -rf data/raw data/pdf

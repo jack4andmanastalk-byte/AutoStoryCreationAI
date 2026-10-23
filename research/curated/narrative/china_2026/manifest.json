@@ -1,0 +1,48 @@
+{
+  "project": "現代中国のストーリーテリング技法カタログ",
+  "version": "1.0",
+  "cutoff_date": "2026-10-22",
+  "files": [
+    {
+      "name": "README_ja.md",
+      "bytes": 3070,
+      "sha256": "232c9c5451484a61f142671f74484b984046c5f63a977e85d76f967d7ddca79c"
+    },
+    {
+      "name": "catalog.jsonl",
+      "bytes": 126661,
+      "sha256": "feedb8675cb9a8f96f7e25bdd5a010c97c4c95c80d7146765342ab5164705830"
+    },
+    {
+      "name": "catalog.schema.json",
+      "bytes": 1395,
+      "sha256": "c497267391d8cd5696f2643ad5aba9e86176d7978c22adbc6ee4729ecb8e80bb"
+    },
+    {
+      "name": "catalog_index.csv",
+      "bytes": 20331,
+      "sha256": "0c0bfa00aaa9944a2cfd593766425546a285acf18b2a56f41d76b99830f0a57e"
+    },
+    {
+      "name": "china_storytelling_report_ja.md",
+      "bytes": 178297,
+      "sha256": "b7900a1ff96926a7efe96b932daf60ef174790f872d820b2dc6a1611e4155828"
+    },
+    {
+      "name": "sources.jsonl",
+      "bytes": 102840,
+      "sha256": "d625351d6605a2f8bd45955df4ea99e8486db73b8155f5f3208f837a0b55bdf6"
+    },
+    {
+      "name": "sources.schema.json",
+      "bytes": 1816,
+      "sha256": "c80737d5b8b6590f2b3f9eb5bc9e725027de1ccab945adbc9e909d0bd2258dea"
+    },
+    {
+      "name": "validation_report.json",
+      "bytes": 970,
+      "sha256": "4fb741cbee0ad4d44a00972ab4172d23874e872e5f166bc480f231629c95f9b1"
+    }
+  ],
+  "note": "manifest自体とZIP本体のハッシュは再帰性を避けるため含めない。"
+}

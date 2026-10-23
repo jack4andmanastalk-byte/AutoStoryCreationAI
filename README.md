@@ -9,8 +9,9 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 から、統一スキーマのメタデータ JSONL と閲覧用の PDF を生成するパイプラインと、
 その実行結果を収録します。
 
-> 現在のフェーズ: **Phase 0 — データセットアップ**。
-> スキル／ハーネス／パイプラインはこのフェーズで実験し、逐年拡張します。
+> 現在のフェーズ: **Phase 0 — データセットアップ**（完了）と
+> **Phase 1 — 創作知識の運用可能化**（進行中）。
+> `research/` に、外部コーパスの選別・統一カタログ・スキル種を収録しています。
 
 ---
 
@@ -101,6 +102,12 @@ make report
 │   ├── raw/                    # 整形済み本文テキスト
 │   └── pdf/                    # レンダリングした PDF
 ├── docs/                       # 設計・スキーマ・法務メモ
+├── research/                   # 創作技法・制作実務の研究コーパス（下記 4.1）
+│   ├── curated/                # 選別済みの元成果物（出典・限界つき）
+│   ├── catalog/                # 統一カタログ（技法 488・分類 10・ツール 96・書誌 529）
+│   ├── program/                # スキル／ハーネス種（13）と実装設計
+│   ├── inventory/              # 34 成果物の採否台帳
+│   └── curation/               # 選別報告・ギャップ分析・追加調査
 ├── samples/                    # リポジトリに同梱する小さなサンプル
 ├── scripts/
 │   ├── setup_dataset.py        # データセットアップ CLI（主要エントリポイント）
@@ -114,6 +121,24 @@ make report
 └── tests/                      # pytest
 ```
 
+### 4.1 研究コーパス（`research/`）
+
+外部で収集した創作研究資料（25 成果物）を、実用性 6 軸で判定して取捨選択したものです。
+**採用 9・参照 21・除外 4**。保存したのは書誌・要約・分析であり、第三者の本文は含みません。
+
+| パス | 内容 |
+| --- | --- |
+| [`research/README.md`](research/README.md) | 全体像と読み方 |
+| [`research/curation/selection_report.md`](research/curation/selection_report.md) | 実用性判定・採否理由・重複分析 |
+| [`research/curation/gap_analysis_and_added_sources.md`](research/curation/gap_analysis_and_added_sources.md) | 空白領域の追加調査（24 件、2025–2026 のベンチマーク等） |
+| [`research/catalog/README.md`](research/catalog/README.md) | 統一カタログのスキーマと限界 |
+| [`research/program/skill_pipeline_mapping.md`](research/program/skill_pipeline_mapping.md) | 技法 → `SKILL.md`／評価ハーネスへの変換設計 |
+
+```bash
+make research         # research/curated/ から統一カタログを再生成
+make research-check   # コミット済みカタログとの差分検査（CI 用）
+```
+
 ## 5.  品質保証
 
 * `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、PDF 描画、
@@ -123,7 +148,8 @@ make report
 
 ## 6.  次フェーズ候補
 
-* スキルの定義（`skills/`）と評価ハーネスの雛形
+* `research/program/skill_seeds.jsonl` の 13 種から `skills/` の `SKILL.md` を実装
+* 評価ハーネスの雛形（決定論的検査＋LLM ルブリック）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
 * キャラクターシート・世界観ノートの生成と、その評価軸の設計
 * 縦組み PDF / EPUB 出力（現在は横組み A5）
