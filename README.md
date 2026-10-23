@@ -21,9 +21,11 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 | 書誌メタデータ | `data/datasets/aozora_works.jsonl` | 青空文庫の作品（作品ID・タイトル・著者・NDC分類・初出・底本初版発行年・公開URLなど） |
 | 著者メタデータ | `data/datasets/aozora_authors.jsonl` | 作家・翻訳者（人物ID・氏名・ヨミガナ・生没年など） |
 | 書誌メタデータ | `data/datasets/narou_novels.jsonl` | 小説家になろうの作品（Nコード・ジャンル・掲載日・話数・文字数・評価指標など） |
-| 整形済み本文 | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・注記を除いたプレーンテキスト |
-| PDF | `data/pdf/{aozora,narou}/*.pdf` | 表紙（書誌情報）+ 本文の A5 PDF（和文組版・禁則処理つき） |
-| ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・生成時刻 |
+| 商業化Top100メタデータ | `data/datasets/narou_commercialized_top100.jsonl` (`samples/` にも同梱) | 商業化済作品の知名度・売上巻数・人気・総合評価順 Top 100 カタログ |
+| 商業化Top100ランキング表 | `docs/narou_top100_ranking.md` | 商業化済 Top 100 作品の順位・指標・全話数・総文字数・PDFサイズ一覧 |
+| 整形済み本文 | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いたプレーンテキスト |
+| PDF | `data/pdf/{aozora,narou}/*.pdf` | 表紙（書誌・ランキング情報）+ 全話本文の A5 PDF（和文組版・禁則処理つき） |
+| ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・生成時刻 |
 
 JSONL は 1 行 = 1 レコード（UTF-8 / `ensure_ascii=False` / キー順固定）です。
 スキーマの詳細は [`docs/dataset_schema.md`](docs/dataset_schema.md) を参照してください。
@@ -49,9 +51,20 @@ make report
 ```bash
 .venv/bin/python scripts/setup_dataset.py aozora-metadata            # 書誌データのみ
 .venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
-.venv/bin/python scripts/fetch_narou_api.py --genres 101 201 303     # 公式APIの生JSONを保存
-.venv/bin/python scripts/setup_dataset.py narou-metadata
-.venv/bin/python scripts/setup_dataset.py narou-texts --works 20 --pdf
+.venv/bin/python scripts/fetch_narou_api.py --per-query 500 --order-pages 2
+.venv/bin/python scripts/setup_dataset.py narou-metadata --cached-only
+.venv/bin/python scripts/setup_dataset.py narou-rank --top 100       # 知名度・売上巻数・人気・評価順ランキング
+.venv/bin/python scripts/setup_dataset.py narou-texts --works 100 --max-episodes 0 --pdf --rank-order
+```
+
+事前ビルド済みの全 100 作品・全話（48,916 話 / 約 2.03 億文字）PDF セットを取得する場合:
+
+```bash
+# 方法 A: datasets ブランチから展開
+make pull-datasets
+
+# 方法 B: GitHub Release から PDF アーカイブ (narou_top100_pdfs.tar.gz) を直接取得
+gh release download datasets-narou-top100
 ```
 
 ## 3.  データソース
