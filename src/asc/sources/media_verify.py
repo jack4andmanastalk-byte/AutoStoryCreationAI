@@ -546,10 +546,12 @@ def _clean_wiki_markup(raw: str) -> str:
 
 
 def _extract_infobox_field(block: str, field_name: str) -> Optional[str]:
-    m = re.search(rf"\|\s*{re.escape(field_name)}\s*=\s*([^\n|}}]+)", block)
+    # Collapse [[Target|Label]] wikilinks before matching field boundaries on '|'
+    resolved = re.sub(r"\[\[(?:[^|\]]*\|)?([^\]]+)\]\]", r"\1", block)
+    m = re.search(rf"\|\s*{re.escape(field_name)}\s*=\s*([^\n|}}]+)", resolved)
     if not m:
         return None
-    cleaned = _clean_wiki_markup(m.group(1))
+    cleaned = _clean_wiki_markup(m.group(1)).lstrip("[")
     return cleaned or None
 
 
