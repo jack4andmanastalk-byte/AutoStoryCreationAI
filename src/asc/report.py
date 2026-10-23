@@ -13,7 +13,9 @@ DATASETS = {
     "aozora_works.jsonl": "青空文庫 (Aozora Bunko)",
     "aozora_authors.jsonl": "青空文庫 作家",
     "narou_novels.jsonl": "小説家になろう (Syosetsuka ni Narou)",
-    "narou_commercialized_ranked.jsonl": "小説家になろう 外部確認済・商業化ランキング",
+    "narou_commercialized_ranked.jsonl": "小説家になろう 外部確認済・商業化ランキング (Top 300)",
+    "narou_commercialized_genre_supplement.jsonl": "小説家になろう ジャンル別商業化追加（歴史・推理・現代・SF・ホラー）",
+    "narou_commercialized_all.jsonl": "小説家になろう 外部確認済・商業化統合コーパス",
 }
 
 

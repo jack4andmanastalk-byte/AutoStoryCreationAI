@@ -30,7 +30,7 @@ aozora:
     - https://registry.npmjs.org/aozora/-/aozora-0.2.2.tgz
   # Plain text mirror (one .txt per work, Aozora notation).
   text_mirror_tarball: https://codeload.github.com/aozorahack/aozorabunko_text/tar.gz/refs/heads/master
-  # Number of works that receive a text + PDF rendering.
+  # Number of works that receive a plain-text download (PDF rendering disabled).
   sample_works: 120
   sample_seed: 20240101
   min_chars: 3000
@@ -67,15 +67,15 @@ narou:
     - generalfirstup
   per_query: 500
   max_start: 2000
-  # Number of ranked commercialised novels that receive a full-episode text + PDF rendering
-  # (Ranks #1..#100 + Ranks #101..#200 + continuation Ranks #201..#300).
+  # Number of ranked commercialised novels that receive a full-episode plain-text download
+  # (Ranks #1..#300; plus 5-genre commercialised supplement via narou-genre-supplement).
   download_works: 300
   min_chars: 5000
   # General-audience novelapi cautionary R15 flag (required for flagship works
   # such as 無職転生, 転スラ, 薬屋のひとりごと, Re:ゼロ, 本好きの下剋上; adult R18
   # novel18api remains excluded).
   include_r15: true
-  # Restrict text/PDF generation to commercialised works (free web version only).
+  # Restrict text collection to commercialised works (free web version only; PDF disabled).
   commercialized_only: true
   # Require external title/author search confirmation across books, manga, anime,
   # and games (CiNii Books ISBN + Japanese Wikipedia + Apple Books Japan + official registries).

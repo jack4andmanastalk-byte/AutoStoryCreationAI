@@ -1,22 +1,24 @@
 name: dataset-refresh
 
-# Builds and refreshes the research datasets of AutoStoryCreationAI:
-#   1. Aozora Bunko full bibliographic catalog + public-domain sample PDFs
+# Builds and refreshes the text-only research datasets of AutoStoryCreationAI:
+#   1. Aozora Bunko bibliographic catalog + public-domain plain UTF-8 texts (no PDFs)
 #   2. Syosetsuka ni Narou R15-inclusive bibliographic catalog + strict external
 #      4-media commercialisation verification (books/manga/anime/games via
-#      CiNii Books ISBN + Japanese Wikipedia + Apple Books Japan + official registries) +
-#      300 full-episode (no episode cap) commercialised WEB PDFs
-#      (Ranks #1..#100 + Ranks #101..#200 + continuation Ranks #201..#300)
-#
-# Published to:
-#   - `datasets` branch (`git fetch origin datasets`)
-#   - GitHub Releases `datasets-narou-commercialized` & `datasets-narou-top100`
+#      CiNii Books ISBN + Japanese Wikipedia + Apple Books Japan + official registries):
+#      - Overall Top 300 commercialised works (all episodes, plain UTF-8 .txt)
+#      - 5-genre targeted commercialised supplement (`歴史・推理・現代・SF・ホラー`,
+#        10-15 works per genre = 50-75 works, all episodes, plain UTF-8 .txt)
+#   3. Converts any legacy PDFs to plain text and purges all PDF artifacts from
+#      both the orphan `datasets` branch and GitHub Releases.
 on:
   workflow_dispatch:
     inputs:
       narou_works:
-        description: "Total number of ranked commercialised Narou full-episode PDFs (1..N)"
+        description: "Total number of ranked commercialised Narou full-episode plain texts (1..N)"
         default: "300"
+      supplement_per_genre:
+        description: "Target commercialised works per supplement genre (歴史・推理・現代・SF・ホラー)"
+        default: "15"
       seed_run_id:
         description: "Optional prior workflow run ID to reuse prepared/shard artifacts from"
         default: ""
@@ -29,7 +31,6 @@ on:
       - "scripts/fetch_narou_api.py"
       - "src/asc/sources/narou.py"
       - "src/asc/sources/media_verify.py"
-      - "src/asc/render/pdf.py"
       - "configs/dataset.yaml"
       - "requirements.txt"
   schedule:
@@ -43,7 +44,7 @@ permissions:
 jobs:
   prepare:
     runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 55
+    timeout-minutes: 110
     concurrency:
       group: dataset-prepare-${{ github.ref }}
       cancel-in-progress: true
@@ -62,69 +63,120 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Prepare or reuse verified bibliographic catalogs & Aozora PDFs
+      - name: Convert/stage existing plain texts, harvest deep 5-genre metadata, & build 5-genre supplement
         run: |
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
+          PER_GENRE="${{ github.event.inputs.supplement_per_genre || '15' }}"
           POOL=$(( TARGET + 35 ))
           SCAN=$(( TARGET * 3 + 200 ))
-          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39937814414' }}"
 
-          reused_prep=0
-          if [ -n "$SEED_RUN" ]; then
-            mkdir -p seed_prep
-            if gh run download "$SEED_RUN" -n prepared-bundle -D seed_prep 2>/dev/null && [ -f seed_prep/prepared.tar.gz ]; then
-              tar -xzf seed_prep/prepared.tar.gz
-              if [ -f data/datasets/narou_commercialized_ranked.jsonl ]; then
-                READY_CNT=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
-                if [ "$READY_CNT" -ge "$TARGET" ]; then
-                  cp seed_prep/prepared.tar.gz prepared.tar.gz
-                  reused_prep=1
-                  echo "Reused verified prepared-bundle ($READY_CNT ranked works >= $TARGET) from run $SEED_RUN"
-                fi
-              fi
-            fi
+          mkdir -p data/datasets data/raw/aozora/texts data/raw/narou/texts reuse_existing/datasets
+
+          # 1) Stage existing catalogs & plain texts from `datasets` branch; if any legacy
+          #    PDF lacks a .txt counterpart, stage only that PDF and convert it to .txt.
+          if git fetch --depth=1 --filter=blob:none origin datasets 2>/dev/null; then
+            git --work-tree=reuse_existing checkout FETCH_HEAD -- datasets raw/aozora 2>/dev/null || true
+            [ -d reuse_existing/datasets ] && cp -rn reuse_existing/datasets/* data/datasets/ 2>/dev/null || true
+            [ -d reuse_existing/raw/aozora/texts ] && cp -rn reuse_existing/raw/aozora/texts/* data/raw/aozora/texts/ 2>/dev/null || true
+            git reset -q HEAD || true
+
+            python - <<'PY'
+          import pathlib, subprocess
+
+          ls_txt = set(
+              pathlib.PurePosixPath(p).stem.lower()
+              for p in subprocess.check_output(
+                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/narou/texts"],
+                  text=True,
+              ).splitlines()
+              if p.endswith(".txt")
+          )
+          ls_pdf = [
+              p for p in subprocess.check_output(
+                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "pdf/narou", "pdf/aozora"],
+                  text=True,
+              ).splitlines()
+              if p.endswith(".pdf")
+          ]
+          ls_aozora_txt = set(
+              pathlib.PurePosixPath(p).stem.lower()
+              for p in subprocess.check_output(
+                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/aozora/texts"],
+                  text=True,
+              ).splitlines()
+              if p.endswith(".txt")
+          )
+          missing_pdfs = []
+          for p in ls_pdf:
+              stem = pathlib.PurePosixPath(p).stem.lower()
+              if p.startswith("pdf/narou/") and stem not in ls_txt:
+                  missing_pdfs.append(p)
+              elif p.startswith("pdf/aozora/") and stem not in ls_aozora_txt:
+                  missing_pdfs.append(p)
+          if missing_pdfs:
+              print(f"Checking out {len(missing_pdfs)} text-less PDFs for conversion to .txt")
+              subprocess.run(["git", "--work-tree=reuse_existing", "checkout", "FETCH_HEAD", "--", *missing_pdfs], check=False)
+          else:
+              print(f"All existing works already have .txt files on datasets branch (narou={len(ls_txt)}, aozora={len(ls_aozora_txt)})")
+          PY
           fi
 
-          if [ "$reused_prep" -eq 0 ]; then
+          # Ensure Aozora metadata + texts exist (plain text only, no --pdf)
+          if [ ! -f data/datasets/aozora_works.jsonl ] || [ -z "$(ls -A data/raw/aozora/texts/*.txt 2>/dev/null)" ]; then
             python scripts/setup_dataset.py aozora-metadata
-            python scripts/setup_dataset.py aozora-texts --works 15 --pdf
+            python scripts/setup_dataset.py aozora-texts --works 15
+          fi
 
-            mkdir -p reuse_meta/pdf/narou reuse_meta/datasets
-            if git fetch --depth=1 --filter=blob:none origin datasets 2>/dev/null; then
-              git --work-tree=reuse_meta checkout FETCH_HEAD -- datasets/narou_commercialized_ranked.jsonl 2>/dev/null || true
-              git ls-tree --name-only FETCH_HEAD pdf/narou | while read -r rel; do
-                [ -n "$rel" ] && dd if=/dev/zero of="reuse_meta/$rel" bs=1024 count=3 2>/dev/null || true
-              done
-            fi
-            if gh release download datasets-narou-commercialized -p "narou_commercialized_ranked.jsonl" -D reuse_meta/datasets --clobber 2>/dev/null; then
-              python - <<'PY'
-          import json, pathlib
-          p = pathlib.Path("reuse_meta/datasets/narou_commercialized_ranked.jsonl")
-          out_dir = pathlib.Path("reuse_meta/pdf/narou")
-          out_dir.mkdir(parents=True, exist_ok=True)
-          for line in p.read_text(encoding="utf-8").splitlines():
-              if not line.strip():
-                  continue
-              row = json.loads(line)
-              if row.get("pdf_path"):
-                  ncode = row["id"].split(":", 1)[1]
-                  marker = out_dir / f"{ncode}.pdf"
-                  if not marker.exists():
-                      marker.write_bytes(b"\0" * 3072)
-          PY
-            fi
+          # 2) Harvest deep Narou metadata including 5 target genres (歴史・推理・現代・SF・ホラー)
+          python scripts/fetch_narou_api.py --per-query 500 --order-pages 4 --out-dir data/cache/narou_api
+          python scripts/setup_dataset.py narou-metadata --cached-only
 
-            python scripts/fetch_narou_api.py --per-query 500 --order-pages 4 --out-dir data/cache/narou_api
-            python scripts/setup_dataset.py narou-metadata --cached-only
+          # 3) Ensure overall Top-300 ranked catalog is ready (reuse verified Top-300 if >= TARGET)
+          READY_RANKED=0
+          if [ -f data/datasets/narou_commercialized_ranked.jsonl ]; then
+            READY_RANKED=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
+          elif [ -f samples/narou_commercialized_ranked.jsonl ]; then
+            cp samples/narou_commercialized_ranked.jsonl data/datasets/narou_commercialized_ranked.jsonl
+            READY_RANKED=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
+          fi
+          if [ "$READY_RANKED" -lt "$TARGET" ]; then
             python scripts/setup_dataset.py narou-rank \
               --top "$POOL" \
               --scan-limit "$SCAN" \
               --strict-external \
-              --reuse-existing-dir reuse_meta \
+              --reuse-existing-dir reuse_existing \
               --request-interval 0.20
-
-            tar -czf prepared.tar.gz data/datasets data/raw/aozora data/pdf/aozora data/cache/fonts
           fi
+
+          # 4) Stage any already-downloaded supplement texts from `datasets` branch if present
+          if [ -f data/datasets/narou_commercialized_genre_supplement.jsonl ] && git rev-parse --verify FETCH_HEAD >/dev/null 2>&1; then
+            python - <<'PY'
+          import json, pathlib, subprocess
+          p = pathlib.Path("data/datasets/narou_commercialized_genre_supplement.jsonl")
+          wanted = {json.loads(ln)["id"].split(":", 1)[1].lower() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()}
+          ls_out = subprocess.check_output(["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/narou/texts"], text=True).splitlines()
+          matches = [rel for rel in ls_out if pathlib.PurePosixPath(rel).stem.lower() in wanted]
+          if matches:
+              subprocess.run(["git", "--work-tree=reuse_existing", "checkout", "FETCH_HEAD", "--", *matches], check=False)
+          PY
+          fi
+
+          # 5) Externally verify & fetch all episodes (plain text) for 10-15 works per genre
+          #    across 歴史・推理・現代・SF・ホラー (total 50-75 works, zero overlap with Top 300)
+          python scripts/setup_dataset.py narou-genre-supplement \
+            --per-genre "$PER_GENRE" \
+            --min-per-genre 10 \
+            --scan-limit-per-genre 260 \
+            --strict-count \
+            --reuse-existing-dir reuse_existing \
+            --request-interval 0.22
+
+          # 6) Convert any staged text-less PDFs to .txt and delete all PDFs
+          git reset -q HEAD || true
+          python scripts/setup_dataset.py purge-pdfs --reuse-existing-dir reuse_existing
+          rm -rf reuse_existing data/pdf
+
+          tar -czf prepared.tar.gz data/datasets data/raw/aozora data/raw/narou
 
       - name: Upload prepared bundle
         uses: actions/upload-artifact@v4
@@ -136,7 +188,7 @@ jobs:
   render-narou:
     needs: prepare
     runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 150
+    timeout-minutes: 90
     concurrency:
       group: dataset-render-${{ github.ref }}-${{ matrix.shard }}
       cancel-in-progress: true
@@ -169,38 +221,26 @@ jobs:
       - name: Extract prepared bundle
         run: tar -xzf prepared.tar.gz
 
-      - name: Stage cached PDFs/texts from prior shard artifact, `datasets` branch, & GitHub Release
+      - name: Stage cached plain texts (or legacy PDFs for conversion) for Shard ${{ matrix.shard }}/20
         run: |
           mkdir -p reuse_cache
-          SHARD="${{ matrix.shard }}"
-          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39937814414' }}"
-
-          # 1) Reuse completed shard bundle from prior run when available
-          if [ -n "$SEED_RUN" ]; then
-            mkdir -p seed_shard
-            if gh run download "$SEED_RUN" -n "narou-shard-${SHARD}" -D seed_shard 2>/dev/null && [ -f "seed_shard/shard-${SHARD}.tar.gz" ]; then
-              tar -xzf "seed_shard/shard-${SHARD}.tar.gz" -C reuse_cache
-              echo "Staged prior shard artifact narou-shard-${SHARD} from run ${SEED_RUN}"
-            fi
-            rm -rf seed_shard
-          fi
-
-          # 2) Check which assigned N-codes still lack a cached PDF; stage from `datasets` branch & Release tarballs
           if git fetch --depth=1 --filter=blob:none origin datasets 2>/dev/null; then
-            HAS_DATASETS_BRANCH=1
+            HAS_BRANCH=1
           else
-            HAS_DATASETS_BRANCH=0
+            HAS_BRANCH=0
           fi
 
           python - <<'PY'
-          import json, os, pathlib, subprocess, tarfile
+          import json, pathlib, subprocess, tarfile
 
           target = int("${{ github.event.inputs.narou_works || '300' }}")
           shard = int("${{ matrix.shard }}")
           shard_count = 20
-          has_branch = int("${HAS_DATASETS_BRANCH:-0}") if False else (
-              subprocess.call(["git", "rev-parse", "--verify", "FETCH_HEAD"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) == 0
-          )
+          has_branch = subprocess.call(
+              ["git", "rev-parse", "--verify", "FETCH_HEAD"],
+              stdout=subprocess.DEVNULL,
+              stderr=subprocess.DEVNULL,
+          ) == 0
 
           ranked_path = pathlib.Path("data/datasets/narou_commercialized_ranked.jsonl")
           rows = [json.loads(line) for line in ranked_path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -209,28 +249,34 @@ jobs:
 
           def existing_cached_ncodes() -> set[str]:
               found: set[str] = set()
-              for sub in ("data/pdf/narou", "pdf/narou", "narou"):
+              for sub in ("raw/narou/texts", "data/raw/narou/texts", "pdf/narou", "data/pdf/narou"):
                   d = pathlib.Path("reuse_cache") / sub
                   if d.is_dir():
-                      for p in d.glob("*.pdf"):
-                          if p.stat().st_size > 2048:
+                      for p in list(d.glob("*.txt")) + list(d.glob("*.pdf")):
+                          if p.stat().st_size > 256:
                               found.add(p.stem.lower())
               return found
 
           still_needed = wanted_ncodes - existing_cached_ncodes()
 
-          # 2a) Stage from `datasets` branch if needed
+          # 1) Stage .txt first from `datasets` branch (fall back to .pdf only if .txt missing)
           if still_needed and has_branch:
               ls_out = subprocess.check_output(
-                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "pdf/narou", "raw/narou/texts", "datasets"],
+                  ["git", "ls-tree", "-r", "--name-only", "FETCH_HEAD", "raw/narou/texts", "pdf/narou", "datasets"],
                   text=True,
               ).splitlines()
               to_extract = []
+              txt_found = set()
               for rel in ls_out:
                   p = pathlib.PurePosixPath(rel)
-                  if rel in ("datasets/narou_commercialized_ranked.jsonl", "datasets/narou_commercialized_top100.jsonl"):
+                  if rel in ("datasets/narou_commercialized_ranked.jsonl", "datasets/narou_commercialized_all.jsonl"):
                       to_extract.append(rel)
-                  elif p.suffix.lower() in (".pdf", ".txt") and p.stem.lower() in still_needed:
+                  elif p.suffix.lower() == ".txt" and p.stem.lower() in still_needed:
+                      to_extract.append(rel)
+                      txt_found.add(p.stem.lower())
+              for rel in ls_out:
+                  p = pathlib.PurePosixPath(rel)
+                  if p.suffix.lower() == ".pdf" and p.stem.lower() in (still_needed - txt_found):
                       to_extract.append(rel)
               if to_extract:
                   subprocess.run(
@@ -241,63 +287,53 @@ jobs:
 
           still_needed = wanted_ncodes - existing_cached_ncodes()
 
-          # 2b) Stage from Release `datasets-narou-commercialized` tarballs if needed
+          # 2) Fallback: stage from Release `datasets-narou-commercialized` text tarballs if needed
           if still_needed:
               rel_dl = pathlib.Path("rel_cache_dl")
               rel_dl.mkdir(parents=True, exist_ok=True)
               rc = subprocess.call(
                   [
                       "gh", "release", "download", "datasets-narou-commercialized",
-                      "-p", "narou_rank_*_pdfs.tar.gz",
+                      "-p", "narou_rank_*_texts.tar.gz",
                       "-p", "narou_commercialized_ranked.jsonl",
                       "-D", str(rel_dl),
                       "--clobber",
                   ]
               )
               if rc == 0:
-                  rel_jsonl = rel_dl / "narou_commercialized_ranked.jsonl"
-                  if rel_jsonl.exists():
-                      dst_j = pathlib.Path("reuse_cache/datasets")
-                      dst_j.mkdir(parents=True, exist_ok=True)
-                      dst_j.joinpath("narou_commercialized_ranked.jsonl").write_bytes(rel_jsonl.read_bytes())
-                  extracted_cnt = 0
-                  out_pdf_dir = pathlib.Path("reuse_cache/pdf/narou")
-                  out_pdf_dir.mkdir(parents=True, exist_ok=True)
-                  for tar_path in sorted(rel_dl.glob("narou_rank_*_pdfs.tar.gz")):
+                  out_txt_dir = pathlib.Path("reuse_cache/raw/narou/texts")
+                  out_txt_dir.mkdir(parents=True, exist_ok=True)
+                  for tar_path in sorted(rel_dl.glob("narou_rank_*_texts.tar.gz")):
                       with tarfile.open(tar_path, "r:gz") as tf:
                           for member in tf.getmembers():
-                              if not member.isfile():
-                                  continue
-                              stem = pathlib.PurePosixPath(member.name).stem.lower()
-                              if stem in still_needed:
+                              if member.isfile() and pathlib.PurePosixPath(member.name).stem.lower() in still_needed:
                                   fobj = tf.extractfile(member)
                                   if fobj is not None:
-                                      (out_pdf_dir / pathlib.PurePosixPath(member.name).name).write_bytes(fobj.read())
-                                      extracted_cnt += 1
-                  print(f"Extracted {extracted_cnt} cached PDFs from GitHub Release for shard {shard}")
+                                      (out_txt_dir / pathlib.PurePosixPath(member.name).name).write_bytes(fobj.read())
               subprocess.run(["rm", "-rf", str(rel_dl)], check=False)
 
-          print(f"Shard {shard}: {len(existing_cached_ncodes() & wanted_ncodes)}/{len(wanted_ncodes)} assigned PDFs ready in reuse_cache")
+          print(f"Shard {shard}: {len(existing_cached_ncodes() & wanted_ncodes)}/{len(wanted_ncodes)} assigned texts ready in reuse_cache")
           PY
 
-      - name: Fetch all episodes & render PDFs (Shard ${{ matrix.shard }}/20)
+      - name: Fetch all episodes as plain UTF-8 text (Shard ${{ matrix.shard }}/20, no PDF)
         run: |
+          git reset -q HEAD || true
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
           python scripts/setup_dataset.py narou-texts \
             --works "$TARGET" \
             --max-episodes 0 \
-            --pdf \
             --rank-order \
             --reuse-existing-dir reuse_cache \
             --shard-index "${{ matrix.shard }}" \
             --shard-count 20 \
             --request-interval 0.22
 
-      - name: Bundle shard outputs
+      - name: Bundle text-only shard outputs
         run: |
-          mkdir -p data/datasets/shards data/pdf/narou data/raw/narou/texts
+          rm -rf data/pdf
+          mkdir -p data/datasets/shards data/raw/narou/texts
           tar -czf "shard-${{ matrix.shard }}.tar.gz" \
-            data/datasets/shards data/pdf/narou data/raw/narou
+            data/datasets/shards data/raw/narou
 
       - name: Upload shard bundle
         uses: actions/upload-artifact@v4
@@ -315,7 +351,7 @@ jobs:
       (!cancelled()) && needs.prepare.result == 'success'
       && needs.render-narou.result != 'cancelled'
     runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
-    timeout-minutes: 120
+    timeout-minutes: 90
     concurrency:
       group: dataset-refresh-publish
       cancel-in-progress: false
@@ -346,7 +382,7 @@ jobs:
           path: shards_dl
           merge-multiple: true
 
-      - name: Merge shards, backfill if needed, and verify count
+      - name: Merge shards, purge any PDFs, verify counts, & print report
         run: |
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
           tar -xzf prepared.tar.gz
@@ -354,27 +390,24 @@ jobs:
             [ -f "$f" ] && tar -xzf "$f"
           done
 
-          RENDERED_NOW=$(ls -1 data/pdf/narou/*.pdf 2>/dev/null | wc -l | tr -d ' ')
-          mkdir -p reuse_cache/pdf/narou reuse_cache/datasets
-          if [ "$RENDERED_NOW" -lt "$TARGET" ]; then
-            if gh release download datasets-narou-commercialized -p "narou_rank_*_pdfs.tar.gz" -p "narou_commercialized_ranked.jsonl" -D rel_backfill --clobber 2>/dev/null; then
-              [ -f rel_backfill/narou_commercialized_ranked.jsonl ] && cp rel_backfill/narou_commercialized_ranked.jsonl reuse_cache/datasets/
-              for tf in rel_backfill/narou_rank_*_pdfs.tar.gz; do
-                [ -f "$tf" ] && tar -xzf "$tf" -C reuse_cache/pdf
-              done
-              rm -rf rel_backfill
-            fi
-          fi
-
+          mkdir -p reuse_cache
           python scripts/setup_dataset.py narou-merge-shards \
             --works "$TARGET" \
             --reuse-existing-dir reuse_cache \
             --backfill \
             --strict-count
           rm -rf data/datasets/shards reuse_cache
+
+          # Guarantee 0 PDFs remain anywhere and rebuild combined catalog + manifest
+          python scripts/setup_dataset.py purge-pdfs
+          PDF_REMAINING=$(find data -type f -iname "*.pdf" | wc -l | tr -d ' ')
+          if [ "$PDF_REMAINING" -ne 0 ]; then
+            echo "ERROR: $PDF_REMAINING PDF files still present in data/"
+            exit 1
+          fi
           python scripts/dataset_report.py
 
-      - name: Publish datasets & PDFs incrementally to the `datasets` branch
+      - name: Publish clean orphan text-only `datasets` branch (zero PDFs in history)
         run: |
           mkdir -p publish
           cd publish
@@ -385,17 +418,17 @@ jobs:
           git checkout -q -b datasets
           git remote add origin "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git"
 
-          # Commit 1: metadata catalogs + Aozora
+          # Commit 1: metadata catalogs + Aozora plain texts (no pdf/ directory)
           cp -r ../data/datasets ./datasets
-          mkdir -p ./raw ./pdf
+          mkdir -p ./raw
           [ -d ../data/raw/aozora ] && cp -r ../data/raw/aozora ./raw/aozora
-          [ -d ../data/pdf/aozora ] && cp -r ../data/pdf/aozora ./pdf/aozora
+          find . -type f -iname "*.pdf" -delete || true
           find . -maxdepth 4 -type f -size +95M -print -delete || true
           git add -A
-          git commit -q -m "datasets: metadata & Aozora ($(date -u +%FT%TZ))"
+          git commit -q -m "datasets: text-only metadata & Aozora ($(date -u +%FT%TZ))"
           git push --force origin HEAD:refs/heads/datasets
 
-          # Commits 2..M: Narou plain texts in 100-file batches
+          # Commits 2..M: Narou full-episode plain texts (Top 300 + 5-genre supplement) in 120-file batches
           mkdir -p ./raw/narou/texts
           tbatch=0
           tcount=0
@@ -405,7 +438,7 @@ jobs:
             [ "$sz" -ge 99614720 ] && continue
             cp "$txt_file" ./raw/narou/texts/
             tcount=$(( tcount + 1 ))
-            if [ $(( tcount % 100 )) -eq 0 ]; then
+            if [ $(( tcount % 120 )) -eq 0 ]; then
               tbatch=$(( tbatch + 1 ))
               git add ./raw/narou
               git diff --cached --quiet || git commit -q -m "datasets: Narou full-episode plain texts batch ${tbatch}"
@@ -419,80 +452,84 @@ jobs:
             git push origin HEAD:refs/heads/datasets
           fi
 
-          # Commits M+1..N: Narou full-episode PDFs in 65-file batches (<600 MB per push)
-          mkdir -p ./pdf/narou
-          batch=0
-          count=0
-          for pdf_file in ../data/pdf/narou/*.pdf; do
-            [ -f "$pdf_file" ] || continue
-            sz=$(stat -c%s "$pdf_file")
-            if [ "$sz" -ge 99614720 ]; then
-              echo "Skipping oversized >95MB file: $pdf_file"
-              continue
-            fi
-            cp "$pdf_file" ./pdf/narou/
-            count=$(( count + 1 ))
-            if [ $(( count % 65 )) -eq 0 ]; then
-              batch=$(( batch + 1 ))
-              git add ./pdf/narou
-              git diff --cached --quiet || git commit -q -m "datasets: Narou full-episode PDFs batch ${batch}"
-              git push origin HEAD:refs/heads/datasets
-            fi
-          done
-          git add ./pdf/narou
-          if ! git diff --cached --quiet; then
-            batch=$(( batch + 1 ))
-            git commit -q -m "datasets: Narou full-episode PDFs batch ${batch} (complete)"
-            git push origin HEAD:refs/heads/datasets
+      - name: Delete legacy PDF releases/assets & publish compact plain-text Release (`datasets-narou-commercialized`)
+        run: |
+          # 1) Remove obsolete PDF-only `datasets-narou-top100` release & tag if it exists
+          if gh release view "datasets-narou-top100" >/dev/null 2>&1; then
+            gh release delete "datasets-narou-top100" --yes --cleanup-tag || true
           fi
 
-      - name: Publish GitHub Releases (`datasets-narou-commercialized` & `datasets-narou-top100`)
-        run: |
+          # 2) Build compact plain-text tarballs (Top 300 in 100-work slices + 5-genre supplement + Aozora)
           python - <<'PY'
           import json, pathlib, tarfile
 
           ranked_path = pathlib.Path("data/datasets/narou_commercialized_ranked.jsonl")
           rows = [json.loads(line) for line in ranked_path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
-          def make_slice_tar(slice_rows, out_name):
+          def make_txt_tar(slice_rows, out_name, arc_prefix="narou/texts"):
               if not slice_rows:
                   return
               with tarfile.open(out_name, "w:gz") as tf:
                   for r in slice_rows:
-                      pdf_rel = r.get("pdf_path")
-                      if pdf_rel and pathlib.Path(pdf_rel).exists():
-                          tf.add(pdf_rel, arcname=f"narou/{pathlib.Path(pdf_rel).name}")
+                      txt_rel = r.get("text_path")
+                      if txt_rel and pathlib.Path(txt_rel).exists():
+                          tf.add(txt_rel, arcname=f"{arc_prefix}/{pathlib.Path(txt_rel).name}")
 
           for start in range(0, len(rows), 100):
               s_rank = start + 1
               e_rank = start + 100
-              tar_name = f"narou_rank_{s_rank:03d}_{e_rank:03d}_pdfs.tar.gz"
-              make_slice_tar(rows[start : start + 100], tar_name)
+              make_txt_tar(rows[start : start + 100], f"narou_rank_{s_rank:03d}_{e_rank:03d}_texts.tar.gz")
+
+          supp_path = pathlib.Path("data/datasets/narou_commercialized_genre_supplement.jsonl")
+          if supp_path.exists():
+              supp_rows = [json.loads(line) for line in supp_path.read_text(encoding="utf-8").splitlines() if line.strip()]
+              make_txt_tar(supp_rows, "narou_genre_supplement_texts.tar.gz")
+
+          aozora_dir = pathlib.Path("data/raw/aozora/texts")
+          if aozora_dir.is_dir():
+              with tarfile.open("aozora_texts.tar.gz", "w:gz") as tf:
+                  for p in sorted(aozora_dir.glob("*.txt")):
+                      tf.add(p, arcname=f"aozora/texts/{p.name}")
           PY
 
-          TOTAL_COUNT=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
+          RANKED_COUNT=$(wc -l < data/datasets/narou_commercialized_ranked.jsonl | tr -d ' ')
+          SUPP_COUNT=0
+          [ -f data/datasets/narou_commercialized_genre_supplement.jsonl ] && SUPP_COUNT=$(wc -l < data/datasets/narou_commercialized_genre_supplement.jsonl | tr -d ' ')
+          ALL_COUNT=$(( RANKED_COUNT + SUPP_COUNT ))
+
           TAG_MAIN="datasets-narou-commercialized"
-          TITLE_MAIN="Syosetsuka ni Narou Externally Verified Commercialized Full-Episode PDFs (Ranks 1-${TOTAL_COUNT}, R15 Included)"
-          NOTES_MAIN="Externally verified (CiNii Books ISBN + Wikipedia book/manga/anime/game + Apple Books Japan) commercialized Syosetsuka ni Narou free WEB editions (including R15-flagged works), rendered with all episodes across Ranks 1-${TOTAL_COUNT}."
+          TITLE_MAIN="Syosetsuka ni Narou Verified Commercialized Plain-Text Corpus (Top ${RANKED_COUNT} + ${SUPP_COUNT} 5-Genre Supplement = ${ALL_COUNT} Works)"
+          NOTES_MAIN="Text-only corpus (all PDFs purged): externally verified commercialized Syosetsuka ni Narou free WEB plain texts (R15 included, all episodes) — Overall Ranks 1-${RANKED_COUNT} plus ${SUPP_COUNT} works across 歴史・推理・現代・SF・ホラー."
           if ! gh release view "$TAG_MAIN" >/dev/null 2>&1; then
             gh release create "$TAG_MAIN" --title "$TITLE_MAIN" --notes "$NOTES_MAIN"
           else
             gh release edit "$TAG_MAIN" --title "$TITLE_MAIN" --notes "$NOTES_MAIN" || true
+            # Delete any legacy *_pdfs.tar.gz or *.pdf assets on this release
+            OLD_PDF_ASSETS=$(gh release view "$TAG_MAIN" --json assets --jq '.assets[].name | select(test("pdf"; "i"))' || true)
+            for old_a in $OLD_PDF_ASSETS; do
+              echo "Deleting legacy PDF release asset: $old_a"
+              gh release delete-asset "$TAG_MAIN" "$old_a" --yes || true
+            done
           fi
+
           ASSETS=(
+            data/datasets/narou_commercialized_all.jsonl
             data/datasets/narou_commercialized_ranked.jsonl
             data/datasets/narou_commercialized_ranking.md
+            data/datasets/narou_commercialized_genre_supplement.jsonl
+            data/datasets/narou_genre_supplement_ranking.md
             data/datasets/narou_commercialized_top100.jsonl
             data/datasets/narou_top100_ranking.md
             data/datasets/manifest.json
           )
-          for tar_f in narou_rank_*_pdfs.tar.gz; do
+          for tar_f in narou_rank_*_texts.tar.gz narou_genre_supplement_texts.tar.gz aozora_texts.tar.gz; do
             [ -f "$tar_f" ] && ASSETS+=("$tar_f")
           done
           for slice_f in data/datasets/narou_commercialized_rank[0-9]*.jsonl data/datasets/narou_rank[0-9]*_ranking.md; do
             [ -f "$slice_f" ] && ASSETS+=("$slice_f")
           done
           for asset in "${ASSETS[@]}"; do
+            [ -f "$asset" ] || continue
             for attempt in 1 2 3; do
               if gh release upload "$TAG_MAIN" "$asset" --clobber; then
                 break
@@ -502,24 +539,9 @@ jobs:
             done
           done
 
-          # Keep `datasets-narou-top100` updated with the strictly verified R15-inclusive Top 100
-          cp narou_rank_001_100_pdfs.tar.gz narou_top100_pdfs.tar.gz
-          TAG_TOP100="datasets-narou-top100"
-          if ! gh release view "$TAG_TOP100" >/dev/null 2>&1; then
-            gh release create "$TAG_TOP100" \
-              --title "Syosetsuka ni Narou Top 100 Commercialized Full-Episode PDFs" \
-              --notes "Ranked Top 100 externally verified commercialized Syosetsuka ni Narou free WEB editions (R15 included)."
+          # Final assertion: zero PDF assets remain on Release
+          REM_PDF_ASSETS=$(gh release view "$TAG_MAIN" --json assets --jq '[.assets[].name | select(test("pdf"; "i"))] | length')
+          if [ "$REM_PDF_ASSETS" != "0" ]; then
+            echo "ERROR: $REM_PDF_ASSETS PDF assets still remain on $TAG_MAIN"
+            exit 1
           fi
-          for top_asset in \
-            narou_top100_pdfs.tar.gz \
-            data/datasets/narou_commercialized_top100.jsonl \
-            data/datasets/narou_top100_ranking.md \
-            data/datasets/manifest.json; do
-            for attempt in 1 2 3; do
-              if gh release upload "$TAG_TOP100" "$top_asset" --clobber; then
-                break
-              fi
-              [ "$attempt" -eq 3 ] && exit 1
-              sleep 5
-            done
-          done

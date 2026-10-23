@@ -107,9 +107,15 @@ def main() -> int:
 
     limit = min(args.per_query, 500)
     queries: list[tuple[str, dict]] = []
-    major_genres = {101, 102, 201, 202, 302, 401}
+    major_genres = {101, 102, 201, 202, 301, 302, 303, 304, 305, 401, 402, 403, 404}
+    supplement_focus_genres = (303, 304, 305, 301, 302, 102, 306, 307, 401, 402, 403, 404)
     for genre in args.genres if args.genres is not None else cfg.narou.genres:
-        g_pages = 2 if genre in major_genres and args.order_pages >= 2 else 1
+        if genre in {303, 304, 305, 301, 302, 402, 403, 404}:
+            g_pages = min(3, max(1, args.order_pages))
+        elif genre in major_genres and args.order_pages >= 2:
+            g_pages = 2
+        else:
+            g_pages = 1
         for page_idx in range(g_pages):
             st = 1 + page_idx * limit
             if st > 2000:
@@ -117,6 +123,19 @@ def main() -> int:
             suffix = "" if page_idx == 0 else f"_p{page_idx + 1}"
             # Note: notr15 is intentionally omitted so R15-flagged general works are included.
             queries.append((f"genre_{genre}{suffix}", {"genre": genre, "order": "hyoka", "st": st}))
+
+    # Targeted per-genre commercialisation candidate harvesting for non-isekai genres
+    # (歴史 / 推理 / 現代 / SF / ホラー) so bunko/tankobon works with lower overall
+    # bookmark totals are still discovered before strict external verification.
+    if args.genres is None or set(args.genres) & set(supplement_focus_genres):
+        target_g = [
+            g for g in supplement_focus_genres if args.genres is None or g in args.genres
+        ]
+        for g in target_g:
+            for kw_idx, g_kw in enumerate(("書籍化", "文庫", "コミカライズ")):
+                queries.append(
+                    (f"genre_{g}_kw{kw_idx}", {"genre": g, "word": g_kw, "order": "hyoka", "st": 1})
+                )
 
     for order in args.orders or []:
         if order in {"hyoka", "favnovelcnt"}:
