@@ -14,6 +14,7 @@
 | [`curation/selection_report.md`](curation/selection_report.md) | **採用判定の本体**。実用性の評価基準、34 成果物の採否、重複・権利・除外理由、次工程。 |
 | [`curation/gap_analysis_and_added_sources.md`](curation/gap_analysis_and_added_sources.md) | コーパスの空白を埋める追加調査（2026 年のベンチマーク、長編生成、Agent Skills、評価ハーネス、日本語研究）。 |
 | [`catalog/README.md`](catalog/README.md) | 統一カタログのスキーマと読み方、件数、限界。 |
+| [`curation/executability_report.md`](curation/executability_report.md) | **実務化できるか**の仕分け（手順・合格条件・失敗条件・例の 4 項目、488 件）。 |
 | [`program/skill_pipeline_mapping.md`](program/skill_pipeline_mapping.md) | 技法カタログを `SKILL.md` / 評価ハーネスへ変換する設計。 |
 | [`inventory/artifacts.jsonl`](inventory/artifacts.jsonl) | 成果物 34 件の機械可読インベントリ（判定・点数・保存先・根拠）。 |
 | [`curated/README.md`](curated/README.md) | 採録した 88 ファイルの扱い、除外したもの、ファイル名の正規化。 |
@@ -38,6 +39,8 @@ research/
 │   ├── taxonomies.jsonl         # 10 の分類体系
 │   ├── tools.jsonl              # 96 のスキル／ツール／パイプライン
 │   ├── sources.jsonl            # 529 の重複排除済み書誌
+│   ├── executability.jsonl      # 488 件の実行可能度（手順・合格条件・失敗条件・例）
+│   ├── executability_summary.md # その集計（自動生成）
 │   ├── schema.json              # JSON Schema（record family ごと）
 │   ├── manifest.json            # 件数・分類・入力ハッシュ
 │   └── validation_report.json   # 構造検査の結果
@@ -48,6 +51,7 @@ research/
 │   └── artifacts.jsonl          # 34 成果物の採否インベントリ
 └── curation/
     ├── selection_report.md
+    ├── executability_report.md
     ├── gap_analysis_and_added_sources.md
     └── added_sources.jsonl      # 追加調査 24 件
 ```
@@ -69,6 +73,19 @@ research/
   CNKI・万方の HTML／PDF、入れ子 ZIP の重複。**容量・著作権・監査コスト**が理由です。
 
 詳細な点数と理由は [`curation/selection_report.md`](curation/selection_report.md) を参照してください。
+
+### 3.1 実務に落とせるか
+
+「知識が抽象的で使えない」を件数で扱うため、各技法に実行可能度を付けている。
+
+| 区分 | 件数 | 使い方 |
+| --- | ---: | --- |
+| `executable` | 115 | そのまま `SKILL.md` の手順にできる |
+| `partial` | 290 | 合格条件を 1 行足せば使える |
+| `reference_only` | 83 | 分類・評価・発想の語彙として使う |
+
+欠けているのは主に**合格条件**（488 件中 124 件しか持たない）。
+詳細は [`curation/executability_report.md`](curation/executability_report.md)。
 
 ## 4. 再生成と検証
 

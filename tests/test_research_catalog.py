@@ -26,6 +26,7 @@ def catalog():
         "taxonomies": read_jsonl(CATALOG / "taxonomies.jsonl"),
         "tools": read_jsonl(CATALOG / "tools.jsonl"),
         "sources": read_jsonl(CATALOG / "sources.jsonl"),
+        "executability": read_jsonl(CATALOG / "executability.jsonl"),
         "manifest": json.loads((CATALOG / "manifest.json").read_text(encoding="utf-8")),
         "validation": json.loads((CATALOG / "validation_report.json").read_text(encoding="utf-8")),
     }
@@ -154,7 +155,8 @@ def test_added_sources_are_well_formed():
 def test_schema_is_valid_json_and_versioned():
     schema = json.loads((CATALOG / "schema.json").read_text(encoding="utf-8"))
     assert schema["$schema"].startswith("https://json-schema.org/")
-    assert {"technique", "taxonomy", "tool", "source", "skill_seed"} <= set(schema["$defs"])
+    assert {"technique", "taxonomy", "tool", "source", "skill_seed", "executability"} <= set(
+        schema["$defs"])
 
 
 def test_manifest_inputs_exist():
@@ -177,3 +179,68 @@ def test_curated_manifest_hashes_match_files():
             continue
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         assert digest == rec["sha256"], rec["destination"]
+
+
+def test_executability_covers_every_technique(catalog):
+    ids = {r["id"] for r in catalog["techniques"]}
+    exec_ids = [r["id"] for r in catalog["executability"]]
+    assert len(exec_ids) == len(set(exec_ids)) == len(ids)
+    assert set(exec_ids) == ids
+
+
+def test_executability_is_internally_consistent(catalog):
+    for rec in catalog["executability"]:
+        criteria = rec["criteria"]
+        assert set(criteria) == {"procedure", "acceptance", "failure_condition", "example"}
+        assert rec["score"] == sum(criteria.values())
+        assert set(rec["missing"]) == {k for k, ok in criteria.items() if not ok}
+        assert list(rec["missing"]) == [k for k in ("procedure", "acceptance",
+                                                   "failure_condition", "example")
+                                       if not criteria[k]]
+        assert rec["tier"] in {"executable", "partial", "reference_only"}
+        if rec["tier"] == "executable":
+            assert criteria["procedure"] and criteria["acceptance"], rec["id"]
+        if rec["tier"] == "reference_only":
+            assert rec["score"] <= 1, rec["id"]
+
+
+def test_executability_tiers_match_manifest(catalog):
+    rows = catalog["executability"]
+    counts = catalog["manifest"]["executability"]["tier_counts"]
+    for tier in ("executable", "partial", "reference_only"):
+        assert counts.get(tier, 0) == sum(1 for r in rows if r["tier"] == tier)
+    assert sum(counts.values()) == len(rows)
+
+
+def test_executability_summary_matches_manifest(catalog):
+    """The generated markdown must not drift from the machine-readable roll-up."""
+    summary = (CATALOG / "executability_summary.md").read_text(encoding="utf-8")
+    total = len(catalog["executability"])
+    for tier, n in catalog["manifest"]["executability"]["tier_counts"].items():
+        assert f"| `{tier}` | {n} |" in summary, tier
+    assert f"対象: **{total} 件**" in summary
+
+
+def test_derived_operations_are_flagged(catalog):
+    """A record must say whether its procedure came from the source or a mapping."""
+    for rec in catalog["techniques"]:
+        assert rec["extra"]["operation_origin"] in {"stated", "mechanism_derived", "none"}
+    china = [r for r in catalog["techniques"] if r["artifact"] == "narrative/china_2026"]
+    assert china and all(r["extra"]["operation_origin"] == "mechanism_derived" for r in china)
+    assert all(r["operation_ja"] == r["mechanism_ja"] for r in china)
+
+
+def test_executability_summary_sections_are_present(catalog):
+    summary = (CATALOG / "executability_summary.md").read_text(encoding="utf-8")
+    for heading in (
+        "# 実行可能度の集計（自動生成）",
+        "## 判定基準（4 項目・各 1 点）",
+        "## 成果物別",
+        "## `partial` を `executable` にするために足すもの",
+        "## スキル種（13 件）が参照する技法の内訳",
+        "## この集計で分からないこと",
+    ):
+        assert heading in summary, heading
+    coverage = catalog["manifest"]["executability"]["seed_coverage"]
+    assert coverage and coverage["seeds"] == 13
+    assert not coverage["unresolved_ids"]

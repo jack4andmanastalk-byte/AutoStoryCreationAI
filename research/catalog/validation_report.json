@@ -10,7 +10,10 @@
     "all_source_refs_resolve": true,
     "all_sources_have_title": true,
     "all_citable_sources_have_url_or_doi": true,
-    "counts_match_manifest": true
+    "counts_match_manifest": true,
+    "executability_covers_all_techniques": true,
+    "all_executability_tiers_valid": true,
+    "executability_scores_consistent": true
   },
   "counts": {
     "techniques": 488,

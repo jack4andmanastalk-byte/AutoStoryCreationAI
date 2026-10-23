@@ -16,6 +16,8 @@
 | `taxonomies.jsonl` | 10 | ATU、プロップ、モチーフ索引などの分類体系 |
 | `tools.jsonl` | 96 | AI スキル、執筆ツール、パイプライン、評価基盤 |
 | `sources.jsonl` | 529 | 重複排除済みの書誌（URL/DOI 単位） |
+| `executability.jsonl` | 488 | 各技法の実行可能度（手順・合格条件・失敗条件・例の 4 項目） |
+| `executability_summary.md` | — | 上記の集計（自動生成） |
 | `manifest.json` | — | 件数、分類別内訳、入力ファイルの SHA-256 |
 | `validation_report.json` | — | 構造検査の結果（内容の妥当性ではない） |
 | `schema.json` | — | JSON Schema（technique / taxonomy / tool / source / skill_seed） |
@@ -33,6 +35,9 @@
 
 `domains`（複数タグあり）: story 250、style 166、production 68、character 67、
 meta 67、world 59、interaction 46、history 38。
+
+実行可能度の内訳: `executable` 115 / `partial` 290 / `reference_only` 83。
+詳細は [`../curation/executability_report.md`](../curation/executability_report.md)。
 
 ---
 
@@ -131,6 +136,44 @@ URL で重複排除して 96 件にしたもの（3 件が両方に存在）。�
 
 ---
 
+## 5.5 実行可能度（executability.jsonl）
+
+「この項目は、そのまま指示書にできるか」を 4 項目で判定したもの。
+引用元の研究の質ではなく、**レコードの書き方**を測っている。
+
+```json
+{
+  "id": "narrative/japan_2026:T034",
+  "artifact": "narrative/japan_2026",
+  "criteria": {"procedure": true, "acceptance": true, "failure_condition": true, "example": false},
+  "score": 3,
+  "tier": "executable",
+  "missing": ["example"],
+  "operation_origin": "stated",
+  "acceptance_cue": "確認",
+  "acceptance_cue_field": "operation_ja",
+  "procedure_chars": 62,
+  "example_count": 0
+}
+```
+
+| フィールド | 意味 |
+| --- | --- |
+| `criteria` | 手順（30 文字以上）／合格条件（判定語）／失敗条件（20 文字以上）／例（1 件以上） |
+| `score` | 0–4 |
+| `tier` | `executable`＝手順と合格条件の両方あり、`partial`＝片方欠け、`reference_only`＝0–1 点 |
+| `operation_origin` | `stated`＝原カタログが手順として記述、`mechanism_derived`＝仕組み欄から導出、`none`＝手順なし |
+| `acceptance_cue` | 合格条件と判定した語（監査用。過大評価の可能性あり） |
+
+**使い方**:
+* `tier=executable` の項目だけを `SKILL.md` の手順節に使う。
+* `tier=partial` は、合格条件を 1 行足してから使う。
+* `tier=reference_only` は、評価の観点・タグ・検索語として使う。手順にはしない。
+
+**注意**: `acceptance_cue` は語彙の有無で判定している。「比較」のように作業を表す語も
+拾うため、`executable` は過大評価の方向に偏る。判定基準は
+`scripts/build_research_catalog.py` の `EXECUTABILITY_CRITERIA` にあり、変更すれば再生成できる。
+
 ## 6. 使い方
 
 ```python
@@ -155,8 +198,11 @@ print(t["summary_ja"])
 for sid in t["source_ids"]:
     print("-", src[sid]["title"], src[sid]["url"])
 
-# 3. 失敗類型の分布（例: 制約・限界が明示された項目）
-print(Counter(bool(t["limitations_ja"]) for t in tech))
+# 3. そのままスキル化できる項目だけを引く
+executability = {r["id"]: r for r in read_jsonl("research/catalog/executability.jsonl")}
+for t in tech:
+    if executability[t["id"]]["tier"] == "executable" and "world" in t["domains"]:
+        print(t["id"], t["title_ja"])
 ```
 
 スキルへの変換は [`../program/skill_pipeline_mapping.md`](../program/skill_pipeline_mapping.md) を参照。
@@ -186,3 +232,4 @@ print(Counter(bool(t["limitations_ja"]) for t in tech))
 4. **編集上の分類**。`domains` と要約は本リポジトリの編集であり、原典の主張ではない。
 5. **引用の安全性**。要約が原文に近い場合があるため、公表時は原典を確認し、
    引用ルールに従う。
+6. **実行可能度は文章の形の評価**。手順が正しいこと、技法が効くことは保証しない。

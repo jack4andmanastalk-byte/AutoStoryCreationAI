@@ -132,6 +132,7 @@ make report
 | [`research/curation/selection_report.md`](research/curation/selection_report.md) | 実用性判定・採否理由・重複分析 |
 | [`research/curation/gap_analysis_and_added_sources.md`](research/curation/gap_analysis_and_added_sources.md) | 空白領域の追加調査（24 件、2025–2026 のベンチマーク等） |
 | [`research/catalog/README.md`](research/catalog/README.md) | 統一カタログのスキーマと限界 |
+| [`research/curation/executability_report.md`](research/curation/executability_report.md) | 実務化できるかの仕分け（488 件：executable 115 / partial 290 / reference_only 83） |
 | [`research/program/skill_pipeline_mapping.md`](research/program/skill_pipeline_mapping.md) | 技法 → `SKILL.md`／評価ハーネスへの変換設計 |
 
 ```bash

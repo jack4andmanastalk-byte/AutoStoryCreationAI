@@ -6,141 +6,564 @@
   "$defs": {
     "evidence": {
       "type": "object",
-      "required": ["level", "verification", "source_count"],
+      "required": [
+        "level",
+        "verification",
+        "source_count"
+      ],
       "properties": {
-        "level": {"type": ["string", "null"], "description": "Level assigned by the originating catalog. Levels are NOT comparable across catalogs; see research/catalog/README.md."},
-        "verification": {"type": ["string", "null"]},
-        "source_count": {"type": "integer", "minimum": 0}
+        "level": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Level assigned by the originating catalog. Levels are NOT comparable across catalogs; see research/catalog/README.md."
+        },
+        "verification": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_count": {
+          "type": "integer",
+          "minimum": 0
+        }
       }
     },
     "provenance": {
       "type": "object",
-      "required": ["path"],
+      "required": [
+        "path"
+      ],
       "properties": {
-        "path": {"type": "string", "pattern": "^research/curated/"}
+        "path": {
+          "type": "string",
+          "pattern": "^research/curated/"
+        }
       }
     },
     "technique": {
       "type": "object",
-      "required": ["id", "schema_version", "artifact", "original_id", "entry_type",
-                   "title_ja", "domains", "source_ids", "evidence", "language", "rights", "provenance"],
+      "required": [
+        "id",
+        "schema_version",
+        "artifact",
+        "original_id",
+        "entry_type",
+        "title_ja",
+        "domains",
+        "source_ids",
+        "evidence",
+        "language",
+        "rights",
+        "provenance"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^[a-z_]+/[a-z_0-9]+:[A-Za-z0-9_.-]+$"},
-        "schema_version": {"const": "1.0"},
-        "artifact": {"type": "string"},
-        "original_id": {"type": "string"},
-        "entry_type": {"enum": ["technique", "paradigm", "practice", "concept", "workflow", "critical_principle"]},
-        "title_ja": {"type": "string", "minLength": 1},
-        "title_en": {"type": ["string", "null"]},
-        "terms": {"type": "array", "items": {"type": "string"}},
-        "summary_ja": {"type": ["string", "null"]},
-        "operation_ja": {"type": ["string", "null"]},
-        "function_ja": {"type": ["string", "null"]},
-        "mechanism_ja": {"type": ["string", "null"]},
-        "limitations_ja": {"type": ["string", "null"]},
-        "origin_ja": {"type": ["string", "null"]},
-        "examples": {"type": "array"},
-        "media": {"type": "array", "items": {"type": "string"}},
-        "domains": {"type": "array", "minItems": 1, "items": {"enum": ["story", "character", "world", "history", "production", "interaction", "style", "meta"]}},
-        "source_ids": {"type": "array", "items": {"type": "string", "pattern": "^src-[0-9a-f]{10}$"}},
-        "evidence": {"$ref": "#/$defs/evidence"},
-        "related_ids": {"type": "array", "items": {"type": "string"}},
-        "language": {"const": "ja"},
-        "rights": {"type": "string"},
-        "mapping_authorship": {"type": "object"},
-        "provenance": {"$ref": "#/$defs/provenance"},
-        "extra": {"type": "object"}
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z_]+/[a-z_0-9]+:[A-Za-z0-9_.-]+$"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "original_id": {
+          "type": "string"
+        },
+        "entry_type": {
+          "enum": [
+            "technique",
+            "paradigm",
+            "practice",
+            "concept",
+            "workflow",
+            "critical_principle"
+          ]
+        },
+        "title_ja": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title_en": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "summary_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operation_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "function_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mechanism_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitations_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "origin_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "examples": {
+          "type": "array"
+        },
+        "media": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domains": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "story",
+              "character",
+              "world",
+              "history",
+              "production",
+              "interaction",
+              "style",
+              "meta"
+            ]
+          }
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^src-[0-9a-f]{10}$"
+          }
+        },
+        "evidence": {
+          "$ref": "#/$defs/evidence"
+        },
+        "related_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "language": {
+          "const": "ja"
+        },
+        "rights": {
+          "type": "string"
+        },
+        "mapping_authorship": {
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "extra": {
+          "type": "object"
+        }
       }
     },
     "taxonomy": {
       "type": "object",
-      "required": ["id", "schema_version", "artifact", "original_id", "entry_type",
-                   "title_ja", "scope_ja", "source_ids", "domains", "provenance"],
+      "required": [
+        "id",
+        "schema_version",
+        "artifact",
+        "original_id",
+        "entry_type",
+        "title_ja",
+        "scope_ja",
+        "source_ids",
+        "domains",
+        "provenance"
+      ],
       "properties": {
-        "id": {"type": "string"},
-        "schema_version": {"const": "1.0"},
-        "artifact": {"type": "string"},
-        "original_id": {"type": "string"},
-        "entry_type": {"const": "taxonomy"},
-        "title_ja": {"type": "string"},
-        "title_en": {"type": ["string", "null"]},
-        "alternate_names": {"type": "array", "items": {"type": "string"}},
-        "scope_ja": {"type": "string"},
-        "unit": {"type": ["string", "null"]},
-        "classification_ja": {"type": ["string", "null"]},
-        "operation_ja": {"type": ["string", "null"]},
-        "limitations_ja": {"type": ["string", "null"]},
-        "access_note": {"type": ["string", "null"]},
-        "source_ids": {"type": "array", "items": {"type": "string"}},
-        "domains": {"type": "array", "items": {"type": "string"}},
-        "language": {"type": "string"},
-        "rights": {"type": "string"},
-        "mapping_authorship": {"type": "object"},
-        "provenance": {"$ref": "#/$defs/provenance"}
+        "id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "original_id": {
+          "type": "string"
+        },
+        "entry_type": {
+          "const": "taxonomy"
+        },
+        "title_ja": {
+          "type": "string"
+        },
+        "title_en": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "alternate_names": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "scope_ja": {
+          "type": "string"
+        },
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "classification_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "operation_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "limitations_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "access_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "language": {
+          "type": "string"
+        },
+        "rights": {
+          "type": "string"
+        },
+        "mapping_authorship": {
+          "type": "object"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        }
       }
     },
     "tool": {
       "type": "object",
-      "required": ["id", "schema_version", "artifact", "original_id", "entry_type",
-                   "name", "url", "source_ids", "domains", "provenance"],
+      "required": [
+        "id",
+        "schema_version",
+        "artifact",
+        "original_id",
+        "entry_type",
+        "name",
+        "url",
+        "source_ids",
+        "domains",
+        "provenance"
+      ],
       "properties": {
-        "id": {"type": "string"},
-        "schema_version": {"const": "1.0"},
-        "artifact": {"type": "string"},
-        "original_id": {"type": "string"},
-        "entry_type": {"enum": ["skill_or_tool", "pipeline_tool"]},
-        "name": {"type": "string"},
-        "title_ja": {"type": ["string", "null"]},
-        "url": {"type": "string"},
-        "platform": {"type": ["string", "null"]},
-        "category": {"type": ["string", "null"]},
-        "subtags": {"type": "array"},
-        "format": {"type": ["string", "null"]},
-        "deliverables": {"type": ["string", "null"]},
-        "techniques_ja": {"type": ["string", "null"]},
-        "best_for_ja": {"type": ["string", "null"]},
-        "install": {"type": ["string", "null"]},
-        "caveats_ja": {"type": ["string", "null"]},
-        "documentation_language": {"type": ["string", "null"]},
-        "scores": {"type": "object"},
-        "score_total": {"type": ["number", "null"]},
-        "rank": {"type": ["string", "null"]},
-        "license": {"type": ["string", "null"]},
-        "stars": {"type": ["number", "null"]},
-        "last_pushed_at": {"type": ["string", "null"]},
-        "retrieved_at": {"type": ["string", "null"]},
-        "pipeline_stage": {"type": ["string", "null"]},
-        "pdca_role_ja": {"type": ["string", "null"]},
-        "source_ids": {"type": "array", "items": {"type": "string"}},
-        "domains": {"type": "array", "items": {"type": "string"}},
-        "rights": {"type": "string"},
-        "provenance": {"$ref": "#/$defs/provenance"},
-        "merged_from": {"type": "array", "items": {"type": "string"}}
+        "id": {
+          "type": "string"
+        },
+        "schema_version": {
+          "const": "1.0"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "original_id": {
+          "type": "string"
+        },
+        "entry_type": {
+          "enum": [
+            "skill_or_tool",
+            "pipeline_tool"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "title_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "url": {
+          "type": "string"
+        },
+        "platform": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "subtags": {
+          "type": "array"
+        },
+        "format": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deliverables": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "techniques_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "best_for_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "install": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "caveats_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "documentation_language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scores": {
+          "type": "object"
+        },
+        "score_total": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "rank": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "license": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stars": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "last_pushed_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "retrieved_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pipeline_stage": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pdca_role_ja": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "rights": {
+          "type": "string"
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "merged_from": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
       }
     },
     "source": {
       "type": "object",
-      "required": ["id", "title", "authors", "url", "source_type", "artifacts"],
+      "required": [
+        "id",
+        "title",
+        "authors",
+        "url",
+        "source_type",
+        "artifacts"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^src-[0-9a-f]{10}$"},
-        "title": {"type": "string", "minLength": 1},
-        "authors": {"type": "array", "items": {"type": "string"}},
-        "year": {"type": ["integer", "null"]},
-        "url": {"type": ["string", "null"]},
-        "doi": {"type": ["string", "null"]},
-        "source_type": {"type": ["string", "null"]},
-        "language": {"type": ["string", "null"]},
-        "peer_review_status": {"type": ["string", "null"]},
-        "evidence_note": {"type": ["string", "null"]},
-        "notes": {"type": ["string", "null"]},
+        "id": {
+          "type": "string",
+          "pattern": "^src-[0-9a-f]{10}$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "year": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "url": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "doi": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "source_type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "peer_review_status": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "evidence_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "notes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "artifacts": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["artifact", "original_id"],
+            "required": [
+              "artifact",
+              "original_id"
+            ],
             "properties": {
-              "artifact": {"type": "string"},
-              "original_id": {"type": "string"}
+              "artifact": {
+                "type": "string"
+              },
+              "original_id": {
+                "type": "string"
+              }
             }
           }
         }
@@ -148,30 +571,214 @@
     },
     "skill_seed": {
       "type": "object",
-      "required": ["id", "kind", "name", "title_ja", "purpose_ja", "inputs", "outputs",
-                   "steps", "checks", "technique_ids", "status"],
+      "required": [
+        "id",
+        "kind",
+        "name",
+        "title_ja",
+        "purpose_ja",
+        "inputs",
+        "outputs",
+        "steps",
+        "checks",
+        "technique_ids",
+        "status"
+      ],
       "properties": {
-        "id": {"type": "string", "pattern": "^seed-[0-9]{2}-[a-z-]+$"},
-        "kind": {"enum": ["skill_seed", "harness_seed"]},
-        "name": {"type": "string"},
-        "title_ja": {"type": "string"},
-        "purpose_ja": {"type": "string"},
-        "inputs": {"type": "array", "items": {"type": "string"}},
-        "outputs": {"type": "array", "items": {"type": "string"}},
-        "steps": {"type": "array", "items": {"type": "string"}},
-        "checks": {"type": "array", "items": {"type": "string"}},
-        "technique_ids": {"type": "array", "items": {"type": "string"}},
-        "external_resources": {"type": "array", "items": {"type": "string"}},
-        "risks_ja": {"type": "array", "items": {"type": "string"}},
-        "status": {"const": "seed"}
+        "id": {
+          "type": "string",
+          "pattern": "^seed-[0-9]{2}-[a-z-]+$"
+        },
+        "kind": {
+          "enum": [
+            "skill_seed",
+            "harness_seed"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "title_ja": {
+          "type": "string"
+        },
+        "purpose_ja": {
+          "type": "string"
+        },
+        "inputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "technique_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "external_resources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "risks_ja": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "const": "seed"
+        }
       }
+    },
+    "executability": {
+      "type": "object",
+      "description": "How far a technique record is from being directly executable. A lexical self-assessment of the record; it does not validate the cited scholarship.",
+      "required": [
+        "id",
+        "artifact",
+        "criteria",
+        "score",
+        "tier",
+        "missing",
+        "operation_origin"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "artifact": {
+          "type": "string"
+        },
+        "entry_type": {
+          "type": "string"
+        },
+        "domains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "title_ja": {
+          "type": "string"
+        },
+        "criteria": {
+          "type": "object",
+          "required": [
+            "procedure",
+            "acceptance",
+            "failure_condition",
+            "example"
+          ],
+          "properties": {
+            "procedure": {
+              "type": "boolean"
+            },
+            "acceptance": {
+              "type": "boolean"
+            },
+            "failure_condition": {
+              "type": "boolean"
+            },
+            "example": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4
+        },
+        "tier": {
+          "enum": [
+            "executable",
+            "partial",
+            "reference_only"
+          ]
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "procedure",
+              "acceptance",
+              "failure_condition",
+              "example"
+            ]
+          }
+        },
+        "operation_origin": {
+          "enum": [
+            "stated",
+            "mechanism_derived",
+            "none"
+          ],
+          "description": "stated = the source catalog wrote a procedure; mechanism_derived = taken from a mechanism/description field; none = no procedural text."
+        },
+        "acceptance_cue": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "acceptance_cue_field": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "procedure_chars": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "example_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": true
     }
   },
   "oneOf": [
-    {"$ref": "#/$defs/technique"},
-    {"$ref": "#/$defs/taxonomy"},
-    {"$ref": "#/$defs/tool"},
-    {"$ref": "#/$defs/source"},
-    {"$ref": "#/$defs/skill_seed"}
+    {
+      "$ref": "#/$defs/technique"
+    },
+    {
+      "$ref": "#/$defs/taxonomy"
+    },
+    {
+      "$ref": "#/$defs/tool"
+    },
+    {
+      "$ref": "#/$defs/source"
+    },
+    {
+      "$ref": "#/$defs/skill_seed"
+    },
+    {
+      "$ref": "#/$defs/executability"
+    }
   ]
 }

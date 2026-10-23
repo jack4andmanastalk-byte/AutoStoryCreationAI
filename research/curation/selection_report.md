@@ -294,6 +294,7 @@ research/
 | 4 | 世界観日本の 22 項目・キャラクター日本の 118 情報源を正規化 | カタログへ追加し、スキルの参照に接続。 |
 | 5 | ConStory-Bench / LitBench の公開データで検査器を較正 | 一致率・再現性を記録。 |
 | 6 | ツール 96 件のメタデータを再取得 | ライセンス・スター・更新日を更新。 |
+| 7 | `partial` 290 件のうち、スキル種が引く 100 件に合格条件を追記 | `executable` が 48 → 148 件になる。 |
 
 ---
 
@@ -304,3 +305,4 @@ research/
 * 追加資料: [`added_sources.jsonl`](added_sources.jsonl)
 * カタログ: [`../catalog/README.md`](../catalog/README.md)
 * スキル設計: [`../program/skill_pipeline_mapping.md`](../program/skill_pipeline_mapping.md)
+* 実行可能度の仕分け: [`executability_report.md`](executability_report.md)
