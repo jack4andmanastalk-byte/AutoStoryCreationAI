@@ -148,9 +148,9 @@ class CommandProvider:
 class ScriptedProvider:
     """Returns pre-written text. For tests and the offline demo only.
 
-    Lookup order: ``"<purpose>:<task_id>"``, then ``purpose``. A missing key is an
-    error rather than an empty string, so a broken demo cannot look like a
-    successful generation.
+    Lookup order: ``"<purpose>:<system>:<task_id>"``, ``"<purpose>:<task_id>"``,
+    then ``purpose``. A missing key is an error rather than an empty string, so a
+    broken demo cannot look like a successful generation.
     """
 
     name = "scripted"
@@ -165,7 +165,13 @@ class ScriptedProvider:
     def generate(self, request: GenerationRequest) -> GenerationResult:
         self.calls.append(request)
         task_id = str(request.context.get("task_id", ""))
-        for key in (f"{request.purpose}:{task_id}", request.purpose):
+        system = str(request.context.get("system", ""))
+        keys = [
+            f"{request.purpose}:{system}:{task_id}",
+            f"{request.purpose}:{task_id}",
+            request.purpose,
+        ]
+        for key in keys:
             if key in self.responses:
                 return GenerationResult(
                     text=self.responses[key], provider=self.name,

@@ -179,12 +179,14 @@ make audit      # デモ作品（矛盾を 7 件仕込んだ 5 章）を監査�
 make evaluate   # デモ作品と初稿を比較（L2 は記録済み判定を再生／ネットワーク不要）
 make skills-check   # SKILL.md の仕様検査＋両スキルのテスト
 make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
-make plan           # 固定タスク t01 から canon を生成（オフラインの台本で配線検証）
+make plan           # 固定タスク t01 から canon だけを生成
+make story          # S1: 企画 → canon → 3 章 → 監査を一括実行
+make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
 ```
 
-### 4.3 生成パイプライン（Phase 2-A: Plan）
+### 4.3 生成パイプライン（Phase 2-A: Plan / Draft）
 
-固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から**設定台帳（canon）を生成**する段階です。
+固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から **canon を生成し、3 章の本文を書き、監査まで通す**段階です。
 
 ```bash
 python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配線を確認
@@ -198,8 +200,13 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
   工程間の変換がありません。canon が監査の要求を満たさない場合は**生成段階で失敗**します
   （`--max_attempts` 回まで修復プロンプトで再試行し、それでも駄目なら `status: failed`）
 * `runs/` は git 管理外。研究ノートには `manifest.json` の `git_commit` と `prompt_hashes` を引きます
-* `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/plan-demo.json`）で、
+* `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/*.json`）で、
   モデル出力ではありません
+* `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon を使う系です
+* 各章には `{{time: day=3}}{{location: 王都}}` などのマーカーが入り、監査の根拠になります。
+  モデルがマーカーを落とした場合は canon から補い、**補ったことを `warnings_ja` に残します**（黙って直さない）
+* 実行の最後にゲート（`must_include` / `length` / `no_high_severity` / `all_checks_ran`）を評価し、
+  未達なら終了コード 1 を返します（デモは `--report-only` で 0）
 
 * デモ: [`harness/README.md`](harness/README.md)、期待値: `harness/cases/demo/EXPECTED.md`
 * 設計方針: **総合点を出さない**（次元別プロファイル）、**根拠の無い判定は無効**、

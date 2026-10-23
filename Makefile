@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate plan skills-check protocol-check clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate plan story baseline skills-check protocol-check clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -59,8 +59,16 @@ evaluate: ## run the evaluation harness on the demo story (L1 + recorded L2)
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/eval/demo \
 		--report-only
 
-plan: ## run the Plan step (task -> canon) with the scripted fixture
+story: ## run S1 end to end (plan -> draft -> audit) with the scripted fixture
 	$(RUN) scripts/run_pipeline.py --task t01 --out build/runs \
+		--script benchmarks/protocol-v1/fixtures/plan-demo.json --report-only
+
+baseline: ## run S0 (single prompt, no canon) for the same task
+	$(RUN) scripts/run_pipeline.py --task t01 --system s0 --out build/runs \
+		--script benchmarks/protocol-v1/fixtures/draft-baseline-demo.json --report-only
+
+plan: ## run only the Plan step (task -> canon)
+	$(RUN) scripts/run_pipeline.py --task t01 --stage plan --out build/runs \
 		--script benchmarks/protocol-v1/fixtures/plan-demo.json
 
 protocol-check: ## verify the frozen evaluation protocol and its task set

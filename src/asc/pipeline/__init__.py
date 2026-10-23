@@ -7,6 +7,10 @@ from .llm import (
     CommandProvider, GenerationRequest, GenerationResult, Provider, ProviderError,
     ScriptedProvider, digest, load_scripted_responses,
 )
+from .draft import (
+    Draft, DraftError, ChapterDraft, build_story, canon_brief, chapter_plan,
+    check_chapter, clean_text, draft_story,
+)
 from .plan import (
     Plan, PlanError, build_plan, canon_coverage, normalise_canon, parse_plan,
     validate_payload,
@@ -20,6 +24,8 @@ __all__ = [
     "ProviderError", "ScriptedProvider", "digest", "load_scripted_responses",
     "Plan", "PlanError", "build_plan", "canon_coverage", "normalise_canon",
     "parse_plan", "validate_payload",
+    "Draft", "DraftError", "ChapterDraft", "build_story", "canon_brief",
+    "chapter_plan", "check_chapter", "clean_text", "draft_story",
     "PromptError", "PromptTemplate", "load_prompt",
     "RunLedger", "git_commit", "make_run_id",
     "PROTOCOL_VERSION", "Task", "TaskError", "TaskSet", "load_tasks",
