@@ -28,6 +28,8 @@ on:
       - "scripts/run_pipeline.py"
       - "prompts/**"
       - "tests/test_pipeline.py"
+      - "scripts/run_experiment.py"
+      - "scripts/judge_adapter.py"
       - ".github/workflows/research-check.yml"
   pull_request:
     paths:
