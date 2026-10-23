@@ -119,6 +119,8 @@ def test_dataset_jobs_cancel_superseded_builds(dataset):
         concurrency = dataset["jobs"][job_id]["concurrency"]
         assert concurrency["cancel-in-progress"] is True, job_id
         assert "github.ref" in concurrency["group"], job_id
+    # matrix shards must include matrix.shard so shards do not cancel each other
+    assert "matrix.shard" in dataset["jobs"]["render-narou"]["concurrency"]["group"]
     # publishing is serialised instead: two force-pushes must not interleave
     publish = dataset["jobs"]["publish"]["concurrency"]
     assert publish["cancel-in-progress"] is False
@@ -126,7 +128,8 @@ def test_dataset_jobs_cancel_superseded_builds(dataset):
 
 def test_a_cancelled_build_never_publishes(dataset):
     condition = " ".join(dataset["jobs"]["publish"]["if"].split())
-    assert "always()" in condition          # keep backfill-on-partial-failure
+    assert "!cancelled()" in condition      # backfill on partial failure, but obey UI Cancel
+    assert "always()" not in condition      # `always()` blocks standard GitHub UI Cancel
     assert "needs.prepare.result == 'success'" in condition
     assert "needs.render-narou.result != 'cancelled'" in condition
 

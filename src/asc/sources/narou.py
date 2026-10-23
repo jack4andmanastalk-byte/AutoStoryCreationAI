@@ -373,12 +373,14 @@ def compute_popularity_ranking_score(work: Work) -> Dict[str, Any]:
         )
         wiki_vols = int(ext.get("wikipedia_volumes") or 0)
         cinii_books = int(ext.get("cinii_book_hits") or 0)
+        apple_books = int(ext.get("apple_book_hits") or 0)
         cinii_total = min(int(ext.get("cinii_total_results") or 0), 35)
         text_vols = estimate_volumes_from_text(combined_text) if is_book else 0
         est_vols = max(
             syuppan_vols,
             wiki_vols,
             cinii_books,
+            min(apple_books, 25) if is_book else 0,
             min(cinii_total, 25) if is_book else 0,
             text_vols,
             1 if (is_book or rights.get("commercialized") is True) else 0,
@@ -475,6 +477,10 @@ def apply_external_verification(
     if "cinii_books" in media_result.sources:
         signals.append(
             f"cinii_books(book={media_result.cinii_book_hits},manga={media_result.cinii_manga_hits})"
+        )
+    if "apple_books_jp" in media_result.sources:
+        signals.append(
+            f"apple_books_jp(book={media_result.apple_book_hits},manga={media_result.apple_manga_hits})"
         )
     if "wikipedia" in media_result.sources:
         signals.append(f"wikipedia({','.join(media_result.verified_media)})")
@@ -937,18 +943,26 @@ class NarouSource:
         anime_ncodes: Optional[Set[str]] = None,
         strict: Optional[bool] = None,
         check_syuppan: bool = False,
+        seed_verifications: Optional[Dict[str, MediaVerificationResult]] = None,
+        target_verified_pool: int = 0,
+        min_scan_before_stop: int = 700,
     ) -> List[Work]:
-        """Batch-verify candidates via CiNii Books + Wikipedia (+ optional Syosetu)."""
+        """Batch-verify candidates via Wikipedia + CiNii Books + Apple Books Japan."""
         strict_flag = (
             self.config.strict_external_verification if strict is None else strict
         )
         media_map = self.media_verifier.verify_candidates(
             candidates,
             anime_ncodes=anime_ncodes,
+            seed_verifications=seed_verifications,
+            target_verified_pool=target_verified_pool,
+            min_scan_before_stop=min_scan_before_stop,
         )
         accepted: List[Work] = []
         for work in candidates:
-            res = media_map.get(work.id) or MediaVerificationResult()
+            if work.id not in media_map:
+                continue
+            res = media_map[work.id]
             if check_syuppan and not res.verified:
                 userid = str((work.extra or {}).get("userid") or "") or None
                 if userid:
