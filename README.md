@@ -205,6 +205,9 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 my_model_adapter.py" --out runs           # 実モデルを接続
 python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 scripts/chat_operator.py --dir build/operator/pilot"  # 鍵なし
+OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command \
+    --command "python3 scripts/model_adapter.py --model gpt-4.1" \
+    --model gpt-4.1 --model-version 2025-04-14 --out runs       # 版を固定した実モデル
 ```
 
 * 出力 `runs/<run_id>/`: `manifest.json`（モデル・温度・seed・**プロンプトのハッシュ**・git commit・プロトコル版）、
@@ -215,6 +218,10 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
 * `runs/` は git 管理外。研究ノートには `manifest.json` の `git_commit` と `prompt_hashes` を引きます
 * `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/*.json`）で、
   モデル出力ではありません
+* `scripts/model_adapter.py` は、**版を固定した実モデル**を繋ぐ経路です（OpenAI 互換の
+  `/chat/completions`。ローカルのゲートウェイも `--base-url` で使えます）。鍵は環境変数から読み、
+  標準出力には本文だけを返します。`--dry-run` で送信内容を確認でき、`--model-version` を渡すと
+  `manifest.json` の `model_version` が固定されます（これが §5 G5 を判定できる唯一の経路）
 * `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
   プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
   応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。

@@ -109,6 +109,8 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
    コマンドとして渡し、プロンプトを `requests/` に落として応答を `responses/` に
    置く。応答が無いときは **exit 3** で止まり、プロンプトが変わった応答は
    **exit 4（stale）** で拒否する。担い手の版を固定できないため G5 は満たさない。
+   版を固定できるモデルには `scripts/model_adapter.py`（OpenAI 互換）を使う。
+   `--model` と `--model-version` が `manifest.json` に残り、G5 を判定できる。
 2. `manifest.json` に次を必ず記録する。
    `run_id`, `task_id`, `system`, `seed`, `model`, `model_version`, `temperature`,
    `prompt_hashes`, `git_commit`, `protocol_version`, `started_at`, `finished_at`, `cost`.
@@ -152,6 +154,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | 生成（S0–S3） | **S0 / S1 実装済み**（`scripts/run_pipeline.py`）。S2 改稿・S3 文体は未実装 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
+| 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。**実モデルでの較正は未実施** |
 | 対照群 30 作品 | 未選定 |
 
