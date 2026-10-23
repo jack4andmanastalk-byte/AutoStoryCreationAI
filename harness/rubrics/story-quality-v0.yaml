@@ -1,0 +1,65 @@
+# 物語品質ルーブリック v0
+#
+# 総合点は出さない。次元ごとのプロファイルを比較する。
+# anchors は「その点を付けるとき、本文のどこを見るか」を書く。
+# evidence_required: true の次元は、根拠（引用または位置）のない判定を無効とする。
+id: story-quality-v0
+version: "0.1"
+scale:
+  min: 1
+  max: 5
+
+dimensions:
+  - id: coherence
+    question_ja: 出来事の因果と時系列が、本文の情報だけで説明できるか。
+    evidence_required: true
+    owner_skill: skills/continuity-ledger
+    anchors:
+      5: 主要な転換がすべて前の出来事に根拠を持ち、省略された因果も読み手が補える。
+      3: 一部の転換に説明が足りないが、読み進められる。
+      1: 唐突な転換が複数あり、因果が追えない。
+
+  - id: character_consistency
+    question_ja: 人物の選択が、設定された欲望・恐れ・知識と整合するか。
+    evidence_required: true
+    owner_skill: skills/character-core
+    anchors:
+      5: 行動が人物の欲望と恐れから説明でき、知識の範囲を超えない。
+      3: 概ね整合するが、都合のよい判断が一箇所ある。
+      1: 人物が場面の要求に合わせて性格を変えている。
+
+  - id: world_rule_consistency
+    question_ja: 世界の規則とコストが、都合よく変更されていないか。
+    evidence_required: true
+    owner_skill: skills/world-rules
+    anchors:
+      5: 規則が一貫し、代償が物語の制約として機能している。
+      3: 規則は保たれているが、代償が薄い。
+      1: 都合のよい場面で規則が破られ、説明もない。
+
+  - id: originality
+    question_ja: 既存作品の定型の組合せを超えた固有の要素があるか。
+    evidence_required: true
+    owner_skill: skills/premise-brief
+    anchors:
+      5: 設定・状況・語りのいずれかに、他作品に置き換えにくい固有性がある。
+      3: 定型の組合せだが、一部に独自の処理がある。
+      1: 既知の型の焼き直しで、固有の要素が見当たらない。
+
+  - id: reader_orientation
+    question_ja: 初見の読者が、人物・場所・目的を追えるか。
+    evidence_required: true
+    owner_skill: skills/scene-information
+    anchors:
+      5: 必要な情報が、必要になった時点で過不足なく提示される。
+      3: 情報の順序に難があるが、読み返せば追える。
+      1: 誰がどこで何をしているか分からない箇所が複数ある。
+
+  - id: prose_control
+    question_ja: 文長・表記・視点が意図的に制御されているか。
+    evidence_required: false
+    owner_skill: skills/voice-style
+    anchors:
+      5: 文長と表記が場面に応じて変わり、視点の揺れがない。
+      3: 大きな破綻はないが、単調な箇所がある。
+      1: 文長が一定で、視点や表記が揺れる。

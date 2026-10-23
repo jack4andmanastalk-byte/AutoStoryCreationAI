@@ -1,0 +1,17 @@
+# 章ごとの時点。day は物語開始からの通日。
+chapters:
+  - id: ch01
+    day: 1
+    location: 灯台
+  - id: ch02
+    day: 10
+    location: 灯台
+  - id: ch03
+    day: 11
+    location: 王都
+  - id: ch04
+    day: 20
+    location: 王都
+  - id: ch05
+    day: 21
+    location: 王都

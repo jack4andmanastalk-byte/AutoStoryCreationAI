@@ -1,0 +1,32 @@
+# 灯火の記録 — 監査用のデモ作品
+#
+# このディレクトリは、継続性監査が「検出できるはずのもの」を検出できるかを
+# 確かめるための小さな作品です。意図的に 6 種類の矛盾を仕込んであります。
+# 各章の最後に、期待される検出結果をコメントで書いています。
+
+characters:
+  - id: aria
+    name: アリア
+    aliases: ["アリア姫"]
+    status: alive
+    location: 灯台
+    age_at_start: 24
+    birthday_day: 120
+    knows: []
+    notes: 灯台守の娘。王都の事情には疎い。
+
+  - id: boris
+    name: ボリス
+    aliases: ["衛兵ボリス"]
+    status: alive
+    location: 灯台
+    age_at_start: 41
+    knows: ["F-07"]
+
+  - id: celia
+    name: セリア
+    aliases: []
+    status: alive
+    location: 王都
+    age_at_start: 30
+    knows: []

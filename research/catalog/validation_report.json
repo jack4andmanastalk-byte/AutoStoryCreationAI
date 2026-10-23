@@ -1,0 +1,25 @@
+{
+  "validated_on": "2026-10-23",
+  "status": "passed",
+  "scope": "structural checks only; not a verification of the cited scholarship",
+  "checks": {
+    "unique_ids": true,
+    "all_techniques_have_title": true,
+    "all_techniques_have_domain": true,
+    "all_records_have_provenance": true,
+    "all_source_refs_resolve": true,
+    "all_sources_have_title": true,
+    "all_citable_sources_have_url_or_doi": true,
+    "counts_match_manifest": true,
+    "executability_covers_all_techniques": true,
+    "all_executability_tiers_valid": true,
+    "executability_scores_consistent": true
+  },
+  "counts": {
+    "techniques": 488,
+    "taxonomies": 10,
+    "tools": 96,
+    "sources": 529
+  },
+  "unresolved_related_ids": 0
+}

@@ -1,0 +1,7 @@
+# 意図的な矛盾。監査はここに書かれた組を「違反」ではなく「除外」に回す。
+# 理由を必ず書く。空欄のまま除外しない。
+suppressions:
+  - check: dead_character_reappears
+    subject: boris
+    scope: [ch05]
+    reason: アリアの夢の中の回想。故人が発話するのは意図どおり。

@@ -3,8 +3,10 @@ VENV    ?= .venv
 BIN     := $(VENV)/bin
 CONFIG  ?= configs/dataset.yaml
 WORK    ?= 120
+# skills/harness need PyYAML: prefer the virtualenv when it exists
+RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate skills-check clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -37,6 +39,28 @@ pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
 
 report: ## print statistics about the generated datasets
 	$(BIN)/python scripts/dataset_report.py --config $(CONFIG)
+
+research: ## rebuild the unified research catalog from research/curated
+	$(PYTHON) scripts/build_research_catalog.py
+
+research-check: ## verify the committed research catalog is up to date
+	$(PYTHON) scripts/build_research_catalog.py --check
+
+audit: ## audit the demo story against its canon (shows the 7 seeded defects)
+	$(RUN) scripts/audit_continuity.py \
+		--canon harness/cases/demo/canon --text harness/cases/demo/text \
+		--out build/audit/demo.json --ledger build/audit/demo-ledger.json \
+		--markdown build/audit/demo.md --fail-on none
+
+evaluate: ## run the evaluation harness on the demo story (L1 + recorded L2)
+	$(RUN) scripts/run_evaluation.py \
+		--candidate harness/cases/demo/text --baseline harness/cases/demo-baseline/text \
+		--canon harness/cases/demo/canon --patterns harness/patterns.yaml \
+		--judge-fixture harness/fixtures/judgements-demo.json --out build/eval/demo \
+		--report-only
+
+skills-check: ## validate SKILL.md files, run the demo audit and the evaluation tests
+	$(RUN) -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q
 
 clean: ## remove the generated texts and PDFs
 	rm -rf data/raw data/pdf

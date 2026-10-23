@@ -1,0 +1,134 @@
+{
+  "checked_date": "2026-10-22",
+  "overall_status": "PASS_WITH_DOCUMENTED_LIMITATIONS",
+  "counts": {
+    "techniques": 144,
+    "sources": 86,
+    "categories": 18,
+    "entry_types": {
+      "workflow": 6,
+      "technique": 133,
+      "critical_principle": 5
+    },
+    "source_verification_levels": {
+      "C": 37,
+      "B": 5,
+      "A": 42,
+      "D": 2
+    },
+    "primary_source_verification_levels_by_entry": {
+      "A": 105,
+      "C": 32,
+      "B": 6,
+      "D": 1
+    },
+    "http_retrieval_attempts": 146,
+    "http_retrieval_states": {
+      "html_text_extracted": 99,
+      "pdf_text_extracted": 15,
+      "request_or_extraction_error": 9,
+      "http_error": 20,
+      "thin_or_script_only": 3
+    },
+    "http_failed_or_thin_attempts": 32,
+    "crossref_api_records": 16,
+    "crossref_api_200_records": 8
+  },
+  "checks_performed": [
+    "UTF-8 and JSONL parse",
+    "JSON Schema + URI format",
+    "ID sequence and uniqueness",
+    "18 categories x 8 entries",
+    "exact title/definition/operation duplicates",
+    "forward and reverse citations",
+    "related-item symmetry",
+    "reference locator presence",
+    "DOI syntax",
+    "ISBN-13 checksum",
+    "edition-year basic sanity",
+    "Markdown anchors and all internal links",
+    "144 technique headings and 86 source headings",
+    "unfinished placeholders"
+  ],
+  "errors": [],
+  "warnings": [
+    "C/Dの主参照を持つ項目は、原著の逐語引用・詳細な主張の前に追加照合が必要。",
+    "HTTP 200は対象本文の取得成功を保証しない。GDCのメンテナンス転送を別記。",
+    "全てのDOIをCrossref APIで照合できたわけではなく、429等の応答も台帳に保存。",
+    "公開本文の取得と対象箇所の確認は、全書・全論文の読了や有効性の実証とは異なる。",
+    "これは内部整合性と識別子形式の検証であり、学術的査読、文献探索の完全性、将来のリンク存続の保証ではない。"
+  ],
+  "entries_needing_primary_original_text_check": [
+    "T004",
+    "T007",
+    "T017",
+    "T018",
+    "T019",
+    "T021",
+    "T023",
+    "T024",
+    "T032",
+    "T041",
+    "T042",
+    "T048",
+    "T049",
+    "T050",
+    "T052",
+    "T053",
+    "T054",
+    "T055",
+    "T056",
+    "T059",
+    "T060",
+    "T082",
+    "T083",
+    "T084",
+    "T087",
+    "T088",
+    "T089",
+    "T093",
+    "T110",
+    "T133",
+    "T137",
+    "T138",
+    "T139"
+  ],
+  "primary_search_only_entries": [
+    "T093"
+  ],
+  "files": {
+    "report_ja.md": {
+      "bytes": 258311,
+      "sha256": "d1d6c64bb377b289ec6102d9cac046de13826a74c589bd90db42926b272280af"
+    },
+    "sources.jsonl": {
+      "bytes": 246373,
+      "sha256": "a348ea233f3cd6678b7a47d3ccaf2986dcb85a3994fd561c6bb5a955177df72e"
+    },
+    "techniques.jsonl": {
+      "bytes": 243146,
+      "sha256": "4a40a27a4ad5fe97f188579f3a24aba0daa1bbb33fb3f4aeadf76ac721a638a9"
+    },
+    "categories.json": {
+      "bytes": 6060,
+      "sha256": "a2faa36ffed99a2c1b294bb6bd5afdaff57674ef1b85644d5d5c2ca2fdbf086e"
+    },
+    "retrieval_audit.jsonl": {
+      "bytes": 65815,
+      "sha256": "b020cc3ae359fd58cfc1b674e440d96e30748de5802070ca7cf32d52b9a08cba"
+    },
+    "README_ja.md": {
+      "bytes": 1615,
+      "sha256": "14ccea31b7e48182e2d697188bf30718dc827977ad58c0f42bae41ab81bd7c9d"
+    },
+    "sources.schema.json": {
+      "bytes": 1503,
+      "sha256": "9e57594a9e9058919d97ccd5c7d82581d8f968d6c5ca54af86b6ee65791a00dc"
+    },
+    "techniques.schema.json": {
+      "bytes": 1938,
+      "sha256": "9363231fe8ece6299f9f47a91d17950bd6d4dcd5ae075d9e9f540dee625a8fe9"
+    }
+  },
+  "rights_note": "No third-party full text or PDF snapshots included in delivery bundle."
+}

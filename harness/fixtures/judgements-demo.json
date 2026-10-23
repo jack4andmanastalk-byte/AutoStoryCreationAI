@@ -1,0 +1,60 @@
+{
+  "_note": "デモ用の記録済み判定。実モデルの出力ではなく、ハーネスの配線と検証をオフラインで再現するための固定値。実運用では --judge-command で外部コマンドを接続する。",
+  "scores": {
+    "demo": {
+      "dimensions": [
+        {
+          "dimension": "coherence",
+          "score": 3,
+          "evidence": [{"path": "ch03.md", "line": 3, "quote": "灯台から三日かかる道を、アリアは一日で来たことになる。"}],
+          "rationale_ja": "移動の省略はあるが、章の接続は追える。"
+        },
+        {
+          "dimension": "character_consistency",
+          "score": 4,
+          "evidence": [{"path": "ch02.md", "line": 3, "quote": "アリアは頷き、衛兵ボリスの背を追った。"}],
+          "rationale_ja": "アリアの行動は灯台守としての責任から説明できる。"
+        },
+        {
+          "dimension": "world_rule_consistency",
+          "score": 4,
+          "evidence": [{"path": "ch01.md", "line": 4, "quote": "灯台の鍵は外套の内側に縫い付けたままにしている。"}],
+          "rationale_ja": "鍵の扱いが一貫している。"
+        },
+        {
+          "dimension": "originality",
+          "score": 3,
+          "evidence": [{"path": "ch04.md", "line": 3, "quote": "ボリスは扉の陰から現れ、「鍵を返せ」と言った。"}],
+          "rationale_ja": "鍵と病の二重線は定型の範囲内だが、処理は独自。"
+        },
+        {
+          "dimension": "reader_orientation",
+          "score": 4,
+          "evidence": [{"path": "ch01.md", "line": 3, "quote": "アリアは灯芯を切り、炎の高さを確かめる。"}],
+          "rationale_ja": "人物・場所・目的が冒頭で示される。"
+        },
+        {
+          "dimension": "prose_control",
+          "score": 3,
+          "evidence": [],
+          "rationale_ja": "文長は場面に応じて変わるが、やや均一。"
+        }
+      ]
+    },
+    "demo-baseline": {
+      "dimensions": [
+        {"dimension": "coherence", "score": 2, "evidence": [{"path": "ch01.md", "line": 6}], "rationale_ja": "要約調で、因果が説明されていない。"},
+        {"dimension": "character_consistency", "score": 2, "evidence": [{"path": "ch01.md", "line": 5}], "rationale_ja": "人物の動機が書かれていない。"},
+        {"dimension": "world_rule_consistency", "score": 2, "evidence": [{"path": "ch01.md", "line": 3}], "rationale_ja": "世界の規則への言及がない。"},
+        {"dimension": "originality", "score": 2, "evidence": [{"path": "ch01.md", "line": 8}], "rationale_ja": "定型の要約にとどまる。"},
+        {"dimension": "reader_orientation", "score": 3, "evidence": [{"path": "ch01.md", "line": 3}], "rationale_ja": "情報は並ぶが場面がない。"},
+        {"dimension": "prose_control", "score": 2, "evidence": [], "rationale_ja": "文長が一定で単調。"}
+      ]
+    }
+  },
+  "pairwise": {
+    "winner": "a",
+    "rationale_ja": "候補は場面で示し、初稿は要約で説明している。",
+    "_note": "単一の記録値。実際のハーネスは順序を入れ替えて 2 回呼び、バイアスを検査する。"
+  }
+}

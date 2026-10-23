@@ -1,0 +1,625 @@
+{
+  "generated_on": "2026-10-23",
+  "source_archive": "StoryAutomation.zip (uploaded as StoryAutomation.zip.txt)",
+  "note": "Each curated file is a byte-identical copy of the archived original. File names were normalized in a few directories; see original_path.",
+  "file_count": 88,
+  "total_bytes": 6146821,
+  "files": [
+    {
+      "destination": "research/curated/ai_creation/pipeline_catalog/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-8fe0-7368-9a39-e9c81b65bae0/creative_pipeline_catalog_report.md",
+      "bytes": 45803,
+      "sha256": "902b5d53358a9761f3fee76515a9c9eee80905061cf10f8625916f4768fa6131"
+    },
+    {
+      "destination": "research/curated/ai_creation/pipeline_catalog/tools.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-8fe0-7368-9a39-e9c81b65bae0/creative_narrative_tools_metadata.jsonl",
+      "bytes": 21461,
+      "sha256": "f271da90ad86149561ab65c72c793d8bf19d05faec19baa6ffa8ad07c4ab7d3e"
+    },
+    {
+      "destination": "research/curated/ai_creation/skills_catalog/candidates_screened.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-f164-77e3-81e3-6828da055c30/workspace-01a166db-f164-77e3-81e3-6828da055c30/output/data/candidates_screened.jsonl",
+      "bytes": 1110670,
+      "sha256": "eafac7cdfa2bf03447fd72efa49ce29e8aa3e1e2f4bce50fc4ecd32caa40cd7d"
+    },
+    {
+      "destination": "research/curated/ai_creation/skills_catalog/catalog.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-f164-77e3-81e3-6828da055c30/workspace-01a166db-f164-77e3-81e3-6828da055c30/output/data/catalog.jsonl",
+      "bytes": 139546,
+      "sha256": "9c2cd85a95059ca2d9fdc63698da6a965d94cc8d73ce4a4f6e1bb1f10b9d719f"
+    },
+    {
+      "destination": "research/curated/ai_creation/skills_catalog/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-f164-77e3-81e3-6828da055c30/workspace-01a166db-f164-77e3-81e3-6828da055c30/output/creative_building_ai_skills_catalog_report.md",
+      "bytes": 124262,
+      "sha256": "8db8a5ed4c57d428af9be7c72a34a47f5e79621f630ff5b55017461e9367c277"
+    },
+    {
+      "destination": "research/curated/ai_creation/skills_catalog/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166db-f164-77e3-81e3-6828da055c30/workspace-01a166db-f164-77e3-81e3-6828da055c30/output/data/sources.jsonl",
+      "bytes": 126656,
+      "sha256": "93dcb7217846d58305ad60db481817a68fb7fe516a186eada547b9ebd084e81a"
+    },
+    {
+      "destination": "research/curated/character/china/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165d1-d90d-712e-8a9a-d82259959ac1/report.md",
+      "bytes": 58772,
+      "sha256": "535982f9f650c6fb6b030b851c3933778fcbd7970fde0144cb25f750b3ff24e3"
+    },
+    {
+      "destination": "research/curated/character/china/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165d1-d90d-712e-8a9a-d82259959ac1/sources.jsonl",
+      "bytes": 181984,
+      "sha256": "746fe32d03a34999b40adc9a9f38c8bcb515930ab8880dcd78f2b9eaee9a52ea"
+    },
+    {
+      "destination": "research/curated/character/europe/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165f4-6dc8-7afd-9a8c-6aa671f42fc1/character_research_report_ja.md",
+      "bytes": 19730,
+      "sha256": "c5873302f9231b77871c0553a325f2a2ae2716e6b456a04894bb96e8db4e90c4"
+    },
+    {
+      "destination": "research/curated/character/europe/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165f4-6dc8-7afd-9a8c-6aa671f42fc1/character_sources.jsonl",
+      "bytes": 77956,
+      "sha256": "e2214202911d83266f39b0a1cc21aecc18d574428f44f3d064f5165436465cf6"
+    },
+    {
+      "destination": "research/curated/character/japan/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165bf-9e04-774c-80a9-98d26d90f548/character_research/character_creation_japan_report.md",
+      "bytes": 66237,
+      "sha256": "0957f8526a5473f2d4d7676f3126f8145ce6c9c08f1d06cfed5b020157ec5629"
+    },
+    {
+      "destination": "research/curated/character/japan/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165bf-9e04-774c-80a9-98d26d90f548/character_research/character_creation_japan_catalog_metadata.jsonl",
+      "bytes": 128413,
+      "sha256": "2e5038bb1776a95fa0d4769ef73baa2b44cbaf7dd70359a2ff612ea8c56ca2d1"
+    },
+    {
+      "destination": "research/curated/history_myth/classification_systems/catalog.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16704-1a00-7ea9-9216-e1242099f51d/catalog.jsonl",
+      "bytes": 12206,
+      "sha256": "d0d89d091ba609928a5ca05a55a7a4ec41b74e8d4d2b22bffde965d8d8cb315f"
+    },
+    {
+      "destination": "research/curated/history_myth/classification_systems/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16704-1a00-7ea9-9216-e1242099f51d/report.md",
+      "bytes": 12015,
+      "sha256": "fa771f84dff71b9b623cef8398b8cf1f3cb9e6da4139f378f65a9dee828b777e"
+    },
+    {
+      "destination": "research/curated/history_myth/comparative_mythology/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16702-ed3a-79fb-b849-023fb33802cc/comparative_mythology_creative_catalog.md",
+      "bytes": 76006,
+      "sha256": "8973b0cdb90da26e9ac0ac19454ad847e5a3f7c4e3ccc958b503d747e3673d08"
+    },
+    {
+      "destination": "research/curated/history_myth/comparative_mythology/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16702-ed3a-79fb-b849-023fb33802cc/comparative_mythology_catalog_sources.jsonl",
+      "bytes": 55256,
+      "sha256": "9f6832e35160e2f49ddc6e235e99a2929e2fa076c8ee5292ba2f609bba94b135"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/README_ja.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/README_ja.md",
+      "bytes": 3070,
+      "sha256": "232c9c5451484a61f142671f74484b984046c5f63a977e85d76f967d7ddca79c"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/catalog.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/catalog.jsonl",
+      "bytes": 126661,
+      "sha256": "feedb8675cb9a8f96f7e25bdd5a010c97c4c95c80d7146765342ab5164705830"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/catalog.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/catalog.schema.json",
+      "bytes": 1395,
+      "sha256": "c497267391d8cd5696f2643ad5aba9e86176d7978c22adbc6ee4729ecb8e80bb"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/manifest.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/manifest.json",
+      "bytes": 1480,
+      "sha256": "73d14ec551dc5a0d13cd8ab2c12e26d065f5bec856e0ee6891c040670e9307be"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/report_ja.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/china_storytelling_report_ja.md",
+      "bytes": 178297,
+      "sha256": "b7900a1ff96926a7efe96b932daf60ef174790f872d820b2dc6a1611e4155828"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/sources.jsonl",
+      "bytes": 102840,
+      "sha256": "d625351d6605a2f8bd45955df4ea99e8486db73b8155f5f3208f837a0b55bdf6"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/sources.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/sources.schema.json",
+      "bytes": 1816,
+      "sha256": "c80737d5b8b6590f2b3f9eb5bc9e725027de1ccab945adbc9e909d0bd2258dea"
+    },
+    {
+      "destination": "research/curated/narrative/china_2026/validation_report.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/workspace-01a16420-0b38-7e9d-a514-86fa1a0480b9/china_storytelling/deliverables/validation_report.json",
+      "bytes": 970,
+      "sha256": "4fb741cbee0ad4d44a00972ab4172d23874e872e5f166bc480f231629c95f9b1"
+    },
+    {
+      "destination": "research/curated/narrative/china_craft/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-1afa-712b-ad5b-8bfa5e47807b/china_narrative_techniques/report.md",
+      "bytes": 58241,
+      "sha256": "1506901ef12194b18a26b792c2408b0567cc0eba45c207976a5d944cee78bd91"
+    },
+    {
+      "destination": "research/curated/narrative/china_craft/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a16420-1afa-712b-ad5b-8bfa5e47807b/china_narrative_techniques/sources.jsonl",
+      "bytes": 57047,
+      "sha256": "658491e56c12327335db09b740753542e6996ce89e3dce25e98dd8178ecbf42a"
+    },
+    {
+      "destination": "research/curated/narrative/europe_craft/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a163f8-1721-777a-8f96-b8863065adf2/catalog_report.md",
+      "bytes": 41971,
+      "sha256": "a83acf6080a3751f4d3fe33fe8e6f948ab28b1aab33198bab2c9e92e7ffd5c7e"
+    },
+    {
+      "destination": "research/curated/narrative/europe_craft/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a163f8-1721-777a-8f96-b8863065adf2/sources.jsonl",
+      "bytes": 16981,
+      "sha256": "2bb558fbbbffac19a6f80490b978a67d3cc05e6ebc7956af5583c1766452f22f"
+    },
+    {
+      "destination": "research/curated/narrative/europe_storytelling/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a163f8-6e4e-7532-abb3-565b229235bf/現代ヨーロッパ_ストーリーテリング技法カタログ.md",
+      "bytes": 33526,
+      "sha256": "aaf229426cd9b890814d0673d42c5daac02b085adee01706490592081b7c661a"
+    },
+    {
+      "destination": "research/curated/narrative/europe_storytelling/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a163f8-6e4e-7532-abb3-565b229235bf/現代ヨーロッパ_ストーリーテリング_情報源.jsonl",
+      "bytes": 23722,
+      "sha256": "3223bbbadcb33251593100e324877e9de851d89e721f851a86bd7c10e9a17c9a"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/README.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/README.md",
+      "bytes": 8798,
+      "sha256": "95b93074238f6e2a93bbd83055d267cabddbd22853d24f01363b2d972edccfbd"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/manifest.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/manifest.json",
+      "bytes": 1656,
+      "sha256": "554262af3aea4253c6a3accfa4f1292e77ca8012cd65dc25ea28621cdb2505aa"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/japan_narrative_techniques_report.md",
+      "bytes": 171766,
+      "sha256": "8866678e144c9786958c57b37687dbd54906c7108fea06f6b0d2ef2050d96541"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/schema.json",
+      "bytes": 9465,
+      "sha256": "286a388f690a0521d3e00e3cd8777b257617cf6cdefbd237219f5c177eec35b7"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/screening_log.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/screening_log.jsonl",
+      "bytes": 35933,
+      "sha256": "739fe590b7eb11d4ce066e13ab05866a63f5c37613b5db01cb056f9612309273"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/sources.jsonl",
+      "bytes": 163842,
+      "sha256": "157fb3b9e872b1b178ae8a22b49f77d1b7e8300308259aa96f6cb8e66f29b4b2"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/technique_index.csv",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/technique_index.csv",
+      "bytes": 13358,
+      "sha256": "94cfd085d22d6590970cb19303a292002f8d51c23fc8416c1d8216e5ce3d2b9e"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/techniques.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/techniques.jsonl",
+      "bytes": 162101,
+      "sha256": "14f4fa624aad4a7ce58f8c56fb742b580334ce990d002b65ea45f7c77856e861"
+    },
+    {
+      "destination": "research/curated/narrative/japan_2026/validation.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "japan_narrative_techniques_2026-10-22/japan_narrative_techniques/validation.json",
+      "bytes": 2340,
+      "sha256": "2369fa8a97e02b5fe2633ea6df53bbdc447ef39cc20610355cd3b3832ed77173"
+    },
+    {
+      "destination": "research/curated/narrative/japan_entertainment/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/japanese_entertainment_scenario_techniques.md",
+      "bytes": 77325,
+      "sha256": "55de7c4fb2a2c710159d291659a511f7f8470f87647fb967df58522b4b7404ce"
+    },
+    {
+      "destination": "research/curated/narrative/japan_entertainment/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/scenario_sources_metadata.jsonl",
+      "bytes": 42707,
+      "sha256": "3b329d73f3df3249de39ae0b5e2fa5975ee1945637198b5d7c3b03dc39da0b0c"
+    },
+    {
+      "destination": "research/curated/narrative/japan_film/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/scenario_techniques_report.md",
+      "bytes": 89509,
+      "sha256": "3eacf21cb91808141f55213fc88bdf2ccf46748df4938dd3f23415189f72071d"
+    },
+    {
+      "destination": "research/curated/narrative/japan_film/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/scenario_techniques_metadata.jsonl",
+      "bytes": 26526,
+      "sha256": "006aa89d4c99e4dd80c01bf216efc9e7615d7ce6b91759ce0cf8403a23fe1bc8"
+    },
+    {
+      "destination": "research/curated/narrative/japan_games/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/scenario_techniques_japan_games.md",
+      "bytes": 15210,
+      "sha256": "f2316a44cf40f5c7dfc918201076b997ce7a21109f7de5707abca63a72e7e6da"
+    },
+    {
+      "destination": "research/curated/narrative/japan_games/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/scenario_sources.jsonl",
+      "bytes": 7321,
+      "sha256": "f92d879e9c915ca27746e6d5717e020ca968785043cafd0ef2ced644d96db2da"
+    },
+    {
+      "destination": "research/curated/narrative/japan_light_novel_manga/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/report.md",
+      "bytes": 206916,
+      "sha256": "058bfc31dfbc1ea1ace080e983ca6177b395941041281a25afc05b547d482ca3"
+    },
+    {
+      "destination": "research/curated/narrative/japan_light_novel_manga/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/sources.jsonl",
+      "bytes": 191880,
+      "sha256": "84b4ab77e903bcc79b3546da65bc088c3b9ad85d769c9f943110fffece3c18f9"
+    },
+    {
+      "destination": "research/curated/narrative/japan_literary/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/literary_scenario_techniques_japan.md",
+      "bytes": 17799,
+      "sha256": "491d60b00898d9753e6b003bc6a90b1f1a1878de4d79e8d2fa5e1e45fd065172"
+    },
+    {
+      "destination": "research/curated/narrative/japan_literary/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/literary_scenario_sources.jsonl",
+      "bytes": 13209,
+      "sha256": "e275322ba889dd9f8b8b6cbaf0ef491ab8d14e95fe4b65d192a30e7ceb19715a"
+    },
+    {
+      "destination": "research/curated/narrative/japan_storytelling_50/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/japanese_storytelling_techniques_catalog.md",
+      "bytes": 122843,
+      "sha256": "211109853ea64f13bc4aa82c8a1cc97796a6dbf07e94e9d87465998c9d425dc5"
+    },
+    {
+      "destination": "research/curated/narrative/japan_storytelling_50/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/storytelling_sources.jsonl",
+      "bytes": 25623,
+      "sha256": "2a2099b7e13dbafc752b3e57334b595fe7eb4450bbea8e127a3a04320bd72ce5"
+    },
+    {
+      "destination": "research/curated/narrative/japan_storytelling_report/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/storytelling_japan_report.md",
+      "bytes": 22991,
+      "sha256": "208939dc51f61d7a343275daaf38c430d2b73b003603020a1e5f4831ca99bed4"
+    },
+    {
+      "destination": "research/curated/narrative/japan_storytelling_report/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/storytelling_japan_sources.jsonl",
+      "bytes": 7869,
+      "sha256": "9bc8dac2afdd97e26da7b6236d09729735f458f1454e283485a0301530c9ec0b"
+    },
+    {
+      "destination": "research/curated/narrative/japan_trpg/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/trpg_scenario_catalog.md",
+      "bytes": 18892,
+      "sha256": "66354b42c9bd8775a97af6b243d4a49c83a26fdfcd2f18ae833adb9574bf2981"
+    },
+    {
+      "destination": "research/curated/narrative/japan_trpg/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/trpg_scenario_sources.jsonl",
+      "bytes": 10247,
+      "sha256": "674cda52564a3f9e44fb718f4f287aefad1eb980e733e483179177b0171387fe"
+    },
+    {
+      "destination": "research/curated/narrative/us_2025/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story/storytelling-catalog/report.md",
+      "bytes": 63432,
+      "sha256": "d9dadf3424af719a1d98a26ef19aa74925138b5a8d96b4548d2b779c0dc89c5b"
+    },
+    {
+      "destination": "research/curated/narrative/us_2025/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story/storytelling-catalog/sources.jsonl",
+      "bytes": 36997,
+      "sha256": "48581ac73a5b079b1e14c84cbf1ef994f15cf1014a75486945a2f7f713ba18cf"
+    },
+    {
+      "destination": "research/curated/narrative/us_2025/techniques.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story/storytelling-catalog/techniques.jsonl",
+      "bytes": 37283,
+      "sha256": "ca0b3e3e176ee6b61953fefa39b021550650410f86f352a58fd96c9c5dbfb193"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/README_ja.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/README_ja.md",
+      "bytes": 1615,
+      "sha256": "14ccea31b7e48182e2d697188bf30718dc827977ad58c0f42bae41ab81bd7c9d"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/categories.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/categories.json",
+      "bytes": 6060,
+      "sha256": "a2faa36ffed99a2c1b294bb6bd5afdaff57674ef1b85644d5d5c2ca2fdbf086e"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/report_ja.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/report_ja.md",
+      "bytes": 258311,
+      "sha256": "d1d6c64bb377b289ec6102d9cac046de13826a74c589bd90db42926b272280af"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/sources.jsonl",
+      "bytes": 246373,
+      "sha256": "a348ea233f3cd6678b7a47d3ccaf2986dcb85a3994fd561c6bb5a955177df72e"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/sources.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/sources.schema.json",
+      "bytes": 1503,
+      "sha256": "9e57594a9e9058919d97ccd5c7d82581d8f968d6c5ca54af86b6ee65791a00dc"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/techniques.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/techniques.jsonl",
+      "bytes": 243146,
+      "sha256": "4a40a27a4ad5fe97f188579f3a24aba0daa1bbb33fb3f4aeadf76ac721a638a9"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/techniques.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/techniques.schema.json",
+      "bytes": 1938,
+      "sha256": "9363231fe8ece6299f9f47a91d17950bd6d4dcd5ae075d9e9f540dee625a8fe9"
+    },
+    {
+      "destination": "research/curated/narrative/us_2026/validation_report.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "us_story2/narrative_catalog/validation_report.json",
+      "bytes": 3723,
+      "sha256": "268f2b03c617a97b0e967aaba3b28c5b548890bc818053959b68de0aaf39bbe5"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_china/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166d2-2950-7085-b471-0d737cbf020f/reports/2026-10-23_china-game-narrative-pipeline_report_ja.md",
+      "bytes": 58014,
+      "sha256": "d6608a25dc8ae0269fc004361a308f30a67f16e9569b07c4b3b21c6da3c9675f"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_china/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a166d2-2950-7085-b471-0d737cbf020f/reports/2026-10-23_china-game-narrative-sources.jsonl",
+      "bytes": 26430,
+      "sha256": "5a43424804025ff8eacdd0efa6a8f7762da4548c63fa01a20c95dfb98efa8d5f"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_europe/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fe-2b1c-7ae3-9fe5-cbff98b00f8b/european_game_narrative_pipeline_report.md",
+      "bytes": 32617,
+      "sha256": "0fc15e1da50096da90ae82608e4fdad74e8a1efb6ab59a6bbd66cf82d594ad46"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_europe/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fe-2b1c-7ae3-9fe5-cbff98b00f8b/european_game_narrative_sources.jsonl",
+      "bytes": 25606,
+      "sha256": "2bfe333a406b8d4da9dc41891d3b12e69d77cb0148222935062313d6640c86c3"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_japan/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165f7-07c4-701b-b626-b8cf54e0dc45/report.md",
+      "bytes": 34405,
+      "sha256": "3bbc00187563439a7b15bd491775338d71c6b89c8931da971d6ac066303f99aa"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_japan/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165f7-07c4-701b-b626-b8cf54e0dc45/sources.jsonl",
+      "bytes": 11016,
+      "sha256": "956e6dfcf1163fbb6a155c35c256bfef1aa571b7a1b3832b9f265a81be88b933"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/README.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/README.md",
+      "bytes": 8847,
+      "sha256": "d635361dc6fbf18f0a456eeddac91d78b31becb504f1a69a6ae12f5c9889b231"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/practices.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/practices.jsonl",
+      "bytes": 34074,
+      "sha256": "131c2fc241faf4e25de8fa5f04c63e919062804c4adaad5baea8cd60437acc8b"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/practices.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/practices.schema.json",
+      "bytes": 2219,
+      "sha256": "dff480d4af662e28df98ee5a1089dfdf97128da957194a6a1f453b335b6ca6a4"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/report_ja.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/report_ja.md",
+      "bytes": 89487,
+      "sha256": "eac1558720cdd2edc442b05ad23450e0802c9b18658200a1d247a6cde53ff533"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/research_log.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/research_log.md",
+      "bytes": 8811,
+      "sha256": "f4198704fc13d92f00085e86edef01cea4dd69886ba9c8a64511a4d534e9c93d"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/sources.jsonl",
+      "bytes": 179596,
+      "sha256": "edc2d7d88e1d7e311907423999875deacc748f4aff00cd5a5a310b94f7639328"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/sources.schema.json",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/sources.schema.json",
+      "bytes": 11768,
+      "sha256": "13953c4836a674592dbecfa419bde108ad618421b5e701cd425889f13cac5521"
+    },
+    {
+      "destination": "research/curated/production/game_narrative_us/validation_report.txt",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "workspace-01a165fd-c70a-7931-8421-115ef3347250/game_narrative_research/validation_report.txt",
+      "bytes": 25084,
+      "sha256": "d6f4ec577b74e247e601234046a2fe9b0839fd55ebc3aafb56b326ab49e3e5e7"
+    },
+    {
+      "destination": "research/curated/worldbuilding/china/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "China_Worldbuilding/worldbuilding_techniques_china_ja.md",
+      "bytes": 38840,
+      "sha256": "54c9387ac55444541df07f920750eb2bbd10611a3408cb08fa0c8cd0e4d77f53"
+    },
+    {
+      "destination": "research/curated/worldbuilding/china/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "China_Worldbuilding/sources_ja.jsonl",
+      "bytes": 33618,
+      "sha256": "1c7931e5d7411251b75a72326737dfbc15ff6d29444d54210e808cbde319b5d6"
+    },
+    {
+      "destination": "research/curated/worldbuilding/europe/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/worldbuilding_catalogue_report.md",
+      "bytes": 45611,
+      "sha256": "8b8989cb30910cd9ddcb980b04c78b2dd89c746a746747a0f56280b71b53e49b"
+    },
+    {
+      "destination": "research/curated/worldbuilding/europe/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/2_worldbuilding_sources.jsonl",
+      "bytes": 17491,
+      "sha256": "837f0031fea9bf0be7514579240b09bbc3b300a4e1b60eb6c0ba129eb6ee19f5"
+    },
+    {
+      "destination": "research/curated/worldbuilding/japan/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/worldbuilding_techniques_japan.md",
+      "bytes": 117331,
+      "sha256": "49867fdeefe4f24d24e8a2d9d4a1004cb0ab3d197b4b1c0a37e1fbb1ee797bca"
+    },
+    {
+      "destination": "research/curated/worldbuilding/japan/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/worldbuilding_sources_metadata.jsonl",
+      "bytes": 28187,
+      "sha256": "4952f03e29dee3d4685f9d960ae01fc929fc5faa372f9a2c93220961723e6d9c"
+    },
+    {
+      "destination": "research/curated/worldbuilding/us/report.md",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/worldbuilding_us_catalog.md",
+      "bytes": 29483,
+      "sha256": "141021ed6fb45031b110ef70b4956a9df9a8c1230acf982cbf46eb1af4382479"
+    },
+    {
+      "destination": "research/curated/worldbuilding/us/sources.jsonl",
+      "source_archive": "StoryAutomation.zip",
+      "source_path": "StoryAutomation/worldbuilding_sources.jsonl",
+      "bytes": 16789,
+      "sha256": "27b9cb0835a35da0ed577ac23eebae03d869e9b07f8fcee8c5b12819ec3b85b9"
+    }
+  ]
+}

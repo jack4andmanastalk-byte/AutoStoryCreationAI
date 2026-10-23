@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "techniques.schema.json",
+  "title": "Narrative technique catalog record",
+  "type": "object",
+  "required": [
+    "technique_id",
+    "category_id",
+    "title_ja",
+    "terms_en",
+    "entry_type",
+    "definition_ja",
+    "creative_operation_ja",
+    "media",
+    "theoretical_mapping_ja",
+    "conditions_and_limits_ja",
+    "references",
+    "source_ids",
+    "primary_source_id",
+    "related_technique_ids"
+  ],
+  "properties": {
+    "technique_id": {
+      "type": "string",
+      "pattern": "^T[0-9]{3}$"
+    },
+    "category_id": {
+      "type": "string",
+      "pattern": "^C[0-9]{2}$"
+    },
+    "entry_type": {
+      "enum": [
+        "technique",
+        "workflow",
+        "critical_principle"
+      ]
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "source_id",
+          "locator",
+          "role"
+        ],
+        "properties": {
+          "source_id": {
+            "type": "string",
+            "pattern": "^S[0-9]{3}$"
+          },
+          "locator": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "primary_topic_reference",
+              "support_or_comparison"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "source_ids": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^S[0-9]{3}$"
+      }
+    },
+    "related_technique_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^T[0-9]{3}$"
+      }
+    },
+    "media": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": true
+}

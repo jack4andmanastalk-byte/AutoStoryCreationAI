@@ -1,0 +1,63 @@
+name: research-check
+
+# Verifies that the curated research corpus and the generated catalog are in sync.
+#
+#   curated/*.jsonl  --build-->  research/catalog/*.jsonl
+#
+# The catalog is committed, so a change to research/curated without regenerating
+# it (or a hand edit of the generated files) fails this job.
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "research/**"
+      - "scripts/build_research_catalog.py"
+      - "tests/test_research_catalog.py"
+      - "skills/**"
+      - "harness/**"
+      - "src/asc/story/**"
+      - "src/asc/evaluation/**"
+      - "tests/test_continuity.py"
+      - "tests/test_evaluation.py"
+      - "tests/test_skills_spec.py"
+      - ".github/workflows/research-check.yml"
+  pull_request:
+    paths:
+      - "research/**"
+      - "scripts/build_research_catalog.py"
+      - "tests/test_research_catalog.py"
+      - "skills/**"
+      - "harness/**"
+      - "src/asc/story/**"
+      - "src/asc/evaluation/**"
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      # The catalog builder uses the standard library only. pytest is the one
+      # extra dependency needed for the structural tests.
+      - name: Install pytest and PyYAML
+        run: python -m pip install --upgrade pip pytest pyyaml
+
+      - name: Check the catalog is up to date
+        run: python scripts/build_research_catalog.py --check
+
+      - name: Run the structural tests
+        run: python -m pytest tests/test_research_catalog.py -q
+
+      # The skills are checked against the Agent Skills frontmatter rules, and the
+      # demo case is re-audited so that the seeded defects are still detected.
+      - name: Run the skill and harness tests
+        run: python -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q

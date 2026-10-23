@@ -1,0 +1,183 @@
+{
+  "schema_version": "1.0",
+  "generated_on": "2026-10-23",
+  "generator": "scripts/build_research_catalog.py",
+  "counts": {
+    "techniques": 488,
+    "taxonomies": 10,
+    "tools": 96,
+    "sources": 529
+  },
+  "by_artifact": {
+    "history_myth/comparative_mythology": 19,
+    "narrative/china_2026": 84,
+    "narrative/japan_2026": 116,
+    "narrative/us_2025": 83,
+    "narrative/us_2026": 144,
+    "production/game_narrative_us": 42
+  },
+  "by_entry_type": {
+    "concept": 39,
+    "critical_principle": 5,
+    "paradigm": 83,
+    "practice": 42,
+    "technique": 313,
+    "workflow": 6
+  },
+  "by_domain": {
+    "character": 67,
+    "history": 38,
+    "interaction": 46,
+    "meta": 67,
+    "production": 68,
+    "story": 250,
+    "style": 166,
+    "world": 59
+  },
+  "by_evidence_level": {
+    "A": 164,
+    "B": 30,
+    "C": 33,
+    "D": 1,
+    "unrated": 260
+  },
+  "unresolved_related_ids": 0,
+  "executability": {
+    "definition": "lexical self-assessment of the catalog records; not a judgement about the cited scholarship",
+    "criteria": {
+      "procedure": "operation_ja exists and is >= 30 characters",
+      "acceptance": "the operational text names a pass/fail cue (確認/検証/測定/基準/判定/チェック/照合/逸脱/満たす/比較/テスト/記録)",
+      "failure_condition": "limitations_ja exists and is >= 20 characters",
+      "example": "at least one concrete work / practice / case"
+    },
+    "tiers": {
+      "executable": "has both a procedure and an acceptance cue",
+      "partial": "2+ criteria but missing a procedure or an acceptance cue",
+      "reference_only": "0-1 criteria"
+    },
+    "tier_counts": {
+      "executable": 115,
+      "partial": 290,
+      "reference_only": 83
+    },
+    "criterion_counts": {
+      "procedure": 405,
+      "acceptance": 124,
+      "failure_condition": 386,
+      "example": 103
+    },
+    "operation_origin": {
+      "mechanism_derived": 84,
+      "none": 83,
+      "stated": 321
+    },
+    "by_artifact": {
+      "history_myth/comparative_mythology": {
+        "entries": 19,
+        "executable": 1,
+        "partial": 18,
+        "reference_only": 0,
+        "criteria": {
+          "procedure": 19,
+          "acceptance": 1,
+          "failure_condition": 0,
+          "example": 19
+        },
+        "mean_score": 2.05
+      },
+      "narrative/china_2026": {
+        "entries": 84,
+        "executable": 12,
+        "partial": 72,
+        "reference_only": 0,
+        "criteria": {
+          "procedure": 84,
+          "acceptance": 12,
+          "failure_condition": 84,
+          "example": 84
+        },
+        "mean_score": 3.14
+      },
+      "narrative/japan_2026": {
+        "entries": 116,
+        "executable": 40,
+        "partial": 76,
+        "reference_only": 0,
+        "criteria": {
+          "procedure": 116,
+          "acceptance": 40,
+          "failure_condition": 116,
+          "example": 0
+        },
+        "mean_score": 2.34
+      },
+      "narrative/us_2025": {
+        "entries": 83,
+        "executable": 0,
+        "partial": 0,
+        "reference_only": 83,
+        "criteria": {
+          "procedure": 0,
+          "acceptance": 9,
+          "failure_condition": 0,
+          "example": 0
+        },
+        "mean_score": 0.11
+      },
+      "narrative/us_2026": {
+        "entries": 144,
+        "executable": 56,
+        "partial": 88,
+        "reference_only": 0,
+        "criteria": {
+          "procedure": 144,
+          "acceptance": 56,
+          "failure_condition": 144,
+          "example": 0
+        },
+        "mean_score": 2.39
+      },
+      "production/game_narrative_us": {
+        "entries": 42,
+        "executable": 6,
+        "partial": 36,
+        "reference_only": 0,
+        "criteria": {
+          "procedure": 42,
+          "acceptance": 6,
+          "failure_condition": 42,
+          "example": 0
+        },
+        "mean_score": 2.14
+      }
+    },
+    "seed_coverage": {
+      "seeds": 13,
+      "referenced_techniques": 164,
+      "resolved": 164,
+      "tier_counts": {
+        "executable": 48,
+        "partial": 100,
+        "reference_only": 16
+      },
+      "unresolved_ids": []
+    }
+  },
+  "inputs_sha256": {
+    "research/curated/ai_creation/pipeline_catalog/tools.jsonl": "f271da90ad86149561ab65c72c793d8bf19d05faec19baa6ffa8ad07c4ab7d3e",
+    "research/curated/ai_creation/skills_catalog/catalog.jsonl": "9c2cd85a95059ca2d9fdc63698da6a965d94cc8d73ce4a4f6e1bb1f10b9d719f",
+    "research/curated/ai_creation/skills_catalog/sources.jsonl": "93dcb7217846d58305ad60db481817a68fb7fe516a186eada547b9ebd084e81a",
+    "research/curated/history_myth/classification_systems/catalog.jsonl": "d0d89d091ba609928a5ca05a55a7a4ec41b74e8d4d2b22bffde965d8d8cb315f",
+    "research/curated/history_myth/comparative_mythology/sources.jsonl": "9f6832e35160e2f49ddc6e235e99a2929e2fa076c8ee5292ba2f609bba94b135",
+    "research/curated/narrative/china_2026/catalog.jsonl": "feedb8675cb9a8f96f7e25bdd5a010c97c4c95c80d7146765342ab5164705830",
+    "research/curated/narrative/china_2026/sources.jsonl": "d625351d6605a2f8bd45955df4ea99e8486db73b8155f5f3208f837a0b55bdf6",
+    "research/curated/narrative/japan_2026/sources.jsonl": "157fb3b9e872b1b178ae8a22b49f77d1b7e8300308259aa96f6cb8e66f29b4b2",
+    "research/curated/narrative/japan_2026/techniques.jsonl": "14f4fa624aad4a7ce58f8c56fb742b580334ce990d002b65ea45f7c77856e861",
+    "research/curated/narrative/us_2025/sources.jsonl": "48581ac73a5b079b1e14c84cbf1ef994f15cf1014a75486945a2f7f713ba18cf",
+    "research/curated/narrative/us_2025/techniques.jsonl": "ca0b3e3e176ee6b61953fefa39b021550650410f86f352a58fd96c9c5dbfb193",
+    "research/curated/narrative/us_2026/sources.jsonl": "a348ea233f3cd6678b7a47d3ccaf2986dcb85a3994fd561c6bb5a955177df72e",
+    "research/curated/narrative/us_2026/techniques.jsonl": "4a40a27a4ad5fe97f188579f3a24aba0daa1bbb33fb3f4aeadf76ac721a638a9",
+    "research/curated/production/game_narrative_us/practices.jsonl": "131c2fc241faf4e25de8fa5f04c63e919062804c4adaad5baea8cd60437acc8b",
+    "research/curated/production/game_narrative_us/sources.jsonl": "edc2d7d88e1d7e311907423999875deacc748f4aff00cd5a5a310b94f7639328"
+  }
+}
