@@ -1,76 +1,88 @@
 name: research-check
 
-# Verifies that the curated research corpus and the generated catalog are in sync.
+# Repository CI: catalog integrity, skills, harness, pipeline and protocol.
 #
-#   curated/*.jsonl  --build-->  research/catalog/*.jsonl
+# Why this workflow is small on purpose
+# -------------------------------------
+# This repository is private, so GitHub-hosted runners share one concurrency
+# budget (20 jobs on the Free plan). `dataset-refresh` fans out 20 shards and
+# used to fill that budget, which left this job queued for tens of minutes
+# behind a 30-minute PDF build.
 #
-# The catalog is committed, so a change to research/curated without regenerating
-# it (or a hand edit of the generated files) fails this job.
+# Two things keep CI fast now:
+#   1. `dataset-refresh` caps its matrix (`max-parallel`), reserving slots.
+#   2. This workflow has its own concurrency group, so a superseded commit is
+#      cancelled instead of queueing behind itself.
+#
+# Set the repository variable `CI_RUNNER_LABEL` to a self-hosted runner label
+# to take CI off the shared budget entirely; nothing else needs to change.
+# See docs/ci.md.
 on:
   push:
     branches:
       - "**"
-    paths:
-      - "research/**"
-      - "scripts/build_research_catalog.py"
-      - "tests/test_research_catalog.py"
-      - "skills/**"
-      - "harness/**"
-      - "src/asc/story/**"
-      - "src/asc/evaluation/**"
-      - "tests/test_continuity.py"
-      - "tests/test_evaluation.py"
-      - "tests/test_skills_spec.py"
-      - "benchmarks/**"
-      - "docs/protocol.md"
-      - "tests/test_protocol.py"
-      - "src/asc/pipeline/**"
-      - "scripts/run_pipeline.py"
-      - "prompts/**"
-      - "tests/test_pipeline.py"
-      - ".github/workflows/research-check.yml"
+      # The dataset bot force-pushes this branch in several batches; those
+      # commits cannot change code, so checking them only burns runner slots.
+      - "!datasets"
   pull_request:
-    paths:
-      - "research/**"
-      - "scripts/build_research_catalog.py"
-      - "tests/test_research_catalog.py"
-      - "skills/**"
-      - "harness/**"
-      - "src/asc/story/**"
-      - "src/asc/evaluation/**"
+  workflow_dispatch:
+
+concurrency:
+  # One run per ref: a new push cancels the previous, unfinished check.
+  group: research-check-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
 
 jobs:
   check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: ${{ vars.CI_RUNNER_LABEL || 'ubuntu-latest' }}
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
 
-      # The catalog builder uses the standard library only. pytest is the one
-      # extra dependency needed for the structural tests.
-      - name: Install pytest and PyYAML
-        run: python -m pip install --upgrade pip pytest pyyaml
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
+      # The catalog is committed, so a change to research/curated without
+      # regenerating it (or a hand edit of the generated files) fails here.
       - name: Check the catalog is up to date
         run: python scripts/build_research_catalog.py --check
 
-      - name: Run the structural tests
-        run: python -m pytest tests/test_research_catalog.py -q
+      # Run the whole suite rather than a hand-maintained list: the previous
+      # list had to be edited for every new test file and drifted silently.
+      # Rendering tests skip themselves when the Japanese fonts are absent.
+      - name: Run the test suite
+        run: python -m pytest tests -q
 
-      # The skills are checked against the Agent Skills frontmatter rules, and the
-      # demo case is re-audited so that the seeded defects are still detected.
-      - name: Run the skill and harness tests
-        run: python -m pytest tests/test_skills_spec.py tests/test_continuity.py tests/test_evaluation.py -q
+      # The demo cases are the acceptance criteria of the two skills; run them
+      # explicitly so a regression names the failing artifact in the log.
+      - name: Audit the demo story (continuity-ledger)
+        run: |
+          python scripts/audit_continuity.py \
+            --canon harness/cases/demo/canon \
+            --text harness/cases/demo/text \
+            --out /tmp/audit.json --ledger /tmp/ledger.json \
+            --markdown /tmp/audit.md --fail-on none --quiet
 
-      - name: Run the protocol tests
-        run: python -m pytest tests/test_protocol.py -q
+      - name: Evaluate the demo story (evaluation-harness)
+        run: |
+          python scripts/run_evaluation.py \
+            --candidate harness/cases/demo/text \
+            --baseline harness/cases/demo-baseline/text \
+            --canon harness/cases/demo/canon \
+            --rubric harness/rubrics/story-quality-v0.yaml \
+            --patterns harness/patterns.yaml \
+            --judge-fixture harness/fixtures/judgements-demo.json \
+            --out /tmp/eval --report-only
 
-      - name: Run the pipeline tests
-        run: python -m pytest tests/test_pipeline.py -q
+      - name: Print the evaluation report
+        run: cat /tmp/eval/report.md

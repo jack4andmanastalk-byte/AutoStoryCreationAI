@@ -158,6 +158,7 @@ gh release download datasets-narou-commercialized
 
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
+| [`docs/ci.md`](docs/ci.md) | CI の実行枠設計（なぜ CI が待たされていたか、どう直したか） |
 
 ```bash
 make research         # research/curated/ から統一カタログを再生成
@@ -220,7 +221,11 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
 * `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
 * `make skills-check` — `SKILL.md` の frontmatter・リンク・500 行制限、継続性監査の期待値、
   評価ハーネスのゲート（根拠必須・回帰判定・カバレッジ警告）を検査
-* CI: `.github/workflows/dataset-refresh.yml` が公式取得からレポートまでを実行します
+* CI: `.github/workflows/research-check.yml` が**全 push / 全 PR** でカタログ整合・全テスト・
+  デモの監査と評価を実行します（ローカル 30〜60 秒）。実行枠の設計は
+  [`docs/ci.md`](docs/ci.md) を参照してください
+* `dataset-refresh`（データ取得と PDF 生成）は別ワークフローで、**同時実行数を絞って**
+  CI の枠を空けます
 
 ## 6.  次フェーズ候補
 

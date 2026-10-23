@@ -71,6 +71,17 @@ plan: ## run only the Plan step (task -> canon)
 	$(RUN) scripts/run_pipeline.py --task t01 --stage plan --out build/runs \
 		--script benchmarks/protocol-v1/fixtures/plan-demo.json
 
+ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
+	$(RUN) scripts/build_research_catalog.py --check
+	$(RUN) -m pytest tests -q
+	$(RUN) scripts/audit_continuity.py --canon harness/cases/demo/canon \
+		--text harness/cases/demo/text --out build/ci/audit.json \
+		--markdown build/ci/audit.md --fail-on none --quiet
+	$(RUN) scripts/run_evaluation.py --candidate harness/cases/demo/text \
+		--baseline harness/cases/demo-baseline/text --canon harness/cases/demo/canon \
+		--rubric harness/rubrics/story-quality-v0.yaml --patterns harness/patterns.yaml \
+		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
+
 protocol-check: ## verify the frozen evaluation protocol and its task set
 	$(RUN) -m pytest tests/test_protocol.py -q
 
