@@ -9,15 +9,19 @@ chat) never has to see a run key.
 
     # 1. run the pipeline: it stops at the first missing answer per cell
     python3 scripts/run_experiment.py --provider command \\
-        --command "python3 scripts/chat_operator.py --dir build/operator/chat2" ...
+        --command "python3 scripts/chat_operator.py --dir runs/operator/chat2" ...
 
     # 2. write the prompts, one block per pending request
-    python3 scripts/relay_prompts.py export --dir build/operator/chat2
+    python3 scripts/relay_prompts.py export --dir runs/operator/chat2
 
     # 3. paste <outbox>/PROMPTS.md into a chat, paste the answers back into a file
-    python3 scripts/relay_prompts.py ingest --dir build/operator/chat2 --file answers.txt
+    python3 scripts/relay_prompts.py ingest --dir runs/operator/chat2 --file answers.txt
 
     # 4. run the pipeline again; repeat until nothing is pending
+
+Keep ``--dir`` outside ``build/``: ``build/`` is not kept across sessions, and a
+lost ``responses/`` directory means asking the chat for the same answers again.
+``runs/operator/<name>`` is git-ignored and survives.
 
 The tag is derived from the request key, so the same request keeps the same tag
 across exports. ``ingest`` pins each answer to the prompt hash it answers, so the
