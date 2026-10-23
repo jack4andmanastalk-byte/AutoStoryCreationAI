@@ -413,6 +413,12 @@ def _write_ranked_catalogs(
             encoding="utf-8",
         )
 
+    # Clean up any spare-pool slice files beyond len(works) (e.g. 301_400 from prepare)
+    for stale in cfg.paths.dataset_dir.glob("narou_commercialized_rank[0-9]*.jsonl"):
+        stale.unlink(missing_ok=True)
+    for stale in cfg.paths.dataset_dir.glob("narou_rank[0-9]*_ranking.md"):
+        stale.unlink(missing_ok=True)
+
     for start_idx in range(100, len(works), 100):
         bracket = list(works[start_idx : start_idx + 100])
         if not bracket:

@@ -67,7 +67,7 @@ jobs:
           TARGET="${{ github.event.inputs.narou_works || '300' }}"
           POOL=$(( TARGET + 35 ))
           SCAN=$(( TARGET * 3 + 200 ))
-          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39906592344' }}"
+          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39937814414' }}"
 
           reused_prep=0
           if [ -n "$SEED_RUN" ]; then
@@ -173,7 +173,7 @@ jobs:
         run: |
           mkdir -p reuse_cache
           SHARD="${{ matrix.shard }}"
-          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39906592344' }}"
+          SEED_RUN="${{ github.event.inputs.seed_run_id || vars.DATASET_SEED_RUN_ID || '39937814414' }}"
 
           # 1) Reuse completed shard bundle from prior run when available
           if [ -n "$SEED_RUN" ]; then
@@ -489,10 +489,18 @@ jobs:
           for tar_f in narou_rank_*_pdfs.tar.gz; do
             [ -f "$tar_f" ] && ASSETS+=("$tar_f")
           done
-          for slice_f in data/datasets/narou_commercialized_rank*.jsonl data/datasets/narou_rank*_ranking.md; do
+          for slice_f in data/datasets/narou_commercialized_rank[0-9]*.jsonl data/datasets/narou_rank[0-9]*_ranking.md; do
             [ -f "$slice_f" ] && ASSETS+=("$slice_f")
           done
-          gh release upload "$TAG_MAIN" "${ASSETS[@]}" --clobber
+          for asset in "${ASSETS[@]}"; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG_MAIN" "$asset" --clobber; then
+                break
+              fi
+              [ "$attempt" -eq 3 ] && exit 1
+              sleep 5
+            done
+          done
 
           # Keep `datasets-narou-top100` updated with the strictly verified R15-inclusive Top 100
           cp narou_rank_001_100_pdfs.tar.gz narou_top100_pdfs.tar.gz
@@ -502,9 +510,16 @@ jobs:
               --title "Syosetsuka ni Narou Top 100 Commercialized Full-Episode PDFs" \
               --notes "Ranked Top 100 externally verified commercialized Syosetsuka ni Narou free WEB editions (R15 included)."
           fi
-          gh release upload "$TAG_TOP100" \
+          for top_asset in \
             narou_top100_pdfs.tar.gz \
             data/datasets/narou_commercialized_top100.jsonl \
             data/datasets/narou_top100_ranking.md \
-            data/datasets/manifest.json \
-            --clobber
+            data/datasets/manifest.json; do
+            for attempt in 1 2 3; do
+              if gh release upload "$TAG_TOP100" "$top_asset" --clobber; then
+                break
+              fi
+              [ "$attempt" -eq 3 ] && exit 1
+              sleep 5
+            done
+          done
