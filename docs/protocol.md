@@ -105,12 +105,16 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 
 1. `scripts/run_pipeline.py` で run を作る。出力は `runs/<run_id>/`（git 管理外）。
    `--provider scripted` は配線検証用の台本、`--provider command` が実モデル用。
+   鍵を持たない環境では `scripts/chat_operator.py` を `--provider command` の
+   コマンドとして渡し、プロンプトを `requests/` に落として応答を `responses/` に
+   置く。応答が無いときは **exit 3** で止まり、プロンプトが変わった応答は
+   **exit 4（stale）** で拒否する。担い手の版を固定できないため G5 は満たさない。
 2. `manifest.json` に次を必ず記録する。
    `run_id`, `task_id`, `system`, `seed`, `model`, `model_version`, `temperature`,
    `prompt_hashes`, `git_commit`, `protocol_version`, `started_at`, `finished_at`, `cost`.
 3. L1 は全 run に実行する。L2 は L1 を通過した run にだけ実行する（費用のため）。
 4. L3 は層化抽出する（タスク × 系 × 3 ペア、合計 60 ペア以上）。評定者は 2 名以上。
-5. 結果は `research/experiments/<id>/results.json` と `note.md` に置く。`note.md` には
+5. 結果は `experiments/<id>/results.json` と `note.md` に置く（`experiments/README.md` の規約、`run_experiment.py` の既定出力）。`note.md` には
    **仮説・条件・N・結果・限界**を書く。生の run 出力はコミットしない。
 6. 集計は `scripts/summarize_experiment.py` で行い、平均だけでなく 95% CI と N を出す。
 
@@ -147,7 +151,15 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | L3 | ラベル形式と一致率の計算のみ。評定は未実施 |
 | 生成（S0–S3） | **S0 / S1 実装済み**（`scripts/run_pipeline.py`）。S2 改稿・S3 文体は未実装 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
+| 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。**実モデルでの較正は未実施** |
 | 対照群 30 作品 | 未選定 |
 
 この表は PR ごとに更新する。**「実装済み」と「検証済み」を混ぜて書かない。**
+
+### pilot（`experiments/2026-10-pilot-t01-s0s1/`）
+
+鍵を持たない環境で S0/S1 が**実テキストで最後まで通る**ことを確かめた記録。条件は
+t01 × seed 0–2 × S0/S1（6 run）。担い手は対話セッションのオペレータで、
+**モデルと版を固定できないため G5 は未達**。§5 により、この run の L1 の値は
+**参考値**であり、L2/L3 は測っていない。公開作品との比較（G3/G4）には使えない。
