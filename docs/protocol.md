@@ -104,6 +104,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 ## 7. 手続き
 
 1. `scripts/run_pipeline.py` で run を作る。出力は `runs/<run_id>/`（git 管理外）。
+   `--provider scripted` は配線検証用の台本、`--provider command` が実モデル用。
 2. `manifest.json` に次を必ず記録する。
    `run_id`, `task_id`, `system`, `seed`, `model`, `model_version`, `temperature`,
    `prompt_hashes`, `git_commit`, `protocol_version`, `started_at`, `finished_at`, `cost`.
@@ -144,7 +145,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | L1 | 実装済み（継続性監査・指標・禁止パターン） |
 | L2 | 実装済み。**実モデル未接続、較正未実施** |
 | L3 | ラベル形式と一致率の計算のみ。評定は未実施 |
-| 生成（S0–S3） | **未実装**（次の PR） |
+| 生成（S0–S3） | **Plan のみ実装済み**（`scripts/run_pipeline.py`）。Draft / 改稿は未実装 |
 | 対照群 30 作品 | 未選定 |
 
 この表は PR ごとに更新する。**「実装済み」と「検証済み」を混ぜて書かない。**
