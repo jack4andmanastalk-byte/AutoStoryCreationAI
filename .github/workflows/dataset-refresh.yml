@@ -30,16 +30,27 @@ on:
       - "configs/dataset.yaml"
       - "requirements.txt"
   schedule:
-    # every Sunday at 03:00 UTC
-    - cron: "0 3 * * 0"
+    # Monthly, not weekly, on purpose. One build is ~20 shards x ~35 minutes
+    # = ~700 hosted minutes. Weekly that is ~3,000 minutes/month, which is
+    # already over the 2,000-minute Free allowance and starves CI of both
+    # concurrency slots and minutes. Monthly leaves room for CI.
+    # Trigger a refresh by hand (workflow_dispatch) when the data matters more.
+    - cron: "0 3 1 * *"
 
 permissions:
   contents: write
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    # Self-hosted runners do not consume hosted minutes; see docs/ci.md.
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 35
+    # A newer push to the same ref supersedes this build; its artifacts would be
+    # overwritten anyway. `cancel-in-progress` is what stops three 30-minute runs
+    # from queueing behind each other and starving repository CI.
+    concurrency:
+      group: dataset-prepare-${{ github.ref }}
+      cancel-in-progress: true
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -85,10 +96,20 @@ jobs:
 
   render-narou:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 90
+    concurrency:
+      group: dataset-render-${{ github.ref }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
+      # Slot reservation: the repository shares one concurrency budget
+      # (20 jobs on the Free plan). Running all 20 shards at once filled it and
+      # left `research-check` queued behind a 30-minute PDF build.
+      # 12 shards run in two waves (about 70 minutes) and leave >= 6 slots for
+      # CI and interactive work. Override with the repository variable
+      # DATASET_MAX_PARALLEL; see docs/ci.md.
+      max-parallel: ${{ fromJSON(vars.DATASET_MAX_PARALLEL || '12') }}
       matrix:
         shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
     env:
@@ -178,8 +199,13 @@ jobs:
 
   publish:
     needs: [prepare, render-narou]
-    if: always() && needs.prepare.result == 'success'
-    runs-on: ubuntu-latest
+    # `always()` keeps the "publish even if some shards failed, then backfill"
+    # behaviour, but a cancelled run must not push: its artifacts are partial
+    # and its successor is already rebuilding them.
+    if: >-
+      always() && needs.prepare.result == 'success'
+      && needs.render-narou.result != 'cancelled'
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 60
     concurrency:
       group: dataset-refresh-publish

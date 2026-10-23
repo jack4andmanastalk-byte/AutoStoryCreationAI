@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment plan story baseline skills-check protocol-check clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment plan story baseline skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -74,6 +74,17 @@ plan: ## run only the Plan step (task -> canon)
 experiment: ## run the S0/S1 matrix with the scripted fixture (wiring only)
 	$(RUN) scripts/run_experiment.py --id demo-scripted --tasks t01 \
 		--systems s0 s1 --seeds 0 1 --out build/experiments/demo-scripted
+
+ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
+	$(RUN) scripts/build_research_catalog.py --check
+	$(RUN) -m pytest tests -q
+	$(RUN) scripts/audit_continuity.py --canon harness/cases/demo/canon \
+		--text harness/cases/demo/text --out build/ci/audit.json \
+		--markdown build/ci/audit.md --fail-on none --quiet
+	$(RUN) scripts/run_evaluation.py --candidate harness/cases/demo/text \
+		--baseline harness/cases/demo-baseline/text --canon harness/cases/demo/canon \
+		--rubric harness/rubrics/story-quality-v0.yaml --patterns harness/patterns.yaml \
+		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
 
 protocol-check: ## verify the frozen evaluation protocol and its task set
 	$(RUN) -m pytest tests/test_protocol.py -q
