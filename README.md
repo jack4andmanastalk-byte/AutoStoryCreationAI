@@ -9,8 +9,9 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 から、統一スキーマのメタデータ JSONL と閲覧用の PDF を生成するパイプラインと、
 その実行結果を収録します。
 
-> 現在のフェーズ: **Phase 0 — データセットアップ**（完了）と
-> **Phase 1 — 創作知識の運用可能化**（進行中）。
+> 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
+> **Phase 1 — 創作知識の運用可能化**（進行中）、
+> **Phase 2 — スキルの実行可能化**（開始: `continuity-ledger` と `evaluation-harness`）。
 > `research/` に、外部コーパスの選別・統一カタログ・スキル種を収録しています。
 
 ---
@@ -102,6 +103,8 @@ make report
 │   ├── raw/                    # 整形済み本文テキスト
 │   └── pdf/                    # レンダリングした PDF
 ├── docs/                       # 設計・スキーマ・法務メモ
+├── skills/                     # 実行可能なスキル（SKILL.md + references/、下記 4.2）
+├── harness/                    # 評価ケース・ルーブリック・判定器（下記 4.2）
 ├── research/                   # 創作技法・制作実務の研究コーパス（下記 4.1）
 │   ├── curated/                # 選別済みの元成果物（出典・限界つき）
 │   ├── catalog/                # 統一カタログ（技法 488・分類 10・ツール 96・書誌 529）
@@ -118,6 +121,8 @@ make report
 │   ├── sources/aozora.py sources/narou.py
 │   ├── text/aozora_format.py text/narou_html.py
 │   ├── render/pdf.py fonts.py
+│   ├── story/                  # canon・台帳・継続性監査（continuity-ledger）
+│   └── evaluation/             # 指標・ルーブリック・判定器・ハーネス
 └── tests/                      # pytest
 ```
 
@@ -135,22 +140,48 @@ make report
 | [`research/curation/executability_report.md`](research/curation/executability_report.md) | 実務化できるかの仕分け（488 件：executable 115 / partial 290 / reference_only 83） |
 | [`research/program/skill_pipeline_mapping.md`](research/program/skill_pipeline_mapping.md) | 技法 → `SKILL.md`／評価ハーネスへの変換設計 |
 
+| [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
+
 ```bash
 make research         # research/curated/ から統一カタログを再生成
 make research-check   # コミット済みカタログとの差分検査（CI 用）
 ```
+
+### 4.2 実行可能なスキル（`skills/`・`harness/`）
+
+知識を読むだけの資料ではなく、**実行して判定できる形**にした 2 スキルです。
+どちらも「決定論的に検査できる部分」と「意味の評価」を分離しています。
+
+| スキル | 何をするか | 実装 |
+| --- | --- | --- |
+| [`skills/continuity-ledger/SKILL.md`](skills/continuity-ledger/SKILL.md) | canon（設定台帳）と本文マーカーから、死亡・知識・伏線・移動日数・年齢の矛盾を検出する | `src/asc/story/`、`scripts/audit_continuity.py` |
+| [`skills/evaluation-harness/SKILL.md`](skills/evaluation-harness/SKILL.md) | 作品を L1（決定論）・L2（モデル判定）・L3（人間）に分けて測り、改稿前後を比較する | `src/asc/evaluation/`、`scripts/run_evaluation.py` |
+
+```bash
+make audit      # デモ作品（矛盾を 7 件仕込んだ 5 章）を監査して、検出結果を表示
+make evaluate   # デモ作品と初稿を比較（L2 は記録済み判定を再生／ネットワーク不要）
+make skills-check   # SKILL.md の仕様検査＋両スキルのテスト
+```
+
+* デモ: [`harness/README.md`](harness/README.md)、期待値: `harness/cases/demo/EXPECTED.md`
+* 設計方針: **総合点を出さない**（次元別プロファイル）、**根拠の無い判定は無効**、
+  **文字数・会話率・段落長は良し悪しとして扱わない**、**監査カバレッジが違う CED は比較しない**
+* 仕様変更の記録: [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md)
 
 ## 5.  品質保証
 
 * `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、PDF 描画、
   JSONL ラウンドトリップのユニットテスト
 * `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
+* `make skills-check` — `SKILL.md` の frontmatter・リンク・500 行制限、継続性監査の期待値、
+  評価ハーネスのゲート（根拠必須・回帰判定・カバレッジ警告）を検査
 * CI: `.github/workflows/dataset-refresh.yml` が公式取得からレポートまでを実行します
 
 ## 6.  次フェーズ候補
 
-* `research/program/skill_seeds.jsonl` の 13 種から `skills/` の `SKILL.md` を実装
-* 評価ハーネスの雛形（決定論的検査＋LLM ルブリック）
+* `research/program/skill_seeds.jsonl` の残り 11 種から `skills/` の `SKILL.md` を実装
+  （seed-08 / seed-13 は実装済み）
+* 評価ハーネスの L2 を実モデルで較正する（現在は記録済み判定での配線検証のみ）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
 * キャラクターシート・世界観ノートの生成と、その評価軸の設計
 * 縦組み PDF / EPUB 出力（現在は横組み A5）

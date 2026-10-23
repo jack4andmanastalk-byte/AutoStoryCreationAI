@@ -1,0 +1,22 @@
+# 決定論的に検出できる「禁止パターン」。
+# ここに書いたものだけが L1 で落ちる。増やすときは、なぜ禁止かを message_ja に書く。
+patterns:
+  - id: meta_summary
+    pattern: "(つまり|要するに|まとめると)"
+    message_ja: "地の文での要約・解説。場面で示すか、削る。"
+    severity: low
+
+  - id: stacked_hedge
+    pattern: "(かもしれない可能性|ような気がする|と思われるだろう)"
+    message_ja: "推量の重ね掛け。視点人物の判断を一つに絞る。"
+    severity: low
+
+  - id: doubled_adverb
+    pattern: "(とてもとても|非常に非常に|本当に本当に)"
+    message_ja: "強調副詞の重複。程度は具体物で示す。"
+    severity: medium
+
+  - id: repeated_connective
+    pattern: "(そして、){2,}|(しかし、){2,}"
+    message_ja: "接続詞の連続。文を分けるか、接続を落とす。"
+    severity: low

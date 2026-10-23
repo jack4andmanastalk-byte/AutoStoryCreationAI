@@ -1,0 +1,12 @@
+# 移動日数。片方向だけ書いてもよい（逆方向は自動で使う）。
+locations:
+  - id: 灯台
+    travel_days:
+      王都: 3
+  - id: 王都
+    travel_days:
+      灯台: 3
+  - id: 港
+    travel_days:
+      灯台: 1
+      王都: 2

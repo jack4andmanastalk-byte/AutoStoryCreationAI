@@ -1,0 +1,14 @@
+# 伏線台帳。setup / payoff は宣言であり、本文のマーカーと食い違えば low で報告される。
+foreshadowing:
+  - id: fs-001
+    description: 灯台の鍵
+    setup: ch01
+    payoff: ch04
+
+  - id: fs-002
+    description: 王の病
+    setup: ch03
+
+  - id: fs-003
+    description: 港の鐘
+    setup: ch04

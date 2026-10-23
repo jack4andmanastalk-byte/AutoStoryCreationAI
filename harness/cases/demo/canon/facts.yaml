@@ -1,0 +1,11 @@
+# 事実台帳。terms は語彙手掛かり（地の文ではなく台詞の検査に使う）。
+facts:
+  - id: F-07
+    summary: 王の病は治らない
+    terms: ["王の病", "咳"]
+    setup: ch03
+
+  - id: F-09
+    summary: 灯台の鍵はアリアが持つ
+    terms: ["灯台の鍵"]
+    setup: ch01

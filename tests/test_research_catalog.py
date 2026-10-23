@@ -111,7 +111,7 @@ def test_skill_seed_references_resolve(catalog, seeds):
     assert {s["kind"] for s in seeds} == {"skill_seed", "harness_seed"}
     assert len({s["id"] for s in seeds}) == len(seeds)
     for seed in seeds:
-        assert seed["status"] == "seed"
+        assert seed["status"] in {"seed", "implemented"}, seed["id"]
         assert seed["steps"] and seed["checks"] and seed["outputs"], seed["id"]
         assert set(seed["technique_ids"]) <= techniques, seed["id"]
         assert set(seed.get("tool_ids", [])) <= tools, seed["id"]
@@ -244,3 +244,20 @@ def test_executability_summary_sections_are_present(catalog):
     coverage = catalog["manifest"]["executability"]["seed_coverage"]
     assert coverage and coverage["seeds"] == 13
     assert not coverage["unresolved_ids"]
+
+
+def test_implemented_seeds_point_at_existing_files(seeds):
+    """When a seed claims to be implemented, the files it names must exist."""
+    implemented = [s for s in seeds if s["status"] == "implemented"]
+    assert {s["id"] for s in implemented} == {
+        "seed-08-continuity-ledger", "seed-13-evaluation-harness"}
+    for seed in implemented:
+        impl = seed["implementation"]
+        assert seed["acceptance_written"], seed["id"]
+        assert seed["design_change_ja"], seed["id"]
+        for key in ("skill", "cli", "tests"):
+            assert (ROOT / impl[key]).is_file(), f"{seed['id']}: {impl[key]}"
+        for path in impl["library"]:
+            assert (ROOT / path).is_file(), f"{seed['id']}: {path}"
+    statuses = {s["id"]: s["status"] for s in seeds}
+    assert all(v in {"seed", "implemented"} for v in statuses.values())

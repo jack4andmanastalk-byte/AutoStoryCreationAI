@@ -229,6 +229,37 @@ tests:
 * `severity=high` は修正必須。`medium` は人間の確認。`low` は記録のみ。
 * 意図的な矛盾は `canon/intentional_contradictions.yaml` に理由つきで登録し、再検出を抑制する。
 
+### 5.5 実装した結果（2026-10-23）
+
+上の設計から、実装時に次の 3 点を変えた。理由と検証は
+[`../curation/spec_changes_2026-10.md`](../curation/spec_changes_2026-10.md) にある。
+
+| 設計時 | 実装 | 理由 |
+| --- | --- | --- |
+| `canon/characters/*.md` の YAML frontmatter | `canon/characters.yaml` ほか 6 ファイル | 1 ファイルにまとめた方が、正解の全体を 1 回で読める |
+| `canon/intentional_contradictions.yaml` | `canon/suppressions.yaml`（`reason` 必須） | 「除外」であることが名前から分かるようにした |
+| 本文から状態を抽出 | 本文に `{{death: ...}}` などのマーカーを書く | 日本語の人称・省略により自動抽出は誤検出が多い |
+
+| 成果物 | パス |
+| --- | --- |
+| スキル | `skills/continuity-ledger/SKILL.md`（詳細は `references/` 3 本） |
+| ライブラリ | `src/asc/story/{canon,text,ledger,continuity}.py` |
+| CLI | `scripts/audit_continuity.py`（終了コード 0/1/2） |
+| デモ | `harness/cases/demo/`（矛盾 7 件＋意図的な矛盾 1 件、`EXPECTED.md`） |
+| テスト | `tests/test_continuity.py`（14 件） |
+
+### 5.6 evaluation-harness の実装
+
+| 層 | 実装 | 停止条件 |
+| --- | --- | --- |
+| L1 | `src/asc/evaluation/metrics.py` ＋ 継続性監査 | high の違反が 1 件でもあれば fail |
+| L2 | `src/asc/evaluation/judge.py`（外部コマンド／記録済み判定） | 根拠の無い判定は `unevidenced` として fail |
+| L3 | `_calibrate`（人間ラベルの一致率） | 評定者 1 名なら警告 |
+
+**総合点は出さない。** 回帰として扱うのは欠陥（CED・禁止パターン・次元得点）だけで、
+文字数・会話率・段落長・文長 CV は記述統計として並べる。
+CLI は `scripts/run_evaluation.py`、デモは `harness/cases/demo{-baseline}`。
+
 ---
 
 ## 6. アンチパターン
@@ -248,8 +279,8 @@ tests:
 
 | フェーズ | 成果物 | 完了条件 |
 | --- | --- | --- |
-| P1-a | `continuity-ledger` の `SKILL.md` と `scripts/audit.py` | 3 作品以上で、既知の矛盾を再現率高く検出。 |
-| P1-b | `evaluation-harness` の L1 検査 + ルーブリック v0 | ベースラインとの比較で、改善/悪化を判定できる。 |
+| P1-a ✅ | `continuity-ledger` の `SKILL.md` と `scripts/audit_continuity.py` | 3 作品以上で、既知の矛盾を再現率高く検出。**デモ 1 作品で 7/7 を検出。作品数の拡充は未了。** |
+| P1-b ✅ | `evaluation-harness` の L1 検査 + ルーブリック v0 | ベースラインとの比較で、改善/悪化を判定できる。**L2 は記録済み判定のみ（実モデル未接続）。** |
 | P1-c | `premise-brief` / `voice-style` | 出力の検証条件を満たし、人間評価でベースライン以上。 |
 | P1-d | 世界観・歴史スキル | 年表・規則の矛盾検出が動く。 |
 | P2 | 参照資料の昇格（世界観日本 22、キャラ日本 118） | カタログへ正規化し、スキルの `references/` に接続。 |

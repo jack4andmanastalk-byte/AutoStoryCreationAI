@@ -16,6 +16,7 @@
 | [`catalog/README.md`](catalog/README.md) | 統一カタログのスキーマと読み方、件数、限界。 |
 | [`curation/executability_report.md`](curation/executability_report.md) | **実務化できるか**の仕分け（手順・合格条件・失敗条件・例の 4 項目、488 件）。 |
 | [`program/skill_pipeline_mapping.md`](program/skill_pipeline_mapping.md) | 技法カタログを `SKILL.md` / 評価ハーネスへ変換する設計。 |
+| [`curation/spec_changes_2026-10.md`](curation/spec_changes_2026-10.md) | seed-08 / seed-13 の実装時に**補った合格条件と設計変更**の記録（`partial` を executable 相当へ）。 |
 | [`inventory/artifacts.jsonl`](inventory/artifacts.jsonl) | 成果物 34 件の機械可読インベントリ（判定・点数・保存先・根拠）。 |
 | [`curated/README.md`](curated/README.md) | 採録した 88 ファイルの扱い、除外したもの、ファイル名の正規化。 |
 | [`curated/MANIFEST.json`](curated/MANIFEST.json) | 各ファイルの元パスと SHA-256（改変検出用）。 |
@@ -45,7 +46,7 @@ research/
 │   ├── manifest.json            # 件数・分類・入力ハッシュ
 │   └── validation_report.json   # 構造検査の結果
 ├── program/
-│   ├── skill_seeds.jsonl        # 13 のスキル／ハーネス種（実装前の設計単位）
+│   ├── skill_seeds.jsonl        # 13 のスキル／ハーネス種（seed-08/13 は status: implemented）
 │   └── skill_pipeline_mapping.md # スキル／ハーネスへの変換設計
 ├── inventory/
 │   └── artifacts.jsonl          # 34 成果物の採否インベントリ
@@ -53,6 +54,7 @@ research/
     ├── selection_report.md
     ├── executability_report.md
     ├── gap_analysis_and_added_sources.md
+    ├── spec_changes_2026-10.md  # 実装時に補った合格条件
     └── added_sources.jsonl      # 追加調査 24 件
 ```
 
@@ -86,6 +88,10 @@ research/
 
 欠けているのは主に**合格条件**（488 件中 124 件しか持たない）。
 詳細は [`curation/executability_report.md`](curation/executability_report.md)。
+
+この「合格条件の欠落」に対して、実装の側で何を補ったかは
+[`curation/spec_changes_2026-10.md`](curation/spec_changes_2026-10.md) に 1 対 1 で記録しています
+（seed-08 は 9 件、seed-13 は 4 件の `partial` に対応）。
 
 ## 4. 再生成と検証
 
@@ -122,6 +128,7 @@ for t in techniques:
 
 1. **スキル**: `program/skill_seeds.jsonl` の 13 種（企画、世界規則、歴史、人物、関係、構造、
    場面、継続性、文体、改稿、分岐、翻案、評価）を `SKILL.md` へ変換する。
+   継続性（seed-08）と評価（seed-13）は**実装済み**で、`skills/` と `harness/` に実行可能な形で入っています。
 2. **ハーネス**: 決定論的検査（台帳・禁止表現・構造）と LLM 判定（根拠位置つき）を分離し、
    ベンチマーク（ConStory-Bench, LitBench, NCP-Bench 等）で外部較正する。
 3. **パイプライン**: Plan（企画・世界・人物）→ Do（階層生成）→ Check（整合性・受容）→
