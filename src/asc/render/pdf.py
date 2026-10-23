@@ -14,6 +14,7 @@ CJK font (see :mod:`asc.fonts`).
 
 from __future__ import annotations
 
+import io
 import logging
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence
@@ -212,9 +213,29 @@ class BookPdfRenderer:
         ]
         if work.stats.get("episodes"):
             rows.append(("話数", str(work.stats["episodes"])))
+        elements = list(work.stats.get("elements") or [])
+        if elements:
+            rows.append(("登録要素", " / ".join(elements)))
         if ranking.get("rank"):
-            score_detail = f"第{ranking['rank']}位（総合評価 {work.stats.get('global_point', 0):,} pt / ブックマーク {work.stats.get('fav_novel_cnt', 0):,} 件）"
+            score_detail = (
+                f"第{ranking['rank']}位（総合評価 {work.stats.get('global_point', 0):,} pt / "
+                f"ブックマーク {work.stats.get('fav_novel_cnt', 0):,} 件）"
+            )
             rows.append(("人気・評価順位", score_detail))
+        media_labels = []
+        if ranking.get("is_book"):
+            media_labels.append("書籍")
+        if ranking.get("is_comic"):
+            media_labels.append("マンガ")
+        if ranking.get("is_anime"):
+            media_labels.append("アニメ")
+        if ranking.get("is_game"):
+            media_labels.append("ゲーム")
+        if media_labels:
+            media_str = "・".join(media_labels)
+            if ranking.get("isbn_sample"):
+                media_str += f"（ISBN: {ranking['isbn_sample']}）"
+            rows.append(("商業メディア確認", media_str))
         if ranking.get("publisher") or ranking.get("label"):
             pub = " / ".join(filter(None, [ranking.get("publisher"), ranking.get("label")]))
             rows.append(("商業刊行情報", pub))
@@ -323,4 +344,49 @@ class BookPdfRenderer:
         self._render_blocks(pdf, blocks)
         pdf.output(str(target))
         LOGGER.info("wrote %s", target)
+        return target
+
+    def refresh_cover(
+        self,
+        work: Work,
+        existing_pdf: str | Path,
+        out_path: str | Path,
+        note: str = "",
+    ) -> Path:
+        """Replace Page 1 (cover) of an existing full-episode PDF with updated metadata."""
+        from pypdf import PdfReader, PdfWriter
+
+        src = Path(existing_pdf)
+        target = Path(out_path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+
+        cover_pdf = self._new_document(work)
+        self._render_cover(cover_pdf, work, note=note)
+        cover_bytes = bytes(cover_pdf.output())
+
+        cover_reader = PdfReader(io.BytesIO(cover_bytes))
+        body_reader = PdfReader(str(src))
+        if len(body_reader.pages) < 2:
+            raise ValueError(f"existing PDF {src} has fewer than 2 pages")
+
+        writer = PdfWriter()
+        for page in cover_reader.pages:
+            writer.add_page(page)
+        for page in body_reader.pages[1:]:
+            writer.add_page(page)
+
+        author = work.primary_author
+        writer.add_metadata(
+            {
+                "/Title": work.title[:120],
+                "/Author": author.name if author else "",
+                "/Subject": work.url,
+                "/Creator": "AutoStoryCreationAI dataset builder",
+            }
+        )
+        tmp_target = target.with_suffix(".tmp.pdf")
+        with tmp_target.open("wb") as fh:
+            writer.write(fh)
+        tmp_target.replace(target)
+        LOGGER.info("refreshed cover of %s (%s pages)", target, len(writer.pages))
         return target

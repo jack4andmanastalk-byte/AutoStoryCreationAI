@@ -27,10 +27,11 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import shutil
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT / "src") not in sys.path:
@@ -59,8 +60,12 @@ LOGGER = logging.getLogger("setup_dataset")
 AOZORA_WORKS = "aozora_works.jsonl"
 AOZORA_AUTHORS = "aozora_authors.jsonl"
 NAROU_WORKS = "narou_novels.jsonl"
-NAROU_RANKED = "narou_commercialized_top100.jsonl"
-NAROU_RANKING_MD = "narou_top100_ranking.md"
+NAROU_RANKED = "narou_commercialized_ranked.jsonl"
+NAROU_RANKING_MD = "narou_commercialized_ranking.md"
+NAROU_TOP100 = "narou_commercialized_top100.jsonl"
+NAROU_TOP100_MD = "narou_top100_ranking.md"
+NAROU_RANK101_PLUS = "narou_commercialized_rank101_200.jsonl"
+NAROU_RANK101_PLUS_MD = "narou_rank101_200_ranking.md"
 MANIFEST = "manifest.json"
 
 
@@ -132,20 +137,40 @@ def store_works(path: Path, works: Iterable[Work]) -> int:
     return write_jsonl(path, [work.to_json() for work in works])
 
 
-def render_narou_ranking_markdown(works: Sequence[Work]) -> str:
-    """Format a Markdown summary table of ranked commercialised Narou works."""
+def render_narou_ranking_markdown(
+    works: Sequence[Work],
+    *,
+    heading: Optional[str] = None,
+) -> str:
+    """Format a Markdown summary table of externally verified commercialised Narou works."""
     total_eps = sum(int((w.stats or {}).get("episodes") or 0) for w in works)
     total_chars = sum(int((w.stats or {}).get("char_count") or 0) for w in works)
     total_pdf_bytes = sum(int((w.extra or {}).get("pdf_bytes") or 0) for w in works)
     pdf_count = sum(1 for w in works if w.pdf_path)
+    r15_count = sum(1 for w in works if "R15" in ((w.stats or {}).get("elements") or []))
+    book_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_book"))
+    manga_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_comic"))
+    anime_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_anime"))
+    game_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_game"))
+
+    if not heading:
+        if works:
+            r_first = ((works[0].extra or {}).get("ranking") or {}).get("rank") or 1
+            r_last = ((works[-1].extra or {}).get("ranking") or {}).get("rank") or len(works)
+            heading = (
+                f"# 小説家になろう 外部実在確認済・商業化作品 人気・評価・知名度ランキング（第{r_first}位〜第{r_last}位）"
+            )
+        else:
+            heading = "# 小説家になろう 外部実在確認済・商業化作品 ランキング"
 
     lines = [
-        "# 小説家になろう 商業化済作品 人気・評価・知名度ランキング Top 100",
+        heading,
         "",
-        "公式サイト（`api.syosetu.com`・`syosetu.com/commercialization/anime/`・`syosetu.com/syuppan/`・作品情報ページ）の公開指標に基づき、",
-        "商業化が確認された無料公開WEB版作品を **総合評価ポイント・ブックマーク数（人気）・評価点・商業刊行巻数（書報/あらすじ）・メディアミックス実績（アニメ化・ゲーム化・コミカライズ）** の合成スコア順にランキング化した一覧です。",
+        "自己申告キーワードのみに依存せず、**CiNii Books 書誌・ISBN 検索（書籍・マンガ）** および **日本語版 Wikipedia 作品・メディアミックス検証（書籍・マンガ・アニメ・ゲーム）**・公式アニメ一覧等を実際に検索し、商業化が外部データベースで実在確認された作品のみを抽出したランキングです（一般向け `novelapi` の **`R15` フラグ付与作品を含む**／18禁ノクターン等は除外）。",
         "",
         f"- **収録作品数**: {len(works)} 作品（PDF 生成済: {pdf_count} 作品・全話収録 / 話数制限なし）",
+        f"- **R15 フラグ付与作品数**: {r15_count} 作品（全体の {r15_count * 100.0 / max(len(works), 1):.1f}%）",
+        f"- **外部確認メディア内訳**: 書籍 {book_cnt} / マンガ {manga_cnt} / アニメ {anime_cnt} / ゲーム {game_cnt}",
         f"- **総エピソード数**: {total_eps:,} 話",
         f"- **総文字数**: {total_chars:,} 文字",
     ]
@@ -154,8 +179,8 @@ def render_narou_ranking_markdown(works: Sequence[Work]) -> str:
     lines.extend(
         [
             "",
-            "| 順位 | Nコード | タイトル | 作者 | ジャンル | 総合評価pt | ブックマーク | 評価pt | 商業・メディア展開 | 話数 | 文字数 | PDF |",
-            "|---:|---|---|---|---|---:|---:|---:|---|---:|---:|---:|",
+            "| 順位 | Nコード | タイトル | 作者 | ジャンル | R15 | 総合評価pt | ブックマーク | 確認メディア | 商業刊行・ISBN | 話数 | 文字数 | PDF |",
+            "|---:|---|---|---|---|---|---:|---:|---|---|---:|---:|---:|",
         ]
     )
     for idx, work in enumerate(works, start=1):
@@ -164,33 +189,45 @@ def render_narou_ranking_markdown(works: Sequence[Work]) -> str:
         ncode = work.id.split(":", 1)[1]
         author = work.authors[0].name if work.authors else ""
         genre_label = (work.genre or {}).get("label") or ""
+        is_r15 = "R15" if "R15" in ((work.stats or {}).get("elements") or []) else "-"
         gp = int((work.stats or {}).get("global_point") or 0)
         fav = int((work.stats or {}).get("fav_novel_cnt") or 0)
-        ap = int((work.stats or {}).get("all_point") or 0)
         eps = int((work.stats or {}).get("episodes") or 0)
         chars = int((work.stats or {}).get("char_count") or 0)
 
-        badges: List[str] = []
-        if ranking.get("is_anime"):
-            badges.append("アニメ")
-        if ranking.get("is_game"):
-            badges.append("ゲーム")
+        media_badges: List[str] = []
+        if ranking.get("is_book"):
+            media_badges.append("書籍")
         if ranking.get("is_comic"):
-            badges.append("漫画")
+            media_badges.append("漫画")
+        if ranking.get("is_anime"):
+            media_badges.append("アニメ")
+        if ranking.get("is_game"):
+            media_badges.append("ゲーム")
+        media_str = "・".join(media_badges) if media_badges else "書籍"
+
+        pub_parts: List[str] = []
         if ranking.get("label") or ranking.get("publisher"):
-            badges.append(str(ranking.get("label") or ranking.get("publisher")))
+            pub_parts.append(str(ranking.get("label") or ranking.get("publisher")))
+        if ranking.get("isbn_sample"):
+            pub_parts.append(f"`{ranking['isbn_sample']}`")
         vols = int(ranking.get("estimated_volumes") or 0)
         if vols > 1:
-            badges.append(f"{vols}巻+")
-        media_str = "・".join(badges) if badges else "書籍化"
+            pub_parts.append(f"{vols}巻+")
+        pub_str = " / ".join(pub_parts) if pub_parts else "-"
 
         pdf_bytes = int((work.extra or {}).get("pdf_bytes") or 0)
-        pdf_cell = f"{pdf_bytes / (1024 * 1024):.1f}MB" if pdf_bytes else ("済" if work.pdf_path else "-")
+        pdf_cell = (
+            f"{pdf_bytes / (1024 * 1024):.1f}MB"
+            if pdf_bytes
+            else ("済" if work.pdf_path else "-")
+        )
         safe_title = work.title.replace("|", "｜")
         safe_author = author.replace("|", "｜")
+        safe_pub = pub_str.replace("|", "｜")
         lines.append(
-            f"| {rank} | `{ncode}` | {safe_title} | {safe_author} | {genre_label} | "
-            f"{gp:,} | {fav:,} | {ap:,} | {media_str} | {eps:,} | {chars:,} | {pdf_cell} |"
+            f"| {rank} | `{ncode}` | {safe_title} | {safe_author} | {genre_label} | {is_r15} | "
+            f"{gp:,} | {fav:,} | {media_str} | {safe_pub} | {eps:,} | {chars:,} | {pdf_cell} |"
         )
     lines.append("")
     return "\n".join(lines)
@@ -352,13 +389,90 @@ def cmd_narou_metadata(cfg: Config, args: argparse.Namespace) -> None:
     )
 
 
+def _write_ranked_catalogs(
+    cfg: Config,
+    works: Sequence[Work],
+    out_path: Optional[Path] = None,
+) -> Tuple[Path, Path]:
+    """Write full ranked JSONL/Markdown plus Top-100 and Rank-101+ slices."""
+    primary_jsonl = out_path or (cfg.paths.dataset_dir / NAROU_RANKED)
+    store_works(primary_jsonl, works)
+
+    md_path = cfg.paths.dataset_dir / NAROU_RANKING_MD
+    md_path.write_text(render_narou_ranking_markdown(works), encoding="utf-8")
+
+    top100 = list(works[:100])
+    if top100:
+        store_works(cfg.paths.dataset_dir / NAROU_TOP100, top100)
+        (cfg.paths.dataset_dir / NAROU_TOP100_MD).write_text(
+            render_narou_ranking_markdown(
+                top100,
+                heading="# 小説家になろう 外部実在確認済・商業化作品 人気・評価・知名度ランキング Top 100（第1位〜第100位）",
+            ),
+            encoding="utf-8",
+        )
+
+    rank101_plus = list(works[100:])
+    if rank101_plus:
+        last_rank = ((rank101_plus[-1].extra or {}).get("ranking") or {}).get("rank") or len(works)
+        store_works(cfg.paths.dataset_dir / NAROU_RANK101_PLUS, rank101_plus)
+        (cfg.paths.dataset_dir / NAROU_RANK101_PLUS_MD).write_text(
+            render_narou_ranking_markdown(
+                rank101_plus,
+                heading=(
+                    f"# 小説家になろう 外部実在確認済・商業化作品 人気・評価・知名度ランキング 第101位以降（第101位〜第{last_rank}位）"
+                ),
+            ),
+            encoding="utf-8",
+        )
+    return primary_jsonl, md_path
+
+
+def _load_reuse_maps(
+    reuse_dir: Optional[Path],
+) -> Tuple[Dict[str, Path], Dict[str, Path], Dict[str, Work]]:
+    """Index existing full-episode PDFs, texts, and metadata for incremental continuation."""
+    pdfs: Dict[str, Path] = {}
+    txts: Dict[str, Path] = {}
+    prev_works: Dict[str, Work] = {}
+    if not reuse_dir or not reuse_dir.exists():
+        return pdfs, txts, prev_works
+
+    for sub in ("pdf/narou", "data/pdf/narou"):
+        pdir = reuse_dir / sub
+        if pdir.is_dir():
+            for p in pdir.glob("*.pdf"):
+                if p.stat().st_size > 2048:
+                    pdfs.setdefault(p.stem.lower(), p)
+
+    for sub in ("raw/narou/texts", "data/raw/narou/texts"):
+        tdir = reuse_dir / sub
+        if tdir.is_dir():
+            for p in tdir.glob("*.txt"):
+                if p.stat().st_size > 256:
+                    txts.setdefault(p.stem.lower(), p)
+
+    for sub in (
+        "datasets/narou_commercialized_ranked.jsonl",
+        "datasets/narou_commercialized_top100.jsonl",
+        "data/datasets/narou_commercialized_ranked.jsonl",
+        "data/datasets/narou_commercialized_top100.jsonl",
+    ):
+        jpath = reuse_dir / sub
+        if jpath.is_file():
+            for w in load_works(jpath):
+                prev_works.setdefault(w.id.lower(), w)
+
+    return pdfs, txts, prev_works
+
+
 def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
-    """Verify commercialisation & rank top Narou works in descending score order."""
+    """Verify commercialisation via external book/manga/anime/game catalogs & rank works."""
     works_path = cfg.paths.dataset_dir / NAROU_WORKS
     if not works_path.exists():
         raise SystemExit(f"{works_path} not found - run 'narou-metadata' first")
     works = load_works(works_path)
-    interval = getattr(args, "request_interval", None) or 0.45
+    interval = getattr(args, "request_interval", None) or 0.20
     source = NarouSource(cfg.narou, cfg.paths, build_client(cfg, request_interval=interval))
 
     anime_ncodes = source.fetch_anime_ncodes()
@@ -380,33 +494,27 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
     )
 
     top_target = args.top
-    scan_limit = max(args.scan_limit, top_target + 80)
+    scan_limit = max(args.scan_limit, top_target * 2 + 120)
+    strict_flag = (
+        cfg.narou.strict_external_verification
+        if getattr(args, "strict_external", None) is None
+        else bool(args.strict_external)
+    )
     LOGGER.info(
-        "verifying commercialisation across up to %s top Narou candidates (target=%s)",
+        "externally verifying commercialisation (books/manga/anime/games, R15=%s, strict=%s) "
+        "across up to %s top Narou candidates (target=%s)",
+        cfg.narou.include_r15,
+        strict_flag,
         min(scan_limit, len(candidates)),
         top_target,
     )
 
-    verified: List[Work] = []
-    for idx, work in enumerate(candidates[:scan_limit], start=1):
-        ok = source.verify_and_enrich_commercialization(
-            work,
-            anime_ncodes=anime_ncodes,
-            check_syuppan=not args.no_syuppan,
-            check_infotop=True,
-        )
-        if ok:
-            verified.append(work)
-            LOGGER.info(
-                "[verified %s | scan %s] %s (%s) score=%s",
-                len(verified),
-                idx,
-                work.title,
-                work.id,
-                work.extra["ranking"]["ranking_score"],
-            )
-        if len(verified) >= top_target + 35 and idx >= top_target + 60:
-            break
+    verified = source.verify_candidates_external(
+        candidates[:scan_limit],
+        anime_ncodes=anime_ncodes,
+        strict=strict_flag,
+        check_syuppan=getattr(args, "check_syuppan", False),
+    )
 
     verified.sort(
         key=lambda w: (
@@ -418,35 +526,38 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
         reverse=True,
     )
 
+    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
+    reuse_pdfs, _, _ = _load_reuse_maps(reuse_dir)
+
     selected: List[Work] = []
     for work in verified:
         if len(selected) >= top_target:
             break
-        if args.verify_web and not source.verify_web_text_available(work):
+        ncode_lower = work.id.split(":", 1)[1].lower()
+        already_downloaded = ncode_lower in reuse_pdfs
+        if args.verify_web and not already_downloaded and not source.verify_web_text_available(work):
             LOGGER.warning("skipping %s (%s) - WEB episodes unavailable/stubbed", work.id, work.title)
             continue
         rank_num = len(selected) + 1
         work.extra.setdefault("ranking", {})["rank"] = rank_num
         selected.append(work)
         LOGGER.info(
-            "Rank #%s: %s (%s) | score=%s | gp=%s | eps=%s | chars=%s",
+            "Rank #%s: %s (%s) | R15=%s | media=%s | score=%s | gp=%s | eps=%s",
             rank_num,
             work.title,
             work.id,
+            "R15" in (work.stats.get("elements") or []),
+            ",".join(work.extra["ranking"].get("verified_media") or []),
             work.extra["ranking"]["ranking_score"],
             work.stats.get("global_point"),
             work.stats.get("episodes"),
-            work.stats.get("char_count"),
         )
 
     if len(selected) < top_target:
         LOGGER.warning("selected %s commercialised works (target was %s)", len(selected), top_target)
 
-    out_path = Path(args.out_file) if args.out_file else (cfg.paths.dataset_dir / NAROU_RANKED)
-    store_works(out_path, selected)
-
-    md_path = cfg.paths.dataset_dir / NAROU_RANKING_MD
-    md_path.write_text(render_narou_ranking_markdown(selected), encoding="utf-8")
+    explicit_out = Path(args.out_file) if args.out_file else None
+    out_path, md_path = _write_ranked_catalogs(cfg, selected, out_path=explicit_out)
 
     merged = {w.id: w for w in works}
     for w in verified:
@@ -455,12 +566,16 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
         merged[w.id] = w
     store_works(works_path, merged.values())
 
+    r15_selected = sum(1 for w in selected if "R15" in (w.stats.get("elements") or []))
     write_manifest(
         cfg,
         {
             "narou_rank": {
                 "ranked_works": len(selected),
+                "r15_works": r15_selected,
                 "verified_pool": len(verified),
+                "strict_external_verification": strict_flag,
+                "include_r15": cfg.narou.include_r15,
                 "file": relative(out_path),
                 "ranking_markdown": relative(md_path),
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -567,9 +682,12 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
             )
 
     target = args.works or cfg.narou.download_works
+    start_rank = max(1, int(getattr(args, "start_rank", 1) or 1))
+    offset = start_rank - 1
     shard_count = int(getattr(args, "shard_count", 1) or 1)
     shard_index = int(getattr(args, "shard_index", 0) or 0)
 
+    ordered_pool = ordered_pool[offset:]
     if shard_count > 1:
         top_slice = ordered_pool[:target]
         ordered_pool = [
@@ -577,15 +695,19 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         ]
         target = len(ordered_pool)
         LOGGER.info(
-            "shard %s/%s assigned %s works: %s",
+            "shard %s/%s (start_rank=%s) assigned %s works: %s",
             shard_index,
             shard_count,
+            start_rank,
             target,
             [
                 f"#{((w.extra.get('ranking') or {}).get('rank') or '?')}:{w.id}"
                 for w in ordered_pool
             ],
         )
+
+    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
+    reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
 
     raw_dir = cfg.paths.raw_dir / "narou" / "texts"
     pdf_dir = cfg.paths.pdf_dir / "narou"
@@ -595,6 +717,7 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         if len(updated) >= target:
             break
         ncode = work.id.split(":", 1)[1]
+        ncode_lower = ncode.lower()
         if not use_ranked_file and (
             getattr(args, "check_commercialization", False)
             or (commercialized_only and work.rights.get("commercialized") is not True)
@@ -609,10 +732,73 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
             continue
 
         expected_eps = int(work.stats.get("episodes") or 0)
-        work.extra.setdefault("api_char_count", work.stats.get("char_count"))
+        expected_chars = int(work.stats.get("char_count") or 0)
+        work.extra.setdefault("api_char_count", expected_chars)
         work.extra.setdefault("api_episodes", expected_eps)
 
         rank_label = (work.extra.get("ranking") or {}).get("rank")
+        cover_note = (
+            "出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版（全話収録）"
+            if work.rights.get("commercialized") is True and args.max_episodes == 0
+            else (
+                "出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版"
+                if work.rights.get("commercialized") is True
+                else "出典: 小説家になろう (syosetu.com) — 公式サイトが無料公開しているWEB版"
+            )
+        )
+
+        # Fast incremental reuse when an already-rendered full-episode PDF + text exist
+        if (
+            args.max_episodes == 0
+            and ncode_lower in reuse_pdfs
+            and ncode_lower in reuse_txts
+        ):
+            prev_w = reuse_prev.get(work.id.lower())
+            prev_eps = int((prev_w.stats if prev_w else {}).get("episodes") or 0)
+            prev_chars = int((prev_w.stats if prev_w else {}).get("char_count") or 0)
+            src_txt = reuse_txts[ncode_lower]
+            src_pdf = reuse_pdfs[ncode_lower]
+            txt_content = src_txt.read_text(encoding="utf-8")
+            episodes_fresh = (
+                (prev_eps > 0 and expected_eps <= prev_eps + 3)
+                or (prev_eps == 0 and len(txt_content) >= max(1000, int(expected_chars * 0.70)))
+            )
+            if episodes_fresh:
+                text_path = raw_dir / f"{ncode}.txt"
+                text_path.parent.mkdir(parents=True, exist_ok=True)
+                if src_txt.resolve() != text_path.resolve():
+                    shutil.copy2(src_txt, text_path)
+                work.text_path = relative(text_path)
+                work.stats["char_count"] = prev_chars or sum(
+                    len(ln) for ln in txt_content.splitlines() if ln.strip()
+                )
+                work.stats["episodes"] = prev_eps or expected_eps
+                work.extra["text_origin"] = "reused full-episode cache"
+                work.extra["all_episodes_rendered"] = True
+                if renderer is not None:
+                    pdf_path = pdf_dir / f"{ncode}.pdf"
+                    try:
+                        renderer.refresh_cover(work, src_pdf, pdf_path, note=cover_note)
+                    except Exception as exc:
+                        LOGGER.warning("cover refresh fallback copy for %s: %s", ncode, exc)
+                        if src_pdf.resolve() != pdf_path.resolve():
+                            pdf_path.parent.mkdir(parents=True, exist_ok=True)
+                            shutil.copy2(src_pdf, pdf_path)
+                    work.pdf_path = relative(pdf_path)
+                    work.extra["pdf_bytes"] = pdf_path.stat().st_size
+                updated.append(work)
+                LOGGER.info(
+                    "[%s/%s] Rank #%s %s -> REUSED (%s episodes, %s chars, pdf=%s)",
+                    len(updated),
+                    target,
+                    rank_label or "-",
+                    work.title,
+                    work.stats["episodes"],
+                    f"{work.stats['char_count']:,}",
+                    work.pdf_path,
+                )
+                continue
+
         LOGGER.info(
             "fetching %s (Rank #%s, expected %s episodes): %s",
             work.id,
@@ -639,7 +825,8 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         work.extra["all_episodes_rendered"] = args.max_episodes == 0
         if work.rights.get("commercialized") is True:
             work.rights["note"] = (
-                "この作品は商業化されています。商業版（紙書籍・電子書籍）は再配布せず、"
+                "この作品は外部書誌・メディアDBにより商業化が実在確認されています。"
+                "商業版（紙書籍・電子書籍）は再配布せず、"
                 "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
                 "二次利用には作者の許諾が必要です。"
             )
@@ -655,15 +842,7 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
                 work,
                 blocks,
                 pdf_path,
-                note=(
-                    "出典: 小説家になろう (syosetu.com) — 商業化作品の無料公開WEB版（全話収録）"
-                    if work.rights.get("commercialized") is True and args.max_episodes == 0
-                    else (
-                        "出典: 小説家になろう (syosetu.com) — 商業化作品の無料公開WEB版"
-                        if work.rights.get("commercialized") is True
-                        else "出典: 小説家になろう (syosetu.com) — 公式サイトが無料公開しているWEB版"
-                    )
-                ),
+                note=cover_note,
             )
             work.pdf_path = relative(pdf_path)
             work.extra["pdf_bytes"] = pdf_path.stat().st_size
@@ -701,10 +880,7 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
             rmerged.values(),
             key=lambda w: ((w.extra.get("ranking") or {}).get("rank") or 999999),
         )
-        store_works(ranked_path, final_ranked)
-        (cfg.paths.dataset_dir / NAROU_RANKING_MD).write_text(
-            render_narou_ranking_markdown(final_ranked), encoding="utf-8"
-        )
+        _write_ranked_catalogs(cfg, final_ranked, out_path=ranked_path)
 
     write_manifest(
         cfg,
@@ -802,8 +978,25 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             key=lambda w: ((w.extra.get("ranking") or {}).get("rank") or 999999),
         )[: args.works]
 
+    cover_renderer: Optional[BookPdfRenderer] = None
     for idx, work in enumerate(final_ranked, start=1):
+        old_rank = (work.extra.get("ranking") or {}).get("rank")
         work.extra.setdefault("ranking", {})["rank"] = idx
+        if old_rank != idx and work.pdf_path:
+            pdf_full = REPO_ROOT / work.pdf_path
+            if pdf_full.exists():
+                if cover_renderer is None:
+                    cover_renderer = build_renderer(cfg)
+                try:
+                    cover_renderer.refresh_cover(
+                        work,
+                        pdf_full,
+                        pdf_full,
+                        note="出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版（全話収録）",
+                    )
+                    work.extra["pdf_bytes"] = pdf_full.stat().st_size
+                except Exception as exc:
+                    LOGGER.warning("cover rank refresh skipped for %s: %s", work.id, exc)
 
     # Remove any spare PDFs/texts beyond the final Top N
     keep_ncodes = {w.id.split(":", 1)[1].lower() for w in final_ranked}
@@ -822,9 +1015,7 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             merged[w.id] = w
         store_works(works_path, merged.values())
 
-    store_works(ranked_path, final_ranked)
-    md_path = cfg.paths.dataset_dir / NAROU_RANKING_MD
-    md_path.write_text(render_narou_ranking_markdown(final_ranked), encoding="utf-8")
+    ranked_path, md_path = _write_ranked_catalogs(cfg, final_ranked, out_path=ranked_path)
 
     rendered = [w for w in final_ranked if w.pdf_path]
     total_eps = sum(int(w.stats.get("episodes") or 0) for w in rendered)
@@ -896,19 +1087,24 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--cached-only", action="store_true", help="only import cached API JSON files")
     p.set_defaults(func=cmd_narou_metadata)
 
-    p = sub.add_parser("narou-rank", help="verify & rank commercialised Narou works")
-    p.add_argument("--top", type=int, default=100, help="number of top ranked works to select")
-    p.add_argument("--scan-limit", type=int, default=220, help="max top candidates to inspect")
+    p = sub.add_parser("narou-rank", help="externally verify & rank commercialised Narou works")
+    p.add_argument("--top", type=int, default=200, help="number of top ranked works to select")
+    p.add_argument("--scan-limit", type=int, default=600, help="max top candidates to inspect")
     p.add_argument("--min-chars", type=int, default=10000)
     p.add_argument("--min-episodes", type=int, default=1)
-    p.add_argument("--request-interval", type=float, default=0.45)
-    p.add_argument("--no-syuppan", action="store_true")
+    p.add_argument("--request-interval", type=float, default=0.20)
+    p.add_argument("--check-syuppan", action="store_true", default=False)
+    p.add_argument("--no-syuppan", dest="check_syuppan", action="store_false")
+    p.add_argument("--strict-external", dest="strict_external", action="store_true", default=None)
+    p.add_argument("--no-strict-external", dest="strict_external", action="store_false")
     p.add_argument("--verify-web", action="store_true", default=True)
     p.add_argument("--no-verify-web", dest="verify_web", action="store_false")
+    p.add_argument("--reuse-existing-dir", default=None)
     p.add_argument("--out-file", default=None)
     p.set_defaults(func=cmd_narou_rank)
 
     p = sub.add_parser("narou-texts", help="download texts (and PDFs) of Narou novels")
+    p.add_argument("--start-rank", type=int, default=1, help="1-indexed rank to start from (e.g. 101)")
     p.add_argument("--works", type=int, default=None)
     p.add_argument("--max-episodes", type=int, default=0)
     p.add_argument("--pdf", action="store_true", help="also render PDF files")
@@ -916,6 +1112,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--ignore-ranked-file", action="store_true")
     p.add_argument("--rank-order", action="store_true", help="execute strictly in rank order")
     p.add_argument("--diversify-genres", action="store_true", help="interleave across genres")
+    p.add_argument("--reuse-existing-dir", default=None, help="directory with previous PDFs/texts")
     p.add_argument("--shard-index", type=int, default=0)
     p.add_argument("--shard-count", type=int, default=1)
     p.add_argument("--request-interval", type=float, default=None)
@@ -933,7 +1130,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     p = sub.add_parser("narou-merge-shards", help="merge sharded narou-texts outputs")
     p.add_argument("--shard-dir", default=None)
-    p.add_argument("--works", type=int, default=100)
+    p.add_argument("--works", type=int, default=200)
     p.add_argument("--backfill", action="store_true", help="backfill from spare ranked works")
     p.add_argument("--strict-count", action="store_true", help="exit non-zero if count < --works")
     p.set_defaults(func=cmd_narou_merge_shards)

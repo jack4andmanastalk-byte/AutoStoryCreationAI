@@ -33,6 +33,7 @@ from ..config import REPO_ROOT, NarouConfig, PathsConfig
 from ..http import HttpClient
 from ..schema import NAROU_SOURCE, Author, Work
 from ..text.narou_html import parse_chapter, parse_index_max_page, parse_novel_index
+from .media_verify import ExternalMediaVerifier, MediaVerificationResult
 
 LOGGER = logging.getLogger(__name__)
 
@@ -355,28 +356,77 @@ def compute_popularity_ranking_score(work: Work) -> Dict[str, Any]:
     review_cnt = int(stats.get("review_cnt") or 0)
 
     markers = set(rights.get("markers") or [])
+    ext = rights.get("external_verification")
     combined_text = "\n".join(
         filter(None, [work.title, extra.get("keywords"), extra.get("synopsis")])
     )
-    is_anime = bool(
-        existing.get("is_anime")
-        or any("アニメ" in m or "劇場版" in m or "映画" in m for m in markers)
-        or re.search(r"(アニメ化|TVアニメ|アニメ\s*[1-9１-９一二三四]期|劇場版|アニメ放送)", combined_text)
-    )
-    is_game = bool(
-        existing.get("is_game")
-        or any("ゲーム" in m for m in markers)
-        or "ゲーム化" in combined_text
-    )
-    is_comic = bool(
-        existing.get("is_comic")
-        or any("コミカライズ" in m or "漫画" in m or "コミック" in m for m in markers)
-        or re.search(r"(コミカライズ|漫画化|コミック)", combined_text)
-    )
 
-    syuppan_vols = int(existing.get("syuppan_volumes") or 0)
-    text_vols = estimate_volumes_from_text(combined_text)
-    est_vols = max(syuppan_vols, text_vols, 1 if rights.get("commercialized") is True else 0)
+    if isinstance(ext, dict):
+        # Strictly rely on external catalog verification (CiNii Books + Wikipedia + Official)
+        is_book = bool(ext.get("has_book") or existing.get("is_book"))
+        is_anime = bool(ext.get("has_anime") or existing.get("is_anime"))
+        is_game = bool(ext.get("has_game") or existing.get("is_game"))
+        is_comic = bool(ext.get("has_manga") or existing.get("is_comic"))
+        syuppan_vols = max(
+            int(existing.get("syuppan_volumes") or 0),
+            int(ext.get("syuppan_volumes") or 0),
+        )
+        wiki_vols = int(ext.get("wikipedia_volumes") or 0)
+        cinii_books = int(ext.get("cinii_book_hits") or 0)
+        cinii_total = min(int(ext.get("cinii_total_results") or 0), 35)
+        text_vols = estimate_volumes_from_text(combined_text) if is_book else 0
+        est_vols = max(
+            syuppan_vols,
+            wiki_vols,
+            cinii_books,
+            min(cinii_total, 25) if is_book else 0,
+            text_vols,
+            1 if (is_book or rights.get("commercialized") is True) else 0,
+        )
+        verified_media = list(ext.get("verified_media") or [])
+        verification_sources = list(ext.get("sources") or [])
+        isbn_sample = ext.get("isbn_sample") or ext.get("manga_isbn_sample")
+        publisher = ext.get("publisher") or existing.get("publisher") or ext.get("manga_publisher")
+        label = ext.get("label") or existing.get("label") or ext.get("manga_label")
+        wikipedia_title = ext.get("wikipedia_title")
+    else:
+        is_book = bool(rights.get("commercialized") is True)
+        is_anime = bool(
+            existing.get("is_anime")
+            or any("アニメ" in m or "劇場版" in m or "映画" in m for m in markers)
+            or re.search(
+                r"(アニメ化|TVアニメ|アニメ\s*[1-9１-９一二三四]期|劇場版|アニメ放送)",
+                combined_text,
+            )
+        )
+        is_game = bool(
+            existing.get("is_game")
+            or any("ゲーム" in m for m in markers)
+            or "ゲーム化" in combined_text
+        )
+        is_comic = bool(
+            existing.get("is_comic")
+            or any("コミカライズ" in m or "漫画" in m or "コミック" in m for m in markers)
+            or re.search(r"(コミカライズ|漫画化|コミック)", combined_text)
+        )
+        syuppan_vols = int(existing.get("syuppan_volumes") or 0)
+        text_vols = estimate_volumes_from_text(combined_text)
+        est_vols = max(syuppan_vols, text_vols, 1 if rights.get("commercialized") is True else 0)
+        verified_media = [
+            m
+            for m, flag in (
+                ("book", is_book),
+                ("manga", is_comic),
+                ("anime", is_anime),
+                ("game", is_game),
+            )
+            if flag
+        ]
+        verification_sources = list(existing.get("verification_sources") or [])
+        isbn_sample = existing.get("isbn_sample")
+        publisher = existing.get("publisher")
+        label = existing.get("label")
+        wikipedia_title = existing.get("wikipedia_title")
 
     score = (
         float(global_pt)
@@ -396,13 +446,76 @@ def compute_popularity_ranking_score(work: Work) -> Dict[str, Any]:
         "review_cnt": review_cnt,
         "syuppan_volumes": syuppan_vols,
         "estimated_volumes": est_vols,
+        "is_book": is_book,
         "is_anime": is_anime,
         "is_comic": is_comic,
         "is_game": is_game,
-        "publisher": existing.get("publisher"),
-        "label": existing.get("label"),
+        "verified_media": verified_media,
+        "verification_sources": verification_sources,
+        "isbn_sample": isbn_sample,
+        "wikipedia_title": wikipedia_title,
+        "publisher": publisher,
+        "label": label,
         "signals": list(existing.get("signals") or []),
     }
+
+
+def apply_external_verification(
+    work: Work,
+    media_result: MediaVerificationResult,
+    *,
+    strict: bool = True,
+) -> bool:
+    """Apply external 4-media verification result to ``work`` and return acceptance."""
+    work.rights["external_verification"] = media_result.to_dict()
+    work.rights["external_verified"] = media_result.verified
+
+    ranking = dict((work.extra or {}).get("ranking") or {})
+    signals: List[str] = []
+    if "cinii_books" in media_result.sources:
+        signals.append(
+            f"cinii_books(book={media_result.cinii_book_hits},manga={media_result.cinii_manga_hits})"
+        )
+    if "wikipedia" in media_result.sources:
+        signals.append(f"wikipedia({','.join(media_result.verified_media)})")
+    if "official_anime_page" in media_result.sources:
+        signals.append("official_anime_page")
+    if media_result.syuppan_volumes > 0:
+        signals.append(f"syuppan({media_result.syuppan_volumes}vols)")
+
+    if media_result.verified:
+        work.rights["commercialized"] = True
+        work.rights["note"] = (
+            "この作品は外部書誌・メディアDB（CiNii Books ISBN / Wikipedia / 公式書報・アニメ一覧）により"
+            "商業化が実在確認されています。商業版（紙書籍・電子書籍）は再配布せず、"
+            "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
+            "二次利用には作者の許諾が必要です。"
+        )
+        ranking["signals"] = signals
+        ranking["is_book"] = media_result.has_book
+        ranking["is_comic"] = media_result.has_manga
+        ranking["is_anime"] = media_result.has_anime
+        ranking["is_game"] = media_result.has_game
+        ranking["publisher"] = media_result.publisher or media_result.manga_publisher
+        ranking["label"] = media_result.label or media_result.manga_label
+        ranking["isbn_sample"] = media_result.isbn_sample or media_result.manga_isbn_sample
+        ranking["wikipedia_title"] = media_result.wikipedia_title
+        ranking["verification_sources"] = list(media_result.sources)
+        work.extra["ranking"] = ranking
+        work.extra["ranking"] = compute_popularity_ranking_score(work)
+        return True
+
+    if strict:
+        # Reject self-claimed or unverified works when external catalog search finds 0 proof
+        work.rights["commercialized"] = False
+        return False
+
+    if work.rights.get("commercialized") is True:
+        ranking["signals"] = signals or ["self_reported_narou_metadata"]
+        work.extra["ranking"] = ranking
+        work.extra["ranking"] = compute_popularity_ranking_score(work)
+        return True
+    return False
 
 #: Fields that are copied verbatim into the JSONL record.
 COPY_FIELDS = (
@@ -664,6 +777,7 @@ class NarouSource:
         self.paths = paths
         self.client = client
         self.api = NarouApiClient(config, client)
+        self.media_verifier = ExternalMediaVerifier(client)
 
     # -- metadata ------------------------------------------------------
     def _accept_work(self, work: Work) -> bool:
@@ -815,6 +929,41 @@ class NarouSource:
             return True
         chapter = parse_chapter(html, index=1, url=index_url)
         return bool(chapter.paragraphs)
+
+    def verify_candidates_external(
+        self,
+        candidates: Sequence[Work],
+        *,
+        anime_ncodes: Optional[Set[str]] = None,
+        strict: Optional[bool] = None,
+        check_syuppan: bool = False,
+    ) -> List[Work]:
+        """Batch-verify candidates via CiNii Books + Wikipedia (+ optional Syosetu)."""
+        strict_flag = (
+            self.config.strict_external_verification if strict is None else strict
+        )
+        media_map = self.media_verifier.verify_candidates(
+            candidates,
+            anime_ncodes=anime_ncodes,
+        )
+        accepted: List[Work] = []
+        for work in candidates:
+            res = media_map.get(work.id) or MediaVerificationResult()
+            if check_syuppan and not res.verified:
+                userid = str((work.extra or {}).get("userid") or "") or None
+                if userid:
+                    syuppan = self.check_syuppan(work.title, userid=userid)
+                    if syuppan.get("matched"):
+                        res.has_book = True
+                        res.verified = True
+                        res.syuppan_volumes = int(syuppan.get("volumes") or 1)
+                        res.publisher = res.publisher or syuppan.get("publisher")
+                        res.label = res.label or syuppan.get("label")
+                        if "syuppan" not in res.sources:
+                            res.sources.append("syuppan")
+            if apply_external_verification(work, res, strict=strict_flag):
+                accepted.append(work)
+        return accepted
 
     def verify_and_enrich_commercialization(
         self,

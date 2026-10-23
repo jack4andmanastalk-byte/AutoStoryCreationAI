@@ -64,6 +64,10 @@ class NarouConfig:
     include_r15: bool = True
     #: Only download texts/PDFs of commercialised Narou works (free web edition).
     commercialized_only: bool = True
+    #: Require external bibliographic/media catalog proof (CiNii Books ISBN /
+    #: Wikipedia franchise entry / official Syosetu anime-syuppan registry)
+    #: across books, manga, anime, and games rather than self-reported text.
+    strict_external_verification: bool = True
     #: Attempt legacy /txtdownload/ endpoint before HTML chapter pages.
     use_txtdownload: bool = False
     #: Local JSON files with raw API responses (offline import).

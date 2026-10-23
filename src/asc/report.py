@@ -13,6 +13,7 @@ DATASETS = {
     "aozora_works.jsonl": "青空文庫 (Aozora Bunko)",
     "aozora_authors.jsonl": "青空文庫 作家",
     "narou_novels.jsonl": "小説家になろう (Syosetsuka ni Narou)",
+    "narou_commercialized_ranked.jsonl": "小説家になろう 外部確認済・商業化ランキング",
 }
 
 

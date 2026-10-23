@@ -73,14 +73,20 @@ def main() -> int:
     parser.add_argument(
         "--orders",
         nargs="*",
-        default=["hyoka", "favnovelcnt", "lengthdesc", "generalfirstup"],
+        default=["hyoka", "favnovelcnt", "impressioncnt", "reviewcnt", "lengthdesc", "generalfirstup"],
     )
     parser.add_argument("--per-query", type=int, default=500)
     parser.add_argument(
         "--order-pages",
         type=int,
-        default=2,
-        help="number of 500-record pages to fetch per ordering query (max st=2000)",
+        default=4,
+        help="number of 500-record pages to fetch per top ordering query (max st=2000)",
+    )
+    parser.add_argument(
+        "--keywords",
+        nargs="*",
+        default=["書籍化", "コミカライズ", "アニメ化", "ゲーム化"],
+        help="commercialisation search terms harvested via order=hyoka (R15 included)",
     )
     parser.add_argument("--out-dir", default=None)
     parser.add_argument("--no-fields", action="store_true", help="store every field")
@@ -101,16 +107,39 @@ def main() -> int:
 
     limit = min(args.per_query, 500)
     queries: list[tuple[str, dict]] = []
+    major_genres = {101, 102, 201, 202, 302, 401}
     for genre in args.genres if args.genres is not None else cfg.narou.genres:
-        queries.append((f"genre_{genre}", {"genre": genre, "st": 1}))
+        g_pages = 2 if genre in major_genres and args.order_pages >= 2 else 1
+        for page_idx in range(g_pages):
+            st = 1 + page_idx * limit
+            if st > 2000:
+                break
+            suffix = "" if page_idx == 0 else f"_p{page_idx + 1}"
+            # Note: notr15 is intentionally omitted so R15-flagged general works are included.
+            queries.append((f"genre_{genre}{suffix}", {"genre": genre, "order": "hyoka", "st": st}))
+
     for order in args.orders or []:
-        pages = max(1, args.order_pages) if order in {"hyoka", "favnovelcnt"} else 1
+        if order in {"hyoka", "favnovelcnt"}:
+            pages = max(1, args.order_pages)
+        elif order in {"impressioncnt", "reviewcnt"}:
+            pages = min(2, max(1, args.order_pages))
+        else:
+            pages = 1
         for page_idx in range(pages):
             st = 1 + page_idx * limit
             if st > 2000:
                 break
             suffix = "" if page_idx == 0 else f"_p{page_idx + 1}"
             queries.append((f"order_{order}{suffix}", {"order": order, "st": st}))
+
+    for idx, kw in enumerate(args.keywords or []):
+        kw_pages = 2 if kw == "書籍化" and args.order_pages >= 2 else 1
+        for page_idx in range(kw_pages):
+            st = 1 + page_idx * limit
+            if st > 2000:
+                break
+            suffix = "" if page_idx == 0 else f"_p{page_idx + 1}"
+            queries.append((f"kw_{idx}_{kw}{suffix}", {"word": kw, "order": "hyoka", "st": st}))
 
     for name, query in queries:
         params: dict = {"out": "json", "lim": limit}
