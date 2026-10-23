@@ -30,15 +30,20 @@ on:
       - "configs/dataset.yaml"
       - "requirements.txt"
   schedule:
-    # every Sunday at 03:00 UTC
-    - cron: "0 3 * * 0"
+    # Monthly, not weekly, on purpose. One build is ~20 shards x ~35 minutes
+    # = ~700 hosted minutes. Weekly that is ~3,000 minutes/month, which is
+    # already over the 2,000-minute Free allowance and starves CI of both
+    # concurrency slots and minutes. Monthly leaves room for CI.
+    # Trigger a refresh by hand (workflow_dispatch) when the data matters more.
+    - cron: "0 3 1 * *"
 
 permissions:
   contents: write
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    # Self-hosted runners do not consume hosted minutes; see docs/ci.md.
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 35
     # A newer push to the same ref supersedes this build; its artifacts would be
     # overwritten anyway. `cancel-in-progress` is what stops three 30-minute runs
@@ -91,7 +96,7 @@ jobs:
 
   render-narou:
     needs: prepare
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 90
     concurrency:
       group: dataset-render-${{ github.ref }}
@@ -200,7 +205,7 @@ jobs:
     if: >-
       always() && needs.prepare.result == 'success'
       && needs.render-narou.result != 'cancelled'
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 60
     concurrency:
       group: dataset-refresh-publish

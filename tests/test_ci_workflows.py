@@ -133,8 +133,31 @@ def test_workflows_declare_minimal_permissions(ci, dataset):
     assert dataset["permissions"]["contents"] == "write"
 
 
+def test_dataset_build_is_cheap_enough_to_leave_minutes_for_ci(dataset):
+    """One build is ~700 minutes; a weekly schedule alone exceeds 2,000/month."""
+    triggers = dataset[True] if True in dataset else dataset["on"]
+    cron = triggers["schedule"][0]["cron"]
+    fields = cron.split()
+    assert len(fields) == 5
+    minute, hour, day_of_month, month, day_of_week = fields
+    monthly = day_of_month.isdigit() and day_of_week == "*"
+    assert monthly, f"expected a monthly schedule, got {cron!r}"
+    assert "workflow_dispatch" in triggers
+
+
+def test_both_workflows_can_move_to_a_self_hosted_runner(ci, dataset):
+    """Self-hosted runners do not consume hosted minutes (docs/ci.md section 4)."""
+    assert "CI_RUNNER_LABEL" in ci["jobs"]["check"]["runs-on"]
+    for job in dataset["jobs"].values():
+        assert "DATASET_RUNNER_LABEL" in job["runs-on"]
+
+
 def test_docs_describe_the_budget():
     text = (REPO_ROOT / "docs" / "ci.md").read_text(encoding="utf-8")
     assert "DATASET_MAX_PARALLEL" in text
     assert "CI_RUNNER_LABEL" in text
+    assert "DATASET_RUNNER_LABEL" in text
     assert "20" in text
+    # the billing incident and the arithmetic behind the schedule change
+    assert "2,000" in text
+    assert "700" in text

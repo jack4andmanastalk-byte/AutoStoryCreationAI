@@ -45,18 +45,47 @@
    完全に独立する。ランナーの登録は Settings → Actions → Runners。
 
 ```bash
-# 設定（どちらも任意）
-gh variable set DATASET_MAX_PARALLEL --body 8      # データ生成をさらに控えめに
-gh variable set CI_RUNNER_LABEL --body self-hosted # セルフホストに移す
+# 設定（すべて任意）
+gh variable set DATASET_MAX_PARALLEL --body 8        # データ生成の並列度を下げる
+gh variable set CI_RUNNER_LABEL --body self-hosted   # CI をセルフホストへ
+gh variable set DATASET_RUNNER_LABEL --body self-hosted  # データ生成もセルフホストへ
 ```
 
-## 4. ローカルで同じことをする
+## 4. コスト（分数）— 実行枠より先に尽きる制約
+
+2026-10-23 に、**両ワークフローが 2 秒で「開始されず」に失敗**した。ログの注記は次のとおり。
+
+```
+The job was not started because recent account payments have failed
+or your spending limit needs to be increased.
+```
+
+つまり枠（同時実行数）ではなく、**分数の上限または支払い**で止まっていた。見積もりは次のとおり。
+
+| ワークフロー | 1 回の消費 | 頻度（変更前） | 月あたり |
+| --- | ---: | --- | ---: |
+| `dataset-refresh` | 約 **700 分**（20 シャード × 約 35 分 ＋ prepare/publish） | 週次 | 約 3,000 分 |
+| `research-check` | 約 1 分 | push ごと（数十回/日） | 数十分 |
+
+Free プランのプライベートリポジトリは **2,000 分/月**。データ生成だけで超過する。
+そこで次の 3 つを入れた。
+
+1. **定期実行を週次 → 月次**（`cron: "0 3 1 * *"`）。必要なら `workflow_dispatch` で随時実行する。
+2. **セルフホストランナーへの移行口**を両方に用意した（`CI_RUNNER_LABEL` / `DATASET_RUNNER_LABEL`）。
+   セルフホストは分数を消費しないため、これがいちばん確実な解決策になる。
+3. `research-check` の path フィルタ廃止（全 push）は**コスト的にも安全**。1 回 1 分未満で、
+   古いコミットの実行は `cancel-in-progress` で打ち切られる。
+
+> **注意**: 請求が止まっている間は、どのワークフローも開始されない。
+> ローカルでは `make ci` が同じ検査を行うので、マージ判断はそれで行える。
+
+## 5. ローカルで同じことをする
 
 ```bash
 make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評価（CI と同じ順序）
 ```
 
-## 5. 現在のジョブ構成
+## 6. 現在のジョブ構成
 
 | ワークフロー | トリガー | 時間 | 役割 |
 | --- | --- | --- | --- |
@@ -66,12 +95,13 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 `research-check` は**デモの監査と評価も実行**する。テストが緑でも、デモの期待値が
 ずれていれば落ちる（`harness/cases/demo/EXPECTED.md` が契約）。
 
-## 6. 触るときの注意
+## 7. 触るときの注意
 
 * `dataset-refresh` のシャード数を増やすなら `max-parallel` も見直す。
   `シャード数 - max-parallel + 2` が常時使う枠。**8 以上は空ける**こと。
 * `publish` の `if` から `needs.render-narou.result != 'cancelled'` を消さない。
   キャンセルされた実行の部分的な PDF で `datasets` ブランチを上書きしてしまう。
+* `dataset-refresh` の頻度を週次に戻すなら、分数を計算し直すこと（1 回 700 分）。
 * `research-check` に path フィルタを戻さない。**列挙漏れで CI が走らない**のが
   いちばん危ない失敗の仕方だから。実行時間は 1 分未満なので、絞る理由がない。
 * ランナーの上限はプランで変わる（Free 20 / Pro 40 / Team 60）。数字を直すときは
