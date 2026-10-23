@@ -25,10 +25,10 @@ data-aozora: ## Aozora Bunko: bibliographic records, texts and PDFs
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) aozora-texts --works $(WORK) --pdf
 
 data-narou: ## Syosetsuka ni Narou: bibliographic records, ranking, full-episode texts and PDFs
-	$(BIN)/python scripts/fetch_narou_api.py --config $(CONFIG) --per-query 500 --order-pages 2
+	$(BIN)/python scripts/fetch_narou_api.py --config $(CONFIG) --per-query 500 --order-pages 4
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-metadata --cached-only
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-rank --top 100
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 100 --max-episodes 0 --pdf --rank-order
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-rank --top 300 --scan-limit 1100
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 300 --max-episodes 0 --pdf --rank-order
 
 pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
 	git fetch origin +refs/heads/datasets:refs/remotes/origin/datasets

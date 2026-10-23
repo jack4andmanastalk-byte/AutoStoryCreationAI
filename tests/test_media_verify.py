@@ -430,3 +430,112 @@ def test_refresh_cover_preserves_body_pages(tmp_path: Path):
     cover_txt = updated_reader.pages[0].extract_text()
     assert "第2位" in cover_txt
     assert "9784040662206" in cover_txt
+
+
+def test_parse_apple_books_response_verifies_imprint_and_rejects_unrelated():
+    from asc.sources.media_verify import parse_apple_books_response
+
+    apple_payload = {
+        "resultCount": 4,
+        "results": [
+            {
+                "kind": "ebook",
+                "trackId": 1001,
+                "trackName": "異世界迷宮でハーレムを(1)",
+                "artistName": "氷樹一世, 蘇我捨恥(ヒーロー文庫/イマジカインフォス) & 四季童子",
+                "genres": ["マンガ", "ブック"],
+            },
+            {
+                "kind": "ebook",
+                "trackId": 1002,
+                "trackName": "異世界迷宮でハーレムを 1",
+                "artistName": "蘇我捨恥(ヒーロー文庫/イマジカインフォス) & 四季童子",
+                "genres": ["ライトノベル", "ブック"],
+            },
+            {
+                "kind": "ebook",
+                "trackId": 1003,
+                "trackName": "【期間限定無料】異世界迷宮でハーレムを(1)",
+                "artistName": "氷樹一世, 蘇我捨恥",
+                "genres": ["マンガ", "ブック"],
+            },
+            {
+                "kind": "ebook",
+                "trackId": 1004,
+                "trackName": "異世界迷宮でハーレムを 自費出版",
+                "artistName": "蘇我捨恥 / Kindle Direct Publishing",
+                "genres": ["ライトノベル"],
+            },
+        ],
+    }
+
+    parsed = parse_apple_books_response(
+        apple_payload,
+        search_titles=["異世界迷宮でハーレムを"],
+        author_variants=extract_author_variants("蘇我捨恥"),
+    )
+    assert parsed["matched"] is True
+    assert parsed["has_book"] is True
+    assert parsed["has_manga"] is True
+    assert parsed["label"] == "ヒーロー文庫"
+    assert parsed["publisher"] == "イマジカインフォス"
+    assert parsed["book_hits"] == 1
+    assert parsed["manga_hits"] == 1
+
+    # Uncommercialized work ("謙虚、堅実をモットーに生きております！") must NOT match unrelated books
+    unrelated_payload = {
+        "resultCount": 1,
+        "results": [
+            {
+                "kind": "ebook",
+                "trackId": 9999,
+                "trackName": "謙虚なるコントラリアン",
+                "artistName": "アンソニー・ボルトン",
+                "genres": ["ビジネス／マネー", "ブック"],
+            }
+        ],
+    }
+    rejected = parse_apple_books_response(
+        unrelated_payload,
+        search_titles=["謙虚、堅実をモットーに生きております！"],
+        author_variants=extract_author_variants("ひよこのケーキ"),
+    )
+    assert rejected["matched"] is False
+
+
+def test_write_ranked_catalogs_emits_rank201_300_slice(tmp_path: Path):
+    import sys
+
+    repo_root = Path(__file__).resolve().parents[1]
+    if str(repo_root / "scripts") not in sys.path:
+        sys.path.insert(0, str(repo_root / "scripts"))
+    import setup_dataset
+    from asc.config import Config
+
+    cfg = Config()
+    cfg.paths.dataset_dir = tmp_path
+    works = [
+        Work(
+            id=f"narou:N{idx:04d}AA",
+            source="syosetsuka_ni_narou",
+            title=f"作品{idx}",
+            url=f"https://ncode.syosetu.com/n{idx:04d}aa/",
+            authors=[Author(name=f"作者{idx}", role="author")],
+            genre={"label": "ハイファンタジー"},
+            stats={"char_count": 50000, "episodes": 25, "elements": ["R15"], "global_point": 100000 - idx, "fav_novel_cnt": 20000},
+            pdf_path=f"data/pdf/narou/N{idx:04d}AA.pdf",
+            extra={"pdf_bytes": 1048576, "ranking": {"rank": idx, "is_book": True, "is_comic": True}},
+        )
+        for idx in range(1, 301)
+    ]
+    setup_dataset._write_ranked_catalogs(cfg, works)
+
+    assert (tmp_path / "narou_commercialized_ranked.jsonl").is_file()
+    assert (tmp_path / "narou_commercialized_top100.jsonl").is_file()
+    assert (tmp_path / "narou_commercialized_rank101_200.jsonl").is_file()
+    assert (tmp_path / "narou_commercialized_rank201_300.jsonl").is_file()
+    md_201_300 = (tmp_path / "narou_rank201_300_ranking.md").read_text(encoding="utf-8")
+    assert "第201位〜第300位" in md_201_300
+    assert "`N0201AA`" in md_201_300
+    assert "`N0300AA`" in md_201_300
+
