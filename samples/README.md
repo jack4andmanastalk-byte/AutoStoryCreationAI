@@ -1,8 +1,11 @@
 # samples
 
-このディレクトリはリポジトリに同梱する小さなサンプルです。
-全件データ・本文・PDF は `make data`（または `make pull-datasets`）で `data/` 配下に生成されます（Git には含めません）。
+このディレクトリはリポジトリに同梱する小さなサンプルと検証済みカタログです。
+全件データ・全話プレーンテキスト本文は `make data`（または `make pull-datasets`）で `data/` 配下に展開されます（PDF は容量最適化・AI 利用特化のため全てプレーンテキスト化の上で削除済みです）。
 
 * `aozora_works.sample.jsonl` / `aozora_authors.sample.jsonl` … 青空文庫メタデータの部分集合
-* `narou_novels.sample.jsonl` … 小説家になろうメタデータ（商業化フラグ付き作品を含む）の部分集合
-* `pdf/` … 青空文庫（著作権消滅作品）から組版した A5 PDF サンプル
+* `narou_novels.sample.jsonl` … 小説家になろうメタデータの部分集合
+* `narou_commercialized_all.jsonl` … 外部実在確認済・商業化統合コーパス（全 373 作品: 総合 Top 300 ＋ 5ジャンル追加 73 作品）
+* `narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` / `rank201_300` も同梱) … 総合ランキング上位 300 作品メタデータ
+* `narou_commercialized_genre_supplement.jsonl` … 5ジャンル限定（歴史 15・推理 15・現代 15・SF 15・ホラー 13＝計 73 作品）追加カタログ
+* `texts/` … 青空文庫（著作権消滅作品）から整形・テキスト化した UTF-8 プレーンテキストサンプル

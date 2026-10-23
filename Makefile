@@ -20,19 +20,21 @@ setup: ## create the virtual environment and install the dependencies
 test: ## run the unit tests
 	$(BIN)/python -m pytest tests -q
 
-data: data-aozora data-narou ## download every dataset (metadata + texts + PDFs)
+data: data-aozora data-narou ## download every dataset (metadata + plain texts, no PDFs)
 
-data-aozora: ## Aozora Bunko: bibliographic records, texts and PDFs
+data-aozora: ## Aozora Bunko: bibliographic records and plain texts
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) aozora-metadata
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) aozora-texts --works $(WORK) --pdf
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) aozora-texts --works $(WORK)
 
-data-narou: ## Syosetsuka ni Narou: bibliographic records, ranking, full-episode texts and PDFs
+data-narou: ## Syosetsuka ni Narou: metadata, Top-300 + 5-genre supplement full-episode plain texts
 	$(BIN)/python scripts/fetch_narou_api.py --config $(CONFIG) --per-query 500 --order-pages 4
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-metadata --cached-only
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-rank --top 300 --scan-limit 1100
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 300 --max-episodes 0 --pdf --rank-order
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 300 --max-episodes 0 --rank-order
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-genre-supplement --per-genre 15 --min-per-genre 10
+	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) purge-pdfs
 
-pull-datasets: ## fetch prebuilt datasets and PDFs from the 'datasets' branch
+pull-datasets: ## fetch prebuilt datasets and plain texts from the 'datasets' branch
 	git fetch origin +refs/heads/datasets:refs/remotes/origin/datasets
 	mkdir -p data
 	git archive origin/datasets | tar -x -C data

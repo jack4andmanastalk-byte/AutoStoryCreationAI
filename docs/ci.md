@@ -136,7 +136,7 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 | ワークフロー | トリガー | 時間 | 役割 |
 | --- | --- | --- | --- |
 | `research-check` | 全 push・全 PR・手動 | 30〜60 秒 | カタログ整合、全テスト、デモ監査、デモ評価 |
-| `dataset-refresh` | データ関連のパスへの push・週次・手動 | 60〜90 分 | メタデータ取得、PDF 生成、`datasets` ブランチと Release への公開 |
+| `dataset-refresh` | データ関連のパスへの push・月次・手動 | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化・PDF完全削除、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
 
 `research-check` は**デモの監査と評価も実行**する。テストが緑でも、デモの期待値が
 ずれていれば落ちる（`harness/cases/demo/EXPECTED.md` が契約）。
