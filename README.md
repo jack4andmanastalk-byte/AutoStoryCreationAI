@@ -203,6 +203,8 @@ python3 scripts/run_evaluation.py --candidate build/runs/<id>/text \
 python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配線を確認
 python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 my_model_adapter.py" --out runs           # 実モデルを接続
+python3 scripts/run_pipeline.py --task t01 --provider command \
+    --command "python3 scripts/chat_operator.py --dir build/operator/pilot"  # 鍵なし
 ```
 
 * 出力 `runs/<run_id>/`: `manifest.json`（モデル・温度・seed・**プロンプトのハッシュ**・git commit・プロトコル版）、
@@ -213,6 +215,11 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
 * `runs/` は git 管理外。研究ノートには `manifest.json` の `git_commit` と `prompt_hashes` を引きます
 * `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/*.json`）で、
   モデル出力ではありません
+* `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
+  プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
+  応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。
+  モデル版を固定できないため **G5 は満たさず**、値は参考値です
+  （例: [`experiments/2026-10-pilot-t01-s0s1/`](experiments/2026-10-pilot-t01-s0s1/note.md)）
 * `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon を使う系です
 * 各章には `{{time: day=3}}{{location: 王都}}` などのマーカーが入り、監査の根拠になります。
   モデルがマーカーを落とした場合は canon から補い、**補ったことを `warnings_ja` に残します**（黙って直さない）
