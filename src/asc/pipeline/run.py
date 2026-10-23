@@ -8,6 +8,7 @@ commit and a configuration instead of a memory.
 from __future__ import annotations
 
 import json
+import secrets
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -35,7 +36,9 @@ def git_commit(cwd: Path | None = None) -> str | None:
 
 
 def make_run_id(task_id: str, system: str, seed: int) -> str:
-    return f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{task_id}-{system}-s{seed}"
+    """Timestamp + short random suffix: two runs in the same second must not collide."""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"{stamp}-{task_id}-{system}-s{seed}-{secrets.token_hex(2)}"
 
 
 @dataclass
