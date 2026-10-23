@@ -36,9 +36,13 @@ def git_commit(cwd: Path | None = None) -> str | None:
 
 
 def make_run_id(task_id: str, system: str, seed: int) -> str:
-    """Timestamp + short random suffix: two runs in the same second must not collide."""
+    """Timestamp + random suffix: two runs in the same second must not collide.
+
+    The suffix was two bytes, which collides about once in 50 draws at the same
+    second (~2% per test run); four bytes makes that negligible.
+    """
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    return f"{stamp}-{task_id}-{system}-s{seed}-{secrets.token_hex(2)}"
+    return f"{stamp}-{task_id}-{system}-s{seed}-{secrets.token_hex(4)}"
 
 
 @dataclass

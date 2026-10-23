@@ -6,7 +6,7 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 1. 公開ドメインの日本語文学（青空文庫）
 2. Web 小説（小説家になろう）
 
-から、統一スキーマのメタデータ JSONL と閲覧用の PDF を生成するパイプラインと、
+から、統一スキーマのメタデータ JSONL と AI 自動創作・評価に直接利用できる整形済みプレーンテキスト（UTF-8 `.txt`、PDF 廃止済）を生成するパイプラインと、
 その実行結果を収録します。
 
 > 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
@@ -23,11 +23,12 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 | 書誌メタデータ | `data/datasets/aozora_works.jsonl` | 青空文庫の作品（作品ID・タイトル・著者・NDC分類・初出・底本初版発行年・公開URLなど） |
 | 著者メタデータ | `data/datasets/aozora_authors.jsonl` | 作家・翻訳者（人物ID・氏名・ヨミガナ・生没年など） |
 | 書誌メタデータ | `data/datasets/narou_novels.jsonl` | 小説家になろうの作品（Nコード・ジャンル・R15要素・掲載日・話数・文字数・評価指標など） |
+| 外部確認済・商業化統合メタデータ（373作品） | `samples/narou_commercialized_all.jsonl` | 総合上位 300 作品＋5ジャンル追加 73 作品を重複なく統合した全 373 作品（139,656 話 / 約 5.84 億文字）カタログ |
 | 外部確認済・商業化300作品メタデータ | `samples/narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` / `rank201_300` も同梱) | CiNii Books (ISBN)・Wikipedia・Apple Books Japan により書籍・マンガ・アニメ・ゲームの実在を確認した上位 300 作品カタログ（R15 対象作品を含む） |
-| 外部確認済・商業化ランキング表 | `docs/narou_commercialized_ranking.md` (`docs/narou_top100_ranking.md`, `docs/narou_rank101_200_ranking.md`, `docs/narou_rank201_300_ranking.md`) | 第1位〜第300位の順位・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・PDFサイズ一覧 |
-| 整形済み本文 | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いたプレーンテキスト |
-| PDF | `data/pdf/{aozora,narou}/*.pdf` | 表紙（書誌・外部メディア確認・ISBN・ランキング情報）+ 全話本文の A5 PDF（和文組版・禁則処理つき） |
-| ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・生成時刻 |
+| 5ジャンル限定・商業化追加73作品メタデータ | `samples/narou_commercialized_genre_supplement.jsonl` | **歴史（15）・推理（15）・現代（15）・SF（15）・ホラー（13）** に限定して外部実在検証・全話テキスト化した計 73 作品（19,057 話 / 約 7,981 万文字、Top 300 と重複なし） |
+| 外部確認済・商業化カタログ表 | `docs/narou_commercialized_ranking.md`, `docs/narou_genre_supplement_ranking.md` (`top100` / `rank101_200` / `rank201_300` も同梱) | 順位・区分・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・本文TXTサイズ一覧 |
+| 整形済み本文（プレーンテキスト専用） | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いた全話 UTF-8 プレーンテキスト（既存 PDF は全てテキスト化の上で完全削除済） |
+| ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・テキスト容量・生成時刻 |
 
 JSONL は 1 行 = 1 レコード（UTF-8 / `ensure_ascii=False` / キー順固定）です。
 スキーマの詳細は [`docs/dataset_schema.md`](docs/dataset_schema.md) を参照してください。
@@ -41,7 +42,7 @@ make setup
 # 2) ユニットテスト
 make test
 
-# 3) データ取得（青空文庫 → 小説家になろう の順）
+# 3) データ取得（青空文庫 → 小説家になろう の順、プレーンテキストのみ）
 make data
 
 # 4) 統計の確認
@@ -52,22 +53,24 @@ make report
 
 ```bash
 .venv/bin/python scripts/setup_dataset.py aozora-metadata            # 書誌データのみ
-.venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
+.venv/bin/python scripts/setup_dataset.py aozora-texts --works 120   # プレーンテキストのみ取得
 .venv/bin/python scripts/fetch_narou_api.py --per-query 500 --order-pages 4
 .venv/bin/python scripts/setup_dataset.py narou-metadata --cached-only
 .venv/bin/python scripts/setup_dataset.py narou-rank --top 300 --strict-external   # 書籍・漫画・アニメ・ゲームの外部実在検証＋ランキング
-.venv/bin/python scripts/setup_dataset.py narou-texts --works 300 --max-episodes 0 --pdf --rank-order
-# さらに続き（例: 第301位〜第400位）をダウンロードする場合:
-.venv/bin/python scripts/setup_dataset.py narou-texts --start-rank 301 --works 100 --max-episodes 0 --pdf --rank-order
+.venv/bin/python scripts/setup_dataset.py narou-texts --works 300 --max-episodes 0 --rank-order
+# 5ジャンル限定（歴史・推理・現代・SF・ホラー）の商業化作品を各 10〜15 作品（計 50〜75 作品）追加する場合:
+.venv/bin/python scripts/setup_dataset.py narou-genre-supplement --per-genre 15 --min-per-genre 10
+# 残存 PDF がある場合にプレーンテキストへ変換して完全削除する:
+.venv/bin/python scripts/setup_dataset.py purge-pdfs
 ```
 
-事前ビルド済みの全 300 作品・全話（120,599 話 / 約 5.04 億文字 / 1.72 GiB、R15 対象作品を含む外部確認済・商業化作品）PDF セットを取得する場合:
+事前ビルド済みの全 373 作品・全話（総合 Top 300 作品＋歴史・推理・現代・SF・ホラー 73 作品＝139,656 話 / 約 5.84 億文字 / 圧縮アーカイブ合計 0.54 GB、PDF 完全削除済）プレーンテキストセットを取得する場合:
 
 ```bash
-# 方法 A: datasets ブランチから展開
+# 方法 A: datasets ブランチから展開（プレーンテキスト＋JSONL のみ、PDF ゼロ）
 make pull-datasets
 
-# 方法 B: GitHub Release から PDF アーカイブ (第1〜100位 / 第101〜200位 / 第201〜300位) を直接取得
+# 方法 B: GitHub Release から圧縮テキストアーカイブ (*_texts.tar.gz) を直接取得
 gh release download datasets-narou-commercialized
 ```
 
@@ -184,6 +187,7 @@ make plan           # 固定タスク t01 から canon だけを生成
 make story          # S1: 企画 → canon → 3 章 → 監査を一括実行
 make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
 make experiment     # S0/S1 × seed の行列を回し、実験ノートの雛形を出す
+make blind-pairs    # runs/ の S0/S1 から、来歴を消した A/B ペアを作る（判定用）
 ```
 
 判定器は外部コマンドとして接続します（このリポジトリは鍵を持ちません）。
@@ -195,6 +199,22 @@ python3 scripts/run_evaluation.py --candidate build/runs/<id>/text \
   --judge-command "python3 scripts/judge_adapter.py --llm-command 'my-model --json'"
 ```
 
+L3（選好・識別）は、**どちらがどちらの系かを隠した**ペアでなければ意味を持ちません。
+`scripts/make_blind_pairs.py` が `runs/` から判定用の束を作ります。
+
+```bash
+python3 scripts/make_blind_pairs.py --runs-root runs \
+  --baseline s0 --candidate s1 --out build/pairs/2026-10-pilot
+#   pairs/pair-001.json  {"pair_id","a","b"}   ← 評定者に渡すのはこれだけ
+#   key.json                                    ← どちらが s1 か。評定者に見せない
+#   judge_prompt.md / manifest.json             ← 判定手順と、除外したペアの理由
+```
+
+* 本文から**マーカー（`{{time: …}}` 等）と見出し**を除きます（S1 にしか無い手がかりを消す）
+* 文字数の差が `--max-length-diff`（既定 25%）を超えるペアは、理由つきで除外します（§4）
+* `a` が常に S1 にならないよう、**半分ずつ入れ替えてからシャッフル**します
+* 同じ `--seed` なら同じ束ができます
+
 ### 4.3 生成パイプライン（Phase 2-A: Plan / Draft）
 
 固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から **canon を生成し、3 章の本文を書き、監査まで通す**段階です。
@@ -203,6 +223,11 @@ python3 scripts/run_evaluation.py --candidate build/runs/<id>/text \
 python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配線を確認
 python3 scripts/run_pipeline.py --task t01 --provider command \
     --command "python3 my_model_adapter.py" --out runs           # 実モデルを接続
+python3 scripts/run_pipeline.py --task t01 --provider command \
+    --command "python3 scripts/chat_operator.py --dir build/operator/pilot"  # 鍵なし
+OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command \
+    --command "python3 scripts/model_adapter.py --model gpt-4.1" \
+    --model gpt-4.1 --model-version 2025-04-14 --out runs       # 版を固定した実モデル
 ```
 
 * 出力 `runs/<run_id>/`: `manifest.json`（モデル・温度・seed・**プロンプトのハッシュ**・git commit・プロトコル版）、
@@ -213,6 +238,16 @@ python3 scripts/run_pipeline.py --task t01 --provider command \
 * `runs/` は git 管理外。研究ノートには `manifest.json` の `git_commit` と `prompt_hashes` を引きます
 * `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/*.json`）で、
   モデル出力ではありません
+* `scripts/model_adapter.py` は、**版を固定した実モデル**を繋ぐ経路です（OpenAI 互換の
+  `/chat/completions`。ローカルのゲートウェイも `--base-url` で使えます）。鍵は環境変数から読み、
+  標準出力には本文だけを返します。`--dry-run` で送信内容を確認でき、`--model-version` を渡すと
+  `manifest.json` の `model_version` が固定されます（これが §5 G5 を判定できる唯一の経路）。
+  `--json-mode`（既定 `auto`）は plan のときだけ `response_format=json_object` を付けます
+* `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
+  プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
+  応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。
+  モデル版を固定できないため **G5 は満たさず**、値は参考値です
+  （例: [`experiments/2026-10-pilot-t01-s0s1/`](experiments/2026-10-pilot-t01-s0s1/note.md)）
 * `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon を使う系です
 * 各章には `{{time: day=3}}{{location: 王都}}` などのマーカーが入り、監査の根拠になります。
   モデルがマーカーを落とした場合は canon から補い、**補ったことを `warnings_ja` に残します**（黙って直さない）

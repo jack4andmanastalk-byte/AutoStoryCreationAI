@@ -1,5 +1,15 @@
 {
   "generated_at": "2026-10-22T14:32:35Z",
+  "pdf_purge": {
+    "pdfs_purged": true,
+    "converted_from_pdf": 0,
+    "removed_pdf_files": 0,
+    "freed_pdf_bytes": 0,
+    "narou_text_files": 373,
+    "aozora_text_files": 15,
+    "total_text_bytes": 1786943717,
+    "at": "2026-10-23T15:33:38Z"
+  },
   "steps": {
     "aozora_metadata": {
       "at": "2026-10-23T05:35:35Z",
@@ -10,14 +20,37 @@
     },
     "aozora_texts": {
       "at": "2026-10-23T05:36:35Z",
-      "pdf_dir": "data/pdf/aozora",
+      "pdf_dir": null,
       "texts_dir": "data/raw/aozora/texts",
       "works": 15
     },
+    "narou_genre_supplement": {
+      "all_episodes": true,
+      "at": "2026-10-23T15:33:33Z",
+      "category_counts": {
+        "SF": 15,
+        "ホラー": 13,
+        "推理": 15,
+        "歴史": 15,
+        "現代": 15
+      },
+      "combined_file": "data/datasets/narou_commercialized_all.jsonl",
+      "min_per_genre": 10,
+      "pdf_generated": false,
+      "per_genre_target": 15,
+      "r15_works": 55,
+      "supplement_file": "data/datasets/narou_commercialized_genre_supplement.jsonl",
+      "supplement_markdown": "data/datasets/narou_genre_supplement_ranking.md",
+      "texts_dir": "data/raw/narou/texts",
+      "total_chars": 79812140,
+      "total_episodes": 19057,
+      "total_text_bytes": 241271953,
+      "works": 73
+    },
     "narou_metadata": {
-      "at": "2026-10-23T05:37:51Z",
+      "at": "2026-10-23T14:07:45Z",
       "file": "data/datasets/narou_novels.jsonl",
-      "works": 13958
+      "works": 23666
     },
     "narou_rank": {
       "at": "2026-10-23T06:07:22Z",
@@ -31,15 +64,16 @@
     },
     "narou_texts": {
       "all_episodes": true,
-      "at": "2026-10-23T11:18:42Z",
+      "at": "2026-10-23T15:33:36Z",
       "max_episodes": 0,
-      "pdf_dir": "data/pdf/narou",
+      "pdf_dir": null,
       "ranked_file": "data/datasets/narou_commercialized_ranked.jsonl",
       "ranking_markdown": "data/datasets/narou_commercialized_ranking.md",
       "texts_dir": "data/raw/narou/texts",
       "total_chars": 503784622,
       "total_episodes": 120599,
-      "total_pdf_bytes": 1849238837,
+      "total_pdf_bytes": 0,
+      "total_text_bytes": 1545313686,
       "works": 300
     }
   }

@@ -225,6 +225,10 @@ def main(argv: list[str] | None = None) -> int:
         REPO_ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "draft-baseline-demo.json"),
         help="scripted responses for the S0 baseline")
     parser.add_argument("--command", help="external provider command")
+    parser.add_argument("--model", default=None,
+                        help="model name to record (with --provider command)")
+    parser.add_argument("--model-version", default=None,
+                        help="model version to record (with --provider command)")
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--runs", default=str(REPO_ROOT / "runs"))
     parser.add_argument("--out", default=None, help="default: experiments/<id>")
@@ -243,7 +247,8 @@ def main(argv: list[str] | None = None) -> int:
         if not args.command:
             print("error: --provider command requires --command", file=sys.stderr)
             return 2
-        provider = CommandProvider(args.command)
+        provider = CommandProvider(args.command, model=args.model or "external",
+                                   model_version=args.model_version)
         providers = {system: provider for system in args.systems}
     else:
         try:
@@ -278,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
         "seeds": args.seeds,
         "provider": provider.name,
         "model": provider.model,
+        "model_version": provider.model_version,
         "temperature": args.temperature,
         "git_commit": git_commit(),
         "cells": cells,
