@@ -137,7 +137,8 @@ gh release download datasets-narou-commercialized
 │   ├── text/aozora_format.py text/narou_html.py
 │   ├── render/pdf.py fonts.py
 │   ├── story/                  # canon・台帳・継続性監査（continuity-ledger）
-│   └── evaluation/             # 指標・ルーブリック・判定器・ハーネス
+│   ├── evaluation/             # 指標・ルーブリック・判定器・ハーネス
+│   └── pipeline/               # 生成（現在は Plan: 企画 → canon）
 └── tests/                      # pytest
 ```
 
@@ -178,7 +179,27 @@ make audit      # デモ作品（矛盾を 7 件仕込んだ 5 章）を監査�
 make evaluate   # デモ作品と初稿を比較（L2 は記録済み判定を再生／ネットワーク不要）
 make skills-check   # SKILL.md の仕様検査＋両スキルのテスト
 make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
+make plan           # 固定タスク t01 から canon を生成（オフラインの台本で配線検証）
 ```
+
+### 4.3 生成パイプライン（Phase 2-A: Plan）
+
+固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から**設定台帳（canon）を生成**する段階です。
+
+```bash
+python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配線を確認
+python3 scripts/run_pipeline.py --task t01 --provider command \
+    --command "python3 my_model_adapter.py" --out runs           # 実モデルを接続
+```
+
+* 出力 `runs/<run_id>/`: `manifest.json`（モデル・温度・seed・**プロンプトのハッシュ**・git commit・プロトコル版）、
+  `responses.jsonl`、`brief.md`、`canon/`（6 チャネル）、`plan.json`
+* 生成物は**既存の canon スキーマ**で受け取ります。企画の成果物がそのまま監査の入力になるため、
+  工程間の変換がありません。canon が監査の要求を満たさない場合は**生成段階で失敗**します
+  （`--max_attempts` 回まで修復プロンプトで再試行し、それでも駄目なら `status: failed`）
+* `runs/` は git 管理外。研究ノートには `manifest.json` の `git_commit` と `prompt_hashes` を引きます
+* `--provider scripted` は**配線検証用の台本**（`benchmarks/protocol-v1/fixtures/plan-demo.json`）で、
+  モデル出力ではありません
 
 * デモ: [`harness/README.md`](harness/README.md)、期待値: `harness/cases/demo/EXPECTED.md`
 * 設計方針: **総合点を出さない**（次元別プロファイル）、**根拠の無い判定は無効**、

@@ -24,6 +24,10 @@ on:
       - "benchmarks/**"
       - "docs/protocol.md"
       - "tests/test_protocol.py"
+      - "src/asc/pipeline/**"
+      - "scripts/run_pipeline.py"
+      - "prompts/**"
+      - "tests/test_pipeline.py"
       - ".github/workflows/research-check.yml"
   pull_request:
     paths:
@@ -67,3 +71,6 @@ jobs:
 
       - name: Run the protocol tests
         run: python -m pytest tests/test_protocol.py -q
+
+      - name: Run the pipeline tests
+        run: python -m pytest tests/test_pipeline.py -q
