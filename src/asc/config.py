@@ -59,11 +59,17 @@ class NarouConfig:
     orders: List[str] = field(default_factory=list)
     per_query: int = 200
     max_start: int = 2000
-    download_works: int = 20
+    download_works: int = 100
     min_chars: int = 5000
-    include_r15: bool = False
+    include_r15: bool = True
     #: Only download texts/PDFs of commercialised Narou works (free web edition).
     commercialized_only: bool = True
+    #: Require external bibliographic/media catalog proof (CiNii Books ISBN /
+    #: Wikipedia franchise entry / official Syosetu anime-syuppan registry)
+    #: across books, manga, anime, and games rather than self-reported text.
+    strict_external_verification: bool = True
+    #: Attempt legacy /txtdownload/ endpoint before HTML chapter pages.
+    use_txtdownload: bool = False
     #: Local JSON files with raw API responses (offline import).
     api_response_files: List[str] = field(default_factory=list)
     #: Directory with already downloaded novel texts (``<ncode>/<index>.txt``).

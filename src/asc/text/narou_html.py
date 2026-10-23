@@ -38,6 +38,9 @@ _BLOCK_TAGS = {"p", "div", "li", "blockquote", "h1", "h2", "h3", "h4"}
 #: is the old layout, the others belong to the current design.
 BODY_MARKERS = ("novel_honbun", "js-novel-text", "p-novel__text")
 
+#: Classes that mark author preface / afterword notes rather than story prose.
+EXCLUDED_BODY_CLASSES = ("p-novel__text--preface", "p-novel__text--afterword")
+
 #: Classes that mark the title of an episode.
 TITLE_MARKERS = ("chap_title", "p-novel__title")
 #: ASCII blanks are collapsed; the ideographic space (U+3000) is kept because
@@ -76,6 +79,7 @@ class _NarouParser(HTMLParser):
         self._in_title = False
         self._title_chunks: List[str] = []
         self._seen_body = False
+        self._ruby_skip_depth = 0
 
     # -- helpers ------------------------------------------------------
     @staticmethod
@@ -91,8 +95,12 @@ class _NarouParser(HTMLParser):
     def handle_starttag(self, tag: str, attrs_list) -> None:
         attrs = dict(attrs_list)
         if not self._in_body:
-            if attrs.get("id") == "novel_honbun" or any(
-                self._has_class(attrs, marker) for marker in BODY_MARKERS
+            is_excluded = attrs.get("id") in {"novel_p", "novel_a"} or any(
+                self._has_class(attrs, marker) for marker in EXCLUDED_BODY_CLASSES
+            )
+            if not is_excluded and (
+                attrs.get("id") == "novel_honbun"
+                or any(self._has_class(attrs, marker) for marker in BODY_MARKERS)
             ):
                 self._in_body = True
                 self._body_depth = 1
@@ -108,6 +116,9 @@ class _NarouParser(HTMLParser):
             return
 
         self._body_depth += 1
+        if tag in {"rt", "rp"}:
+            self._ruby_skip_depth += 1
+            return
         if tag == "br":
             self._flush_break(1)
         elif tag in _BLOCK_TAGS:
@@ -122,17 +133,20 @@ class _NarouParser(HTMLParser):
             return
         if not self._in_body:
             return
+        if tag in {"rt", "rp"} and self._ruby_skip_depth > 0:
+            self._ruby_skip_depth -= 1
         if tag in _BLOCK_TAGS:
             self._flush_break(2)
         self._body_depth -= 1
         if self._body_depth <= 0:
             self._in_body = False
+            self._ruby_skip_depth = 0
 
     def handle_data(self, data: str) -> None:
         if self._in_title:
             self._title_chunks.append(data)
             return
-        if not self._in_body:
+        if not self._in_body or self._ruby_skip_depth > 0:
             return
         if not data.strip():
             if data:
@@ -210,3 +224,31 @@ def parse_novel_index(html: str, ncode: str) -> List[Tuple[int, str, str]]:
     for index, title, url in parser.entries:
         seen.setdefault(index, (index, title, url))
     return [seen[key] for key in sorted(seen)]
+
+
+def parse_index_max_page(html: str, ncode: str = "") -> int:
+    """Return the highest ``?p=N`` table-of-contents page number (at least 1).
+
+    Syosetsuka ni Narou paginates novel episode lists at 100 episodes per page
+    (``/<ncode>/?p=2``, ``?p=3``, ..., with a ``最後へ`` link pointing at the
+    last page).
+    """
+    if not html:
+        return 1
+    max_page = 1
+    pattern = (
+        rf"/{re.escape(ncode.lower())}/\?p=(\d+)"
+        if ncode
+        else r"\?p=(\d+)"
+    )
+    for match in re.finditer(pattern, html, flags=re.I):
+        page_num = int(match.group(1))
+        if 1 <= page_num <= 500:
+            max_page = max(max_page, page_num)
+    if max_page == 1:
+        for match in re.finditer(r'href=["\'][^"\']*\?p=(\d+)["\']', html, flags=re.I):
+            page_num = int(match.group(1))
+            if 1 <= page_num <= 500:
+                max_page = max(max_page, page_num)
+    return max_page
+

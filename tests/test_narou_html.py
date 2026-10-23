@@ -5,7 +5,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from asc.text.narou_html import parse_chapter, parse_novel_index  # noqa: E402
+from asc.text.narou_html import (  # noqa: E402
+    parse_chapter,
+    parse_index_max_page,
+    parse_novel_index,
+)
 
 CHAPTER_HTML = """
 <html><body>
@@ -75,3 +79,37 @@ def test_new_design_is_parsed():
     ]
     assert chapter.title == "第一部　婚約破棄の後始末"
     assert all("フッター" not in p for p in chapter.paragraphs)
+
+
+def test_preface_afterword_and_ruby_rt_excluded():
+    html = """
+    <html><body>
+    <h1 class="p-novel__title">第二話　旅立ち</h1>
+    <div class="p-novel__body">
+      <div class="js-novel-text p-novel__text p-novel__text--preface">
+        <p>いつも応援ありがとうございます！</p>
+      </div>
+      <div class="js-novel-text p-novel__text">
+        <p>少年は<ruby>聖剣<rp>(</rp><rt>エクスカリバー</rt><rp>)</rp></ruby>を抜いた。</p>
+      </div>
+      <div class="js-novel-text p-novel__text p-novel__text--afterword">
+        <p>ブックマークお願いします！</p>
+      </div>
+    </div>
+    </body></html>
+    """
+    chapter = parse_chapter(html)
+    assert chapter.paragraphs == ["少年は聖剣を抜いた。"]
+    assert chapter.title == "第二話　旅立ち"
+
+
+def test_parse_index_max_page():
+    html = """
+    <div class="c-pager">
+      <a href="/n9669bk/?p=2">次へ</a>
+      <a href="/n9669bk/?p=3">最後へ</a>
+    </div>
+    """
+    assert parse_index_max_page(html, "n9669bk") == 3
+    assert parse_index_max_page("<div>no pagination</div>", "n9669bk") == 1
+

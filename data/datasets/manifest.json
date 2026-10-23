@@ -2,28 +2,45 @@
   "generated_at": "2026-10-22T14:32:35Z",
   "steps": {
     "aozora_metadata": {
-      "at": "2026-10-22T22:52:15Z",
+      "at": "2026-10-23T03:58:14Z",
       "authors": 1335,
       "file": "data/datasets/aozora_works.jsonl",
       "origin": "aozora.gr.jp (official CSV)",
       "works": 17840
     },
     "aozora_texts": {
-      "at": "2026-10-22T22:56:00Z",
+      "at": "2026-10-23T03:59:16Z",
       "pdf_dir": "data/pdf/aozora",
       "texts_dir": "data/raw/aozora/texts",
       "works": 15
     },
     "narou_metadata": {
-      "at": "2026-10-22T22:54:56Z",
+      "at": "2026-10-23T04:00:25Z",
       "file": "data/datasets/narou_novels.jsonl",
-      "works": 12844
+      "works": 13958
+    },
+    "narou_rank": {
+      "at": "2026-10-23T04:12:53Z",
+      "file": "data/datasets/narou_commercialized_ranked.jsonl",
+      "include_r15": true,
+      "r15_works": 167,
+      "ranked_works": 220,
+      "ranking_markdown": "data/datasets/narou_commercialized_ranking.md",
+      "strict_external_verification": true,
+      "verified_pool": 220
     },
     "narou_texts": {
-      "at": "2026-10-22T23:02:15Z",
+      "all_episodes": true,
+      "at": "2026-10-23T05:09:12Z",
+      "max_episodes": 0,
       "pdf_dir": "data/pdf/narou",
+      "ranked_file": "data/datasets/narou_commercialized_ranked.jsonl",
+      "ranking_markdown": "data/datasets/narou_commercialized_ranking.md",
       "texts_dir": "data/raw/narou/texts",
-      "works": 15
+      "total_chars": 364488757,
+      "total_episodes": 86007,
+      "total_pdf_bytes": 1309546637,
+      "works": 200
     }
   }
 }
