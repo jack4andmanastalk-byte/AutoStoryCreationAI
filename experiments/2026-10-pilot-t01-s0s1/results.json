@@ -1,0 +1,184 @@
+{
+  "experiment": {
+    "id": "2026-10-pilot-t01-s0s1",
+    "created_at": "2026-10-23T12:29:16Z",
+    "protocol": "protocol-v1",
+    "tasks": [
+      "t01"
+    ],
+    "systems": [
+      "s0",
+      "s1"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "provider": "command",
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-23",
+    "temperature": 0.8,
+    "git_commit": "b1187616f028d63a76fb30807a2d09cf6863fc29"
+  },
+  "by_system": {
+    "s0": {
+      "n": 3,
+      "failed": 0,
+      "chars": {
+        "mean": 3092.0,
+        "min": 3045,
+        "max": 3134,
+        "ci95": [
+          3062.333,
+          3134.0
+        ],
+        "n": 3
+      },
+      "must_include_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 3
+      },
+      "warnings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "injected_markers": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      }
+    },
+    "s1": {
+      "n": 3,
+      "failed": 0,
+      "chars": {
+        "mean": 3054.667,
+        "min": 3018,
+        "max": 3076,
+        "ci95": [
+          3018.0,
+          3074.0
+        ],
+        "n": 3
+      },
+      "must_include_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 3
+      },
+      "violations": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "high": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "checks_skipped": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "ced_per_10k_chars": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "warnings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "injected_markers": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      }
+    }
+  },
+  "paired_vs_s0": {
+    "n_pairs": 3,
+    "chars": {
+      "mean_s1_minus_s0": -37.333,
+      "ci95": [
+        -79.0,
+        -0.667
+      ],
+      "n": 3,
+      "direction": "descriptive"
+    },
+    "must_include_rate": {
+      "mean_s1_minus_s0": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "n": 3,
+      "direction": "descriptive"
+    },
+    "warnings": {
+      "mean_s1_minus_s0": 0.0,
+      "ci95": [
+        0.0,
+        0.0
+      ],
+      "n": 3,
+      "direction": "lower_is_better"
+    }
+  }
+}
