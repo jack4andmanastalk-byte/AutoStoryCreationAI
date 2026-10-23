@@ -13,6 +13,11 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import fnmatch
+import re
+import shutil
+import subprocess
+
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -138,6 +143,71 @@ def test_dataset_trigger_does_not_fire_on_main_or_every_push(dataset):
     triggers = dataset[True] if True in dataset else dataset["on"]
     assert "main" in triggers["push"]["branches-ignore"]
     assert triggers["push"]["paths"], "an unfiltered push trigger would rebuild on every commit"
+
+
+# -- release publishing ----------------------------------------------------
+
+def publish_script(dataset: dict) -> str:
+    steps = dataset["jobs"]["publish"]["steps"]
+    return next(step["run"] for step in steps if "Release" in step.get("name", ""))
+
+
+def test_release_assets_cannot_be_added_twice(dataset):
+    """The 2026-10-23 incident: a glob matched the full catalog as well.
+
+    `gh release upload` aborts on a duplicate name with HTTP 422, and because
+    --clobber deletes the old asset first, the release was left without its
+    PDF bundles.
+    """
+    script = publish_script(dataset)
+    globs = [p for p in
+             re.findall(r"data/datasets/narou_commercialized_rank[^ ]*\.jsonl", script)
+             if "[" in p]
+    assert globs, "expected the slice glob in the publish step"
+    for pattern in globs:
+        # shell glob semantics, which is what bash applies here
+        assert not fnmatch.fnmatch(
+            "data/datasets/narou_commercialized_ranked.jsonl", pattern), pattern
+        assert fnmatch.fnmatch(
+            "data/datasets/narou_commercialized_rank201_300.jsonl", pattern), pattern
+    # and the list is deduplicated defensively before it is used
+    assert "!seen[$0]++" in script
+    assert "mapfile -t ASSETS" in script
+
+
+def test_release_uploads_are_one_asset_at_a_time_with_retries(dataset):
+    script = publish_script(dataset)
+    assert 'gh release upload "$TAG_MAIN" "${ASSETS[@]}"' not in script
+    assert "${ASSETS[@]}" in script          # still iterated
+    assert "upload_with_retry" in script
+    assert script.count("upload_with_retry \"$TAG_MAIN\"") >= 1
+
+
+def test_release_step_verifies_what_it_published(dataset):
+    script = publish_script(dataset)
+    assert "verify_release()" in script
+    assert "releases/tags/" in script
+    assert "::error::" in script
+    # a truncated or oversized archive must fail before the old asset is deleted
+    assert "gzip -t" in script
+    assert "2147483648" in script
+
+
+def test_publish_step_is_valid_bash(dataset):
+    if not shutil.which("bash"):
+        pytest.skip("bash is not available")
+    completed = subprocess.run(["bash", "-n"], input=publish_script(dataset),
+                               capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_prepare_step_reuses_seed_artifacts_but_survives_their_expiry(dataset):
+    steps = dataset["jobs"]["prepare"]["steps"]
+    script = next(step["run"] for step in steps
+                  if "run" in step and "Prepare or reuse" in step.get("name", ""))
+    # a pinned run id expires after 7 days; fall back to the newest successes
+    assert "gh run list --workflow dataset-refresh.yml --status success" in script
+    assert "reused_prep=0" in script
 
 
 def test_workflows_declare_minimal_permissions(ci, dataset):
