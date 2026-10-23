@@ -108,7 +108,10 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
    鍵を持たない環境では `scripts/chat_operator.py` を `--provider command` の
    コマンドとして渡し、プロンプトを `requests/` に落として応答を `responses/` に
    置く。応答が無いときは **exit 3** で止まり、プロンプトが変わった応答は
-   **exit 4（stale）** で拒否する。担い手の版を固定できないため G5 は満たさない。
+   **exit 4（stale）** で拒否する。貼り付けで人の手を経る場合は
+   `scripts/relay_prompts.py`（`export` → 回答 → `ingest`）を使う。受け渡しの単位は
+   リクエスト 1 件で、タグは run の key を伏せた 4 文字。担い手の版を固定できないため
+   G5 は満たさない。
    版を固定できるモデルには `scripts/model_adapter.py`（OpenAI 互換）を使う。
    `--model` と `--model-version` が `manifest.json` に残り、G5 を判定できる。
 2. `manifest.json` に次を必ず記録する。
