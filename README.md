@@ -11,7 +11,9 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 
 > 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
 > **Phase 1 — 創作知識の運用可能化**（進行中）、
-> **Phase 2 — スキルの実行可能化**（進行中: 13 スキル実装済み、S2/S3 配線済み。L2 較正・対照群・言語統計は未着手）。
+> **Phase 2 — スキルの実行可能化**（進行中: 13 スキル実装済み、S2/S3 配線済み）。
+> **現在の実験範囲は Arena.ai × L1**。L2/L3 の実証・較正・追加開発は 2026-10-24 に凍結しました
+> （[`docs/evaluation_scope.md`](docs/evaluation_scope.md)）。次は対照群の確定と L1 の探索的実験です。
 > `research/` に、外部コーパスの選別・統一カタログ・スキル種を収録しています。
 
 ---
@@ -161,6 +163,7 @@ gh release download datasets-narou-commercialized
 
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
+| [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
 | [`docs/ci.md`](docs/ci.md) | CI の実行枠設計（なぜ CI が待たされていたか、どう直したか） |
 
 ```bash
@@ -203,7 +206,7 @@ make voice      # 文体の検査デモ（4 件の仕込みを検出）
 make revise     # 改稿ループのデモ（批評→パッチ→再監査→比較）
 make branch     # 分岐構造の検査デモ（7 検査）
 make adaptation # 翻案設計の検査デモ（4 検査）
-make calibrate  # L2/L3 較正のデモ（κ=0.5 の fixture）
+make calibrate  # 凍結資産の固定デモ（κ=0.5 fixture。新規較正ではない）
 make skills-check   # SKILL.md の仕様検査＋全スキルのテスト
 make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
 make plan           # 固定タスク t01 から canon だけを生成
@@ -213,8 +216,13 @@ make story-s2       # S2: S1 ＋ 改稿ループ（台本での配線検証）
 make story-s3       # S3: S2 ＋ 文体適用（台本での配線検証）
 make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
 make experiment     # S0/S1 × seed の行列を回し、実験ノートの雛形を出す
-make blind-pairs    # runs/ の S0/S1 から、来歴を消した A/B ペアを作る（判定用）
+make blind-pairs    # 凍結資産: 既存 runs/ から A/B ペアを作る（新規評定は実施しない）
 ```
+
+> **運用上の注意（2026-10-24）**: 新しい研究実験は L1 のみです。以下の L2/L3 の手順と
+> `make calibrate` / `make blind-pairs` は凍結資産の仕様・固定デモであり、新規の評定や
+> 較正を再開するものではありません。G3/G4 は未測定、Arena の版を固定できない run は
+> G5 を主張せず、L1 の値も探索的な参考値として扱います。
 
 判定器は外部コマンドとして接続します（このリポジトリは鍵を持ちません）。
 
@@ -309,11 +317,12 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 ## 6.  次フェーズ候補
 
+* 対照群 30 作品の承認・確定（L1 の G2 にも使用）。候補本文の取得と機械検証を済ませ、[`controls.proposed.md`](benchmarks/protocol-v1/controls.proposed.md) / [`controls.proposed.json`](benchmarks/protocol-v1/controls.proposed.json) を作成済み。**現在は未承認・未凍結**。承認後に `select_controls.py freeze` を実行する（G3/G4 の再開を意味しない）
+* Arena の chat operator / relay による S0〜S3 の L1 パイロット（まず t01、その後 10 題×3 seed）。版を固定できないため、結果は探索的な参考値として記録する
+* L1 の失敗類型を根拠に、スキル／プロンプト／パイプラインを一つずつ変更し、同じ条件で再測定する
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）
-* 評価ハーネスの L2 を実モデルで較正する（`judge_pairs`＋`calibrate_judge` は実装済み。評定は未実施）
-* 対照群 30 作品の承認・確定（G3/G4 の前提。選定ツールと候補表は作成済み。`make controls-propose` → 人が 3 作品/題を承認 → `select_controls.py freeze`）
-* 固定版モデルでの本実験（10 題×3 seed×S0〜S3。`make pilot-model SYSTEMS="s0 s1 s2 s3"`）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
+* **凍結**: L2/L3 の実証・較正・人間評定・それらの追加開発（再開には利用者の明示的な方針変更が必要）
 * 縦組み PDF / EPUB 出力（現在は横組み A5）
 
 ## 7.  ライセンスと引用

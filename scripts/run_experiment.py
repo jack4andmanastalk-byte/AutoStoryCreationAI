@@ -33,6 +33,9 @@ from asc.pipeline import (  # noqa: E402
     build_revision, build_story, build_voice_pass, git_commit,
     load_scripted_responses, load_tasks,
 )
+from asc.evaluation.scope import (  # noqa: E402
+    EvaluationScopeError, load_evaluation_scope,
+)
 from asc.story.canon import load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
 
@@ -201,7 +204,8 @@ def aggregate(cells: list[dict]) -> dict:
     return result
 
 
-def render_note(experiment: dict, results: dict, scripted: bool) -> str:
+def render_note(experiment: dict, results: dict, scripted: bool,
+                evaluation_scope: dict | None = None) -> str:
     lines = [
         f"# 実験 {experiment['id']}",
         "",
@@ -263,10 +267,27 @@ def render_note(experiment: dict, results: dict, scripted: bool) -> str:
         lines.append(
             "- **設計ステージが off のため、S1 は設計書なしの条件である。**"
             "本実験の条件と混ぜて集計しない。")
+    l1_only = bool(evaluation_scope and evaluation_scope.get("mode") == "l1-only")
     if "s0" in results["by_system"]:
+        if l1_only:
+            lines.append(
+                "- S0 は canon を持たないため、継続性（違反・CED）を S1–S3 と"
+                "直接比較しません。L1-only では必須語・禁止パターンなど、"
+                "両系を同じ方法で測れる指標だけを比較します。")
+        else:
+            lines.append(
+                "- S0 は canon を持たないため、継続性（違反・CED）を測れません。"
+                "S0 と S1 の比較は、文体・指示追従・人間選好で行う必要があります。")
+    if l1_only:
         lines.append(
-            "- S0 は canon を持たないため、継続性（違反・CED）を測れません。"
-            "S0 と S1 の比較は、文体・指示追従・人間選好で行う必要があります。")
+            "- **評価範囲は L1-only**。L2/L3 は 2026-10-24 に運用凍結されたため、"
+            "G3/G4 は未測定であり、意味的な作品品質や人間の選好は評価していません"
+            "（`docs/evaluation_scope.md`）。")
+    version = str(experiment.get("model_version") or "")
+    if "unversioned" in version:
+        lines.append(
+            "- **G5 を主張しません**。Arena のモデル版を固定できないため、"
+            "この実験の L1 の値も protocol-v1 の合格証拠ではなく探索的な参考値です。")
     lines += [
         "- N が小さいため、区間は広い。点推定だけを読まない。",
         "- 単一タスク・単一モデルの結果を一般的な傾向として扱わない。",
@@ -314,7 +335,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         tasks = load_tasks(args.tasks_file)
         selected = [tasks.get(task_id) for task_id in args.tasks]
-    except (TaskError, OSError) as exc:
+        evaluation_scope = load_evaluation_scope()
+    except (TaskError, EvaluationScopeError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 
@@ -367,11 +389,13 @@ def main(argv: list[str] | None = None) -> int:
         "cells": cells,
     }
     results = {"experiment": {k: v for k, v in experiment.items() if k != "cells"},
+               "evaluation_scope": evaluation_scope,
                **aggregate(cells)}
     (out / "results.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out / "note.md").write_text(
-        render_note(experiment, results, scripted=provider.name == "scripted"),
+        render_note(experiment, results, scripted=provider.name == "scripted",
+                    evaluation_scope=evaluation_scope),
         encoding="utf-8")
 
     if not args.quiet:

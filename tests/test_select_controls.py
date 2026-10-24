@@ -169,3 +169,19 @@ def test_freeze_requires_an_approver(tmp_path):
         cwd=REPO_ROOT, capture_output=True, text=True)
     assert completed.returncode == 2
     assert "approved_by" in completed.stderr
+
+
+def test_committed_control_draft_is_unique_and_explicitly_unapproved():
+    path = REPO_ROOT / "benchmarks" / "protocol-v1" / "controls.proposed.json"
+    draft = json.loads(path.read_text(encoding="utf-8"))
+    tasks = load_tasks(TASKS)
+    assert draft["status"] == "awaiting_human_approval"
+    assert not draft["approved_by"]
+    assert not draft["approved_at"]
+    assert set(draft["picks"]) == {task.id for task in tasks.tasks}
+    assert all(len(ids) == 3 for ids in draft["picks"].values())
+    flat = [work_id for ids in draft["picks"].values() for work_id in ids]
+    assert len(flat) == 30
+    assert len(set(flat)) == 30
+    # An approval draft is not the frozen protocol input.
+    assert not (path.parent / "controls.json").exists()

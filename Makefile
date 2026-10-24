@@ -141,7 +141,7 @@ revise: ## run the revision-loop demo (critique -> patch -> re-audit -> compare)
 	$(RUN) scripts/revise.py --mode compare --before build/revise/before.json \
 		--after build/revise/after.json
 
-calibrate: ## run the L2/L3 calibration demo (kappa 0.5 fixture)
+calibrate: ## replay the frozen L2/L3 fixture demo (not a new calibration)
 	$(RUN) scripts/calibrate_judge.py --labels harness/fixtures/labels-demo \
 		--verdicts harness/fixtures/verdicts-demo.json
 
@@ -167,7 +167,7 @@ BASELINE        ?= s0
 CANDIDATE       ?= s1
 PAIRS_OUT       ?= build/pairs/latest
 
-blind-pairs: ## build provenance-free A/B packets from runs/ (L3 judging)
+blind-pairs: ## frozen tooling: rebuild A/B packets from existing runs/ (no new L3 study)
 	@test -d "$(RUNS_ROOT)" || { echo "error: no runs directory: $(RUNS_ROOT)"; exit 2; }
 	$(RUN) scripts/make_blind_pairs.py --runs-root $(RUNS_ROOT) \
 		--baseline $(BASELINE) --candidate $(CANDIDATE) --out $(PAIRS_OUT)

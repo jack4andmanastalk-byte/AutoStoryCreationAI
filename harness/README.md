@@ -3,6 +3,10 @@
 `skills/evaluation-harness` が使う素材を置く。**評価の対象（作品）と、評価の基準（ルーブリック）を
 分けて管理する**ため、ケースは `cases/` に、基準は `rubrics/` に置いている。
 
+> 現在の研究運用は L1-only。L2/L3 の実証・較正・追加開発は 2026-10-24 に凍結した。
+> このディレクトリの L2/L3 ルーブリック・fixture・較正ツールは、回帰検査と既存結果の
+> 再現のために保存する凍結資産である（[`../docs/evaluation_scope.md`](../docs/evaluation_scope.md)）。
+
 ```
 harness/
 ├── patterns.yaml              # 決定論的に検出する禁止パターン（L1）

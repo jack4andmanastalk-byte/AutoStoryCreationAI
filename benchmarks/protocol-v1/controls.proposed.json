@@ -1,0 +1,77 @@
+{
+  "schema": "controls-approval-draft-v1",
+  "status": "awaiting_human_approval",
+  "created_at": "2026-10-24T12:02:03Z",
+  "protocol": "protocol-v1",
+  "rules": "controls-rules-v1",
+  "seed": 0,
+  "source_metadata_commit": "6e9c6ca65f246982697811c79e67d5970226eb37",
+  "source_proposal_sha256": "065cdbdd70056733551e2898e35f88f94eaa393bf611ef3fafcc20e9c60776d8",
+  "approved_by": "",
+  "approved_at": "",
+  "note": "Arenaが提案する30作品の承認候補。人間による承認前なので凍結しない。採用時は承認者がapproved_by/approved_atを記入してselect_controls.py freezeを実行する。この承認はL3の作品評定ではない。",
+  "picks": {
+    "t01": [
+      "aozora:042302",
+      "aozora:057231",
+      "aozora:001308"
+    ],
+    "t02": [
+      "aozora:053158",
+      "aozora:000361",
+      "aozora:048129"
+    ],
+    "t03": [
+      "aozora:056243",
+      "aozora:043224",
+      "aozora:058540"
+    ],
+    "t04": [
+      "aozora:047497",
+      "aozora:000290",
+      "aozora:043468"
+    ],
+    "t05": [
+      "aozora:046387",
+      "aozora:004751",
+      "aozora:000271"
+    ],
+    "t06": [
+      "aozora:058199",
+      "aozora:056124",
+      "aozora:002191"
+    ],
+    "t07": [
+      "aozora:045310",
+      "aozora:047059",
+      "aozora:057192"
+    ],
+    "t08": [
+      "aozora:001368",
+      "aozora:056067",
+      "aozora:042731"
+    ],
+    "t09": [
+      "aozora:054709",
+      "aozora:058019",
+      "aozora:043209"
+    ],
+    "t10": [
+      "aozora:057593",
+      "aozora:001944",
+      "aozora:060805"
+    ]
+  },
+  "review_notes_ja": {
+    "t01": "怪談・呪い・異妖を題材にした幻想・怪奇の対照。",
+    "t02": "幻影・幻談・夢を扱い、影や記憶の変容に近い幻想の対照。",
+    "t03": "異界・霊・夢見心地の語りを持つ幻想作品の対照。",
+    "t04": "小悪魔・神・鏡の中の美女を扱う幻想的な対照。",
+    "t05": "近代日本の生活・心理を描く作品で、現代タスクの対照。",
+    "t06": "結婚生活・日常・心理へ寄る作品で、レシピと記憶の題材に対応。",
+    "t07": "近代の室内・家族・心理の語りを中心にした現代の対照。",
+    "t08": "歴史的事件・浪人・近代説話をそろえた歴史系の対照。",
+    "t09": "江戸の捕物・忠臣蔵・明治の事件をそろえた歴史系の対照。",
+    "t10": "近世の記録・人物・年代を想起させる歴史系の対照。"
+  }
+}

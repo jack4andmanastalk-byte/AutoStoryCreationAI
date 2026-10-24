@@ -284,11 +284,12 @@ CLI は `scripts/run_evaluation.py`、デモは `harness/cases/demo{-baseline}`�
 | P1-c ✅ | `premise-brief` / `voice-style` / `revision-loop` | 出力の検証条件を満たし、人間評価でベースライン以上。**構造検査のみ実装。意味の判定（L2 較正）は未実施。** |
 | P1-d ✅ | 世界観・歴史スキル（`world-rules` / `history-timeline`） | 年表・規則の矛盾検出が動く。**canon との照合まで。** |
 | P1-e ✅ | S2 改稿・S3 文体のパイプライン配線 | `run_pipeline --system s2/s3` が台本で完走。**実モデル未接続。** |
-| P1-f ✅ | L2/L3 較正の道具（`judge_pairs` / `calibrate_judge`） | κ と判定器一致率の計算。**評定は未実施。** |
+| P1-f ⏸ | L2/L3 較正の道具（`judge_pairs` / `calibrate_judge`） | κ と判定器一致率の計算は保存。**2026-10-24 に実証・較正・追加開発を凍結。** |
 | P1-g ✅ | 残り 6 種（`character-core` / `relationship-web` / `plot-architecture` / `scene-information` / `interactive-branch` / `adaptation`） | 13 種すべて implemented。**構造検査のみ。意味の判定（L2 較正）は未実施。** |
 | P1-h ✅ | 設計ステージの接続（S1 = plan → design → draft → audit） | 8 種の設計書を生成・検証・修復。fail-open＋記録。**台本のみ。実モデル未接続。** |
+| P1-i | Arena × L1 の探索的改善ループ | 対照群の確定、S0–S3 の L1 測定、失敗類型ごとの変更・再測定。G5 を主張せず参考値として扱う。 |
 | P2 | 参照資料の昇格（世界観日本 22、キャラ日本 118） | カタログへ正規化し、スキルの `references/` に接続。 |
-| P2 | 外部較正（ConStory/LitBench） | 自前検査器の一致率・再現性を記録。 |
+| P2 ⏸ | 外部較正（ConStory/LitBench） | **L2/L3 凍結に伴い停止。** 再開には利用者の明示的な方針変更が必要。 |
 
 ---
 

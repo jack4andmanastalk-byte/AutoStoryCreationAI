@@ -1,0 +1,30 @@
+# Active research scope. This does not rewrite the frozen protocol-v1 gates.
+schema: evaluation-scope-v1
+protocol: protocol-v1
+decided_on: "2026-10-24"
+mode: l1-only
+provider_constraint: arena-only
+
+active_layers: [L1]
+frozen_layers:
+  L2: 独立したモデル判定と較正の条件を満たせないため、実証・較正・追加開発を凍結する。
+  L3: 人間の評定者を用意できないため、評定・較正・追加開発を凍結する。
+
+# G3/G4 are not failures: they are not measured while L2/L3 are frozen.
+# Arena chat/operator output is unversioned, so G5 is not claimed and L1 values
+# remain exploratory reference values rather than protocol-v1 pass evidence.
+gate_status:
+  G1: reference_only
+  G2: reference_only
+  G3: frozen_not_measured
+  G4: frozen_not_measured
+  G5: unmet_with_unversioned_arena
+
+claims:
+  l1_results: exploratory_reference_only
+  protocol_v1_functioning: not_claimed
+  semantic_quality_or_human_preference: not_evaluated
+
+resume:
+  requires_explicit_user_decision: true
+  note: 利用者が凍結解除を明示し、L2/L3それぞれの評定・較正条件を整えた場合にだけ再開する。
