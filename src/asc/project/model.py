@@ -13,12 +13,14 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .schema import (
+    CHECKPOINT_RECORD,
     NODE_RECORD,
     PROJECT_RECORD,
     REVISION_RECORD,
     SCHEMA_VERSION,
     spec_sha256 as hash_spec,
     validate_artifact,
+    validate_checkpoint,
     validate_node,
     validate_project,
     validate_revision,
@@ -238,6 +240,57 @@ class WorkNodeRevision:
             spec_sha256=data["spec_sha256"],
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
             created_at=data["created_at"],
+        )
+
+
+@dataclass(frozen=True)
+class StageCheckpoint:
+    """The current durable state of one pipeline stage for a node revision."""
+
+    project_id: str
+    node_id: str
+    revision_id: str
+    stage: str
+    status: str
+    attempt_id: str
+    created_at: str
+    updated_at: str
+    run_id: str | None = None
+    artifacts: tuple[ArtifactRef, ...] = ()
+    error: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "record_type": CHECKPOINT_RECORD,
+            "schema_version": SCHEMA_VERSION,
+            "project_id": self.project_id,
+            "node_id": self.node_id,
+            "revision_id": self.revision_id,
+            "stage": self.stage,
+            "status": self.status,
+            "attempt_id": self.attempt_id,
+            "run_id": self.run_id,
+            "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+            "error": self.error,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "StageCheckpoint":
+        validate_checkpoint(data)
+        return cls(
+            project_id=data["project_id"],
+            node_id=data["node_id"],
+            revision_id=data["revision_id"],
+            stage=data["stage"],
+            status=data["status"],
+            attempt_id=data["attempt_id"],
+            run_id=data.get("run_id"),
+            artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
+            error=data.get("error"),
+            created_at=data["created_at"],
+            updated_at=data["updated_at"],
         )
 
 

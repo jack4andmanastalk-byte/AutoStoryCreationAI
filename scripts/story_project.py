@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and inspect persistent creative projects without running generation.
+"""Create, run, and inspect persistent creative projects.
 
 Examples::
 
@@ -8,9 +8,8 @@ Examples::
     python3 scripts/story_project.py status PROJECT_ID --json
 
 By default, projects live below ``runs/projects/``.  Use ``--root`` before the
-subcommand to select another store.  Generation, resume, and nested works are
-later increments; this command currently implements only ``init`` and
-``status``.
+subcommand to select another store.  ``run`` executes the single-work S1
+vertical slice; resume, continuation, and nested works are later increments.
 """
 from __future__ import annotations
 
@@ -22,8 +21,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
+from asc.pipeline import (  # noqa: E402
+    CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
+)
 from asc.project import (  # noqa: E402
     ProjectError,
+    ProjectRunError,
+    ProjectRunner,
     ProjectStore,
     ProjectValidationError,
     WorkSpec,
@@ -52,10 +56,32 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     init.add_argument("--form", default="novel")
     init.add_argument("--json", dest="json_output", action="store_true")
 
+    run = subparsers.add_parser("run", help="run plan, design, and draft for a new revision")
+    run.add_argument("project_id")
+    run.add_argument("--provider", choices=["scripted", "command"], default="command")
+    run.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+    run.add_argument("--command", dest="provider_command", help="external provider command")
+    run.add_argument("--model")
+    run.add_argument("--seed", type=int, default=0)
+    run.add_argument("--temperature", type=float)
+    run.add_argument("--json", dest="json_output", action="store_true")
+
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--json", dest="json_output", action="store_true")
     return parser.parse_args(argv)
+
+
+def _make_provider(args: argparse.Namespace):
+    if args.provider == "scripted":
+        if not args.script:
+            raise ProviderError("--provider scripted requires --script")
+        return ScriptedProvider(
+            load_scripted_responses(args.script), model=args.model or "scripted-fixture",
+        )
+    if not args.provider_command:
+        raise ProviderError("--provider command requires --command")
+    return CommandProvider(args.provider_command, model=args.model or "external")
 
 
 def _print_human(status: dict, *, created: bool) -> None:
@@ -68,7 +94,12 @@ def _print_human(status: dict, *, created: bool) -> None:
     print(f"Spec SHA-256: {status['spec_sha256']}")
     stages = ", ".join(f"{name}={value}" for name, value in status["stages"].items())
     print(f"Stages: {stages}")
-    print(f"Artifacts: {len(status['artifacts'])}; runs: {len(status['runs'])}")
+    print(
+        f"Artifact refs: {len(status.get('artifact_refs', []))}; "
+        f"runs: {len(status['runs'])}"
+    )
+    if status.get("attempt_id"):
+        print(f"Attempt: {status['attempt_id']}")
     print(f"Directory: {status['project_dir']}")
 
 
@@ -96,13 +127,35 @@ def main(argv: list[str] | None = None) -> int:
                 _print_human(status, created=True)
             return 0
 
+        if args.command == "run":
+            provider = _make_provider(args)
+            result = ProjectRunner(store).run(
+                args.project_id, provider,
+                seed=args.seed, temperature=args.temperature,
+            )
+            status = dict(result.status)
+            status["attempt_id"] = result.attempt_id
+            if args.json_output:
+                print(json.dumps(status, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_human(status, created=False)
+            return 0
+
         status = store.status(args.project_id)
         if args.json_output:
             print(json.dumps(status, ensure_ascii=False, sort_keys=True))
         else:
             _print_human(status, created=False)
         return 0
-    except (ProjectError, ProjectValidationError, OSError, UnicodeError) as exc:
+    except ProjectRunError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        if exc.run_dir is not None:
+            print(f"run: {exc.run_dir}", file=sys.stderr)
+        return 2
+    except (
+        ProjectError, ProjectValidationError, ProviderError,
+        OSError, UnicodeError, json.JSONDecodeError,
+    ) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

@@ -7,6 +7,7 @@ in a temporary directory before it becomes visible at its final path.
 from __future__ import annotations
 
 import fcntl
+import hashlib
 import json
 import os
 import shutil
@@ -17,7 +18,9 @@ from pathlib import Path
 from typing import Any, Callable, Iterator, TypeVar
 
 from .model import (
+    ArtifactRef,
     ProjectSnapshot,
+    StageCheckpoint,
     WorkNode,
     WorkNodeRevision,
     WorkProject,
@@ -28,6 +31,7 @@ from .model import (
 from .schema import (
     SCHEMA_VERSION,
     ProjectValidationError,
+    validate_checkpoint,
     validate_id,
     validate_node,
     validate_project,
@@ -115,6 +119,13 @@ class ProjectStore:
             / f"{validate_id(revision_id, 'revision_id')}.json"
         )
 
+    def checkpoint_path(self, project_id: str, node_id: str, stage: str) -> Path:
+        return (
+            self.node_dir(project_id, node_id)
+            / "checkpoints"
+            / f"{validate_id(stage, 'stage')}.json"
+        )
+
     @staticmethod
     @contextmanager
     def _exclusive_lock(path: Path) -> Iterator[None]:
@@ -143,6 +154,15 @@ class ProjectStore:
         if not directory.is_dir():
             raise ProjectNotFoundError(f"project not found: {project_id}")
         with self._exclusive_lock(directory / ".lock"):
+            yield
+
+    @contextmanager
+    def execution_lock(self, project_id: str) -> Iterator[None]:
+        """Serialize whole generation attempts without blocking status readers."""
+        directory = self.project_dir(project_id)
+        if not directory.is_dir():
+            raise ProjectNotFoundError(f"project not found: {project_id}")
+        with self._exclusive_lock(directory / ".execution.lock"):
             yield
 
     @staticmethod
@@ -293,6 +313,108 @@ class ProjectStore:
                 self.node_dir(node.project_id, node.id) / "current.json", node.to_dict(),
             )
 
+    def save_checkpoint(self, checkpoint: StageCheckpoint) -> None:
+        """Atomically persist a stage state for the node's current revision."""
+        validate_checkpoint(checkpoint.to_dict())
+        with self.writer_lock(checkpoint.project_id):
+            node = self.load_node(checkpoint.project_id, checkpoint.node_id)
+            if node.current_revision_id != checkpoint.revision_id:
+                raise ProjectValidationError(
+                    "checkpoint.revision_id is not the node's current revision"
+                )
+            _atomic_write_json(
+                self.checkpoint_path(
+                    checkpoint.project_id, checkpoint.node_id, checkpoint.stage,
+                ),
+                checkpoint.to_dict(),
+            )
+
+    @staticmethod
+    def _project_file(directory: Path, relative: str) -> Path:
+        root = directory.resolve()
+        target = (directory / relative).resolve()
+        try:
+            target.relative_to(root)
+        except ValueError as exc:
+            raise ProjectCorruptError(f"artifact path escapes the project: {relative}") from exc
+        return target
+
+    @staticmethod
+    def _sha256_file(path: Path) -> str:
+        digest = hashlib.sha256()
+        with path.open("rb") as handle:
+            for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(chunk)
+        return digest.hexdigest()
+
+    def artifact_ref(
+        self, project_id: str, run_id: str, relative: str, artifact_id: str,
+    ) -> ArtifactRef:
+        """Reference a final run artifact by project-relative path and content hash."""
+        directory = self.project_dir(project_id)
+        validate_id(run_id, "run_id")
+        if Path(relative).is_absolute() or ".." in Path(relative).parts:
+            raise ProjectValidationError("artifact relative path must stay inside its run")
+        project_relative = f"runs/{run_id}/{relative}"
+        target = self._project_file(directory, project_relative)
+        if not target.is_file():
+            raise ProjectNotFoundError(f"run artifact not found: {target}")
+        suffix = target.suffix.lower()
+        media_type = (
+            "application/json" if suffix == ".json"
+            else "text/markdown" if suffix in {".md", ".markdown"}
+            else "text/plain"
+        )
+        return ArtifactRef(
+            artifact_id=artifact_id,
+            path=project_relative,
+            sha256=self._sha256_file(target),
+            media_type=media_type,
+            producer_run_id=run_id,
+        )
+
+    def _verify_done_checkpoint(
+        self, directory: Path, checkpoint: StageCheckpoint, expected_spec_sha256: str,
+    ) -> None:
+        if checkpoint.run_id is None:  # guarded by schema validation
+            raise ProjectCorruptError("done checkpoint has no run_id")
+        run_dir = directory / "runs" / checkpoint.run_id
+        manifest_path = run_dir / "manifest.json"
+        manifest = self._read_json(manifest_path)
+        if (
+            manifest.get("run_id") != checkpoint.run_id
+            or manifest.get("status") != "ok"
+            or manifest.get("task_id") != checkpoint.node_id
+        ):
+            raise ProjectCorruptError(
+                f"{manifest_path}: done checkpoint requires an ok manifest for the same node run"
+            )
+        input_path = run_dir / "project-input.json"
+        run_input = self._read_json(input_path)
+        expected_input = {
+            "project_id": checkpoint.project_id,
+            "node_id": checkpoint.node_id,
+            "revision_id": checkpoint.revision_id,
+            "attempt_id": checkpoint.attempt_id,
+            "stage": checkpoint.stage,
+            "spec_sha256": expected_spec_sha256,
+        }
+        for field, expected in expected_input.items():
+            if run_input.get(field) != expected:
+                raise ProjectCorruptError(
+                    f"{input_path}: {field} does not match the current checkpoint"
+                )
+        for artifact in checkpoint.artifacts:
+            if artifact.producer_run_id != checkpoint.run_id:
+                raise ProjectCorruptError(
+                    f"checkpoint {checkpoint.stage}: artifact producer does not match run_id"
+                )
+            target = self._project_file(directory, artifact.path)
+            if not target.is_file():
+                raise ProjectCorruptError(f"checkpoint artifact is missing: {target}")
+            if self._sha256_file(target) != artifact.sha256:
+                raise ProjectCorruptError(f"checkpoint artifact hash differs: {target}")
+
     def status(self, project_id: str) -> dict[str, Any]:
         """Return a machine-readable summary derived from persisted records."""
         snapshot = self.load_snapshot(project_id)
@@ -302,13 +424,21 @@ class ProjectStore:
         directory = self.project_dir(project_id)
         checkpoint_dir = self.node_dir(project_id, node.id) / "checkpoints"
         stages = {stage: "pending" for stage in DEFAULT_STAGES}
+        checkpoints: dict[str, StageCheckpoint] = {}
         if checkpoint_dir.is_dir():
             for path in sorted(checkpoint_dir.glob("*.json")):
-                checkpoint = self._read_json(path)
-                status = checkpoint.get("status")
-                if not isinstance(status, str) or not status:
-                    raise ProjectCorruptError(f"{path}: checkpoint has no status")
-                stages[path.stem] = status
+                checkpoint = self._parse(path, StageCheckpoint.from_dict)
+                if (
+                    checkpoint.project_id != project_id
+                    or checkpoint.node_id != node.id
+                    or checkpoint.revision_id != revision.id
+                    or checkpoint.stage != path.stem
+                ):
+                    raise ProjectCorruptError(f"{path}: checkpoint identity does not match its path")
+                if checkpoint.status == "done":
+                    self._verify_done_checkpoint(directory, checkpoint, revision.spec_sha256)
+                checkpoints[checkpoint.stage] = checkpoint
+                stages[checkpoint.stage] = checkpoint.status
         artifacts = sorted(
             str(path.relative_to(directory).as_posix())
             for path in (directory / "artifacts").rglob("*")
@@ -316,32 +446,48 @@ class ProjectStore:
         )
         runs_dir = directory / "runs"
         runs = sorted(path.name for path in runs_dir.iterdir() if path.is_dir())
+        stage_order = list(DEFAULT_STAGES) + sorted(set(checkpoints) - set(DEFAULT_STAGES))
+        artifact_refs = [
+            artifact.to_dict()
+            for stage in stage_order
+            if stage in checkpoints
+            for artifact in checkpoints[stage].artifacts
+        ]
         values = set(stages.values())
-        if stages.get("draft") == "done":
+        if all(stages.get(stage) == "done" for stage in DEFAULT_STAGES):
             state = "complete"
         elif "waiting_response" in values:
             state = "waiting_response"
-        elif values & {"ready", "running"} or runs or artifacts:
+        elif values & {"ready", "running"}:
             state = "in_progress"
         elif "failed" in values:
             state = "failed"
-        elif values - {"pending"}:
+        elif runs or artifacts or artifact_refs or values - {"pending"}:
             state = "in_progress"
         else:
             state = "not_started"
+        checkpoint_times = [item.updated_at for item in checkpoints.values()]
+        attempt_ids = sorted({item.attempt_id for item in checkpoints.values()})
         return {
             "schema_version": SCHEMA_VERSION,
             "project_id": project.id,
             "title": project.title,
             "state": state,
+            "attempt_id": attempt_ids[0] if len(attempt_ids) == 1 else None,
             "root_node_id": node.id,
             "current_revision_id": revision.id,
             "spec_sha256": revision.spec_sha256,
             "spec": revision.spec.to_dict(),
             "created_at": project.created_at,
-            "updated_at": max(project.updated_at, node.updated_at),
+            "updated_at": max([project.updated_at, node.updated_at, *checkpoint_times]),
             "stages": stages,
+            "checkpoints": {
+                stage: checkpoints[stage].to_dict()
+                for stage in stage_order
+                if stage in checkpoints
+            },
             "artifacts": artifacts,
+            "artifact_refs": artifact_refs,
             "runs": runs,
             "project_dir": str(directory),
         }
