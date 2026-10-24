@@ -328,5 +328,12 @@
   "next_task_decision": {
     "multi_task_expansion": "deferred",
     "reason": "Resolve or characterize the exact must_include miss before treating t01 fresh replication as clean enough for cross-task expansion."
+  },
+  "followup_decision": {
+    "decided_on": "2026-10-24",
+    "multi_task_expansion": "proceed_with_literal_miss_retained",
+    "reason": "The exact string miss is not treated as a creative blocker when the required concept is background storm weather; protocol-v1 literal must_include_rate remains 0.667 and no post-hoc synonym matching is applied.",
+    "protocol_v1_changed": false,
+    "semantic_quality_evaluated": false
   }
 }
