@@ -207,7 +207,8 @@ make calibrate  # L2/L3 較正のデモ（κ=0.5 の fixture）
 make skills-check   # SKILL.md の仕様検査＋全スキルのテスト
 make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
 make plan           # 固定タスク t01 から canon だけを生成
-make story          # S1: 企画 → canon → 3 章 → 監査を一括実行
+make design         # 設計書 8 種の生成・検証デモ（canon 照合つき）
+make story          # S1: 企画 → canon → 設計 → 3 章 → 監査を一括実行
 make story-s2       # S2: S1 ＋ 改稿ループ（台本での配線検証）
 make story-s3       # S3: S2 ＋ 文体適用（台本での配線検証）
 make baseline       # S0: canon を使わない単発プロンプト（比較の下限）
@@ -240,9 +241,9 @@ python3 scripts/make_blind_pairs.py --runs-root runs \
 * `a` が常に S1 にならないよう、**半分ずつ入れ替えてからシャッフル**します
 * 同じ `--seed` なら同じ束ができます
 
-### 4.3 生成パイプライン（Phase 2-A: Plan / Draft）
+### 4.3 生成パイプライン（Phase 2-A: Plan / Design / Draft）
 
-固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から **canon を生成し、3 章の本文を書き、監査まで通す**段階です。
+固定タスク（`benchmarks/protocol-v1/tasks.yaml`）から **canon を生成し、設計書を検証し、3 章の本文を書き、監査まで通す**段階です。
 
 ```bash
 python3 scripts/run_pipeline.py --task t01 --out runs            # 台本で配線を確認
@@ -278,7 +279,11 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
   （`export` でタグ付きの貼り付け用ファイル、`ingest` で返答案の取り込み）
   モデル版を固定できないため **G5 は満たさず**、値は参考値です
   （例: [`experiments/2026-10-pilot-t01-s0s1/`](experiments/2026-10-pilot-t01-s0s1/note.md)）
-* `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon を使う系です
+* `--system s0` は canon を渡さない単発プロンプト（比較の下限）。`--system s1` が canon＋設計書を使う系です
+* design ステージは 8 種の設計書（brief / world / history / character / relation / plot / scene / voice）を
+  生成し、各スキルの検査器で検証します。検査落ちは修復プロンプトで再試行し、それでも落ちたら
+  `unresolved` として記録して続行します（fail-open。ゲートには入れない）。S3 の文体適用は設計の
+  `voice.json` を既定に使います。`--no-design` は ablation・デバッグ専用で、本実験では使いません
 * 各章には `{{time: day=3}}{{location: 王都}}` などのマーカーが入り、監査の根拠になります。
   モデルがマーカーを落とした場合は canon から補い、**補ったことを `warnings_ja` に残します**（黙って直さない）
 * 実行の最後にゲート（`must_include` / `length` / `no_high_severity` / `all_checks_ran`）を評価し、
@@ -304,7 +309,7 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 ## 6.  次フェーズ候補
 
-* 13 スキルの構造検査を S1 の Plan/Draft に接続する（設計書の検査を生成工程に組み込む）
+* 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）
 * 評価ハーネスの L2 を実モデルで較正する（`judge_pairs`＋`calibrate_judge` は実装済み。評定は未実施）
 * 対照群 30 作品の選定（G3/G4 の前提。青空文庫から長さを揃えて固定リスト化）
 * 固定版モデルでの本実験（10 題×3 seed×S0〜S3。`make pilot-model SYSTEMS="s0 s1 s2 s3"`）

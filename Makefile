@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -61,9 +61,19 @@ evaluate: ## run the evaluation harness on the demo story (L1 + recorded L2)
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/eval/demo \
 		--report-only
 
-story: ## run S1 end to end (plan -> draft -> audit) with the scripted fixture
+story: ## run S1 end to end (plan -> design -> draft -> audit) with the scripted fixture
 	$(RUN) scripts/run_pipeline.py --task t01 --out build/runs \
 		--script benchmarks/protocol-v1/fixtures/plan-demo.json --report-only
+
+design: ## validate the 8 design documents against a planned canon (scripted)
+	rm -rf build/runs/design-demo-plan build/runs/design-demo
+	$(RUN) scripts/run_pipeline.py --task t01 --system s1 --stage plan \
+		--out build/runs --run-id design-demo-plan --report-only --quiet \
+		--script benchmarks/protocol-v1/fixtures/plan-demo.json
+	$(RUN) scripts/run_pipeline.py --task t01 --system s1 --stage design \
+		--canon build/runs/design-demo-plan/canon --out build/runs \
+		--run-id design-demo --report-only \
+		--script benchmarks/protocol-v1/fixtures/plan-demo.json
 
 baseline: ## run S0 (single prompt, no canon) for the same task
 	$(RUN) scripts/run_pipeline.py --task t01 --system s0 --out build/runs \
@@ -192,7 +202,8 @@ skills-check: ## validate SKILL.md files and run every skill's tests
 		tests/test_relationship_web.py tests/test_plot_architecture.py \
 		tests/test_scene_information.py tests/test_voice_style.py \
 		tests/test_revision_loop.py tests/test_interactive_branch.py \
-		tests/test_adaptation.py tests/test_pipeline_s2s3.py tests/test_calibration.py -q
+		tests/test_adaptation.py tests/test_pipeline_s2s3.py tests/test_pipeline_design.py \
+		tests/test_calibration.py -q
 
 clean: ## remove the generated texts and PDFs
 	rm -rf data/raw data/pdf

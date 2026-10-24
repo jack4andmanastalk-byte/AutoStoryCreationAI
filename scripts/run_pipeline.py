@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Run the generation pipeline for one frozen task.
 
-    # S1: premise -> canon -> three chapters, then audit
-    python3 scripts/run_pipeline.py --task t01 --system s1 \
-        --provider scripted --script benchmarks/protocol-v1/fixtures/plan-demo.json \
+    # S1: premise -> canon -> design -> three chapters, then audit
+    python3 scripts/run_pipeline.py --task t01 --system s1 \\
+        --provider scripted --script benchmarks/protocol-v1/fixtures/plan-demo.json \\
         --out runs
 
     # S0: the same premise with a single prompt and no canon (the baseline)
-    python3 scripts/run_pipeline.py --task t01 --system s0 --provider scripted \
+    python3 scripts/run_pipeline.py --task t01 --system s0 --provider scripted \\
         --script benchmarks/protocol-v1/fixtures/draft-baseline-demo.json --out runs
 
 Every run writes ``runs/<run_id>/`` with the manifest (model, prompt hashes, git
@@ -29,9 +29,9 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
     CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
-    ScriptedProvider, TaskError, VoicePassError, build_plan, build_revision,
-    build_story, build_voice_pass, canon_coverage, load_scripted_responses,
-    load_tasks,
+    ScriptedProvider, TaskError, VoicePassError, build_design, build_plan,
+    build_revision, build_story, build_voice_pass, canon_coverage,
+    load_scripted_responses, load_tasks,
 )
 from asc.story.canon import CanonError, load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
@@ -46,8 +46,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--task", required=True, help="task id, e.g. t01")
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
     parser.add_argument("--system", default="s1", choices=["s0", "s1", "s2", "s3"],
-                        help="s0 = single prompt, s1 = canon + chapters")
-    parser.add_argument("--stage", default="all", choices=["plan", "draft", "all"])
+                        help="s0 = single prompt, s1 = canon + design + chapters")
+    parser.add_argument("--stage", default="all",
+                        choices=["plan", "design", "draft", "all"])
+    parser.add_argument("--design", dest="design", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="run the design stage for s1/s2/s3 (default: on; "
+                             "--no-design is for debugging and ablation only, "
+                             "never for experiment runs)")
     parser.add_argument("--provider", default="scripted", choices=["scripted", "command"])
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
@@ -56,7 +62,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="revision rounds for s2/s3 (default: 1)")
     parser.add_argument("--voice", default=None,
                         help="voice.yaml for the s3 voice pass "
-                             "(default: a generic guide)")
+                             "(default: the run's design/voice.json, "
+                             "else a generic guide)")
     parser.add_argument("--model", default=None)
     parser.add_argument("--temperature", type=float, default=None,
                         help="default: 0.6 for planning, 0.8 for drafting")
@@ -105,6 +112,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.system == "s0" and args.stage == "plan":
         print("error: s0 has no plan stage (the baseline gets no canon)", file=sys.stderr)
         return 2
+    if args.system == "s0" and args.stage == "design":
+        print("error: s0 has no design stage (the baseline gets no canon)", file=sys.stderr)
+        return 2
 
     try:
         provider = make_provider(args)
@@ -113,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     temperature = args.temperature if args.temperature is not None else (
-        0.6 if args.stage == "plan" else 0.8)
+        0.6 if args.stage in {"plan", "design"} else 0.8)
 
     try:
         ledger = RunLedger.create(
@@ -134,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
         "stage": args.stage,
     }
     canon = None
+    design_ran = False
 
     # -- plan -------------------------------------------------------------
     if args.system != "s0" and args.stage in {"plan", "all"}:
@@ -168,6 +179,35 @@ def main(argv: list[str] | None = None) -> int:
             "checks_missing": coverage["missing"],
         }
 
+    # -- design -----------------------------------------------------------
+    if args.system != "s0" and args.stage in {"design", "all"}:
+        if canon is None:
+            if args.canon and args.stage == "design":
+                try:
+                    canon = load_canon(args.canon)
+                except CanonError as exc:
+                    print(f"error: {exc}", file=sys.stderr)
+                    return 2
+            else:
+                print("error: designing without a canon requires the plan stage "
+                      "or --canon", file=sys.stderr)
+                return 2
+        if not args.design:
+            summary["design"] = {"status": "skipped",
+                                 "reason": "--no-design (ablation/debugging only)"}
+        else:
+            try:
+                design = build_design(
+                    task, provider, ledger, canon, temperature=temperature,
+                    seed=args.seed,
+                )
+            except ProviderError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                print(f"run: {ledger.path}", file=sys.stderr)
+                return 2
+            summary["design"] = design.as_dict()
+            design_ran = True
+
     # -- draft ------------------------------------------------------------
     if args.stage in {"draft", "all"}:
         if args.system != "s0" and canon is None:
@@ -178,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             draft = build_story(
                 task, provider, ledger, canon=canon, chapters=tasks.chapters,
                 temperature=temperature, seed=args.seed,
+                design_dir=(ledger.path / "design") if design_ran else None,
             )
         except DraftError as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -205,9 +246,14 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- voice (s3) ---------------------------------------------------------
     if args.system == "s3" and args.stage in {"draft", "all"}:
+        voice_path = args.voice
+        if voice_path is None:
+            designed = ledger.path / "design" / "voice.json"
+            if designed.is_file():
+                voice_path = str(designed)
         try:
             voice = build_voice_pass(
-                task, provider, ledger, canon, voice_path=args.voice,
+                task, provider, ledger, canon, voice_path=voice_path,
                 temperature=temperature, seed=args.seed,
             )
         except (VoicePassError, ValueError, OSError) as exc:

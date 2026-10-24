@@ -1,11 +1,16 @@
-"""Generation pipeline (Plan -> Draft -> Revise -> Voice).
+"""Generation pipeline (Plan -> Design -> Draft -> Revise -> Voice).
 
-S0 drafts from a single prompt; S1 plans a canon first; S2 revises the draft
-against its audit; S3 restyles the revised chapters against a voice guide.
+S0 drafts from a single prompt; S1 plans a canon first, designs the documents
+the skills check, then drafts; S2 revises the draft against its audit; S3
+restyles the revised chapters against a voice guide.
 """
 from .llm import (
     CommandProvider, GenerationRequest, GenerationResult, Provider, ProviderError,
     ScriptedProvider, digest, load_scripted_responses,
+)
+from .design import (
+    DOCS as DESIGN_DOCS, Design, DesignError, DocResult, build_design,
+    design_notes_for_chapter,
 )
 from .draft import (
     Draft, DraftError, ChapterDraft, build_story, canon_brief, chapter_plan,
@@ -26,6 +31,8 @@ __all__ = [
     "ProviderError", "ScriptedProvider", "digest", "load_scripted_responses",
     "Plan", "PlanError", "build_plan", "canon_coverage", "normalise_canon",
     "parse_plan", "validate_payload",
+    "DESIGN_DOCS", "Design", "DesignError", "DocResult", "build_design",
+    "design_notes_for_chapter",
     "Draft", "DraftError", "ChapterDraft", "build_story", "canon_brief",
     "chapter_plan", "check_chapter", "clean_text", "draft_story",
     "Revision", "RevisionError", "build_revision",

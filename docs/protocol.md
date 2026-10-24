@@ -104,6 +104,8 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 ## 7. 手続き
 
 1. `scripts/run_pipeline.py` で run を作る。出力は `runs/<run_id>/`（git 管理外）。
+   S1 以降は plan → design → draft の順に進む。design は 8 種の設計書を検査器で
+   検証し、検査落ちは修復再試行（上限 2 試行）、それでも落ちたら記録して続行する。
    `--provider scripted` は配線検証用の台本、`--provider command` が実モデル用。
    鍵を持たない環境では `scripts/chat_operator.py` を `--provider command` の
    コマンドとして渡し、プロンプトを `requests/` に落として応答を `responses/` に
@@ -156,7 +158,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | L1 | 実装済み（継続性監査・指標・禁止パターン） |
 | L2 | 実装済み。**実モデル未接続、較正未実施** |
 | L3 | ラベル形式・κ・判定器一致率の計算まで実装済み。評定は未実施 |
-| 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S2 改稿・S3 文体は台本での配線検証のみ（`tests/test_pipeline_s2s3.py`）。実モデル未接続 |
+| 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S1 以降は plan → design → draft の順で、8 種の設計書を検査器で検証する（台本での配線検証のみ、`tests/test_pipeline_design.py`）。実モデル未接続 |
 | スキル（13 種） | seed-01〜13 すべて実装済み（構造検査のみ）。意味の判定（L2 較正）は未実施 |
 | L3 較正の道具 | 実装済み（`scripts/judge_pairs.py`、`scripts/calibrate_judge.py`、κ の fixture 検証）。評定は未実施 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |

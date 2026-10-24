@@ -29,8 +29,9 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
     CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
-    ScriptedProvider, TaskError, VoicePassError, build_plan, build_revision,
-    build_story, build_voice_pass, git_commit, load_scripted_responses, load_tasks,
+    ScriptedProvider, TaskError, VoicePassError, build_design, build_plan,
+    build_revision, build_story, build_voice_pass, git_commit,
+    load_scripted_responses, load_tasks,
 )
 from asc.story.canon import load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
@@ -68,7 +69,7 @@ def _measure_final_text(text_dir, task) -> tuple[int, float]:
 
 
 def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
-             max_rounds: int = 1) -> dict:
+             max_rounds: int = 1, design: bool = True) -> dict:
     ledger = RunLedger.create(
         runs_root, task_id=task.id, system=system, seed=seed,
         protocol_version=tasks.protocol, model=provider.model,
@@ -76,15 +77,28 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
     )
     summary: dict = {"run_id": ledger.run_id, "run_dir": str(ledger.path),
                      "task": task.id, "system": system, "seed": seed,
-                     "revision_rounds": None, "voice_applied": False}
+                     "revision_rounds": None, "voice_applied": False,
+                     "design": "on" if design and system != "s0" else "off"}
     canon = None
+    design_dir = None
     try:
         if system != "s0":
             build_plan(task, provider, ledger, chapters=tasks.chapters,
                        target_chars=tasks.target_chars, temperature=temperature, seed=seed)
             canon = load_canon(ledger.path / "canon")
+            if design:
+                result = build_design(task, provider, ledger, canon,
+                                      temperature=temperature, seed=seed)
+                design_dir = ledger.path / "design"
+                summary["design_findings"] = result.as_dict()["findings"]
+                summary["design_unresolved"] = len(result.as_dict()["unresolved"])
+                summary["design_missing"] = len(result.as_dict()["missing"])
+            else:
+                summary["design_findings"] = None
+                summary["design_unresolved"] = None
+                summary["design_missing"] = None
         draft = build_story(task, provider, ledger, canon=canon, chapters=tasks.chapters,
-                            temperature=temperature, seed=seed)
+                            temperature=temperature, seed=seed, design_dir=design_dir)
         summary["warnings"] = len(draft.warnings)
         summary["injected_markers"] = sum(len(c.injected) for c in draft.chapters)
         if system in {"s2", "s3"}:
@@ -94,8 +108,14 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
             summary["revision_rounds"] = revision.rounds
             summary["revision_converged"] = revision.converged
         if system == "s3":
+            voice_path = None
+            if design_dir is not None:
+                candidate = design_dir / "voice.json"
+                if candidate.is_file():
+                    voice_path = str(candidate)
             voice = build_voice_pass(
-                task, provider, ledger, canon, temperature=temperature, seed=seed)
+                task, provider, ledger, canon, voice_path=voice_path,
+                temperature=temperature, seed=seed)
             summary["voice_applied"] = True
             summary["voice_warnings"] = len(voice.warnings)
         # S2/S3 rewrite the draft: measure the final text, not the first one.
@@ -136,7 +156,8 @@ def aggregate(cells: list[dict]) -> dict:
         entry: dict = {"n": len(ok), "failed": len(rows) - len(ok)}
         for metric in ("chars", "must_include_rate", "violations", "high",
                        "checks_skipped", "ced_per_10k_chars", "warnings",
-                       "injected_markers", "revision_rounds"):
+                       "injected_markers", "revision_rounds", "design_findings",
+                       "design_unresolved"):
             values = [row[metric] for row in ok if row.get(metric) is not None]
             if not values:
                 continue
@@ -189,17 +210,18 @@ def render_note(experiment: dict, results: dict, scripted: bool) -> str:
         f"- タスク: {', '.join(experiment['tasks'])}",
         f"- 系: {', '.join(experiment['systems'])}",
         f"- seed: {', '.join(str(s) for s in experiment['seeds'])}",
+        f"- 設計ステージ: {'on' if experiment.get('design', True) else 'off'}",
         f"- プロバイダ: `{experiment['provider']}`",
         f"- コード: `{experiment['git_commit'] or 'unknown'}`",
         "",
         "## 仮説",
         "",
-        "（記入）S1（canon を使う系）は S0（単発プロンプト）より、継続性の欠陥が少ない。",
+        "（記入）S1（canon＋設計書を使う系）は S0（単発プロンプト）より、継続性の欠陥が少ない。",
         "",
         "## 結果",
         "",
-        "| 系 | N | 失敗 | 文字数 | 必須語 | 違反 | high | CED | 警告 |",
-        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "| 系 | N | 失敗 | 文字数 | 必須語 | 違反 | high | CED | 警告 | 設計所見 |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for system, entry in results["by_system"].items():
         def cell(metric: str) -> str:
@@ -208,7 +230,8 @@ def render_note(experiment: dict, results: dict, scripted: bool) -> str:
         lines.append(
             f"| {system} | {entry['n']} | {entry['failed']} | {cell('chars')} | "
             f"{cell('must_include_rate')} | {cell('violations')} | {cell('high')} | "
-            f"{cell('ced_per_10k_chars')} | {cell('warnings')} |")
+            f"{cell('ced_per_10k_chars')} | {cell('warnings')} | "
+            f"{cell('design_findings')} |")
 
     for key in ("paired_vs_s0", "paired_vs_s0_s2", "paired_vs_s0_s3"):
         paired = results.get(key)
@@ -236,6 +259,10 @@ def render_note(experiment: dict, results: dict, scripted: bool) -> str:
             "- **この結果は台本（scripted fixture）による配線検証であり、モデルの性能ではありません。**",
             "- 章は 200〜280 字で、プロトコルの 1,000〜1,400 字に届いていません。",
         ]
+    if not experiment.get("design", True):
+        lines.append(
+            "- **設計ステージが off のため、S1 は設計書なしの条件である。**"
+            "本実験の条件と混ぜて集計しない。")
     if "s0" in results["by_system"]:
         lines.append(
             "- S0 は canon を持たないため、継続性（違反・CED）を測れません。"
@@ -275,6 +302,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--max-rounds", type=int, default=1,
                         help="revision rounds for s2/s3 (default: 1)")
+    parser.add_argument("--design", dest="design", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="run the design stage for s1/s2/s3 (default: on; "
+                             "--no-design is for debugging and ablation only)")
     parser.add_argument("--runs", default=str(REPO_ROOT / "runs"))
     parser.add_argument("--out", default=None, help="default: experiments/<id>")
     parser.add_argument("--quiet", action="store_true")
@@ -318,7 +349,7 @@ def main(argv: list[str] | None = None) -> int:
             for seed in args.seeds:
                 cells.append(run_cell(task, system, seed, providers[system], tasks,
                                       runs_root, args.temperature,
-                                      max_rounds=args.max_rounds))
+                                      max_rounds=args.max_rounds, design=args.design))
 
     experiment = {
         "id": args.id,
@@ -327,6 +358,7 @@ def main(argv: list[str] | None = None) -> int:
         "tasks": [task.id for task in selected],
         "systems": args.systems,
         "seeds": args.seeds,
+        "design": args.design,
         "provider": provider.name,
         "model": provider.model,
         "model_version": provider.model_version,
