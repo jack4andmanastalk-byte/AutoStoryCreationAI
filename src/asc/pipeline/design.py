@@ -387,8 +387,9 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
             request = GenerationRequest(
                 purpose=purpose, prompt=prompt, temperature=temperature,
                 max_tokens=max_tokens, seed=seed,
-                context={"task_id": task.id, "doc": name,
-                         "attempt": attempt, "system": ledger.system},
+                context=ledger.request_context(
+                    task_id=task.id, doc=name, attempt=attempt, system=ledger.system,
+                ),
             )
             result = provider.generate(request)
             ledger.record(request, result)

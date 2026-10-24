@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from ..pipeline import (
+    ChapterDraft,
     Draft,
     Provider,
     ResponsePendingError,
@@ -23,7 +24,10 @@ from ..pipeline import (
 )
 from ..story.canon import Canon, load_canon
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
-from .model import ArtifactRef, ProjectSnapshot, StageCheckpoint, new_id, utc_now
+from .continuation import ContinuationContext, validate_continuation_canon
+from .model import (
+    ArtifactRef, ProjectSnapshot, StageCheckpoint, WorkNodeRevision, new_id, utc_now,
+)
 from .resume import ResumeError, ResumeProvider
 from .schema import SCHEMA_VERSION
 from .store import DEFAULT_STAGES, ProjectError, ProjectStore
@@ -69,6 +73,7 @@ class _Attempt:
     snapshot: ProjectSnapshot
     pipeline: PipelineInput
     attempt_id: str
+    continuation: ContinuationContext | None = None
 
 
 @dataclass(frozen=True)
@@ -127,6 +132,11 @@ class ProjectRunner:
                     "(resume and continuation are separate operations)",
                     project_id=project_id,
                 )
+            if snapshot.revision.parent_revision_id is not None:
+                raise ProjectRunError(
+                    "a continuation revision must be resumed, not started as a new run",
+                    project_id=project_id,
+                )
             attempt = self._attempt(snapshot)
             configs = {
                 stage: _StageConfig(
@@ -142,6 +152,96 @@ class ProjectRunner:
                 self.store.save_checkpoint(checkpoint)
                 existing[stage] = checkpoint
             return self._execute(attempt, provider, configs, existing)
+
+    def continue_project(
+        self, project_id: str, provider: Provider, *,
+        additional_chapters: int | None = None, total_chapters: int | None = None,
+        seed: int = 0, temperature: float | None = None,
+        title: str | None = None, premise: str | None = None,
+    ) -> ProjectRunResult:
+        """Append a new revision while retaining the parent runs and chapter text."""
+        with self.store.execution_lock(project_id):
+            snapshot = self.store.load_snapshot(project_id)
+            status = self.store.status(project_id)
+            if status["state"] != "complete":
+                raise ProjectRunError(
+                    f"project {project_id} is {status['state']}; "
+                    "continuation requires a complete revision",
+                    project_id=project_id,
+                )
+            old_revision = snapshot.revision
+            if additional_chapters is not None and total_chapters is not None:
+                raise ProjectRunError(
+                    "specify only one of additional_chapters and total_chapters",
+                    project_id=project_id,
+                )
+            if total_chapters is not None:
+                if isinstance(total_chapters, bool) or not isinstance(total_chapters, int):
+                    raise ProjectRunError(
+                        "total_chapters must be an integer", project_id=project_id,
+                    )
+                additional_chapters = total_chapters - old_revision.spec.chapter_count
+            if additional_chapters is None:
+                additional_chapters = 1
+            if (
+                isinstance(additional_chapters, bool)
+                or not isinstance(additional_chapters, int)
+                or additional_chapters < 1
+            ):
+                raise ProjectRunError(
+                    "additional_chapters must be a positive integer",
+                    project_id=project_id,
+                )
+            parent_runs = {
+                stage: status["checkpoints"][stage]["run_id"]
+                for stage in DEFAULT_STAGES
+            }
+            if any(run_id is None for run_id in parent_runs.values()):
+                raise ProjectRunError(
+                    "complete revision has a stage without a run", project_id=project_id,
+                )
+            new_spec = replace(
+                old_revision.spec,
+                title=old_revision.spec.title if title is None else title,
+                premise=old_revision.spec.premise if premise is None else premise,
+                chapter_count=old_revision.spec.chapter_count + additional_chapters,
+            )
+            new_revision = WorkNodeRevision.create(
+                revision_id=new_id("rev"),
+                node_id=snapshot.root_node.id,
+                project_id=project_id,
+                spec=new_spec,
+                created_at=utc_now(),
+                parent_revision_id=old_revision.id,
+                parent_runs=parent_runs,
+            )
+            self.store.save_revision(new_revision)
+            self.store.save_node(replace(
+                snapshot.root_node,
+                current_revision_id=new_revision.id,
+                updated_at=utc_now(),
+            ))
+            continued = self.store.load_snapshot(project_id)
+            attempt = self._attempt(
+                continued, continuation=self._continuation_for_snapshot(continued),
+            )
+            configs = {
+                stage: _StageConfig(
+                    seed=seed,
+                    temperature=temperature if temperature is not None
+                    else _default_temperature(stage),
+                )
+                for stage in DEFAULT_STAGES
+            }
+            existing: dict[str, StageCheckpoint] = {}
+            for stage, config in configs.items():
+                checkpoint = self._new_checkpoint(attempt, stage, "pending", config=config)
+                self.store.save_checkpoint(checkpoint)
+                existing[stage] = checkpoint
+            return self._execute(attempt, provider, configs, existing)
+
+    # Readable alias for callers that use the roadmap's noun for this operation.
+    continuation = continue_project
 
     def resume(self, project_id: str, provider: Provider) -> ProjectRunResult:
         """Resume the first unfinished stage without regenerating completed work."""
@@ -161,7 +261,7 @@ class ProjectRunner:
                 stage: StageCheckpoint.from_dict(data)
                 for stage, data in status["checkpoints"].items()
             }
-            if not existing:
+            if not existing and snapshot.revision.parent_revision_id is None:
                 raise ProjectRunError(
                     f"project {project_id} has no checkpoint for the current revision; "
                     "refusing to resume a different revision or orphan run",
@@ -233,18 +333,83 @@ class ProjectRunner:
                         else _default_temperature(stage)
                     ),
                 )
-            attempt = self._attempt(snapshot)
+            attempt = self._attempt(
+                snapshot, continuation=self._continuation_for_snapshot(snapshot),
+            )
             return self._execute(
                 attempt, provider, configs, existing,
                 resume_stage=target if source_dir is not None else None,
             )
 
     @staticmethod
-    def _attempt(snapshot: ProjectSnapshot) -> _Attempt:
+    def _attempt(
+        snapshot: ProjectSnapshot, *, continuation: ContinuationContext | None = None,
+    ) -> _Attempt:
         return _Attempt(
             snapshot=snapshot,
             pipeline=adapt_work_spec(snapshot.root_node.id, snapshot.revision.spec),
             attempt_id=new_id("att"),
+            continuation=continuation,
+        )
+
+    def _continuation_for_snapshot(
+        self, snapshot: ProjectSnapshot,
+    ) -> ContinuationContext | None:
+        revision = snapshot.revision
+        if revision.parent_revision_id is None:
+            return None
+        missing = [stage for stage in DEFAULT_STAGES if stage not in revision.parent_runs]
+        if missing:
+            raise ProjectRunError(
+                f"continuation revision is missing parent runs: {', '.join(missing)}",
+                project_id=snapshot.project.id,
+            )
+        parent = self.store.load_revision(
+            snapshot.project.id, snapshot.root_node.id, revision.parent_revision_id,
+        )
+        run_dirs = {}
+        for stage in DEFAULT_STAGES:
+            run_id = revision.parent_runs[stage]
+            run_dir = self.store.project_dir(snapshot.project.id) / "runs" / run_id
+            run_input = self._read_run_json(run_dir / "project-input.json")
+            if (
+                run_input.get("revision_id") != parent.id
+                or run_input.get("stage") != stage
+            ):
+                raise ProjectRunError(
+                    f"parent run {run_id} does not match continuation parent revision",
+                    project_id=snapshot.project.id,
+                )
+            run_dirs[stage] = run_dir
+        canon = load_canon(run_dirs["plan"] / "canon")
+        order = canon.chapter_order()
+        if len(order) != parent.spec.chapter_count:
+            raise ProjectRunError(
+                "parent canon chapter count differs from parent WorkSpec",
+                project_id=snapshot.project.id,
+            )
+        drafts = []
+        for chapter_id in order:
+            path = run_dirs["draft"] / "text" / f"{chapter_id}.md"
+            if not path.is_file():
+                raise ProjectRunError(
+                    f"parent chapter text is missing: {path}",
+                    project_id=snapshot.project.id,
+                )
+            chapter = canon.chapters[chapter_id]
+            drafts.append(ChapterDraft(
+                id=chapter_id,
+                text=path.read_text(encoding="utf-8"),
+                day=chapter.day,
+                location=chapter.location,
+                preserve_text=True,
+            ))
+        return ContinuationContext(
+            parent_revision_id=parent.id,
+            parent_runs=dict(revision.parent_runs),
+            parent_chapter_count=parent.spec.chapter_count,
+            canon=canon,
+            drafts=tuple(drafts),
         )
 
     @staticmethod
@@ -416,6 +581,9 @@ class ProjectRunner:
             target_chars=attempt.pipeline.total_target,
             temperature=ledger.temperature if ledger.temperature is not None else 0.6,
             seed=seed,
+            prompt_suffix=(
+                attempt.continuation.prompt_suffix if attempt.continuation else ""
+            ),
         )
         # Keep the frozen-task implementation untouched; replace only its
         # derived note with the creative project's actual provenance.
@@ -428,6 +596,8 @@ class ProjectRunner:
             )
         if plan.task.id != attempt.snapshot.root_node.id:
             raise ValueError("plan task does not match project node")
+        if attempt.continuation is not None:
+            validate_continuation_canon(attempt.continuation, canon)
         return canon
 
     def _draft(
@@ -442,6 +612,9 @@ class ProjectRunner:
             temperature=config.temperature,
             seed=config.seed,
             design_dir=design.run_dir / "design",
+            initial_drafts=(
+                attempt.continuation.drafts if attempt.continuation else ()
+            ),
         )
         if len(draft.chapters) != attempt.pipeline.chapters:
             raise ValueError(
@@ -478,6 +651,9 @@ class ProjectRunner:
                 model=provider.model,
                 provider=provider.name,
                 temperature=config.temperature,
+                revision_id=(
+                    attempt.snapshot.revision.id if attempt.continuation else None
+                ),
             )
             ledger.write_json("project-input.json", {
                 "schema_version": SCHEMA_VERSION,
@@ -492,6 +668,9 @@ class ProjectRunner:
                 "resume_of": resume_of,
                 "resume_source_responses_sha256": (
                     resume_provider.source_responses_sha256 if resume_provider else None
+                ),
+                "continuation": (
+                    attempt.continuation.as_dict() if attempt.continuation else None
                 ),
             })
             ledger.write_manifest()
