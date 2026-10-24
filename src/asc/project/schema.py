@@ -19,6 +19,11 @@ SCHEMA_VERSION = 1
 PROJECT_RECORD = "work_project"
 NODE_RECORD = "work_node"
 REVISION_RECORD = "work_node_revision"
+CHECKPOINT_RECORD = "stage_checkpoint"
+STAGE_STATUSES = {
+    "pending", "ready", "running", "waiting_response", "done", "failed",
+    "stale", "skipped",
+}
 
 _ID_RE = re.compile(r"[a-z0-9][a-z0-9._-]{0,62}")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
@@ -178,3 +183,39 @@ def validate_revision(data: Any) -> None:
             raise ProjectValidationError(f"duplicate artifact path: {path}")
         artifact_ids.add(artifact_id)
         artifact_paths.add(path)
+
+
+def validate_checkpoint(data: Any) -> None:
+    data = _mapping(data, "checkpoint")
+    _header(data, CHECKPOINT_RECORD)
+    validate_id(data.get("project_id"), "checkpoint.project_id")
+    validate_id(data.get("node_id"), "checkpoint.node_id")
+    validate_id(data.get("revision_id"), "checkpoint.revision_id")
+    validate_id(data.get("stage"), "checkpoint.stage")
+    validate_id(data.get("attempt_id"), "checkpoint.attempt_id")
+    status = data.get("status")
+    if status not in STAGE_STATUSES:
+        raise ProjectValidationError(f"checkpoint.status is unknown: {status!r}")
+    run_id = _optional_id(data.get("run_id"), "checkpoint.run_id")
+    if status in {"running", "waiting_response", "done", "failed"} and run_id is None:
+        raise ProjectValidationError(f"checkpoint.run_id is required when status is {status}")
+    _timestamp(data.get("created_at"), "checkpoint.created_at")
+    _timestamp(data.get("updated_at"), "checkpoint.updated_at")
+    error = data.get("error")
+    if status == "failed":
+        _nonempty(error, "checkpoint.error")
+    elif error is not None:
+        raise ProjectValidationError("checkpoint.error is only valid for a failed checkpoint")
+    artifacts = data.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise ProjectValidationError("checkpoint.artifacts must be a list")
+    artifact_ids: set[str] = set()
+    artifact_paths: set[str] = set()
+    for index, artifact in enumerate(artifacts):
+        validate_artifact(artifact, f"checkpoint.artifacts[{index}]")
+        if artifact["artifact_id"] in artifact_ids:
+            raise ProjectValidationError(f"duplicate artifact_id: {artifact['artifact_id']}")
+        if artifact["path"] in artifact_paths:
+            raise ProjectValidationError(f"duplicate artifact path: {artifact['path']}")
+        artifact_ids.add(artifact["artifact_id"])
+        artifact_paths.add(artifact["path"])
