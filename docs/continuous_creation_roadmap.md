@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **設計決定。実装は未着手**
+- 状態: **PR 1〜3を実装済み。次はPR 4（continuation / replay bundle）**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -388,8 +388,9 @@ scripts/story_project.py
 tests/test_project_store.py
 ```
 
-PR 2で `runner.py` と既存pipelineへのadapterを追加する。
-既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、新しい創作基盤の
-後方互換性を確認しながら残し、無理に統合しない。
+PR 2で `runner.py` と既存pipelineへのadapterを追加し、PR 3で `resume.py`、
+`story_project resume/pending`、stage別の再開testを追加した。既存の `run_pipeline.py` /
+`run_experiment.py` / protocol-v1は、新しい創作基盤の後方互換性を確認しながら残し、
+無理に統合しない。
 
-**したがって、次の実装はPR 1のproject foundationから開始する。**
+**したがって、次の実装はPR 4のcontinuation / replay bundleから開始する。**

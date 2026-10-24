@@ -9,7 +9,9 @@ Examples::
 
 By default, projects live below ``runs/projects/``.  Use ``--root`` before the
 subcommand to select another store.  ``run`` executes the single-work S1
-vertical slice; resume, continuation, and nested works are later increments.
+vertical slice, and ``resume`` continues an interrupted revision without
+regenerating its completed response prefix.  Continuation and nested works are
+later increments.
 """
 from __future__ import annotations
 
@@ -27,6 +29,7 @@ from asc.pipeline import (  # noqa: E402
 from asc.project import (  # noqa: E402
     ProjectError,
     ProjectRunError,
+    ProjectRunPending,
     ProjectRunner,
     ProjectStore,
     ProjectValidationError,
@@ -66,6 +69,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--temperature", type=float)
     run.add_argument("--json", dest="json_output", action="store_true")
 
+    resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
+    resume.add_argument("project_id")
+    resume.add_argument("--provider", choices=["scripted", "command"], default="command")
+    resume.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+    resume.add_argument("--command", dest="provider_command", help="external provider command")
+    resume.add_argument("--model")
+    resume.add_argument("--json", dest="json_output", action="store_true")
+
+    pending = subparsers.add_parser("pending", help="list operator responses still needed")
+    pending.add_argument("project_id")
+    pending.add_argument("--json", dest="json_output", action="store_true")
+
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--json", dest="json_output", action="store_true")
@@ -100,7 +115,23 @@ def _print_human(status: dict, *, created: bool) -> None:
     )
     if status.get("attempt_id"):
         print(f"Attempt: {status['attempt_id']}")
+    print(f"Pending responses: {len(status.get('pending', []))}")
     print(f"Directory: {status['project_dir']}")
+
+
+def _print_pending(status: dict) -> None:
+    rows = status.get("pending", [])
+    if not rows:
+        print(f"No pending responses for {status['project_id']}")
+        return
+    for row in rows:
+        print(
+            f"{row['key']}: project={row['project_id']} node={row['node_id']} "
+            f"stage={row['stage']} ready={row['response_ready']}"
+        )
+        print(f"  response: {row['response_path']}")
+        if row.get("request_path"):
+            print(f"  request: {row['request_path']}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -127,11 +158,16 @@ def main(argv: list[str] | None = None) -> int:
                 _print_human(status, created=True)
             return 0
 
-        if args.command == "run":
+        if args.command in {"run", "resume"}:
             provider = _make_provider(args)
-            result = ProjectRunner(store).run(
-                args.project_id, provider,
-                seed=args.seed, temperature=args.temperature,
+            runner = ProjectRunner(store)
+            result = (
+                runner.run(
+                    args.project_id, provider,
+                    seed=args.seed, temperature=args.temperature,
+                )
+                if args.command == "run"
+                else runner.resume(args.project_id, provider)
             )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id
@@ -142,11 +178,31 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         status = store.status(args.project_id)
+        if args.command == "pending":
+            report = {
+                "project_id": status["project_id"],
+                "node_id": status["root_node_id"],
+                "state": status["state"],
+                "pending": status["pending"],
+            }
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_pending(status)
+            return 0
         if args.json_output:
             print(json.dumps(status, ensure_ascii=False, sort_keys=True))
         else:
             _print_human(status, created=False)
         return 0
+    except ProjectRunPending as exc:
+        if getattr(args, "json_output", False):
+            print(json.dumps(exc.status, ensure_ascii=False, sort_keys=True))
+        else:
+            print(f"pending: {exc}", file=sys.stderr)
+            print(f"response: {exc.pending.get('response_path')}", file=sys.stderr)
+            print(f"resume after writing the response: story_project.py resume {exc.project_id}")
+        return 3
     except ProjectRunError as exc:
         print(f"error: {exc}", file=sys.stderr)
         if exc.run_dir is not None:

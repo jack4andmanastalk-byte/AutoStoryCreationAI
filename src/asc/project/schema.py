@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from datetime import datetime
 from pathlib import PurePosixPath
@@ -199,6 +200,27 @@ def validate_checkpoint(data: Any) -> None:
     run_id = _optional_id(data.get("run_id"), "checkpoint.run_id")
     if status in {"running", "waiting_response", "done", "failed"} and run_id is None:
         raise ProjectValidationError(f"checkpoint.run_id is required when status is {status}")
+    seed = data.get("seed")
+    if seed is not None and (isinstance(seed, bool) or not isinstance(seed, int)):
+        raise ProjectValidationError("checkpoint.seed must be an integer")
+    temperature = data.get("temperature")
+    if temperature is not None and (
+        isinstance(temperature, bool)
+        or not isinstance(temperature, (int, float))
+        or not math.isfinite(temperature)
+    ):
+        raise ProjectValidationError("checkpoint.temperature must be a finite number")
+    _optional_id(data.get("resume_of"), "checkpoint.resume_of")
+    pending = data.get("pending")
+    if status == "waiting_response":
+        pending = _mapping(pending, "checkpoint.pending")
+        _nonempty(pending.get("key"), "checkpoint.pending.key")
+        _nonempty(pending.get("response_path"), "checkpoint.pending.response_path")
+        for field in ("request_path", "prompt_hash", "purpose"):
+            if pending.get(field) is not None:
+                _nonempty(pending[field], f"checkpoint.pending.{field}")
+    elif pending is not None:
+        raise ProjectValidationError("checkpoint.pending is only valid while waiting_response")
     _timestamp(data.get("created_at"), "checkpoint.created_at")
     _timestamp(data.get("updated_at"), "checkpoint.updated_at")
     error = data.get("error")

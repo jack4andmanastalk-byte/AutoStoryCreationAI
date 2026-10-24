@@ -21,6 +21,20 @@ class ProviderError(RuntimeError):
     """Raised when a provider cannot return usable text."""
 
 
+class ResponsePendingError(ProviderError):
+    """The provider has recorded a request but its response is not ready yet."""
+
+    def __init__(
+        self, message: str, *, key: str, response_path: str,
+        request: "GenerationRequest | None" = None,
+    ):
+        super().__init__(message)
+        self.key = key
+        self.response_path = response_path
+        self.prompt_hash = request.prompt_hash if request is not None else None
+        self.purpose = request.purpose if request is not None else None
+
+
 def digest(text: str) -> str:
     """Short, stable hash used for prompt and response identity."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
@@ -120,6 +134,14 @@ class CommandProvider:
         latency = int((time.monotonic() - started) * 1000)
         if completed.returncode != 0:
             detail = (completed.stderr or "").strip().splitlines()[-1:] or ["no stderr"]
+            if completed.returncode == 3 and detail[0].startswith("NEED RESPONSE key="):
+                import re
+                match = re.fullmatch(r"NEED RESPONSE key=(\S+) file=(.+)", detail[0])
+                if match:
+                    raise ResponsePendingError(
+                        detail[0], key=match.group(1), response_path=match.group(2),
+                        request=request,
+                    )
             raise ProviderError(
                 f"provider exited {completed.returncode}: {detail[0]}")
 
