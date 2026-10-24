@@ -100,6 +100,22 @@ def test_each_document_reports_attempts_and_status(task, responses, tmp_path):
     assert docs["brief"]["attempts"] == 1
 
 
+def test_brief_prompt_matches_the_mechanical_element_and_axis_checks(
+        task, responses, tmp_path):
+    provider = StubProvider({"design:brief": [responses["design:brief:t01"]]})
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    build_design(task, provider, ledger, canon, prompt_dir=PROMPTS, docs=("brief",))
+
+    prompt = provider.calls[0].prompt
+    assert "一字一句そのまま" in prompt
+    assert "structure / character / world" in prompt
+    assert "10 字以上" in prompt
+    report = json.loads((ledger.path / "design" / "brief.report.json"
+                         ).read_text(encoding="utf-8"))
+    assert report["prompt"]["version"] == "1.1"
+
+
 def test_unknown_document_is_a_programmer_error(task, responses, tmp_path):
     from asc.pipeline import DesignError
     ledger = make_ledger(tmp_path)

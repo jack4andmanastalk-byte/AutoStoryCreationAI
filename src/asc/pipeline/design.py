@@ -44,12 +44,12 @@ REPAIR_SEVERITIES = {"high", "medium"}
 DESIGN_SCHEMAS = {
     "brief": """\
 {
-  "logline": "一文のログライン（20〜300字。四要素の語を使う）",
+  "logline": "一文のログライン（20〜300字。elements の各文字列を一字一句そのまま含める）",
   "premise": "前提の要約",
   "theme": "主題を対立命題の形で（例: 務め対情）",
   "elements": {"who": "誰", "where": "どこ", "wants": "望み", "obstacle": "妨げ"},
   "similar": [
-    {"title": "類似作の題名", "axis": "差分の軸", "difference": "何が違うか"}
+    {"title": "類似作の題名", "axis": "structure / character / world のいずれか", "difference": "10字以上の差分"}
   ],
   "prohibitions": [
     {"rule": "禁止条件", "check_ja": "後工程での確認方法"}
