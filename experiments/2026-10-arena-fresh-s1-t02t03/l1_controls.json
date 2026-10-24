@@ -1,0 +1,301 @@
+{
+  "schema": "arena-l1-control-report-v1",
+  "scope": "L1 only; descriptive and G2 reference values, not protocol-v1 passage or semantic quality",
+  "metric_note": "Harness chars include {{...}} markers. run_chars_excluding_markers follows run_experiment.py. Control texts have no markers.",
+  "patterns_path": "harness/patterns.yaml",
+  "patterns_sha256": "96e5352332fa434564c49b7194b0ab9242d10c119e6df71e830587c28a77ab2e",
+  "controls_path": "benchmarks/protocol-v1/controls.json",
+  "controls_sha256": "e87059f877acf861ef7d3d1d51777b3510df687a94f3b3f8f5a8f614d727a131",
+  "runs": {
+    "t02": {
+      "documents": 3,
+      "harness_chars_including_markers": 3352,
+      "dialogue_ratio": 0.023,
+      "sentence_length_cv": 0.35,
+      "mean_paragraph_chars": 1117.3,
+      "forbidden_hits": 0,
+      "forbidden_per_10k_chars": 0.0,
+      "forbidden_evidence": [],
+      "label": "t02-s1-s0",
+      "task": "t02",
+      "run_id": "20261024T141921Z-t02-s1-s0-39192327",
+      "run_dir": "runs/arena-fresh-s1-t02t03/20261024T141921Z-t02-s1-s0-39192327",
+      "run_chars_excluding_markers": 3141,
+      "must_include_rate": 1.0,
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "design_repairs": 0,
+      "design_first_attempt_findings": 0,
+      "provider_requests": 12,
+      "response_provenance": {
+        "counts": {
+          "fresh": 12
+        },
+        "reused_source_run_ids": []
+      },
+      "prompt_hashes": {
+        "design-brief": "d3896b1f827382b0",
+        "design-character": "e4bffc2ee9db74b2",
+        "design-history": "5c7d40abddc6b3b8",
+        "design-plot": "d5889483d2b77e7f",
+        "design-relation": "f8c3e64187631141",
+        "design-repair": "24400eb90fe44e64",
+        "design-scene": "444740c2bfca082c",
+        "design-voice": "bf9880f17ffb484d",
+        "design-world": "16abef1d5aef1eeb",
+        "design:brief": "1675f686fd255e0d",
+        "design:character": "3ba3fbc1fa36817d",
+        "design:history": "754dbe20809f8d79",
+        "design:plot": "8ca58c4baff9b571",
+        "design:relation": "d0051d304b6a4d8e",
+        "design:scene": "07f1dd4fb463cf69",
+        "design:voice": "49a0bd49dce3a30d",
+        "design:world": "3197dec19fbfd6f2",
+        "draft-chapter": "551fa054b7f58ec0",
+        "draft:ch01": "9fdac91de3491b36",
+        "draft:ch02": "23b6b5e37138311a",
+        "draft:ch03": "b7654994fcf0158c",
+        "plan": "6161a879a3a7f3c0",
+        "plan-canon": "d5efcf43e513e63c",
+        "plan-repair": "4b4307af6b4381cb"
+      },
+      "manifest_git_commit": "7433e1fe5421ea65891c01da0101494fc7b1621e",
+      "task_avoid_hits": {
+        "悪魔との契約": 0,
+        "魂を売る": 0
+      }
+    },
+    "t03": {
+      "documents": 3,
+      "harness_chars_including_markers": 3403,
+      "dialogue_ratio": 0.018,
+      "sentence_length_cv": 0.311,
+      "mean_paragraph_chars": 1134.3,
+      "forbidden_hits": 0,
+      "forbidden_per_10k_chars": 0.0,
+      "forbidden_evidence": [],
+      "label": "t03-s1-s0",
+      "task": "t03",
+      "run_id": "20261024T141921Z-t03-s1-s0-cab323d1",
+      "run_dir": "runs/arena-fresh-s1-t02t03/20261024T141921Z-t03-s1-s0-cab323d1",
+      "run_chars_excluding_markers": 3161,
+      "must_include_rate": 1.0,
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "design_repairs": 0,
+      "design_first_attempt_findings": 0,
+      "provider_requests": 12,
+      "response_provenance": {
+        "counts": {
+          "fresh": 12
+        },
+        "reused_source_run_ids": []
+      },
+      "prompt_hashes": {
+        "design-brief": "d3896b1f827382b0",
+        "design-character": "e4bffc2ee9db74b2",
+        "design-history": "5c7d40abddc6b3b8",
+        "design-plot": "d5889483d2b77e7f",
+        "design-relation": "f8c3e64187631141",
+        "design-repair": "24400eb90fe44e64",
+        "design-scene": "444740c2bfca082c",
+        "design-voice": "bf9880f17ffb484d",
+        "design-world": "16abef1d5aef1eeb",
+        "design:brief": "059fb838d2756026",
+        "design:character": "ab6a59df6d67ad05",
+        "design:history": "0a8a090ec830ba95",
+        "design:plot": "8e4d01061755a848",
+        "design:relation": "b7cf7a419c457fee",
+        "design:scene": "57ef4b2934d7c0e6",
+        "design:voice": "f8f14308c9d70695",
+        "design:world": "1afaadadd8de0d40",
+        "draft-chapter": "551fa054b7f58ec0",
+        "draft:ch01": "5a9f54d201b83ea0",
+        "draft:ch02": "75fae4123d42d37b",
+        "draft:ch03": "6b75a0f970782c4b",
+        "plan": "8d10fb0bbbf7293f",
+        "plan-canon": "d5efcf43e513e63c",
+        "plan-repair": "4b4307af6b4381cb"
+      },
+      "manifest_git_commit": "7433e1fe5421ea65891c01da0101494fc7b1621e",
+      "task_avoid_hits": {
+        "タイムマシン": 0,
+        "並行世界": 0
+      }
+    }
+  },
+  "controls": {
+    "t02": [
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 4121,
+        "dialogue_ratio": 0.0,
+        "sentence_length_cv": 0.779,
+        "mean_paragraph_chars": 76.3,
+        "forbidden_hits": 1,
+        "forbidden_per_10k_chars": 2.427,
+        "forbidden_evidence": [
+          {
+            "id": "stacked_hedge",
+            "severity": "low",
+            "message_ja": "推量の重ね掛け。視点人物の判断を一つに絞る。",
+            "pattern": "(かもしれない可能性|ような気がする|と思われるだろう)",
+            "match": "ような気がする",
+            "evidence": {
+              "path": "t02-1.txt",
+              "line": 89
+            }
+          }
+        ],
+        "label": "aozora:053158",
+        "task": "t02",
+        "title": "日没の幻影",
+        "sha256": "8a79b0c13998baffd6b80e37000ef2b83f0fa3bbfeb7c0b2a4427e8fac002b30",
+        "frozen_chars": 4121,
+        "text_path": "build/controls/texts/t02-1.txt"
+      },
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 3606,
+        "dialogue_ratio": 0.0,
+        "sentence_length_cv": 0.661,
+        "mean_paragraph_chars": 450.8,
+        "forbidden_hits": 3,
+        "forbidden_per_10k_chars": 8.319,
+        "forbidden_evidence": [
+          {
+            "id": "meta_summary",
+            "severity": "low",
+            "message_ja": "地の文での要約・解説。場面で示すか、削る。",
+            "pattern": "(つまり|要するに|まとめると)",
+            "match": "つまり",
+            "evidence": {
+              "path": "t02-2.txt",
+              "line": 5
+            }
+          },
+          {
+            "id": "meta_summary",
+            "severity": "low",
+            "message_ja": "地の文での要約・解説。場面で示すか、削る。",
+            "pattern": "(つまり|要するに|まとめると)",
+            "match": "つまり",
+            "evidence": {
+              "path": "t02-2.txt",
+              "line": 13
+            }
+          },
+          {
+            "id": "meta_summary",
+            "severity": "low",
+            "message_ja": "地の文での要約・解説。場面で示すか、削る。",
+            "pattern": "(つまり|要するに|まとめると)",
+            "match": "つまり",
+            "evidence": {
+              "path": "t02-2.txt",
+              "line": 13
+            }
+          }
+        ],
+        "label": "aozora:000361",
+        "task": "t02",
+        "title": "幻談",
+        "sha256": "fd0b99573103dc85a32aff4382d9b857fadf264afd15cdf2fccc7596d51790ad",
+        "frozen_chars": 3606,
+        "text_path": "build/controls/texts/t02-2.txt"
+      },
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 3882,
+        "dialogue_ratio": 0.539,
+        "sentence_length_cv": 0.672,
+        "mean_paragraph_chars": 485.2,
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "forbidden_evidence": [],
+        "label": "aozora:048129",
+        "task": "t02",
+        "title": "夢がたり",
+        "sha256": "5bb0f016c07c379c9bae1c397335d7012694af3a30fd4c9c8a43f4e6ab9eeec6",
+        "frozen_chars": 3882,
+        "text_path": "build/controls/texts/t02-3.txt"
+      }
+    ],
+    "t03": [
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 4028,
+        "dialogue_ratio": 0.122,
+        "sentence_length_cv": 0.5,
+        "mean_paragraph_chars": 183.1,
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "forbidden_evidence": [],
+        "label": "aozora:056243",
+        "task": "t03",
+        "title": "妖氛録",
+        "sha256": "bc9bca817e74cd6496541ac2d43419e6009f15857a461bfc06e9e9b713a91d56",
+        "frozen_chars": 4028,
+        "text_path": "build/controls/texts/t03-1.txt"
+      },
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 4194,
+        "dialogue_ratio": 0.039,
+        "sentence_length_cv": 0.93,
+        "mean_paragraph_chars": 63.5,
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "forbidden_evidence": [],
+        "label": "aozora:043224",
+        "task": "t03",
+        "title": "雪霊記事",
+        "sha256": "04cc46884c1b611d41d5c8121a8814ea820605df3c0a1f2a1020391ad4c7591f",
+        "frozen_chars": 4194,
+        "text_path": "build/controls/texts/t03-2.txt"
+      },
+      {
+        "documents": 1,
+        "harness_chars_including_markers": 3966,
+        "dialogue_ratio": 0.01,
+        "sentence_length_cv": 0.623,
+        "mean_paragraph_chars": 495.8,
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "forbidden_evidence": [],
+        "label": "aozora:058540",
+        "task": "t03",
+        "title": "西班牙犬の家 （夢見心地になることの好きな人々の為めの短篇）",
+        "sha256": "b7998c686fc9f4ba36067299aaffc1207479f1a0fa01402a5e4bfa090ec6f986",
+        "frozen_chars": 3966,
+        "text_path": "build/controls/texts/t03-3.txt"
+      }
+    ]
+  },
+  "control_median_forbidden_per_10k_chars": {
+    "t02": 2.427,
+    "t03": 0.0
+  },
+  "g2_reference_only": {
+    "t02": {
+      "must_include_at_least_0_9": true,
+      "forbidden_at_or_below_control_median": true,
+      "reference_condition_met": true,
+      "g2_pass_claimed": false,
+      "reason": "G5 is unmet; this is a one-cell L1 reference, not protocol-v1 passage."
+    },
+    "t03": {
+      "must_include_at_least_0_9": true,
+      "forbidden_at_or_below_control_median": true,
+      "reference_condition_met": true,
+      "g2_pass_claimed": false,
+      "reason": "G5 is unmet; this is a one-cell L1 reference, not protocol-v1 passage."
+    }
+  },
+  "g5": "not_met: Arena model version is unversioned and sessions are not independent",
+  "l2_l3": "frozen_not_measured"
+}
