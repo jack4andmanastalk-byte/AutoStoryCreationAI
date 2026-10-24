@@ -1,0 +1,27 @@
+# seed-02 の受け入れデモ: 所見 0 件の世界規則。
+# 照合先は harness/cases/demo/canon（場所=灯台・王都・港、章=ch01〜ch05）。
+axioms:
+  - 灯りの火は絶やしてはならない。絶えた夜に失われた船は戻らない。
+rules:
+  - id: R-01
+    statement: 灯りを分けるには、分け手の灯台の火を半分にする。
+    cost: 分け手の灯台の照射範囲が半減し、嵐の夜は船が見えなくなる。
+    constraint: 分け火は一夜しか保たない。
+    exception: 王都の港長が認めた緊急時のみ、全量のまま分けられる。
+    exception_condition: 港長の署名入り命令書があり、翌朝までに火を返すこと。
+  - id: R-02
+    statement: 鍵の貸借は灯台守の帳面に記す。記さない貸借は無効。
+    cost: 帳面への記入には灯台守と借り手の立会いが要り、半日を要する。
+institutions:
+  - name: 灯台守組合
+    role: 鍵の貸借の立会いと帳面の保管。
+  - name: 王都の港
+    role: 緊急時の分け火の許可。
+geography: [灯台, 王都, 港]
+disclosure:
+  - info: 灯りの火を絶やしてはいけない掟
+    chapter: ch01
+  - info: 鍵の貸借には帳面への記入が要る
+    chapter: ch02
+  - info: 緊急時の分け火の例外
+    chapter: ch03

@@ -1,6 +1,6 @@
 ---
 name: draft-chapter
-version: "1.0"
+version: "1.1"
 ---
 あなたは短編小説の執筆担当です。次の設定台帳（canon）に矛盾を作らずに、$chapters 章構成のうち $chapter_index 章目だけを書いてください。
 
@@ -14,6 +14,9 @@ version: "1.0"
 
 ## 設定台帳
 $canon
+
+## この章の設計メモ
+$design
 
 ## 前の章の終わり
 $prior

@@ -1,0 +1,27 @@
+# seed-12 の不良デモ: 4 検査すべてを fail にする仕込み。
+source_title: 灯台の鍵
+target_medium: 舞台
+functions:
+  - id: fn-a
+    kind: mystery
+    description: ""
+  - id: fn-b
+    kind: info
+    description: 置き去りの機能
+mappings:
+  - function: fn-a
+    means: ""
+    newcomer: ""
+    existing: ""
+  - function: fn-ghost
+    means: 舞台装置
+    newcomer: 説明する
+    existing: 再現する
+deletions:
+  - function: fn-a
+    reason: ""
+    substitute: ""
+rights:
+  source: ""
+  scope: ""
+  status: unknown

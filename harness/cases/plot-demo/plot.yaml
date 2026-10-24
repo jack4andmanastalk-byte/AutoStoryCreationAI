@@ -1,0 +1,37 @@
+# seed-06 の受け入れデモ: 所見 0 件の筋立て。
+# 照合先は harness/cases/demo/canon（ch01～ch05、fs-001～fs-003）。
+logline: 灯台守の娘が鍵の真相を追い、自分の選択で灯りを守る
+acts:
+  - id: setup
+    chapters: [ch01, ch02]
+    question: 鍵を追う資格は誰の手にあるか
+  - id: confrontation
+    chapters: [ch03, ch04]
+    question: 記録と情のどちらを取るか
+  - id: resolution
+    chapters: [ch05]
+    question: 自分の選択で灯りを守れるか
+turns:
+  - id: t1
+    chapter: ch01
+    choice_ja: アリアは父の命令に背き、鍵の借り手を確かめに行く
+    point_of_no_return: 革袋を持ち出した時点で引き返せない
+  - id: t2
+    chapter: ch03
+    choice_ja: アリアは帳面の一頁を見て、疑いを記録に変える
+  - id: t3
+    chapter: ch05
+    choice_ja: アリアは灯りの番を取り、鍵の返却を後回しにする
+subplots:
+  - id: ledger
+    beats: [帳面の写しの発見, 組合への届け出, 帳面の返却]
+    converges: ch03 で本筋の疑いと交わる
+ending:
+  kind: bittersweet
+  summary: 鍵は返るが、借り手の死の真相は残る。アリアは灯りを選ぶ
+  aftertaste_ja: 守られた灯りと、残された問い
+unresolved:
+  - item: 借り手が鍵を借りた理由
+    foreshadowing: fs-001
+  - item: 王の病の行方
+    intentional: true

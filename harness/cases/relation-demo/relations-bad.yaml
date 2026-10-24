@@ -1,0 +1,22 @@
+# seed-05 の不良デモ: 6 検査すべてを fail にする仕込み。
+pairs:
+  - a: aria
+    b: zorro
+    public: ""
+    stakes: ""
+changes:
+  - pair: [aria, celia]
+    chapter: ch99
+    trigger: ""
+    after: ""
+silences:
+  - chapter: ch99
+    who: zorro
+    unsaid_ja: ""
+knowledge:
+  - character: boris
+    fact: F-07
+    state: unknown
+  - character: zorro
+    fact: F-00
+    state: maybe

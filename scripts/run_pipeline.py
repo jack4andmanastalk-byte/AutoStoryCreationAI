@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Run the generation pipeline for one frozen task.
 
-    # S1: premise -> canon -> three chapters, then audit
-    python3 scripts/run_pipeline.py --task t01 --system s1 \
-        --provider scripted --script benchmarks/protocol-v1/fixtures/plan-demo.json \
+    # S1: premise -> canon -> design -> three chapters, then audit
+    python3 scripts/run_pipeline.py --task t01 --system s1 \\
+        --provider scripted --script benchmarks/protocol-v1/fixtures/plan-demo.json \\
         --out runs
 
     # S0: the same premise with a single prompt and no canon (the baseline)
-    python3 scripts/run_pipeline.py --task t01 --system s0 --provider scripted \
+    python3 scripts/run_pipeline.py --task t01 --system s0 --provider scripted \\
         --script benchmarks/protocol-v1/fixtures/draft-baseline-demo.json --out runs
 
 Every run writes ``runs/<run_id>/`` with the manifest (model, prompt hashes, git
@@ -28,8 +28,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
-    CommandProvider, DraftError, PlanError, ProviderError, RunLedger,
-    ScriptedProvider, TaskError, build_plan, build_story, canon_coverage,
+    CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
+    ScriptedProvider, TaskError, VoicePassError, build_design, build_plan,
+    build_revision, build_story, build_voice_pass, canon_coverage,
     load_scripted_responses, load_tasks,
 )
 from asc.story.canon import CanonError, load_canon  # noqa: E402
@@ -45,12 +46,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--task", required=True, help="task id, e.g. t01")
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
     parser.add_argument("--system", default="s1", choices=["s0", "s1", "s2", "s3"],
-                        help="s0 = single prompt, s1 = canon + chapters")
-    parser.add_argument("--stage", default="all", choices=["plan", "draft", "all"])
+                        help="s0 = single prompt, s1 = canon + design + chapters")
+    parser.add_argument("--stage", default="all",
+                        choices=["plan", "design", "draft", "all"])
+    parser.add_argument("--design", dest="design", action=argparse.BooleanOptionalAction,
+                        default=True,
+                        help="run the design stage for s1/s2/s3 (default: on; "
+                             "--no-design is for debugging and ablation only, "
+                             "never for experiment runs)")
     parser.add_argument("--provider", default="scripted", choices=["scripted", "command"])
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
     parser.add_argument("--canon", help="reuse an existing canon instead of planning")
+    parser.add_argument("--max-rounds", type=int, default=1,
+                        help="revision rounds for s2/s3 (default: 1)")
+    parser.add_argument("--voice", default=None,
+                        help="voice.yaml for the s3 voice pass "
+                             "(default: the run's design/voice.json, "
+                             "else a generic guide)")
     parser.add_argument("--model", default=None)
     parser.add_argument("--temperature", type=float, default=None,
                         help="default: 0.6 for planning, 0.8 for drafting")
@@ -61,6 +74,22 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report-only", action="store_true",
                         help="always exit 0 and report the gates (for demos and docs)")
     return parser.parse_args(argv)
+
+
+def _measure_text_dir(text_dir: Path, task) -> dict:
+    """Chars and must_include hits of the final text (after revise/voice)."""
+    import re
+
+    bodies = []
+    for path in sorted(text_dir.iterdir()):
+        if path.is_file() and path.suffix.lower() in {".md", ".txt"}:
+            bodies.append(path.read_text(encoding="utf-8"))
+    joined = "\n\n".join(bodies)
+    chars = len(re.sub(r"\s", "", re.sub(r"\{\{[^{}]*\}\}", "", joined)))
+    hits = {term: term in joined for term in task.must_include}
+    return {"chars": chars,
+            "must_include": {"hits": hits, "rate": round(
+                sum(hits.values()) / len(hits), 3) if hits else 1.0}}
 
 
 def make_provider(args: argparse.Namespace):
@@ -83,6 +112,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.system == "s0" and args.stage == "plan":
         print("error: s0 has no plan stage (the baseline gets no canon)", file=sys.stderr)
         return 2
+    if args.system == "s0" and args.stage == "design":
+        print("error: s0 has no design stage (the baseline gets no canon)", file=sys.stderr)
+        return 2
 
     try:
         provider = make_provider(args)
@@ -91,7 +123,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     temperature = args.temperature if args.temperature is not None else (
-        0.6 if args.stage == "plan" else 0.8)
+        0.6 if args.stage in {"plan", "design"} else 0.8)
 
     try:
         ledger = RunLedger.create(
@@ -112,6 +144,7 @@ def main(argv: list[str] | None = None) -> int:
         "stage": args.stage,
     }
     canon = None
+    design_ran = False
 
     # -- plan -------------------------------------------------------------
     if args.system != "s0" and args.stage in {"plan", "all"}:
@@ -146,6 +179,35 @@ def main(argv: list[str] | None = None) -> int:
             "checks_missing": coverage["missing"],
         }
 
+    # -- design -----------------------------------------------------------
+    if args.system != "s0" and args.stage in {"design", "all"}:
+        if canon is None:
+            if args.canon and args.stage == "design":
+                try:
+                    canon = load_canon(args.canon)
+                except CanonError as exc:
+                    print(f"error: {exc}", file=sys.stderr)
+                    return 2
+            else:
+                print("error: designing without a canon requires the plan stage "
+                      "or --canon", file=sys.stderr)
+                return 2
+        if not args.design:
+            summary["design"] = {"status": "skipped",
+                                 "reason": "--no-design (ablation/debugging only)"}
+        else:
+            try:
+                design = build_design(
+                    task, provider, ledger, canon, temperature=temperature,
+                    seed=args.seed,
+                )
+            except ProviderError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                print(f"run: {ledger.path}", file=sys.stderr)
+                return 2
+            summary["design"] = design.as_dict()
+            design_ran = True
+
     # -- draft ------------------------------------------------------------
     if args.stage in {"draft", "all"}:
         if args.system != "s0" and canon is None:
@@ -156,6 +218,7 @@ def main(argv: list[str] | None = None) -> int:
             draft = build_story(
                 task, provider, ledger, canon=canon, chapters=tasks.chapters,
                 temperature=temperature, seed=args.seed,
+                design_dir=(ledger.path / "design") if design_ran else None,
             )
         except DraftError as exc:
             print(f"error: {exc}", file=sys.stderr)
@@ -164,7 +227,46 @@ def main(argv: list[str] | None = None) -> int:
         summary["draft"] = draft.as_dict()
         summary["chars"] = draft.chars
 
-    # -- audit ------------------------------------------------------------
+    # -- revise (s2/s3) -----------------------------------------------------
+    if args.system in {"s2", "s3"} and args.stage in {"draft", "all"}:
+        if canon is None:
+            print("error: revision requires a canon (plan first, or --canon)",
+                  file=sys.stderr)
+            return 2
+        try:
+            revision = build_revision(
+                task, provider, ledger, canon, temperature=temperature,
+                seed=args.seed, max_rounds=args.max_rounds,
+            )
+        except RevisionError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            print(f"run: {ledger.path}", file=sys.stderr)
+            return 2
+        summary["revision"] = revision.as_dict()
+
+    # -- voice (s3) ---------------------------------------------------------
+    if args.system == "s3" and args.stage in {"draft", "all"}:
+        voice_path = args.voice
+        if voice_path is None:
+            designed = ledger.path / "design" / "voice.json"
+            if designed.is_file():
+                voice_path = str(designed)
+        try:
+            voice = build_voice_pass(
+                task, provider, ledger, canon, voice_path=voice_path,
+                temperature=temperature, seed=args.seed,
+            )
+        except (VoicePassError, ValueError, OSError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            print(f"run: {ledger.path}", file=sys.stderr)
+            return 2
+        summary["voice"] = voice.as_dict()
+
+    # -- final text stats (s2/s3 rewrite the draft, so re-measure) --------
+    if "draft" in summary and args.system in {"s2", "s3"}:
+        summary["final"] = _measure_text_dir(ledger.path / "text", task)
+
+    # -- audit (always against the final text) ------------------------------
     if canon is not None and args.stage in {"draft", "all"}:
         report = audit_texts(ledger.path / "canon", ledger.path / "text")
         ledger.write_json("audit.json", report)
@@ -177,9 +279,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- gates ------------------------------------------------------------
     gates: dict[str, bool] = {}
-    if "draft" in summary:
-        gates["must_include"] = summary["draft"]["must_include"]["rate"] >= 1.0
-        gates["length"] = summary["draft"]["chars"] >= tasks.target_chars[0]
+    text_stats = summary.get("final", summary.get("draft"))
+    if text_stats is not None:
+        gates["must_include"] = text_stats["must_include"]["rate"] >= 1.0
+        gates["length"] = text_stats["chars"] >= tasks.target_chars[0]
     if "audit" in summary:
         gates["no_high_severity"] = summary["audit"]["by_severity"].get("high", 0) == 0
         gates["all_checks_ran"] = summary["audit"]["checks_skipped"] == 0

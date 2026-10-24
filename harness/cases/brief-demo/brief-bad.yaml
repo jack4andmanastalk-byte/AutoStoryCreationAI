@@ -1,0 +1,20 @@
+# seed-01 の不良デモ: 6 検査すべてを fail にする仕込み。
+# EXPECTED.md に対応表がある。
+logline: 灯台の話。娘が出てくる。鍵の話でもある。とても面白い展開が待っている。
+elements:
+  who: 灯台守の娘
+  where: ""
+  wants: 宝を探す
+  obstacle: 嵐
+premise: 娘が鍵を追う話。
+theme: 家族の絆は大切だ
+similar:
+  - title: 灯台の物語
+    axis: feeling
+    difference: 似てる。
+prohibitions:
+  - rule: 陳腐な展開を避ける
+    check_ja: 頑張る。
+failure_questions:
+  - 面白くすること
+genre: 幻想

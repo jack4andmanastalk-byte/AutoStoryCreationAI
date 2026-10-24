@@ -1,0 +1,55 @@
+# seed-11 の受け入れデモ: 所見 0 件の分岐構造。
+# 分岐は自己完結（canon 不要）。
+start: n_start
+initial: []
+flags:
+  - id: has_key
+    meaning: 灯台の鍵を手に持つ
+nodes:
+  - id: n_start
+    kind: scene
+    summary: 灯台の朝。鍵の貸し借りを知る
+  - id: n_first
+    kind: choice
+    summary: 鍵を追うか、灯りの番に就くか
+    options:
+      - id: chase
+        label: 鍵を追う
+      - id: watch
+        label: 灯りの番に就く
+  - id: n_chase
+    kind: scene
+    summary: 借り手の足取りを追い、鍵を手にする
+  - id: n_watch
+    kind: scene
+    summary: 灯りの番に就き、夜を守る
+  - id: n_merge
+    kind: scene
+    summary: 夜。番小屋でボリスと落ち合う
+    merge_note: 鍵を持つ場合と持たない場合で会話が変わる。知識は帳面の写しで揃える
+  - id: n_last
+    kind: choice
+    summary: 帳面の金庫を開けるか、預けるか
+    options:
+      - id: open
+        label: 金庫を開ける
+        requires: [has_key]
+      - id: keep
+        label: 帳面を預けたままにする
+  - id: n_end_open
+    kind: ending
+    summary: 金庫を開ける結末
+    ending: 記録が開示され、借り手の死の真相が残る
+  - id: n_end_closed
+    kind: ending
+    summary: 預けたままの結末
+    ending: 記録は閉じたまま、灯りだけが守られる
+edges:
+  - {from: n_start, to: n_first}
+  - {from: n_first, to: n_chase, via: chase, sets: [has_key]}
+  - {from: n_first, to: n_watch, via: watch}
+  - {from: n_chase, to: n_merge}
+  - {from: n_watch, to: n_merge}
+  - {from: n_merge, to: n_last}
+  - {from: n_last, to: n_end_open, via: open}
+  - {from: n_last, to: n_end_closed, via: keep}

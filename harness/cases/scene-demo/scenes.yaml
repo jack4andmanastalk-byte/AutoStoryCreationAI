@@ -1,0 +1,83 @@
+# seed-07 の受け入れデモ: 所見 0 件の場面設計。
+# 照合先は harness/cases/demo/canon（ch01～ch05、F-07・F-09、fs-001～fs-003）。
+scenes:
+  - id: s01
+    chapter: ch01
+    purpose: 鍵の貸し借りという謎を置く
+    conflict: アリアは確かめたい。父の命令は止める
+    change: アリアが革袋を持ち出す
+    tension: curiosity
+    knowledge:
+      - character: aria
+        entry: []
+        gained: [F-09]
+    disclosure:
+      disclosed: [F-09]
+      withheld:
+        - fact: F-07
+          reason: 王の病はまだ読者に明かさない
+    foreshadows:
+      planted:
+        - id: fs-ledger-copy
+          payoff: ch03
+      paid: []
+  - id: s02
+    chapter: ch02
+    purpose: ボリスの沈黙に意味を持たせる
+    conflict: アリアは聞きたい。ボリスは言わない
+    change: 帳面の存在がほのめかされる
+    tension: suspense
+    knowledge:
+      - character: aria
+        entry: [F-09]
+        gained: []
+    disclosure:
+      disclosed: []
+      withheld:
+        - fact: F-07
+          reason: 預かり主の死と一緒に明かす
+    foreshadows:
+      planted: []
+      paid: []
+  - id: s03
+    chapter: ch03
+    purpose: 帳面の一頁で疑いを記録に変える
+    conflict: 開示か保身か。ボリスが選ぶ
+    change: 二人が記録を共有する共犯になる
+    tension: surprise
+    knowledge:
+      - character: boris
+        entry: [F-07]
+        gained: []
+    disclosure:
+      disclosed: [F-07]
+      withheld: []
+    foreshadows:
+      planted: []
+      paid: [fs-001]
+  - id: s04
+    chapter: ch04
+    purpose: 組合への届け出で期限を切る
+    conflict: 筋を通すか、情を取るか
+    change: 届け出の期限が決まる
+    tension: deadline
+    knowledge: []
+    disclosure:
+      disclosed: []
+      withheld: []
+    foreshadows:
+      planted: []
+      paid: []
+  - id: s05
+    chapter: ch05
+    purpose: 灯りを選ぶ決断で閉じる
+    conflict: 鍵の返却か、灯りの番か
+    change: アリアが灯りの番を取る
+    tension: quiet
+    knowledge: []
+    disclosure:
+      disclosed: []
+      withheld: []
+    foreshadows:
+      planted: []
+      paid: [fs-002]
