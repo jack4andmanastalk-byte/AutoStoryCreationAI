@@ -68,8 +68,8 @@ jobs:
       - name: Run the test suite
         run: python -m pytest tests -q
 
-      # The demo cases are the acceptance criteria of the seven skills; run them
-      # explicitly so a regression names the failing artifact in the log.
+      # The demo cases are the acceptance criteria of the thirteen skills; run
+      # them explicitly so a regression names the failing artifact in the log.
       - name: Audit the demo story (continuity-ledger)
         run: |
           python scripts/audit_continuity.py \
@@ -87,6 +87,23 @@ jobs:
             --canon harness/cases/demo/canon --quiet
           python scripts/check_voice.py --voice harness/cases/voice-demo/voice.yaml \
             --text harness/cases/voice-demo/text --fail-on none --quiet
+
+      - name: Check the design demos (character/relation/plot/scene/branch/adaptation)
+        run: |
+          python scripts/check_character.py \
+            --characters harness/cases/character-demo/characters.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_relation.py \
+            --relations harness/cases/relation-demo/relations.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_plot.py --plot harness/cases/plot-demo/plot.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_scene.py --scenes harness/cases/scene-demo/scenes.yaml \
+            --canon harness/cases/demo/canon --quiet
+          python scripts/check_branch.py \
+            --branches harness/cases/branch-demo/branches.yaml --quiet
+          python scripts/check_adaptation.py \
+            --adaptation harness/cases/adaptation-demo/adaptation.yaml --quiet
 
       - name: Run the revision demo (revision-loop)
         run: |

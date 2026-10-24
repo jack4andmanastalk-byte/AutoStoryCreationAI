@@ -1,0 +1,31 @@
+# seed-05 の受け入れデモ: 所見 0 件の関係網。
+# 照合先は harness/cases/demo/canon（人物 aria・boris・celia、事実 F-07・F-09、ch01～ch05）。
+pairs:
+  - a: aria
+    b: boris
+    public: 依頼人と無愛想な鍵屋
+    stakes: 鍵の返却を巡る駆け引き。互いに帳面の筋を知りたい
+    conflict: アリアは鍵を今すぐ取り返したい。ボリスは帳面の筋を通すまで返さない。両立しない
+  - a: boris
+    b: celia
+    public: 王都の組合を通じた顔見知り
+    stakes: 預かり物の処分権を巡る綱引き
+changes:
+  - pair: [aria, boris]
+    chapter: ch03
+    trigger: ボリスが帳面の一頁をアリアに見せる
+    after: 依頼人と鍵屋から、記録を共有する共犯へ
+silences:
+  - chapter: ch02
+    who: boris
+    unsaid_ja: 預かり主が死んだことを、まだアリアに言わない
+knowledge:
+  - character: boris
+    fact: F-07
+    state: knows
+  - character: aria
+    fact: F-07
+    state: unknown
+  - character: celia
+    fact: F-09
+    state: suspects

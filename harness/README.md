@@ -22,7 +22,13 @@ harness/
     ├── brief-demo/            # 企画核の良好／不良デモ（premise-brief）
     ├── world-demo/            # 世界規則の良好／不良デモ（world-rules）
     ├── history-demo/          # 年表の良好／不良デモ（history-timeline）
+    ├── character-demo/        # 人物核の良好／不良デモ（character-core）
+    ├── relation-demo/         # 関係網の良好／不良デモ（relationship-web）
+    ├── plot-demo/             # 筋立ての良好／不良デモ（plot-architecture）
+    ├── scene-demo/            # 場面設計の良好／不良デモ（scene-information）
     ├── voice-demo/            # 文体仕様＋2 章（4 件の仕込み、voice-style）
+    ├── branch-demo/           # 分岐構造の良好／不良デモ（interactive-branch）
+    ├── adaptation-demo/       # 翻案設計の良好／不良デモ（adaptation）
     └── revision-demo/         # 2 章＋パッチ（改稿で 2 件解消、revision-loop）
 ```
 

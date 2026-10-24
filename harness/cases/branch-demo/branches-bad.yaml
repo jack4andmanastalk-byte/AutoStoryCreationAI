@@ -1,0 +1,42 @@
+# seed-11 の不良デモ: 7 検査すべてを fail にする仕込み。
+start: n_start
+initial: [ghost_init]
+flags:
+  - id: has_key
+    meaning: ""
+  - id: never_set
+    meaning: どこでも設定されない旗
+nodes:
+  - id: n_start
+    kind: scene
+    summary: 開始
+  - id: n_first
+    kind: choice
+    summary: 選ぶ
+    options:
+      - {id: only, label: 進む}
+  - id: n_merge
+    kind: scene
+    summary: 合流
+  - id: n_trap
+    kind: scene
+    summary: 罠
+  - id: n_dead
+    kind: scene
+    summary: 行き止まり
+  - id: n_end
+    kind: ending
+    summary: 終わり
+    ending: ""
+  - id: n_orphan
+    kind: scene
+    summary: 孤立
+edges:
+  - {from: n_start, to: n_first}
+  - {from: n_start, to: n_merge}
+  - {from: n_start, to: n_trap}
+  - {from: n_first, to: n_merge, via: missing_option}
+  - {from: n_merge, to: n_ghost}
+  - {from: n_merge, to: n_end, requires: [never_set, ghost_flag]}
+  - {from: n_trap, to: n_trap}
+  - {from: n_end, to: n_start}

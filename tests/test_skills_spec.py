@@ -33,11 +33,17 @@ def split_frontmatter(text: str) -> tuple[dict, str]:
 #: The implemented skills. Adding a skill means adding it here, with its
 #: SKILL.md, references/, demo case and tests — never the name alone.
 EXPECTED_SKILLS = [
+    "adaptation",
+    "character-core",
     "continuity-ledger",
     "evaluation-harness",
     "history-timeline",
+    "interactive-branch",
+    "plot-architecture",
     "premise-brief",
+    "relationship-web",
     "revision-loop",
+    "scene-information",
     "voice-style",
     "world-rules",
 ]

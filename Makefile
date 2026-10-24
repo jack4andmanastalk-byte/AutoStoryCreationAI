@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan story story-s2 story-s3 baseline brief world history voice revise calibrate skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -89,6 +89,28 @@ history: ## check the history-timeline demo against the demo canon
 	$(RUN) scripts/check_history.py --history harness/cases/history-demo/history.yaml \
 		--canon harness/cases/demo/canon
 
+character: ## check the character-core demo against the demo canon
+	$(RUN) scripts/check_character.py --characters harness/cases/character-demo/characters.yaml \
+		--canon harness/cases/demo/canon
+
+relation: ## check the relationship-web demo against the demo canon
+	$(RUN) scripts/check_relation.py --relations harness/cases/relation-demo/relations.yaml \
+		--canon harness/cases/demo/canon
+
+plot: ## check the plot-architecture demo against the demo canon
+	$(RUN) scripts/check_plot.py --plot harness/cases/plot-demo/plot.yaml \
+		--canon harness/cases/demo/canon
+
+scene: ## check the scene-information demo against the demo canon
+	$(RUN) scripts/check_scene.py --scenes harness/cases/scene-demo/scenes.yaml \
+		--canon harness/cases/demo/canon
+
+branch: ## check the interactive-branch demo (self-contained)
+	$(RUN) scripts/check_branch.py --branches harness/cases/branch-demo/branches.yaml
+
+adaptation: ## check the adaptation demo (self-contained)
+	$(RUN) scripts/check_adaptation.py --adaptation harness/cases/adaptation-demo/adaptation.yaml
+
 voice: ## check the voice-style demo (4 seeded findings)
 	-$(RUN) scripts/check_voice.py --voice harness/cases/voice-demo/voice.yaml \
 		--text harness/cases/voice-demo/text --fail-on none
@@ -166,8 +188,11 @@ protocol-check: ## verify the frozen evaluation protocol and its task set
 skills-check: ## validate SKILL.md files and run every skill's tests
 	$(RUN) -m pytest tests/test_skills_spec.py tests/test_continuity.py \
 		tests/test_evaluation.py tests/test_premise_brief.py tests/test_world_rules.py \
-		tests/test_history_timeline.py tests/test_voice_style.py tests/test_revision_loop.py \
-		tests/test_pipeline_s2s3.py tests/test_calibration.py -q
+		tests/test_history_timeline.py tests/test_character_core.py \
+		tests/test_relationship_web.py tests/test_plot_architecture.py \
+		tests/test_scene_information.py tests/test_voice_style.py \
+		tests/test_revision_loop.py tests/test_interactive_branch.py \
+		tests/test_adaptation.py tests/test_pipeline_s2s3.py tests/test_calibration.py -q
 
 clean: ## remove the generated texts and PDFs
 	rm -rf data/raw data/pdf

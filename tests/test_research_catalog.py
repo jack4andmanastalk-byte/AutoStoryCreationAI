@@ -251,8 +251,11 @@ def test_implemented_seeds_point_at_existing_files(seeds):
     implemented = [s for s in seeds if s["status"] == "implemented"]
     assert {s["id"] for s in implemented} == {
         "seed-01-premise-brief", "seed-02-world-rules",
-        "seed-03-history-timeline", "seed-08-continuity-ledger",
+        "seed-03-history-timeline", "seed-04-character-core",
+        "seed-05-relationship-web", "seed-06-plot-architecture",
+        "seed-07-scene-information", "seed-08-continuity-ledger",
         "seed-09-voice-style", "seed-10-revision-loop",
+        "seed-11-interactive-branch", "seed-12-adaptation",
         "seed-13-evaluation-harness"}
     for seed in implemented:
         impl = seed["implementation"]

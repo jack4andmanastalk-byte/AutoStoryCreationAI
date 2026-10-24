@@ -1,0 +1,38 @@
+# seed-12 の受け入れデモ: 所見 0 件の翻案設計。
+# 翻案は自己完結（canon 不要）。題材は架空の短編「灯台の鍵」の舞台化。
+source_title: 灯台の鍵（架空の短編）
+target_medium: 舞台
+functions:
+  - id: fn-key-mystery
+    kind: info
+    description: 鍵の貸し借りという謎の提示
+  - id: fn-ledger-trust
+    kind: emotion
+    description: 帳面の一頁で生まれる信頼
+  - id: fn-lighthouse-duty
+    kind: relation
+    description: 灯りを守る務めの継承
+  - id: fn-night-watch
+    kind: tempo
+    description: 夜番の時間の緩急
+mappings:
+  - function: fn-key-mystery
+    means: 客席に鍵の束を見せる発端の身振り
+    newcomer: 台詞で貸し借りの関係を説明する
+    existing: 原作の革袋の描写を小道具で再現する
+  - function: fn-ledger-trust
+    means: 帳面の頁をめくる音と間
+    newcomer: 頁の内容を読み上げて共有する
+    existing: 原作の一節をそのまま読む
+  - function: fn-lighthouse-duty
+    means: 灯りの点滅と番の交代の所作
+    newcomer: 務めの内容を番の交代で見せる
+    existing: 原作の結末の台詞を残す
+deletions:
+  - function: fn-night-watch
+    reason: 舞台の上演時間に夜番の長さを収められない
+    substitute: fn-lighthouse-duty の番の交代の所作が時間の経過を担う
+rights:
+  source: 灯台の鍵（架空。著作者の許諾済みと想定）
+  scope: 舞台上演・配信
+  status: cleared

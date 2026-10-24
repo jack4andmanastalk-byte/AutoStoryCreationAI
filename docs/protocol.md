@@ -157,7 +157,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | L2 | 実装済み。**実モデル未接続、較正未実施** |
 | L3 | ラベル形式・κ・判定器一致率の計算まで実装済み。評定は未実施 |
 | 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S2 改稿・S3 文体は台本での配線検証のみ（`tests/test_pipeline_s2s3.py`）。実モデル未接続 |
-| スキル（7 種） | seed-01/02/03/08/09/10/13 が実装済み。残り 6 種（seed-04/05/06/07/11/12）は設計書のまま |
+| スキル（13 種） | seed-01〜13 すべて実装済み（構造検査のみ）。意味の判定（L2 較正）は未実施 |
 | L3 較正の道具 | 実装済み（`scripts/judge_pairs.py`、`scripts/calibrate_judge.py`、κ の fixture 検証）。評定は未実施 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |

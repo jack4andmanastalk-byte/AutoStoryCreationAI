@@ -1,0 +1,23 @@
+# seed-04 の不良デモ: 6 検査すべてを fail にする仕込み。
+characters:
+  - id: zorro
+    want: 強くなること
+    need: 強くなること
+    fear: ""
+    wound: ""
+    secret: ""
+    principle: ""
+    self_view: ""
+    others_view: []
+    predictions:
+      - situation: 敵が来たら
+        choice: 戦う
+    speech:
+      sample: 短い。
+      vocab: []
+      avoid: []
+    arc:
+      endpoint: ""
+      changed: []
+      unchanged: []
+    bans: []

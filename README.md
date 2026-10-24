@@ -11,7 +11,7 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 
 > 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
 > **Phase 1 — 創作知識の運用可能化**（進行中）、
-> **Phase 2 — スキルの実行可能化**（進行中: 7 スキル実装済み、S2/S3 配線済み。残り 6 種と言語統計は未着手）。
+> **Phase 2 — スキルの実行可能化**（進行中: 13 スキル実装済み、S2/S3 配線済み。L2 較正・対照群・言語統計は未着手）。
 > `research/` に、外部コーパスの選別・統一カタログ・スキル種を収録しています。
 
 ---
@@ -170,7 +170,7 @@ make research-check   # コミット済みカタログとの差分検査（CI �
 
 ### 4.2 実行可能なスキル（`skills/`・`harness/`）
 
-知識を読むだけの資料ではなく、**実行して判定できる形**にした 7 スキルです。
+知識を読むだけの資料ではなく、**実行して判定できる形**にした 13 スキルです。
 いずれも「決定論的に検査できる部分」と「意味の評価」を分離しています。
 
 | スキル | 何をするか | 実装 |
@@ -178,6 +178,12 @@ make research-check   # コミット済みカタログとの差分検査（CI �
 | [`skills/premise-brief/SKILL.md`](skills/premise-brief/SKILL.md) | 企画核（一文ログライン・主題・差分・禁止条件）が検証可能な形か検査する | `src/asc/brief/`、`scripts/check_brief.py` |
 | [`skills/world-rules/SKILL.md`](skills/world-rules/SKILL.md) | 世界の公理・規則とコスト・例外の条件・地理の対応を検査する | `src/asc/world/`、`scripts/check_world.py` |
 | [`skills/history-timeline/SKILL.md`](skills/history-timeline/SKILL.md) | 年表の年代順・因果参照・痕跡・正史と異説の分離を検査する | `src/asc/history/`、`scripts/check_history.py` |
+| [`skills/character-core/SKILL.md`](skills/character-core/SKILL.md) | 人物の WANT/NEED・視点の分離・選択の予測・口調・アークが設計書としてあるか検査する | `src/asc/character/`、`scripts/check_character.py` |
+| [`skills/relationship-web/SKILL.md`](skills/relationship-web/SKILL.md) | 関係の表向きと利害・両立しない目的・知識表・変化・沈黙を検査する | `src/asc/relation/`、`scripts/check_relation.py` |
+| [`skills/plot-architecture/SKILL.md`](skills/plot-architecture/SKILL.md) | 幕割り・転換点・副筋の合流・結末・未回収の棚卸しを検査する | `src/asc/plot/`、`scripts/check_plot.py` |
+| [`skills/scene-information/SKILL.md`](skills/scene-information/SKILL.md) | 場面の目的・緊張の型・知識の流れ・開示計画・伏線の対応を検査する | `src/asc/scene/`、`scripts/check_scene.py` |
+| [`skills/interactive-branch/SKILL.md`](skills/interactive-branch/SKILL.md) | 分岐の到達不能・行き止まり・罠・辿れない条件・合流の覚え書きを検査する | `src/asc/branch/`、`scripts/check_branch.py` |
+| [`skills/adaptation/SKILL.md`](skills/adaptation/SKILL.md) | 機能の翻訳・削除の理由と代替・両者への対応・権利の記録を検査する | `src/asc/adapt/`、`scripts/check_adaptation.py` |
 | [`skills/continuity-ledger/SKILL.md`](skills/continuity-ledger/SKILL.md) | canon（設定台帳）と本文マーカーから、死亡・知識・伏線・移動日数・年齢の矛盾を検出する | `src/asc/story/`、`scripts/audit_continuity.py` |
 | [`skills/voice-style/SKILL.md`](skills/voice-style/SKILL.md) | 視点の逸脱・自称の揺れ・禁止表現・サンプルからの乖離を報告する | `src/asc/style/`、`scripts/check_voice.py` |
 | [`skills/revision-loop/SKILL.md`](skills/revision-loop/SKILL.md) | 所見を批評に変え、パッチを当てて再監査し、前後を比較する | `src/asc/revision/`、`scripts/revise.py` |
@@ -189,8 +195,14 @@ make evaluate   # デモ作品と初稿を比較（L2 は記録済み判定を�
 make brief      # 企画核の検査デモ（良好 0 件／不良 6 検査 fail）
 make world      # 世界規則の検査デモ（canon 照合つき）
 make history    # 年表の検査デモ（canon 照合つき）
+make character  # 人物核の検査デモ（canon 照合つき）
+make relation   # 関係網の検査デモ（canon 照合つき）
+make plot       # 筋立ての検査デモ（canon 照合つき）
+make scene      # 場面設計の検査デモ（canon 照合つき）
 make voice      # 文体の検査デモ（4 件の仕込みを検出）
 make revise     # 改稿ループのデモ（批評→パッチ→再監査→比較）
+make branch     # 分岐構造の検査デモ（7 検査）
+make adaptation # 翻案設計の検査デモ（4 検査）
 make calibrate  # L2/L3 較正のデモ（κ=0.5 の fixture）
 make skills-check   # SKILL.md の仕様検査＋全スキルのテスト
 make protocol-check # 凍結した評価プロトコル（タスクセット・閾値）の検査
@@ -292,8 +304,7 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 ## 6.  次フェーズ候補
 
-* `research/program/skill_seeds.jsonl` の残り 6 種から `skills/` の `SKILL.md` を実装
-  （seed-01/02/03/08/09/10/13 は実装済み。次は seed-04/05/06/07 character・plot・scene）
+* 13 スキルの構造検査を S1 の Plan/Draft に接続する（設計書の検査を生成工程に組み込む）
 * 評価ハーネスの L2 を実モデルで較正する（`judge_pairs`＋`calibrate_judge` は実装済み。評定は未実施）
 * 対照群 30 作品の選定（G3/G4 の前提。青空文庫から長さを揃えて固定リスト化）
 * 固定版モデルでの本実験（10 題×3 seed×S0〜S3。`make pilot-model SYSTEMS="s0 s1 s2 s3"`）

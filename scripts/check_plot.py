@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Check plot architecture for structural defects (seed-06 plot-architecture).
+
+    python3 scripts/check_plot.py \\
+        --plot harness/cases/plot-demo/plot.yaml \\
+        --canon harness/cases/demo/canon
+
+Without --canon, the chapter/foreshadowing cross-references are weakened.
+Exit status: 0 = no finding at or above ``--fail-on``, 1 = finding found,
+2 = the plot file or the canon could not be loaded.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT / "src") not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+
+from asc.plot import (  # noqa: E402
+    PlotDocError, check_plot, load_plot, render_markdown,
+)
+from asc.story.canon import CanonError, load_canon  # noqa: E402
+
+SEVERITY_RANK = {"none": 99, "low": 2, "medium": 1, "high": 0}
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--plot", required=True,
+                        help="plot.yaml/json file or directory")
+    parser.add_argument("--canon", help="canon directory for cross-references (optional)")
+    parser.add_argument("--out", help="write the JSON report here")
+    parser.add_argument("--markdown", help="write a Markdown summary here")
+    parser.add_argument("--fail-on", choices=["none", "low", "medium", "high"],
+                        default="medium",
+                        help="exit 1 when a finding this severe is found (default: medium)")
+    parser.add_argument("--quiet", action="store_true")
+    args = parser.parse_args(argv)
+
+    try:
+        doc = load_plot(args.plot)
+        canon = load_canon(args.canon) if args.canon else None
+        report = check_plot(doc, canon)
+    except (PlotDocError, CanonError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    if args.out:
+        path = Path(args.out)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
+                        encoding="utf-8")
+    if args.markdown:
+        path = Path(args.markdown)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(render_markdown(report) + "\n", encoding="utf-8")
+
+    if not args.quiet:
+        print(json.dumps({"summary": report["summary"], "findings": [
+            {"check": f["check"], "severity": f["severity"],
+             "message_ja": f["message_ja"]} for f in report["findings"]]},
+            ensure_ascii=False, indent=2))
+
+    if args.fail_on == "none":
+        return 0
+    threshold = SEVERITY_RANK[args.fail_on]
+    worst = min((SEVERITY_RANK.get(f["severity"], 99) for f in report["findings"]),
+                default=99)
+    return 1 if worst <= threshold else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
