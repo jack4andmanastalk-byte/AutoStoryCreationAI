@@ -317,7 +317,11 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 ## 6.  次フェーズ候補
 
-* 対照群 30 作品の承認・確定（L1 の G2 にも使用）。候補本文の取得と機械検証を済ませ、[`controls.proposed.md`](benchmarks/protocol-v1/controls.proposed.md) / [`controls.proposed.json`](benchmarks/protocol-v1/controls.proposed.json) を作成済み。**現在は未承認・未凍結**。承認後に `select_controls.py freeze` を実行する（G3/G4 の再開を意味しない）
+対照群 30 作品は選定承認・凍結済みです（[`controls.proposed.md`](benchmarks/protocol-v1/controls.proposed.md)、
+[`controls.approved.json`](benchmarks/protocol-v1/controls.approved.json)、
+[`controls.json`](benchmarks/protocol-v1/controls.json)）。この承認は L1 の比較対象を
+決めるもので、G3/G4 の再開や人間による品質評定ではありません。
+
 * Arena の chat operator / relay による S0〜S3 の L1 パイロット（まず t01、その後 10 題×3 seed）。版を固定できないため、結果は探索的な参考値として記録する
 * L1 の失敗類型を根拠に、スキル／プロンプト／パイプラインを一つずつ変更し、同じ条件で再測定する
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）

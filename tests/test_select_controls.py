@@ -171,7 +171,7 @@ def test_freeze_requires_an_approver(tmp_path):
     assert "approved_by" in completed.stderr
 
 
-def test_committed_control_draft_is_unique_and_explicitly_unapproved():
+def test_committed_control_proposal_is_preserved_as_unapproved_snapshot():
     path = REPO_ROOT / "benchmarks" / "protocol-v1" / "controls.proposed.json"
     draft = json.loads(path.read_text(encoding="utf-8"))
     tasks = load_tasks(TASKS)
@@ -183,5 +183,33 @@ def test_committed_control_draft_is_unique_and_explicitly_unapproved():
     flat = [work_id for ids in draft["picks"].values() for work_id in ids]
     assert len(flat) == 30
     assert len(set(flat)) == 30
-    # An approval draft is not the frozen protocol input.
-    assert not (path.parent / "controls.json").exists()
+
+
+def test_frozen_controls_match_the_explicit_l1_selection_approval():
+    root = REPO_ROOT / "benchmarks" / "protocol-v1"
+    proposal = json.loads((root / "controls.proposed.json").read_text(encoding="utf-8"))
+    approved = json.loads((root / "controls.approved.json").read_text(encoding="utf-8"))
+    frozen = json.loads((root / "controls.json").read_text(encoding="utf-8"))
+    tasks = load_tasks(TASKS)
+
+    # Approval is for control selection only; it does not resume L2/L3 or
+    # represent a human quality/genre rating.
+    assert approved["status"] == "approved_for_l1_control_selection"
+    assert approved["approved_by"] == "Arena user (explicit control-selection approval)"
+    assert approved["approved_at"] == "2026-10-24T21:29:54+09:00"
+    assert approved["picks"] == proposal["picks"]
+    assert "L2/L3" in approved["approval_scope"]
+    assert frozen["approved_by"] == approved["approved_by"]
+    assert frozen["approved_at"] == approved["approved_at"]
+    assert frozen["frozen"]
+    assert frozen["rules"] == controls.RULES_VERSION
+
+    works = frozen["works"]
+    assert len(works) == 30
+    assert len({work["work_id"] for work in works}) == 30
+    assert all(3000 <= work["chars"] <= 4200 for work in works)
+    assert {work["kind"] for work in works} == {"full", "excerpt"}
+    for task in tasks.tasks:
+        selected = [work for work in works if work["task"] == task.id]
+        assert [work["work_id"] for work in selected] == approved["picks"][task.id]
+        assert all(work["control"] == task.control for work in selected)

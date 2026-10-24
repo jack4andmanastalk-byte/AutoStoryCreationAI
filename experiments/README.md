@@ -39,10 +39,12 @@ make experiment
 python3 scripts/run_experiment.py --id 2026-10-arena-l1-t01 \
   --tasks t01 --systems s0 s1 s2 s3 --seeds 0 \
   --provider command --model arena-agent-mode --model-version unversioned-2026-10-24 \
-  --command "python3 scripts/chat_operator.py --dir runs/operator/arena-l1-t01"
-# 未回答のプロンプトを書き出す（NEED RESPONSE で止まった後に実行）
+  --command "python3 scripts/chat_operator.py --dir runs/operator/arena-l1-t01" \
+  --runs runs/arena-l1-t01 --out build/experiments/2026-10-arena-l1-t01
+# 未回答のプロンプトを書き出す（初回は4件。回答がない間の失敗・exit 1は実験結果ではない）
 python3 scripts/relay_prompts.py export --dir runs/operator/arena-l1-t01
 # Arena で回答後: relay_prompts.py ingest → 同じ run_experiment を再実行
+# 全セル完了後にだけ --out experiments/2026-10-arena-l1-t01 へ変え、結果を保存する
 ```
 
 `--provider command` のアダプタは、標準入力の JSON（`GenerationRequest`）に対して

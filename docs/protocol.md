@@ -177,7 +177,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
 | 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。固定デモの再生のみ。**実モデルでの較正・追加開発は凍結** |
-| 対照群 30 作品 | 選定ツール実装済み（`scripts/select_controls.py`、`tests/test_select_controls.py`）。候補本文を取得し、30 作品・重複なし・権利/NDC/文字数の機械検査を通過。**[`controls.proposed.md`](../benchmarks/protocol-v1/controls.proposed.md) / [`controls.proposed.json`](../benchmarks/protocol-v1/controls.proposed.json) は未承認のドラフトで、`controls.json` は未作成。承認・凍結は未実施** |
+| 対照群 30 作品 | **選定承認・凍結済み**（2026-10-24）。[`controls.approved.json`](../benchmarks/protocol-v1/controls.approved.json) に利用者の明示的な選定承認を記録し、[`controls.json`](../benchmarks/protocol-v1/controls.json) を生成。30 作品・重複なし・権利/NDC/本文/3,000〜4,200 字を機械検査済み（full 3・excerpt 27）。[`controls.proposed.md`](../benchmarks/protocol-v1/controls.proposed.md) に承認記録と作品一覧を保存。L2/L3 や品質評定の再開ではない |
 
 この表は PR ごとに更新する。**「実装済み」と「検証済み」を混ぜて書かない。**
 
