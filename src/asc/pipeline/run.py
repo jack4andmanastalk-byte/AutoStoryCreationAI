@@ -66,18 +66,20 @@ class RunLedger:
     error: str | None = None
     usage: dict = field(default_factory=dict)
     repo_root: Path | None = None
+    revision_id: str | None = None
 
     @classmethod
     def create(cls, root: str | Path, *, task_id: str, system: str, seed: int,
                protocol_version: str, run_id: str | None = None,
                model: str | None = None, provider: str | None = None,
-               temperature: float | None = None) -> "RunLedger":
+               temperature: float | None = None,
+               revision_id: str | None = None) -> "RunLedger":
         root = Path(root)
         ledger = cls(
             root=root, run_id=run_id or make_run_id(task_id, system, seed),
             task_id=task_id, system=system, seed=seed,
             protocol_version=protocol_version, model=model, provider=provider,
-            temperature=temperature,
+            temperature=temperature, revision_id=revision_id,
         )
         ledger.path.mkdir(parents=True, exist_ok=False)
         return ledger
@@ -85,6 +87,13 @@ class RunLedger:
     @property
     def path(self) -> Path:
         return self.root / self.run_id
+
+    def request_context(self, **values) -> dict:
+        """Add optional revision namespacing without changing legacy request keys."""
+        context = dict(values)
+        if self.revision_id is not None:
+            context["revision_id"] = self.revision_id
+        return context
 
     @property
     def commit(self) -> str | None:

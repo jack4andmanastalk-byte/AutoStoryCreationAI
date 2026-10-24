@@ -37,6 +37,8 @@ class ChapterDraft:
     day: int | None = None
     location: str | None = None
     injected: tuple[str, ...] = ()
+    # Continuation uses this only for already persisted parent chapters.
+    preserve_text: bool = False
 
     @property
     def chars(self) -> int:
@@ -71,8 +73,11 @@ class Draft:
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
         for chapter in self.chapters:
-            (directory / f"{chapter.id}.md").write_text(
-                chapter.text.rstrip() + "\n", encoding="utf-8")
+            text = (
+                chapter.text if chapter.preserve_text
+                else chapter.text.rstrip() + "\n"
+            )
+            (directory / f"{chapter.id}.md").write_text(text, encoding="utf-8")
         return directory
 
     def must_include_hits(self) -> dict:
@@ -203,16 +208,24 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
                 prompt_dir: str | Path | None = None, temperature: float = 0.8,
                 max_tokens: int = 2500, seed: int = 0,
                 max_attempts: int = 2,
-                design_dir: str | Path | None = None) -> Draft:
+                design_dir: str | Path | None = None,
+                initial_drafts: tuple[ChapterDraft, ...] = ()) -> Draft:
     template = load_prompt("draft-chapter" if canon is not None else "draft-baseline",
                            prompt_dir)
     ledger.prompt_hashes[template.name] = template.digest
 
     plan = chapter_plan(canon, chapters)
-    drafts: list[ChapterDraft] = []
+    drafts: list[ChapterDraft] = list(initial_drafts)
+    if len(drafts) > len(plan):
+        raise DraftError("initial chapters exceed the requested chapter count")
+    expected_initial = [chapter["id"] for chapter in plan[:len(drafts)]]
+    if [chapter.id for chapter in drafts] != expected_initial:
+        raise DraftError("initial chapters are not the prefix of the new canon")
     warnings: list[str] = []
-    prior = ""
+    prior = drafts[-1].text[-400:] if drafts else ""
     for index, chapter in enumerate(plan, start=1):
+        if index <= len(drafts):
+            continue
         last_problems: list[str] = []
         produced: ChapterDraft | None = None
         if canon is not None:
@@ -226,8 +239,10 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
             request = GenerationRequest(
                 purpose=f"draft:{chapter['id']}", prompt=template.render(values),
                 temperature=temperature, max_tokens=max_tokens, seed=seed + index,
-                context={"task_id": task.id, "chapter": chapter["id"],
-                         "attempt": attempt, "system": ledger.system},
+                context=ledger.request_context(
+                    task_id=task.id, chapter=chapter["id"],
+                    attempt=attempt, system=ledger.system,
+                ),
             )
             try:
                 result = provider.generate(request)

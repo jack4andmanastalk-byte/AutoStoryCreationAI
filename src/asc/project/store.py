@@ -35,6 +35,7 @@ from .schema import (
     validate_id,
     validate_node,
     validate_project,
+    validate_revision,
     validate_spec,
 )
 
@@ -290,6 +291,56 @@ class ProjectStore:
         )
         return ProjectSnapshot(project=project, root_node=node, revision=revision)
 
+    def list_revisions(self, project_id: str, node_id: str) -> list[WorkNodeRevision]:
+        """Read all immutable revisions for a node in creation order."""
+        self.load_node(project_id, node_id)
+        revision_dir = self.node_dir(project_id, node_id) / "revisions"
+        revisions = []
+        for path in sorted(revision_dir.glob("*.json")):
+            revision = self._parse(path, WorkNodeRevision.from_dict)
+            if (
+                revision.id != path.stem
+                or revision.node_id != node_id
+                or revision.project_id != project_id
+            ):
+                raise ProjectCorruptError(f"{path}: revision identity does not match its path")
+            revisions.append(revision)
+        return sorted(revisions, key=lambda item: (item.created_at, item.id))
+
+    def save_revision(self, revision: WorkNodeRevision) -> None:
+        """Append an immutable revision and validate its optional parent runs."""
+        validate_revision(revision.to_dict())
+        with self.writer_lock(revision.project_id):
+            path = self.revision_path(
+                revision.project_id, revision.node_id, revision.id,
+            )
+            if path.exists():
+                existing = self._read_json(path)
+                if existing != revision.to_dict():
+                    raise ProjectValidationError("revision records are immutable")
+                return
+            if revision.parent_revision_id is not None:
+                parent = self.load_revision(
+                    revision.project_id, revision.node_id, revision.parent_revision_id,
+                )
+                if parent.id == revision.id:
+                    raise ProjectValidationError("revision cannot be its own parent")
+                for stage, run_id in revision.parent_runs.items():
+                    run_dir = self.project_dir(revision.project_id) / "runs" / run_id
+                    manifest = self._read_json(run_dir / "manifest.json")
+                    run_input = self._read_json(run_dir / "project-input.json")
+                    if (
+                        manifest.get("run_id") != run_id
+                        or manifest.get("status") != "ok"
+                        or manifest.get("task_id") != revision.node_id
+                        or run_input.get("revision_id") != parent.id
+                        or run_input.get("stage") != stage
+                    ):
+                        raise ProjectValidationError(
+                            f"parent run {run_id} does not belong to revision {parent.id}"
+                        )
+            _atomic_write_json(path, revision.to_dict())
+
     def save_project(self, project: WorkProject) -> None:
         """Atomically save project metadata while preserving its root identity."""
         validate_project(project.to_dict())
@@ -422,6 +473,7 @@ class ProjectStore:
         node = snapshot.root_node
         revision = snapshot.revision
         directory = self.project_dir(project_id)
+        revision_records = self.list_revisions(project_id, node.id)
         checkpoint_dir = self.node_dir(project_id, node.id) / "checkpoints"
         stages = {stage: "pending" for stage in DEFAULT_STAGES}
         checkpoints: dict[str, StageCheckpoint] = {}
@@ -500,6 +552,19 @@ class ProjectStore:
             "attempt_ids": attempt_ids,
             "root_node_id": node.id,
             "current_revision_id": revision.id,
+            "parent_revision_id": revision.parent_revision_id,
+            "parent_runs": dict(sorted(revision.parent_runs.items())),
+            "revision_ids": [item.id for item in revision_records],
+            "revisions": [
+                {
+                    "id": item.id,
+                    "parent_revision_id": item.parent_revision_id,
+                    "parent_runs": dict(sorted(item.parent_runs.items())),
+                    "spec_sha256": item.spec_sha256,
+                    "chapter_count": item.spec.chapter_count,
+                }
+                for item in revision_records
+            ],
             "spec_sha256": revision.spec_sha256,
             "spec": revision.spec.to_dict(),
             "created_at": project.created_at,

@@ -1,6 +1,15 @@
 """Persistent creative-project foundation (schema version 1)."""
 
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
+from .bundle import (
+    BUNDLE_TYPE,
+    BundleError,
+    ReplayBundle,
+    export_bundle,
+    restore_bundle,
+    verify_bundle,
+)
+from .continuation import ContinuationContext
 from .model import (
     ArtifactRef,
     ProjectSnapshot,
@@ -24,6 +33,9 @@ from .store import (
 
 __all__ = [
     "ArtifactRef",
+    "BUNDLE_TYPE",
+    "BundleError",
+    "ContinuationContext",
     "PROJECT_PROTOCOL",
     "PipelineInput",
     "ProjectCorruptError",
@@ -38,6 +50,7 @@ __all__ = [
     "ProjectSnapshot",
     "ProjectStore",
     "ProjectValidationError",
+    "ReplayBundle",
     "ResumeError",
     "ResumeProvider",
     "SCHEMA_VERSION",
@@ -47,4 +60,7 @@ __all__ = [
     "WorkNodeRevision",
     "WorkProject",
     "WorkSpec",
+    "export_bundle",
+    "restore_bundle",
+    "verify_bundle",
 ]

@@ -21,6 +21,10 @@ A response can declare ``provenance: {"origin": "fresh"}`` or
 counts these origins. Missing provenance stays ``unspecified``; it is never
 assumed to be fresh.
 
+Request keys retain their original format unless ``context.revision_id`` is
+present. Continuation requests insert that revision ID after the task ID, so a
+response from an earlier work revision cannot be mistaken for the new prompt.
+
 The ``--dir`` must not live under ``build/``: ``build/`` is scratch and is not
 kept across sessions, and losing ``responses/`` means paying for the same text
 twice. ``runs/operator/<name>`` is git-ignored and survives.
@@ -64,13 +68,18 @@ def request_key(request: dict) -> str:
     has to be able to find the file by name.
     """
     context = request.get("context") or {}
-    raw = "-".join([
+    parts = [
         str(context.get("system") or "none"),
         str(context.get("task_id") or "task"),
+    ]
+    if context.get("revision_id"):
+        parts.append(str(context["revision_id"]))
+    parts.extend([
         f"s{request.get('seed', 0)}",
         str(request.get("purpose") or "generate"),
         f"a{context.get('attempt', 1)}",
     ])
+    raw = "-".join(parts)
     return re.sub(r"[^0-9A-Za-z._-]+", "-", raw)
 
 

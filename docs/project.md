@@ -3,10 +3,10 @@
 `story_project.py` は、固定されたprotocol-v1 taskとは別に、任意のpremiseを持つ
 創作projectを永続化するための入口です。現在のschema versionは **1** です。
 
-現在は、projectの **作成・単一作品のS1生成・中断再開・operator pending確認・状態確認**
-ができます。S1生成はplan → design → draftのvertical sliceで、S2/S3改稿や品質監査は
-通りません。続編、入れ子作品は後のincrementです。既存の `run_pipeline.py` と
-厳密replayの動作は変更していません。
+現在は、projectの **作成・単一作品のS1生成・中断再開・continuation・replay bundle・
+operator pending確認・状態確認** ができます。S1生成はplan → design → draftのvertical sliceで、
+S2/S3改稿や品質監査は通りません。入れ子作品は後のincrementです。既存の `run_pipeline.py` と
+厳密replayの後方互換性は維持しています。
 
 ## 作成
 
@@ -108,6 +108,50 @@ ledgerが `ok` になった直後、checkpointを `done` にする前にprocess�
 呼ばず全応答をoffline再生する別機能です。resumeの一致は、モデルの独立再現性や作品品質を
 示すものではありません。
 
+## 完成後のcontinuation
+
+完成したrevisionにだけ、章を追加する新版を作れます。`--add-chapters` は追加数、
+`--chapters` は新版の総章数です（どちらも省略すると1章追加）。
+
+```bash
+python3 scripts/story_project.py continue prj-seaside \
+  --add-chapters 1 --provider command --command "<provider command>"
+```
+
+continuationはresumeとは別の操作です。旧revision・旧run・旧本文を書き換えず、
+`parent_revision_id` と各stageの `parent_runs` を持つ新しいWorkNodeRevisionへcurrentを進めます。
+新版のplan/designは新しいrunとして作り、draftは旧章をbyte-identicalに新runへ引き継ぎ、
+追加章だけを生成します。plan promptには前版のcompact canonを渡し、旧本文全文は渡しません。
+旧canonの既存entryや章の時系列・場所を変更する応答は拒否します。
+
+continuationのrequest keyにはrevision IDが含まれるため、同じoperator directoryでも旧版の
+responseを新版へ誤適用しません。既存のrevision IDを持たないrequest keyは従来どおりです。
+新版が中断した場合は、通常の `resume` で同じ新版を再開できます。
+
+```bash
+python3 scripts/story_project.py resume prj-seaside \
+  --provider command --command "<provider command>"
+```
+
+## replay bundleの外部保存
+
+project metadata、全revision、checkpoint、全runのmanifest・prompt/response・生成artifactを
+一つの外部directoryへexportできます。lockと一時fileだけを除外し、創作資料はGitへ入れません。
+
+```bash
+python3 scripts/story_project.py bundle export prj-seaside \
+  --out /external/replay/prj-seaside.bundle --json
+python3 scripts/story_project.py bundle verify \
+  /external/replay/prj-seaside.bundle --json
+python3 scripts/story_project.py --root /external/restored-projects \
+  bundle restore /external/replay/prj-seaside.bundle --json
+```
+
+`bundle.json` は全payload fileのrelative path・size・SHA-256を保持します。verifyはhashと
+file一覧を再計算し、さらに復元先と同じ `ProjectStore` の参照・artifact検査を行います。
+restoreは既存projectを上書きせず、一時directoryで検査してから最終pathへ配置します。
+bundle自体を変更した場合はverify/restoreを拒否します。
+
 ## 状態確認
 
 ```bash
@@ -119,9 +163,10 @@ WorkSpec、設定SHA-256を返します。初期状態は `not_started` で、
 `plan`・`design`・`draft` はいずれも `pending` です。生成後は `checkpoints` に
 各stageのrun ID・状態・seed・temperature・artifact参照が入り、3 stageが完了すると
 `complete` になります。`attempt_id` は最新のcheckpointが属するattempt、
-`attempt_ids` は同一revisionに関わった全attemptです。`artifact_refs` から、現在の章本文と
-設計資料を内容hash付きで辿れます。`pending` には、待機中のrequest key、project/node/stage、
-request/response path、response fileの有無が集約されます。
+`attempt_ids` は同一revisionに関わった全attemptです。`revision_ids` / `revisions` には
+旧版を含む版履歴、currentの `parent_revision_id` / `parent_runs` にはcontinuationの参照が入ります。
+`artifact_refs` から、現在の章本文と設計資料を内容hash付きで辿れます。`pending` には、
+待機中のrequest key、project/node/stage、request/response path、response fileの有無が集約されます。
 
 既定の保存先は `runs/projects/` です。testや外部保存では、**subcommandの前**に
 `--root` を指定できます。
@@ -145,8 +190,9 @@ runs/projects/<project_id>/
 
 - `project.json`: project ID、root node、作成・更新時刻。
 - `current.json`: nodeの現在のrevisionへの小さな参照。
-- `<revision_id>.json`: 完全なWorkSpec、そのSHA-256、版付きartifact参照。
-- `checkpoints/<stage>.json`: stage状態、attempt、run、版付きartifact参照。
+- `<revision_id>.json`: 完全なWorkSpec、そのSHA-256、版付きartifact参照。continuation版は
+  `parent_revision_id` と親stageの `parent_runs` も持ち、旧recordは追記・上書きしない。
+- `checkpoints/<stage>.json`: current revisionのstage状態、attempt、run、版付きartifact参照。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json` もあり、旧runは別directoryに残る。
 - `artifacts/`: 後の編纂出力などのための領域。S1の生成物は各runから直接参照します。
@@ -168,6 +214,9 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 - runは不変記録、checkpointは現在状態への参照である。resumeは旧runを書き換えず、
   検証済みprefixを持つ新規runとして記録する。
 - `waiting_response` と `failed` を区別し、response未作成のまま新規attemptを重ねない。
+- continuationは完了版から新版を追加し、旧revision・旧run・旧章の内容を変更しない。
+  新版のdraftでは旧章をコピーし、追加章だけをproviderへ要求する。
+- replay bundleは全payloadをhashで検査し、restore時の上書きを拒否する。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
 これは破損や意図しない不整合を検出する仕組みであり、悪意ある改ざんに対する
@@ -175,6 +224,5 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 4で、完成作品の旧版を保ったまま章や続編を追加するcontinuationと、replayに必要な原本を
-外部pathへexport / verify / restoreするbundleを実装します。厳密replayとresumeは別機能の
-まま維持します。
+PR 5で、独立した子作品を親作品へ版付きで配置する深さ1の入れ子作品を実装します。
+continuation・resume・厳密replayは別機能のまま維持します。

@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜3を実装済み。次はPR 4（continuation / replay bundle）**
+- 状態: **PR 1〜4を実装済み。次はPR 5（深さ1の入れ子作品）**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -302,6 +302,10 @@ replayの記録読み取り層は共通化できるが、厳密replayが要求�
 
 ### PR 4: 続きの作成と外部保存（C-01, D-01）
 
+実装: parent revision / stage runを参照する新版、旧章のbyte-identicalな引継ぎ、追加章だけの
+生成、全payloadのSHA-256 manifest付きexport / verify / restoreを追加。continuation専用の
+revision-scoped request keyを使い、revisionを持たない旧request keyは変更しない。
+
 - 完成後の章追加・続編revisionを実装する。
 - replayに必要な原本をbundleとしてexport/verify/restoreする。
 - bundleはGitへ入れず、指定した外部pathへ保存する。
@@ -389,8 +393,9 @@ tests/test_project_store.py
 ```
 
 PR 2で `runner.py` と既存pipelineへのadapterを追加し、PR 3で `resume.py`、
-`story_project resume/pending`、stage別の再開testを追加した。既存の `run_pipeline.py` /
-`run_experiment.py` / protocol-v1は、新しい創作基盤の後方互換性を確認しながら残し、
-無理に統合しない。
+`story_project resume/pending`、stage別の再開testを追加した。PR 4で `continuation.py` /
+`bundle.py`、project `continue` / `bundle export|verify|restore`、版履歴と追加章生成を追加した。
+既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、新しい創作基盤の後方互換性を
+確認しながら残し、無理に統合しない。
 
-**したがって、次の実装はPR 4のcontinuation / replay bundleから開始する。**
+**したがって、次の実装はPR 5の深さ1の入れ子作品から開始する。**

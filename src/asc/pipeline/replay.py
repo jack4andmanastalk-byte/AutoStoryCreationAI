@@ -36,8 +36,15 @@ def _file_sha256(path: Path) -> str:
     return _sha256_bytes(path.read_bytes())
 
 
-def _key(system: str, task_id: str, seed: int, purpose: str, attempt: int) -> str:
-    raw = "-".join((system, task_id, f"s{seed}", purpose, f"a{attempt}"))
+def _key(
+    system: str, task_id: str, seed: int, purpose: str, attempt: int,
+    revision_id: str | None = None,
+) -> str:
+    parts = [system, task_id]
+    if revision_id:
+        parts.append(str(revision_id))
+    parts.extend((f"s{seed}", purpose, f"a{attempt}"))
+    raw = "-".join(parts)
     return re.sub(r"[^0-9A-Za-z._-]+", "-", raw)
 
 
@@ -50,6 +57,7 @@ def generation_request_key(request: GenerationRequest) -> str:
         int(request.seed),
         str(request.purpose or "generate"),
         int(context.get("attempt", 1)),
+        str(context["revision_id"]) if context.get("revision_id") else None,
     )
 
 
@@ -184,7 +192,10 @@ class ReplayProvider:
                 attempt += 1
             system = str(self.source_manifest.get("system") or "none")
             task_id = str(self.source_manifest.get("task_id") or "task")
-        computed = _key(system, task_id, seed, purpose, attempt)
+        computed = _key(
+            system, task_id, seed, purpose, attempt,
+            str(context["revision_id"]) if context.get("revision_id") else None,
+        )
         usage = (entry.get("response") or {}).get("usage") or {}
         return str(entry.get("request_key") or usage.get("key") or computed)
 

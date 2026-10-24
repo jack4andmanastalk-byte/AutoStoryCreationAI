@@ -190,6 +190,7 @@ class WorkNodeRevision:
     created_at: str
     parent_revision_id: str | None = None
     artifacts: tuple[ArtifactRef, ...] = ()
+    parent_runs: dict[str, str] = field(default_factory=dict)
 
     @classmethod
     def create(
@@ -202,6 +203,7 @@ class WorkNodeRevision:
         created_at: str,
         parent_revision_id: str | None = None,
         artifacts: tuple[ArtifactRef, ...] = (),
+        parent_runs: dict[str, str] | None = None,
     ) -> "WorkNodeRevision":
         return cls(
             id=revision_id,
@@ -212,6 +214,7 @@ class WorkNodeRevision:
             created_at=created_at,
             parent_revision_id=parent_revision_id,
             artifacts=artifacts,
+            parent_runs=dict(parent_runs or {}),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -222,6 +225,7 @@ class WorkNodeRevision:
             "node_id": self.node_id,
             "project_id": self.project_id,
             "parent_revision_id": self.parent_revision_id,
+            "parent_runs": dict(sorted(self.parent_runs.items())),
             "spec": self.spec.to_dict(),
             "spec_sha256": self.spec_sha256,
             "artifacts": [artifact.to_dict() for artifact in self.artifacts],
@@ -239,6 +243,7 @@ class WorkNodeRevision:
             spec=WorkSpec.from_dict(data["spec"]),
             spec_sha256=data["spec_sha256"],
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
+            parent_runs=dict(data.get("parent_runs") or {}),
             created_at=data["created_at"],
         )
 

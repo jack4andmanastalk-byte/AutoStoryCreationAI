@@ -10,8 +10,9 @@ Examples::
 By default, projects live below ``runs/projects/``.  Use ``--root`` before the
 subcommand to select another store.  ``run`` executes the single-work S1
 vertical slice, and ``resume`` continues an interrupted revision without
-regenerating its completed response prefix.  Continuation and nested works are
-later increments.
+regenerating its completed response prefix.  ``continue`` creates a new
+revision for a completed work, and ``bundle export|verify|restore`` moves its
+replay materials to an external directory. Nested works are a later increment.
 """
 from __future__ import annotations
 
@@ -28,6 +29,7 @@ from asc.pipeline import (  # noqa: E402
 )
 from asc.project import (  # noqa: E402
     ProjectError,
+    ReplayBundle,
     ProjectRunError,
     ProjectRunPending,
     ProjectRunner,
@@ -69,6 +71,23 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--temperature", type=float)
     run.add_argument("--json", dest="json_output", action="store_true")
 
+    continuation = subparsers.add_parser(
+        "continue", help="create a new revision with additional chapters",
+    )
+    continuation.add_argument("project_id")
+    chapter_change = continuation.add_mutually_exclusive_group()
+    chapter_change.add_argument("--add-chapters", type=int)
+    chapter_change.add_argument("--chapters", type=int, help="new total chapter count")
+    continuation.add_argument("--title")
+    continuation.add_argument("--premise")
+    continuation.add_argument("--provider", choices=["scripted", "command"], default="command")
+    continuation.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+    continuation.add_argument("--command", dest="provider_command", help="external provider command")
+    continuation.add_argument("--model")
+    continuation.add_argument("--seed", type=int, default=0)
+    continuation.add_argument("--temperature", type=float)
+    continuation.add_argument("--json", dest="json_output", action="store_true")
+
     resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
     resume.add_argument("project_id")
     resume.add_argument("--provider", choices=["scripted", "command"], default="command")
@@ -80,6 +99,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     pending = subparsers.add_parser("pending", help="list operator responses still needed")
     pending.add_argument("project_id")
     pending.add_argument("--json", dest="json_output", action="store_true")
+
+    bundle = subparsers.add_parser("bundle", help="export, verify, or restore replay sources")
+    bundle_commands = bundle.add_subparsers(dest="bundle_command", required=True)
+    bundle_export = bundle_commands.add_parser("export", help="export a project replay bundle")
+    bundle_export.add_argument("project_id")
+    bundle_export.add_argument("--out", required=True, help="new external bundle directory")
+    bundle_export.add_argument("--json", dest="json_output", action="store_true")
+    bundle_verify = bundle_commands.add_parser("verify", help="verify bundle hashes and records")
+    bundle_verify.add_argument("bundle_dir")
+    bundle_verify.add_argument("--json", dest="json_output", action="store_true")
+    bundle_restore = bundle_commands.add_parser("restore", help="restore a bundle below --root")
+    bundle_restore.add_argument("bundle_dir")
+    bundle_restore.add_argument("--json", dest="json_output", action="store_true")
 
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
@@ -134,6 +166,17 @@ def _print_pending(status: dict) -> None:
             print(f"  request: {row['request_path']}")
 
 
+def _print_bundle(report: dict) -> None:
+    print(f"Project: {report['project_id']}")
+    print(f"Files: {report['file_count']}")
+    print(f"Manifest SHA-256: {report['manifest_sha256']}")
+    if report.get("bundle_dir"):
+        print(f"Bundle: {report['bundle_dir']}")
+    if report.get("project_dir"):
+        print(f"Restored: {report['project_dir']}")
+    print("Verified: yes")
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     store = ProjectStore(args.root)
@@ -158,23 +201,43 @@ def main(argv: list[str] | None = None) -> int:
                 _print_human(status, created=True)
             return 0
 
-        if args.command in {"run", "resume"}:
+        if args.command in {"run", "resume", "continue"}:
             provider = _make_provider(args)
             runner = ProjectRunner(store)
-            result = (
-                runner.run(
+            if args.command == "run":
+                result = runner.run(
                     args.project_id, provider,
                     seed=args.seed, temperature=args.temperature,
                 )
-                if args.command == "run"
-                else runner.resume(args.project_id, provider)
-            )
+            elif args.command == "resume":
+                result = runner.resume(args.project_id, provider)
+            else:
+                result = runner.continue_project(
+                    args.project_id, provider,
+                    additional_chapters=args.add_chapters,
+                    total_chapters=args.chapters,
+                    seed=args.seed, temperature=args.temperature,
+                    title=args.title, premise=args.premise,
+                )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id
             if args.json_output:
                 print(json.dumps(status, ensure_ascii=False, sort_keys=True))
             else:
                 _print_human(status, created=False)
+            return 0
+
+        if args.command == "bundle":
+            if args.bundle_command == "export":
+                report = ReplayBundle(store).export(args.project_id, args.out)
+            elif args.bundle_command == "verify":
+                report = ReplayBundle.verify(args.bundle_dir)
+            else:
+                report = ReplayBundle.restore(args.bundle_dir, store.root)
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_bundle(report)
             return 0
 
         status = store.status(args.project_id)

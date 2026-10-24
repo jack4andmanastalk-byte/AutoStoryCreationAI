@@ -160,7 +160,15 @@ def validate_revision(data: Any) -> None:
     validate_id(data.get("id"), "revision.id")
     validate_id(data.get("node_id"), "revision.node_id")
     validate_id(data.get("project_id"), "revision.project_id")
-    _optional_id(data.get("parent_revision_id"), "revision.parent_revision_id")
+    parent_revision_id = _optional_id(
+        data.get("parent_revision_id"), "revision.parent_revision_id",
+    )
+    parent_runs = _mapping(data.get("parent_runs", {}), "revision.parent_runs")
+    if parent_runs and parent_revision_id is None:
+        raise ProjectValidationError("revision.parent_runs requires parent_revision_id")
+    for stage, run_id in parent_runs.items():
+        validate_id(stage, "revision.parent_runs stage")
+        validate_id(run_id, f"revision.parent_runs.{stage}")
     _timestamp(data.get("created_at"), "revision.created_at")
     spec = _mapping(data.get("spec"), "revision.spec")
     validate_spec(spec)

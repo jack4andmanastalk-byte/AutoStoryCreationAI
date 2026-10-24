@@ -239,7 +239,7 @@ def build_plan(task: Task, provider: Provider, ledger: RunLedger, *,
                chapters: int = 3, target_chars: tuple[int, int] = (3000, 4200),
                prompt_dir: str | Path | None = None, temperature: float = 0.6,
                max_tokens: int = 3000, seed: int = 0,
-               max_attempts: int = 2) -> Plan:
+               max_attempts: int = 2, prompt_suffix: str = "") -> Plan:
     """Ask the provider for a canon, repairing it at most ``max_attempts`` times."""
     base = load_prompt("plan-canon", prompt_dir)
     repair = load_prompt("plan-repair", prompt_dir)
@@ -274,10 +274,14 @@ def build_plan(task: Task, provider: Provider, ledger: RunLedger, *,
             })
             purpose = "plan-repair"
             template = repair
+        if prompt_suffix:
+            prompt = f"{prompt}\n\n{prompt_suffix}"
         request = GenerationRequest(
             purpose=purpose, prompt=prompt, temperature=temperature,
             max_tokens=max_tokens, seed=seed,
-            context={"task_id": task.id, "attempt": attempt, "system": ledger.system},
+            context=ledger.request_context(
+                task_id=task.id, attempt=attempt, system=ledger.system,
+            ),
         )
         try:
             result = provider.generate(request)
