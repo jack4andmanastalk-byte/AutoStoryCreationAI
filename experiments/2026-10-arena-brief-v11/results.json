@@ -1,0 +1,122 @@
+{
+  "schema_version": "1.0",
+  "experiment": "arena-brief-prompt-v11",
+  "recorded_at": "2026-10-24T13:11:30Z",
+  "scope": "L1 mechanical prompt probe only: one fresh Arena brief response; no downstream design, story text, L2/L3, quality judgement, or protocol pass claim",
+  "conditions": {
+    "task_id": "t01",
+    "system": "s1",
+    "seed": 0,
+    "temperature": 0.8,
+    "max_attempts": 2,
+    "canon_source": "runs/arena-l1-t01/20261024T130502Z-t01-s1-s0-6ab9f128/canon",
+    "provider": "arena-agent-mode",
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-24"
+  },
+  "baseline": {
+    "run_id": "20261024T130502Z-t01-s1-s0-6ab9f128",
+    "git_commit": "34a451445075ffaf6351a8625fd43958e1953389",
+    "prompt_name": "design-brief",
+    "prompt_version": "1.0",
+    "attempts": 2,
+    "provider_requests": 2,
+    "initial_status": "repair_required",
+    "initial_findings": [
+      {
+        "check": "logline_elements",
+        "severity": "medium",
+        "message_ja": "四要素 'where'（嵐の岬にある灯台と港）がログラインに現れない。",
+        "brief_ref": "brief"
+      },
+      {
+        "check": "logline_elements",
+        "severity": "medium",
+        "message_ja": "四要素 'wants'（貸した鍵と灯りの両方を守ること）がログラインに現れない。",
+        "brief_ref": "brief"
+      },
+      {
+        "check": "logline_elements",
+        "severity": "medium",
+        "message_ja": "四要素 'obstacle'（沖の舟と鍵を隠したイルサ）がログラインに現れない。",
+        "brief_ref": "brief"
+      },
+      {
+        "check": "similar_grounded",
+        "severity": "medium",
+        "message_ja": "差分の軸 '主人公の選択' は structure / character / world のいずれかにする。",
+        "brief_ref": "similar[1]"
+      },
+      {
+        "check": "similar_grounded",
+        "severity": "medium",
+        "message_ja": "差分の軸 '謎の構造' は structure / character / world のいずれかにする。",
+        "brief_ref": "similar[2]"
+      },
+      {
+        "check": "similar_grounded",
+        "severity": "medium",
+        "message_ja": "差分の軸 '結末' は structure / character / world のいずれかにする。",
+        "brief_ref": "similar[3]"
+      }
+    ],
+    "initial_checks_failed": 2,
+    "final_status": "clean",
+    "prompt_template_digest": "f162389556d99fa9",
+    "request_prompt_hash": "577cb7cc3685b669"
+  },
+  "candidate": {
+    "run_id": "20261024T131059Z-t01-s1-s0-ae23abef",
+    "git_commit": "b7b59ba20455deb80e4dce5ae52a8e09f4277ccc",
+    "prompt_name": "design-brief",
+    "prompt_version": "1.1",
+    "attempts": 1,
+    "provider_requests": 1,
+    "initial_status": "clean",
+    "initial_findings": [],
+    "initial_checks_failed": 0,
+    "final_status": "clean",
+    "brief_sha256": "7cfc537de9d6d02fc439ae35a7aac8c89a3e6e95569d1d5115aeeeb7878070dc",
+    "design_summary": {
+      "by_severity": {},
+      "docs": {
+        "brief": {
+          "attempts": 1,
+          "by_severity": {},
+          "checks_failed": 0,
+          "findings": 0,
+          "status": "clean"
+        }
+      },
+      "findings": 0,
+      "missing": [],
+      "task": "t01",
+      "unresolved": []
+    },
+    "prompt_template_digest": "d3896b1f827382b0",
+    "request_prompt_hash": "8b9452a84ad57ccd"
+  },
+  "comparison": {
+    "attempts": {
+      "baseline": 2,
+      "candidate": 1,
+      "delta": -1
+    },
+    "provider_requests": {
+      "baseline": 2,
+      "candidate": 1,
+      "delta": -1
+    },
+    "initial_medium_findings": {
+      "baseline": 6,
+      "candidate": 0
+    }
+  },
+  "interpretation": "In this single fresh probe, the v1.1 prompt produced a structurally clean brief on attempt 1, versus one repair round for v1.0. This supports the targeted prompt change but does not estimate a general success rate.",
+  "limitations": [
+    "N=1 fresh candidate response and one historical baseline response; no confidence interval or general model-compliance claim.",
+    "The candidate probe stops after brief; it does not rerun the other design documents or story stages.",
+    "Arena model version is unversioned, so G5 remains unmet.",
+    "Structural cleanliness is not story quality, genre fit, L2/L3 evidence, or human evaluation."
+  ]
+}

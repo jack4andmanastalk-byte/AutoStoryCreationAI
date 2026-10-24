@@ -164,6 +164,7 @@ gh release download datasets-narou-commercialized
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
 | [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
+| [`docs/replay.md`](docs/replay.md) | 記録済み応答を外部providerなしで再実行し、prompt・response・成果物の一致を監査する方法 |
 | [`docs/ci.md`](docs/ci.md) | CI の実行枠設計（なぜ CI が待たされていたか、どう直したか） |
 
 ```bash
@@ -283,6 +284,10 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 * `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
   プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
   応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。
+  応答JSONには `provenance: {"origin": "fresh"}`、再利用なら
+  `provenance: {"origin": "reused", "source_run_id": "..."}` を記録できます。
+  未指定は `unspecified` であり、新規応答とは見なしません。`run_experiment.py` は
+  request数、design attempts / repairs、初回findings、応答来歴を集計します。
   チャットに貼って返してもらう場合の受け渡しは `scripts/relay_prompts.py` が担当します
   （`export` でタグ付きの貼り付け用ファイル、`ingest` で返答案の取り込み）
   モデル版を固定できないため **G5 は満たさず**、値は参考値です
@@ -317,7 +322,11 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 ## 6.  次フェーズ候補
 
-* 対照群 30 作品の承認・確定（L1 の G2 にも使用）。候補本文の取得と機械検証を済ませ、[`controls.proposed.md`](benchmarks/protocol-v1/controls.proposed.md) / [`controls.proposed.json`](benchmarks/protocol-v1/controls.proposed.json) を作成済み。**現在は未承認・未凍結**。承認後に `select_controls.py freeze` を実行する（G3/G4 の再開を意味しない）
+対照群 30 作品は選定承認・凍結済みです（[`controls.proposed.md`](benchmarks/protocol-v1/controls.proposed.md)、
+[`controls.approved.json`](benchmarks/protocol-v1/controls.approved.json)、
+[`controls.json`](benchmarks/protocol-v1/controls.json)）。この承認は L1 の比較対象を
+決めるもので、G3/G4 の再開や人間による品質評定ではありません。
+
 * Arena の chat operator / relay による S0〜S3 の L1 パイロット（まず t01、その後 10 題×3 seed）。版を固定できないため、結果は探索的な参考値として記録する
 * L1 の失敗類型を根拠に、スキル／プロンプト／パイプラインを一つずつ変更し、同じ条件で再測定する
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）

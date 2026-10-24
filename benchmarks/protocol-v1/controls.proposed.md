@@ -1,14 +1,17 @@
-# 対照群 30 作品 — 承認候補（未凍結）
+# 対照群 30 作品 — 選定承認・凍結済み
 
-- 状態: **awaiting_human_approval**
+- 状態: **approved_for_l1_control_selection / frozen**
 - 規則: `controls-rules-v1` / seed 0
 - 候補生成: `build/controls/proposal.json`（SHA-256 `065cdbdd70056733551e2898e35f88f94eaa393bf611ef3fafcc20e9c60776d8`）
-- 機械可読な候補: `controls.proposed.json`
+- 元の承認候補: `controls.proposed.json`（監査用に未承認のまま保存）
+- 選定承認の入力: `controls.approved.json`
+- 凍結済みの正式入力: `controls.json`（2026-10-24T12:53:20Z）
 
-これは Arena が候補を絞った承認ドラフトであり、**まだ対照群を凍結していない**。
-protocol-v1 §6 の承認者が内容を確認し、`approved_by` / `approved_at` を記入した場合にだけ
-`select_controls.py freeze` で `controls.json` を生成する。この選定承認は、作品の好みや
-品質を採点する L3 の人間評定ではない。L2/L3 の凍結は維持する。
+Arena が候補を絞り、利用者が 2026-10-24 の Arena チャットで「承認して凍結」を明示的に
+選択した。承認記録は `Arena user (explicit control-selection approval)` /
+`2026-10-24T21:29:54+09:00` として保存し、`select_controls.py freeze` で権利・NDC・本文・
+文字数・重複を再検査した。この承認は **L1 対照群の選定だけ**を対象とし、作品の好みや品質を
+採点する L3 の人間評定ではない。L2/L3 の凍結は維持する。
 
 ## t01（fantasy）
 
@@ -110,17 +113,18 @@ protocol-v1 §6 の承認者が内容を確認し、`approved_by` / `approved_at
 | 2 | 北守将軍と三人兄弟の医者 | 宮沢 賢治 | `aozora:001944` | excerpt | 10165 |
 | 3 | 現代語訳　平家物語 04 第四巻 | 尾崎 士郎、作者不詳 | `aozora:060805` | excerpt | 31151 |
 
-## 凍結手順（承認後のみ）
+## 凍結記録
 
-1. 承認者が `controls.proposed.json` の `approved_by` / `approved_at` を記入する。
-2. 必要なら pick と `review_notes_ja` を修正する。
-3. 次を実行し、権利・NDC・本文・文字数・重複を再検査する。
+2026-10-24 に次を実行し、30 作品（full 3・excerpt 27、3,606〜4,198 字）を凍結した。
+`build/controls/texts/` には評価用に切り出した本文と manifest を出力した（git 管理外）。
 
 ```bash
 python3 scripts/select_controls.py freeze \
-  --approved benchmarks/protocol-v1/controls.proposed.json \
+  --approved benchmarks/protocol-v1/controls.approved.json \
   --out benchmarks/protocol-v1/controls.json \
   --emit-dir build/controls/texts
 ```
 
-未承認のまま `controls.json` を作ってはいけない。
+今後の対照群の入れ替えは protocol-v1 §9 に従い、プロトコルの版を上げる。
+`controls.proposed.json` は承認前のスナップショットとして変更せず、正式な実験では
+`controls.json` を使う。

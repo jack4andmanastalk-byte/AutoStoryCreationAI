@@ -1,0 +1,252 @@
+{
+  "experiment": {
+    "id": "2026-10-arena-replay-t02",
+    "created_at": "2026-10-24T14:28:41Z",
+    "protocol": "protocol-v1",
+    "tasks": [
+      "t02"
+    ],
+    "systems": [
+      "s1"
+    ],
+    "seeds": [
+      0
+    ],
+    "design": true,
+    "provider": "replay",
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-24",
+    "temperature": 0.8,
+    "git_commit": "5908aecc0259c954f8d63e9f97cfbcc788a601f1"
+  },
+  "evaluation_scope": {
+    "schema": "evaluation-scope-v1",
+    "protocol": "protocol-v1",
+    "decided_on": "2026-10-24",
+    "mode": "l1-only",
+    "provider_constraint": "arena-only",
+    "active_layers": [
+      "L1"
+    ],
+    "frozen_layers": {
+      "L2": "独立したモデル判定と較正の条件を満たせないため、実証・較正・追加開発を凍結する。",
+      "L3": "人間の評定者を用意できないため、評定・較正・追加開発を凍結する。"
+    },
+    "gate_status": {
+      "G1": "reference_only",
+      "G2": "reference_only",
+      "G3": "frozen_not_measured",
+      "G4": "frozen_not_measured",
+      "G5": "unmet_with_unversioned_arena"
+    },
+    "claims": {
+      "l1_results": "exploratory_reference_only",
+      "protocol_v1_functioning": "not_claimed",
+      "semantic_quality_or_human_preference": "not_evaluated"
+    },
+    "resume": {
+      "requires_explicit_user_decision": true,
+      "note": "利用者が凍結解除を明示し、L2/L3それぞれの評定・較正条件を整えた場合にだけ再開する。"
+    }
+  },
+  "by_system": {
+    "s1": {
+      "n": 1,
+      "failed": 0,
+      "chars": {
+        "mean": 3141.0,
+        "min": 3141,
+        "max": 3141,
+        "ci95": [
+          3141.0,
+          3141.0
+        ],
+        "n": 1
+      },
+      "must_include_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 1
+      },
+      "violations": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "high": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "checks_skipped": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "ced_per_10k_chars": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "warnings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "injected_markers": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "design_findings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "design_unresolved": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "provider_requests": {
+        "mean": 12.0,
+        "min": 12,
+        "max": 12,
+        "ci95": [
+          12.0,
+          12.0
+        ],
+        "n": 1
+      },
+      "design_attempts": {
+        "mean": 8.0,
+        "min": 8,
+        "max": 8,
+        "ci95": [
+          8.0,
+          8.0
+        ],
+        "n": 1
+      },
+      "design_repairs": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "design_first_attempt_findings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "response_provenance": {
+        "counts": {
+          "replay": 12
+        },
+        "reused_source_run_ids": []
+      }
+    }
+  },
+  "replay": {
+    "source": {
+      "run_id": "20261024T141921Z-t02-s1-s0-39192327",
+      "run_dir": "runs/arena-fresh-s1-t02t03/20261024T141921Z-t02-s1-s0-39192327",
+      "git_commit": "7433e1fe5421ea65891c01da0101494fc7b1621e",
+      "model": "arena-agent-mode",
+      "model_version": "unversioned-2026-10-24",
+      "manifest_sha256": "19fa6546754d4cbf5e84985d29a9a97de1d0d93706df39d42cfd7b5b571d10f0",
+      "responses_sha256": "3a316be4dda08b58bcac855e30f8675fe8d6b624cc5bf7ba41d2fa5b0c5870eb",
+      "response_count": 12,
+      "responses_pinned_by_source_manifest": false,
+      "manifest_pin_provided": true,
+      "responses_pin_provided": true
+    },
+    "cells": [
+      {
+        "run_id": "20261024T142841Z-t02-s1-s0-5e64bf29",
+        "run_dir": "runs/arena-replay-s1-formal/20261024T142841Z-t02-s1-s0-5e64bf29",
+        "status": "ok",
+        "verification": {
+          "ok": true,
+          "source_run_id": "20261024T141921Z-t02-s1-s0-39192327",
+          "source_manifest_sha256": "19fa6546754d4cbf5e84985d29a9a97de1d0d93706df39d42cfd7b5b571d10f0",
+          "source_responses_sha256": "3a316be4dda08b58bcac855e30f8675fe8d6b624cc5bf7ba41d2fa5b0c5870eb",
+          "source_unchanged": true,
+          "all_source_responses_consumed": true,
+          "manifest_prompt_hashes_match": true,
+          "artifacts_match": true,
+          "matched_artifacts": 42,
+          "compared_artifacts": 42,
+          "replayed_responses": 12
+        },
+        "error": null
+      }
+    ],
+    "audit_path": "replay-audit.json",
+    "verification_summary": {
+      "new_generation": false,
+      "external_provider_calls": 0,
+      "source_responses_consumed": 12,
+      "request_full_prompt_matches": 12,
+      "artifact_matches": 42,
+      "artifact_comparisons": 42,
+      "source_unchanged": true,
+      "manifest_prompt_hashes_match": true,
+      "g5_model_reproducibility_claimed": false
+    }
+  }
+}

@@ -61,6 +61,9 @@ class GenerationResult:
     model_version: str | None = None
     usage: Mapping[str, Any] = field(default_factory=dict)
     latency_ms: int = 0
+    #: Origin of the answer, for example fresh / reused / scripted. This is
+    #: provenance, not token usage, and is preserved in the run ledger.
+    provenance: Mapping[str, Any] = field(default_factory=dict)
 
     def as_dict(self) -> dict:
         return {
@@ -70,6 +73,7 @@ class GenerationResult:
             "model_version": self.model_version,
             "usage": dict(self.usage),
             "latency_ms": self.latency_ms,
+            "provenance": dict(self.provenance),
         }
 
 
@@ -134,6 +138,9 @@ class CommandProvider:
         text = payload["text"].strip()
         if not text:
             raise ProviderError("provider returned empty text")
+        provenance = payload.get("provenance", {}) or {}
+        if not isinstance(provenance, dict):
+            raise ProviderError('provider JSON field "provenance" must be an object')
 
         return GenerationResult(
             text=text,
@@ -142,6 +149,7 @@ class CommandProvider:
             model_version=payload.get("model_version", self.model_version),
             usage=payload.get("usage", {}) or {},
             latency_ms=payload.get("latency_ms", latency),
+            provenance=provenance,
         )
 
 
@@ -177,6 +185,7 @@ class ScriptedProvider:
                     text=self.responses[key], provider=self.name,
                     model=self.model, model_version=self.model_version,
                     usage={"scripted": True}, latency_ms=0,
+                    provenance={"origin": "scripted"},
                 )
         raise ProviderError(
             f"no scripted response for purpose={request.purpose!r} task={task_id!r}")

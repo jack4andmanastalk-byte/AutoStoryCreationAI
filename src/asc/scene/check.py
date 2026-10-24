@@ -95,8 +95,9 @@ def check_scenes(doc: SceneDoc, canon=None) -> dict:
                     findings.append(_finding(
                         "knowledge_tracked", "medium",
                         f"事実「{fact}」が canon にない。", ref))
+            withheld_facts = {item.fact for item in scene.withheld}
             for fact in flow.gained:
-                if fact not in scene.disclosed:
+                if fact not in scene.disclosed and fact not in withheld_facts:
                     findings.append(_finding(
                         "knowledge_tracked", "medium",
                         f"{flow.character} が得る {fact} が開示計画にない。"

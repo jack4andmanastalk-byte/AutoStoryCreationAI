@@ -100,6 +100,22 @@ def test_each_document_reports_attempts_and_status(task, responses, tmp_path):
     assert docs["brief"]["attempts"] == 1
 
 
+def test_brief_prompt_matches_the_mechanical_element_and_axis_checks(
+        task, responses, tmp_path):
+    provider = StubProvider({"design:brief": [responses["design:brief:t01"]]})
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    build_design(task, provider, ledger, canon, prompt_dir=PROMPTS, docs=("brief",))
+
+    prompt = provider.calls[0].prompt
+    assert "一字一句そのまま" in prompt
+    assert "structure / character / world" in prompt
+    assert "10 字以上" in prompt
+    report = json.loads((ledger.path / "design" / "brief.report.json"
+                         ).read_text(encoding="utf-8"))
+    assert report["prompt"]["version"] == "1.1"
+
+
 def test_unknown_document_is_a_programmer_error(task, responses, tmp_path):
     from asc.pipeline import DesignError
     ledger = make_ledger(tmp_path)
@@ -251,3 +267,48 @@ def test_experiment_cell_records_design_counts(task, responses, tmp_path):
     assert cell["design"] == "on"
     assert cell["design_findings"] == 0
     assert cell["design_unresolved"] == 0
+    assert cell["provider_requests"] == 12
+    assert cell["design_attempts"] == 8
+    assert cell["design_repairs"] == 0
+    assert cell["design_first_attempt_findings"] == 0
+    assert cell["response_provenance"] == {
+        "counts": {"scripted": 12}, "reused_source_run_ids": []}
+
+
+def test_experiment_cell_aggregates_first_attempt_repairs_and_provenance(
+        task, responses, tmp_path):
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import run_experiment
+    tasks = load_tasks(TASKS)
+    bad_brief = json.loads(responses["design:brief:t01"])
+    bad_brief["logline"] = "短い"
+    repaired = dict(responses)
+    repaired["design:brief:t01"] = json.dumps(bad_brief, ensure_ascii=False)
+    repaired["design:brief:repair:t01"] = responses["design:brief:t01"]
+
+    cell = run_experiment.run_cell(
+        task, "s1", 0, ScriptedProvider(repaired), tasks,
+        tmp_path / "runs", 0.8)
+
+    assert cell["status"] == "ok"
+    assert cell["provider_requests"] == 13
+    assert cell["design_attempts"] == 9
+    assert cell["design_repairs"] == 1
+    assert cell["design_first_attempt_findings"] > 0
+    assert cell["design_findings"] == 0
+    assert cell["response_provenance"]["counts"] == {"scripted": 13}
+    run_dir = Path(cell["run_dir"])
+    report = json.loads((run_dir / "design" / "brief.report.json"
+                         ).read_text(encoding="utf-8"))
+    assert report["attempts"] == 2
+    assert report["repairs"] == 1
+    assert report["first_attempt"]["findings"]
+    assert report["findings"] == []
+
+    aggregate = run_experiment.aggregate([cell])["by_system"]["s1"]
+    assert aggregate["provider_requests"]["mean"] == 13
+    assert aggregate["design_attempts"]["mean"] == 9
+    assert aggregate["design_repairs"]["mean"] == 1
+    assert aggregate["design_first_attempt_findings"]["mean"] > 0
+    assert aggregate["response_provenance"] == {
+        "counts": {"scripted": 13}, "reused_source_run_ids": []}

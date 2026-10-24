@@ -1,0 +1,339 @@
+{
+  "experiment": {
+    "id": "2026-10-arena-fresh-s1-n3",
+    "created_at": "2026-10-24T14:06:07Z",
+    "protocol": "protocol-v1",
+    "tasks": [
+      "t01"
+    ],
+    "systems": [
+      "s1"
+    ],
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "design": true,
+    "provider": "command",
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-24",
+    "temperature": 0.8,
+    "git_commit": "c5e81a8308fe8ababff498cf92484cd0e9148015"
+  },
+  "evaluation_scope": {
+    "schema": "evaluation-scope-v1",
+    "protocol": "protocol-v1",
+    "decided_on": "2026-10-24",
+    "mode": "l1-only",
+    "provider_constraint": "arena-only",
+    "active_layers": [
+      "L1"
+    ],
+    "frozen_layers": {
+      "L2": "独立したモデル判定と較正の条件を満たせないため、実証・較正・追加開発を凍結する。",
+      "L3": "人間の評定者を用意できないため、評定・較正・追加開発を凍結する。"
+    },
+    "gate_status": {
+      "G1": "reference_only",
+      "G2": "reference_only",
+      "G3": "frozen_not_measured",
+      "G4": "frozen_not_measured",
+      "G5": "unmet_with_unversioned_arena"
+    },
+    "claims": {
+      "l1_results": "exploratory_reference_only",
+      "protocol_v1_functioning": "not_claimed",
+      "semantic_quality_or_human_preference": "not_evaluated"
+    },
+    "resume": {
+      "requires_explicit_user_decision": true,
+      "note": "利用者が凍結解除を明示し、L2/L3それぞれの評定・較正条件を整えた場合にだけ再開する。"
+    }
+  },
+  "by_system": {
+    "s1": {
+      "n": 3,
+      "failed": 0,
+      "chars": {
+        "mean": 3162.667,
+        "min": 3053,
+        "max": 3267,
+        "ci95": [
+          3053.0,
+          3234.0
+        ],
+        "n": 3
+      },
+      "must_include_rate": {
+        "mean": 0.889,
+        "min": 0.667,
+        "max": 1.0,
+        "ci95": [
+          0.667,
+          1.0
+        ],
+        "n": 3
+      },
+      "violations": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "high": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "checks_skipped": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "ced_per_10k_chars": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "warnings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "injected_markers": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "design_findings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "design_unresolved": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "provider_requests": {
+        "mean": 12.0,
+        "min": 12,
+        "max": 12,
+        "ci95": [
+          12.0,
+          12.0
+        ],
+        "n": 3
+      },
+      "design_attempts": {
+        "mean": 8.0,
+        "min": 8,
+        "max": 8,
+        "ci95": [
+          8.0,
+          8.0
+        ],
+        "n": 3
+      },
+      "design_repairs": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "design_first_attempt_findings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 3
+      },
+      "response_provenance": {
+        "counts": {
+          "fresh": 36
+        },
+        "reused_source_run_ids": []
+      }
+    }
+  },
+  "cell_details": [
+    {
+      "run_id": "20261024T140606Z-t01-s1-s0-b7542410",
+      "seed": 0,
+      "manifest_status": "ok",
+      "provider_requests": 12,
+      "response_provenance": {
+        "counts": {
+          "fresh": 12
+        },
+        "reused_source_run_ids": []
+      },
+      "design_attempts": 8,
+      "design_repairs": 0,
+      "design_first_attempt_findings": 0,
+      "design_findings": 0,
+      "design_unresolved": 0,
+      "design_missing": 0,
+      "brief_attempts": 1,
+      "brief_first_attempt_findings": 0,
+      "chars": 3053,
+      "must_include_rate": 1.0,
+      "must_include_hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "warnings": 0,
+      "injected_markers": 0,
+      "story_sha256": "72137045181a021a217c53530671f81a1ba6bdf3b5e1064b125034f59f27f924"
+    },
+    {
+      "run_id": "20261024T140606Z-t01-s1-s1-83ea4b97",
+      "seed": 1,
+      "manifest_status": "ok",
+      "provider_requests": 12,
+      "response_provenance": {
+        "counts": {
+          "fresh": 12
+        },
+        "reused_source_run_ids": []
+      },
+      "design_attempts": 8,
+      "design_repairs": 0,
+      "design_first_attempt_findings": 0,
+      "design_findings": 0,
+      "design_unresolved": 0,
+      "design_missing": 0,
+      "brief_attempts": 1,
+      "brief_first_attempt_findings": 0,
+      "chars": 3168,
+      "must_include_rate": 0.667,
+      "must_include_hits": {
+        "嵐": false,
+        "灯台": true,
+        "鍵": true
+      },
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "warnings": 0,
+      "injected_markers": 0,
+      "story_sha256": "805ffc6eeaff5ec907cc2d026739653f2d6ef9aba7d9603f01e213552a1a7575"
+    },
+    {
+      "run_id": "20261024T140607Z-t01-s1-s2-7633e4b8",
+      "seed": 2,
+      "manifest_status": "ok",
+      "provider_requests": 12,
+      "response_provenance": {
+        "counts": {
+          "fresh": 12
+        },
+        "reused_source_run_ids": []
+      },
+      "design_attempts": 8,
+      "design_repairs": 0,
+      "design_first_attempt_findings": 0,
+      "design_findings": 0,
+      "design_unresolved": 0,
+      "design_missing": 0,
+      "brief_attempts": 1,
+      "brief_first_attempt_findings": 0,
+      "chars": 3267,
+      "must_include_rate": 1.0,
+      "must_include_hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "warnings": 0,
+      "injected_markers": 0,
+      "story_sha256": "9fd4ebaa5e3cf6b46565af8e491e4256c555327ae774fe7e085fdcb7e1ec222d"
+    }
+  ],
+  "freshness_verification": {
+    "operator_dir": "runs/operator/arena-fresh-s1-n3",
+    "expected_fresh_responses": 36,
+    "fresh_responses": 36,
+    "reused_responses": 0,
+    "unspecified_responses": 0,
+    "all_pending": 0,
+    "baseline_response_reuse": false,
+    "independence_limit": "All answers were newly authored within this Arena work session; seeds are request labels, not independently versioned model sessions."
+  },
+  "observed_issue": {
+    "seed": 1,
+    "run_id": "20261024T140606Z-t01-s1-s1-83ea4b97",
+    "metric": "must_include_rate",
+    "value": 0.667,
+    "missing_term": "嵐",
+    "note": "The fresh draft used 暴風 but did not contain the exact required term 嵐. The response was not edited to hide this result."
+  },
+  "next_task_decision": {
+    "multi_task_expansion": "deferred",
+    "reason": "Resolve or characterize the exact must_include miss before treating t01 fresh replication as clean enough for cross-task expansion."
+  },
+  "followup_decision": {
+    "decided_on": "2026-10-24",
+    "multi_task_expansion": "proceed_with_literal_miss_retained",
+    "reason": "The exact string miss is not treated as a creative blocker when the required concept is background storm weather; protocol-v1 literal must_include_rate remains 0.667 and no post-hoc synonym matching is applied.",
+    "protocol_v1_changed": false,
+    "semantic_quality_evaluated": false
+  }
+}

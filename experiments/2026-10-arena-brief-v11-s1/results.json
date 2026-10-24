@@ -1,0 +1,223 @@
+{
+  "experiment": {
+    "id": "2026-10-arena-brief-v11-s1",
+    "created_at": "2026-10-24T13:19:56Z",
+    "protocol": "protocol-v1",
+    "tasks": [
+      "t01"
+    ],
+    "systems": [
+      "s1"
+    ],
+    "seeds": [
+      0
+    ],
+    "design": true,
+    "provider": "command",
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-24",
+    "temperature": 0.8,
+    "git_commit": "37b99c10c132577ca84b77e510b3b3e0b8bd065a"
+  },
+  "evaluation_scope": {
+    "schema": "evaluation-scope-v1",
+    "protocol": "protocol-v1",
+    "decided_on": "2026-10-24",
+    "mode": "l1-only",
+    "provider_constraint": "arena-only",
+    "active_layers": [
+      "L1"
+    ],
+    "frozen_layers": {
+      "L2": "独立したモデル判定と較正の条件を満たせないため、実証・較正・追加開発を凍結する。",
+      "L3": "人間の評定者を用意できないため、評定・較正・追加開発を凍結する。"
+    },
+    "gate_status": {
+      "G1": "reference_only",
+      "G2": "reference_only",
+      "G3": "frozen_not_measured",
+      "G4": "frozen_not_measured",
+      "G5": "unmet_with_unversioned_arena"
+    },
+    "claims": {
+      "l1_results": "exploratory_reference_only",
+      "protocol_v1_functioning": "not_claimed",
+      "semantic_quality_or_human_preference": "not_evaluated"
+    },
+    "resume": {
+      "requires_explicit_user_decision": true,
+      "note": "利用者が凍結解除を明示し、L2/L3それぞれの評定・較正条件を整えた場合にだけ再開する。"
+    }
+  },
+  "by_system": {
+    "s1": {
+      "n": 1,
+      "failed": 0,
+      "chars": {
+        "mean": 3263.0,
+        "min": 3263,
+        "max": 3263,
+        "ci95": [
+          3263.0,
+          3263.0
+        ],
+        "n": 1
+      },
+      "must_include_rate": {
+        "mean": 1.0,
+        "min": 1.0,
+        "max": 1.0,
+        "ci95": [
+          1.0,
+          1.0
+        ],
+        "n": 1
+      },
+      "violations": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "high": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "checks_skipped": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "ced_per_10k_chars": {
+        "mean": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "warnings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "injected_markers": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "design_findings": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      },
+      "design_unresolved": {
+        "mean": 0.0,
+        "min": 0,
+        "max": 0,
+        "ci95": [
+          0.0,
+          0.0
+        ],
+        "n": 1
+      }
+    }
+  },
+  "integration_probe": {
+    "scope": "controlled L1 downstream integration of the v1.1 brief; not a fresh full-pipeline model sample and not a quality evaluation",
+    "baseline": {
+      "run_id": "20261024T130502Z-t01-s1-s0-6ab9f128",
+      "provider_requests": 13,
+      "design_attempts": 9,
+      "brief_attempts": 2,
+      "chars": 3263,
+      "story_sha256": "8f630f787125b8b41695ee5d3f9dd1407ec1f61a3b5d31720862e9a9b04e0963"
+    },
+    "candidate": {
+      "run_id": "20261024T131956Z-t01-s1-s0-ad75f5a8",
+      "provider_requests": 12,
+      "design_attempts": 8,
+      "brief_attempts": 1,
+      "chars": 3263,
+      "story_sha256": "8f630f787125b8b41695ee5d3f9dd1407ec1f61a3b5d31720862e9a9b04e0963",
+      "brief_sha256": "7cfc537de9d6d02fc439ae35a7aac8c89a3e6e95569d1d5115aeeeb7878070dc",
+      "design_findings": 0,
+      "design_unresolved": 0,
+      "design_missing": 0,
+      "violations": 0,
+      "high": 0,
+      "checks_skipped": 0,
+      "ced_per_10k_chars": 0.0,
+      "must_include_rate": 1.0,
+      "warnings": 0,
+      "injected_markers": 0
+    },
+    "delta_candidate_minus_baseline": {
+      "provider_requests": -1,
+      "design_attempts": -1,
+      "brief_attempts": -1,
+      "chars": 0
+    },
+    "controlled_invariants": {
+      "canon_json_identical": true,
+      "other_design_docs_identical": true,
+      "other_design_docs": [
+        "world",
+        "history",
+        "character",
+        "relation",
+        "plot",
+        "scene",
+        "voice"
+      ],
+      "story_identical": true,
+      "candidate_brief_matches_standalone_probe": true
+    },
+    "response_provenance": {
+      "brief": "newly authored for the earlier standalone v1.1 probe, then integrated here",
+      "plan": "reused from the baseline operator response",
+      "other_design_and_draft": "controlled reuse of baseline operator-authored responses after the brief change",
+      "reused_response_count": 11,
+      "candidate_brief_response_count": 1,
+      "fresh_downstream_model_sample": false
+    },
+    "interpretation": "Under controlled response reuse, the v1.1 brief completed S1 without new structural findings. The one-request reduction is removal of the observed brief repair, not an estimate of fresh downstream model efficiency.",
+    "limitations": [
+      "N=1 and downstream responses were deliberately reused; this is an integration regression check, not an independent end-to-end generation trial.",
+      "Identical story text is expected from reused draft responses and is not evidence that the prompt has no effect in fresh generation.",
+      "No L2/L3, human, quality, genre-fit, or protocol-v1 pass claim. Arena remains unversioned and G5 remains unmet."
+    ]
+  }
+}

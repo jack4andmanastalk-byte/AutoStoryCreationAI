@@ -16,6 +16,11 @@ The command reads one ``GenerationRequest`` JSON object on stdin and prints
 is missing it exits 3 and says which file to write, so the caller can stop at
 the exact prompt that has no text yet instead of inventing one.
 
+A response can declare ``provenance: {"origin": "fresh"}`` or
+``{"origin": "reused", "source_run_id": "..."}``. The experiment summary
+counts these origins. Missing provenance stays ``unspecified``; it is never
+assumed to be fresh.
+
 The ``--dir`` must not live under ``build/``: ``build/`` is scratch and is not
 kept across sessions, and losing ``responses/`` means paying for the same text
 twice. ``runs/operator/<name>`` is git-ignored and survives.
@@ -154,6 +159,9 @@ class Operator:
         text = payload.get("text")
         if not isinstance(text, str) or not text.strip():
             raise ValueError(f"{path}: expected a non-empty string field 'text'")
+        provenance = payload.get("provenance", {}) or {}
+        if not isinstance(provenance, dict):
+            raise ValueError(f"{path}: expected an object field 'provenance'")
         pinned = payload.get("prompt_hash")
         served = self.last_served_hash(key)
         if pinned and pinned != prompt_hash:
@@ -167,6 +175,7 @@ class Operator:
             "model": payload.get("model") or self.model,
             "model_version": payload.get("model_version") or self.model_version,
             "usage": {"operator": True, "key": key},
+            "provenance": provenance,
         }
 
     def status(self) -> dict:

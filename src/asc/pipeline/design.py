@@ -44,12 +44,12 @@ REPAIR_SEVERITIES = {"high", "medium"}
 DESIGN_SCHEMAS = {
     "brief": """\
 {
-  "logline": "一文のログライン（20〜300字。四要素の語を使う）",
+  "logline": "一文のログライン（20〜300字。elements の各文字列を一字一句そのまま含める）",
   "premise": "前提の要約",
   "theme": "主題を対立命題の形で（例: 務め対情）",
   "elements": {"who": "誰", "where": "どこ", "wants": "望み", "obstacle": "妨げ"},
   "similar": [
-    {"title": "類似作の題名", "axis": "差分の軸", "difference": "何が違うか"}
+    {"title": "類似作の題名", "axis": "structure / character / world のいずれか", "difference": "10字以上の差分"}
   ],
   "prohibitions": [
     {"rule": "禁止条件", "check_ja": "後工程での確認方法"}
@@ -200,14 +200,24 @@ class DocResult:
     attempts: int
     findings: tuple[dict, ...] = ()
     checks_failed: int = 0
+    first_attempt_findings: tuple[dict, ...] = ()
+    first_attempt_checks_failed: int = 0
 
     def as_dict(self) -> dict:
         by_severity: dict[str, int] = {}
         for item in self.findings:
             by_severity[item["severity"]] = by_severity.get(item["severity"], 0) + 1
+        first_by_severity: dict[str, int] = {}
+        for item in self.first_attempt_findings:
+            severity = item["severity"]
+            first_by_severity[severity] = first_by_severity.get(severity, 0) + 1
         return {"status": self.status, "attempts": self.attempts,
+                "repairs": max(0, self.attempts - 1),
                 "findings": len(self.findings), "by_severity": by_severity,
-                "checks_failed": self.checks_failed}
+                "checks_failed": self.checks_failed,
+                "first_attempt_findings": len(self.first_attempt_findings),
+                "first_attempt_by_severity": first_by_severity,
+                "first_attempt_checks_failed": self.first_attempt_checks_failed}
 
 
 @dataclass(frozen=True)
@@ -229,6 +239,10 @@ class Design:
                         if doc.status == "missing"],
             "findings": sum(len(doc.findings) for doc in self.docs),
             "by_severity": by_severity,
+            "attempts": sum(doc.attempts for doc in self.docs),
+            "repairs": sum(max(0, doc.attempts - 1) for doc in self.docs),
+            "first_attempt_findings": sum(
+                len(doc.first_attempt_findings) for doc in self.docs),
         }
 
 
@@ -254,8 +268,8 @@ def _validate_doc(name: str, path: Path, canon: Canon | None) -> tuple[list[dict
     """Load and check one design document. Returns (findings, checks_failed).
 
     Structural errors raise ValueError, which the caller turns into a repair
-    round. Voice has no text to check against yet, so a successful load is a
-    pass and the text checks are deferred to the draft.
+    round. Voice has no manuscript to check yet, so only its design-time
+    viewpoint/sample/ban contracts are checked here; text checks are deferred.
     """
     if name == "brief":
         from ..brief import check_brief, load_brief
@@ -280,8 +294,26 @@ def _validate_doc(name: str, path: Path, canon: Canon | None) -> tuple[list[dict
         report = check_scenes(load_scenes(path), canon)
     elif name == "voice":
         from ..style import load_voice
-        load_voice(path)  # structural only; text checks need the draft
-        return [], 0
+        voice = load_voice(path)  # manuscript checks are deferred to the draft
+        findings = []
+        if voice.person == "first" and not voice.pronouns:
+            findings.append({
+                "check": "viewpoint_declared", "severity": "medium",
+                "message_ja": "一人称の自称（pronouns）を宣言する。",
+            })
+        if not voice.sample:
+            findings.append({
+                "check": "sample_declared", "severity": "medium",
+                "message_ja": "文体の固定サンプル（sample）を書く。",
+            })
+        for banned in voice.banned:
+            if not banned.message_ja.strip():
+                findings.append({
+                    "check": "banned_reason", "severity": "medium",
+                    "message_ja": f"禁止表現 {banned.id} に理由（message_ja）を書く。",
+                })
+        failed = len({item["check"] for item in findings})
+        return findings, failed
     else:  # pragma: no cover - DOCS is fixed
         raise ValueError(f"unknown design document: {name}")
     failed = sum(1 for check in report["checks"] if check["status"] == "fail")
@@ -326,6 +358,8 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
         template = templates[name]
         findings: list[dict] = []
         checks_failed = 0
+        first_findings: list[dict] = []
+        first_checks_failed = 0
         last_text = ""
         attempts = 0
         for attempt in range(1, max_attempts + 1):
@@ -371,6 +405,9 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                 ledger.write_text(
                     f"design/attempts/{name}-attempt-{attempt}.error.txt",
                     findings[0]["message_ja"] + "\n")
+                if attempt == 1:
+                    first_findings = list(findings)
+                    first_checks_failed = checks_failed
                 continue
             candidate.write_text(json.dumps(payload, ensure_ascii=False,
                                             indent=2) + "\n", encoding="utf-8")
@@ -383,7 +420,13 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                 ledger.write_text(
                     f"design/attempts/{name}-attempt-{attempt}.error.txt",
                     findings[0]["message_ja"] + "\n")
+                if attempt == 1:
+                    first_findings = list(findings)
+                    first_checks_failed = checks_failed
                 continue
+            if attempt == 1:
+                first_findings = list(findings)
+                first_checks_failed = checks_failed
             if not _needs_repair(findings):
                 break
 
@@ -399,12 +442,17 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
             status = "missing"
         for leftover in design_dir.glob(f".{name}.attempt-*.json"):
             leftover.unlink()
-        results.append(DocResult(name=name, status=status, attempts=attempts,
-                                 findings=tuple(findings),
-                                 checks_failed=checks_failed))
+        results.append(DocResult(
+            name=name, status=status, attempts=attempts,
+            findings=tuple(findings), checks_failed=checks_failed,
+            first_attempt_findings=tuple(first_findings),
+            first_attempt_checks_failed=first_checks_failed))
         ledger.write_json(f"design/{name}.report.json", {
             "doc": name, "status": status, "attempts": attempts,
+            "repairs": max(0, attempts - 1),
             "findings": findings, "checks_failed": checks_failed,
+            "first_attempt": {"findings": first_findings,
+                              "checks_failed": first_checks_failed},
             "prompt": {"name": used.name, "version": used.version,
                        "digest": used.digest},
         })

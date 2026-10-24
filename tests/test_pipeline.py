@@ -100,13 +100,15 @@ def test_command_provider_round_trip(tmp_path):
     script.write_text(
         "import json,sys\n"
         "req=json.load(sys.stdin)\n"
-        "print(json.dumps({'text':'本文','model':'m','usage':{'out':3}}))\n"
+        "print(json.dumps({'text':'本文','model':'m','usage':{'out':3},"
+        "'provenance':{'origin':'fresh'}}))\n"
         "sys.stderr.write('log ' + req['purpose'] + '\\n')\n", encoding="utf-8")
     provider = CommandProvider(f"{sys.executable} {script}", model="m")
     result = provider.generate(GenerationRequest(purpose="plan", prompt="p"))
     assert result.text == "本文"
     assert result.model == "m"
     assert result.usage == {"out": 3}
+    assert result.provenance == {"origin": "fresh"}
 
 
 def test_command_provider_rejects_non_json(tmp_path):

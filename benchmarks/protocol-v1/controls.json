@@ -1,0 +1,691 @@
+{
+  "protocol": "protocol-v1",
+  "frozen": "2026-10-24T12:53:20Z",
+  "rules": "controls-rules-v1",
+  "window": [
+    3000,
+    4200
+  ],
+  "approved_by": "Arena user (explicit control-selection approval)",
+  "approved_at": "2026-10-24T21:29:54+09:00",
+  "note": "The user explicitly selected approval and freeze in Arena chat on 2026-10-24. This approves only the 30-work L1 control-group selection; it does not resume L2/L3, constitute a human quality rating, or claim semantic/genre evaluation.",
+  "works": [
+    {
+      "task": "t01",
+      "control": "fantasy",
+      "work_id": "aozora:042302",
+      "title": "世界怪談名作集 06 信号手",
+      "authors": [
+        "岡本 綺堂",
+        "ディケンズ チャールズ"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000914/card42302.html",
+      "genre": "933 英米小説・物語",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4218,
+        "paragraphs": 37,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4146,
+      "sha256": "4e599c06b1efebc6bd6384b2ecf5716d137af50c77baf87085e1ebca4ed628b7",
+      "keywords": [
+        "怪談"
+      ]
+    },
+    {
+      "task": "t01",
+      "control": "fantasy",
+      "work_id": "aozora:057231",
+      "title": "銭形平次捕物控 004 呪いの銀簪",
+      "authors": [
+        "野村 胡堂"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001670/card57231.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4315,
+        "paragraphs": 88,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4141,
+      "sha256": "482d38ef17d1c660c6909d7a127dffa06e8fa1c139fb413c51e6feb4e5bff9ad",
+      "keywords": [
+        "呪"
+      ]
+    },
+    {
+      "task": "t01",
+      "control": "fantasy",
+      "work_id": "aozora:001308",
+      "title": "影を踏まれた女 近代異妖編",
+      "authors": [
+        "岡本 綺堂"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000082/card1308.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4243,
+        "paragraphs": 43,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4159,
+      "sha256": "b11b51217fe2ae41d4a3eb6fb766556e20e3570c3b33a10253e9bba88d3e7c1b",
+      "keywords": [
+        "妖"
+      ]
+    },
+    {
+      "task": "t02",
+      "control": "fantasy",
+      "work_id": "aozora:053158",
+      "title": "日没の幻影",
+      "authors": [
+        "小川 未明"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001475/card53158.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4268,
+        "paragraphs": 54,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4121,
+      "sha256": "8a79b0c13998baffd6b80e37000ef2b83f0fa3bbfeb7c0b2a4427e8fac002b30",
+      "keywords": [
+        "幻"
+      ]
+    },
+    {
+      "task": "t02",
+      "control": "fantasy",
+      "work_id": "aozora:000361",
+      "title": "幻談",
+      "authors": [
+        "幸田 露伴"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000051/card361.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 3620,
+        "paragraphs": 8,
+        "method": "head-cut at blank line"
+      },
+      "chars": 3606,
+      "sha256": "fd0b99573103dc85a32aff4382d9b857fadf264afd15cdf2fccc7596d51790ad",
+      "keywords": [
+        "幻"
+      ]
+    },
+    {
+      "task": "t02",
+      "control": "fantasy",
+      "work_id": "aozora:048129",
+      "title": "夢がたり",
+      "authors": [
+        "ガールシン フセヴォロド・ミハイロヴィチ",
+        "神西 清"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000340/card48129.html",
+      "genre": "983 ロシア小説・物語",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 3903,
+        "paragraphs": 8,
+        "method": "head-cut at blank line"
+      },
+      "chars": 3882,
+      "sha256": "5bb0f016c07c379c9bae1c397335d7012694af3a30fd4c9c8a43f4e6ab9eeec6",
+      "keywords": [
+        "夢"
+      ]
+    },
+    {
+      "task": "t03",
+      "control": "fantasy",
+      "work_id": "aozora:056243",
+      "title": "妖氛録",
+      "authors": [
+        "中島 敦"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000119/card56243.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4072,
+        "paragraphs": 22,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4028,
+      "sha256": "bc9bca817e74cd6496541ac2d43419e6009f15857a461bfc06e9e9b713a91d56",
+      "keywords": [
+        "妖"
+      ]
+    },
+    {
+      "task": "t03",
+      "control": "fantasy",
+      "work_id": "aozora:043224",
+      "title": "雪霊記事",
+      "authors": [
+        "泉 鏡花"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000050/card43224.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4324,
+        "paragraphs": 66,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4194,
+      "sha256": "04cc46884c1b611d41d5c8121a8814ea820605df3c0a1f2a1020391ad4c7591f",
+      "keywords": [
+        "霊"
+      ]
+    },
+    {
+      "task": "t03",
+      "control": "fantasy",
+      "work_id": "aozora:058540",
+      "title": "西班牙犬の家 （夢見心地になることの好きな人々の為めの短篇）",
+      "authors": [
+        "佐藤 春夫"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001763/card58540.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 3980,
+        "paragraphs": 8,
+        "method": "head-cut at blank line"
+      },
+      "chars": 3966,
+      "sha256": "b7998c686fc9f4ba36067299aaffc1207479f1a0fa01402a5e4bfa090ec6f986",
+      "keywords": [
+        "夢"
+      ]
+    },
+    {
+      "task": "t04",
+      "control": "fantasy",
+      "work_id": "aozora:047497",
+      "title": "ノンシャラン道中記 01 八人の小悪魔",
+      "authors": [
+        "久生 十蘭"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001224/card47497.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 3795,
+        "paragraphs": 9,
+        "method": "head-cut at blank line"
+      },
+      "chars": 3776,
+      "sha256": "a8b467c4ab72843dfc450ed59bf26aa07af08cea222371213d7b7b9f0678673e",
+      "keywords": [
+        "魔"
+      ]
+    },
+    {
+      "task": "t04",
+      "control": "fantasy",
+      "work_id": "aozora:000290",
+      "title": "狂言の神",
+      "authors": [
+        "太宰 治"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000035/card290.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4108,
+        "paragraphs": 18,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4071,
+      "sha256": "1ded426aaf215d88f78d1a343ba51d08c1ebdf8999047671da757914a3e9d427",
+      "keywords": [
+        "神"
+      ]
+    },
+    {
+      "task": "t04",
+      "control": "fantasy",
+      "work_id": "aozora:043468",
+      "title": "世界怪談名作集 16 鏡中の美女",
+      "authors": [
+        "岡本 綺堂",
+        "マクドナルド ジョージ"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001117/card43468.html",
+      "genre": "933 英米小説・物語",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4193,
+        "paragraphs": 39,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4117,
+      "sha256": "475e3fb70c6b00e6254c1b8f189dd04a5d849151b3cd49959112d8c9b4bdfbb2",
+      "keywords": [
+        "怪談"
+      ]
+    },
+    {
+      "task": "t05",
+      "control": "contemporary",
+      "work_id": "aozora:046387",
+      "title": "春の落葉",
+      "authors": [
+        "辻村 もと子"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001228/card46387.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "full",
+      "range": {
+        "start_char": 0,
+        "end_char": 4173,
+        "paragraphs": null,
+        "method": "full text"
+      },
+      "chars": 4051,
+      "sha256": "30b50249986524057cd1b55c50ff743ea48c3ee54cc5ef7966a48949bfa804ae",
+      "keywords": []
+    },
+    {
+      "task": "t05",
+      "control": "contemporary",
+      "work_id": "aozora:004751",
+      "title": "飢ゑ",
+      "authors": [
+        "原 民喜"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000293/card4751.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4131,
+        "paragraphs": 18,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4097,
+      "sha256": "cfb8400e454f14023c1e41d3610a8bae88ed3742378fb78d45de9f32b54567f9",
+      "keywords": []
+    },
+    {
+      "task": "t05",
+      "control": "contemporary",
+      "work_id": "aozora:000271",
+      "title": "HUMAN LOST",
+      "authors": [
+        "太宰 治"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000035/card271.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4313,
+        "paragraphs": 87,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4131,
+      "sha256": "44aa65d879e7e7634d1aa5474a270bf83fe5965677510e461a394f99cec98cf1",
+      "keywords": []
+    },
+    {
+      "task": "t06",
+      "control": "contemporary",
+      "work_id": "aozora:058199",
+      "title": "クロイツェル・ソナタ 01 クロイツェル・ソナタ",
+      "authors": [
+        "トルストイ レオ",
+        "米川 正夫"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000361/card58199.html",
+      "genre": "983 ロシア小説・物語",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4141,
+        "paragraphs": 39,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4064,
+      "sha256": "255c23f266549fb543f7517b6aa84bb66af85a53c31c47e1ffde25d8a626a399",
+      "keywords": []
+    },
+    {
+      "task": "t06",
+      "control": "contemporary",
+      "work_id": "aozora:056124",
+      "title": "奇談クラブ〔戦後版〕 16 結婚ラプソディ",
+      "authors": [
+        "野村 胡堂"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001670/card56124.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4214,
+        "paragraphs": 31,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4154,
+      "sha256": "89cb63a7316cfa81bb53c179a543b27067d7c899fc106f7f26da0e42c3ef6245",
+      "keywords": []
+    },
+    {
+      "task": "t06",
+      "control": "contemporary",
+      "work_id": "aozora:002191",
+      "title": "睡魔",
+      "authors": [
+        "蘭 郁二郎"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000325/card2191.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4503,
+        "paragraphs": 151,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4198,
+      "sha256": "147e5e907a870af5d49827ab59d7a91adcba470c7bef24f3b40649ea0a83f1b7",
+      "keywords": []
+    },
+    {
+      "task": "t07",
+      "control": "contemporary",
+      "work_id": "aozora:045310",
+      "title": "鸚鵡のゐる部屋",
+      "authors": [
+        "牧野 信一"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000183/card45310.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "full",
+      "range": {
+        "start_char": 0,
+        "end_char": 4350,
+        "paragraphs": null,
+        "method": "full text"
+      },
+      "chars": 4158,
+      "sha256": "0e4a80c1343908fbb08ca8d9b149cc6d9c5fb03e170f2df3df0af95f9347bef8",
+      "keywords": []
+    },
+    {
+      "task": "t07",
+      "control": "contemporary",
+      "work_id": "aozora:047059",
+      "title": "子をつれて",
+      "authors": [
+        "葛西 善蔵"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000984/card47059.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4260,
+        "paragraphs": 40,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4179,
+      "sha256": "2f0368f773068d8745e8915fc513d105065fb81734fd72a020f6405d00736316",
+      "keywords": []
+    },
+    {
+      "task": "t07",
+      "control": "contemporary",
+      "work_id": "aozora:057192",
+      "title": "白昼夢",
+      "authors": [
+        "江戸川 乱歩"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001779/card57192.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "full",
+      "range": {
+        "start_char": 0,
+        "end_char": 3760,
+        "paragraphs": null,
+        "method": "full text"
+      },
+      "chars": 3662,
+      "sha256": "d72d3e555a6ddfbb8ef9d8fbba037dd99713b562c6d5e8cc737c28338658a28c",
+      "keywords": []
+    },
+    {
+      "task": "t08",
+      "control": "history",
+      "work_id": "aozora:001368",
+      "title": "応仁の乱",
+      "authors": [
+        "菊池 寛"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000083/card1368.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4143,
+        "paragraphs": 46,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4053,
+      "sha256": "5c3d3cf209f257884ebcf5db7b3ceb0b18b8d8fc563782d648c0115834db2364",
+      "keywords": [
+        "応仁"
+      ]
+    },
+    {
+      "task": "t08",
+      "control": "history",
+      "work_id": "aozora:056067",
+      "title": "濞かみ浪人",
+      "authors": [
+        "吉川 英治"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001562/card56067.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4415,
+        "paragraphs": 113,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4191,
+      "sha256": "c015a7875ed857ca782d6f6f9155c8bea2ff7bf0837e4b929fc0b246321b4bad",
+      "keywords": [
+        "浪人"
+      ]
+    },
+    {
+      "task": "t08",
+      "control": "history",
+      "work_id": "aozora:042731",
+      "title": "落雷のあと ――近代説話――",
+      "authors": [
+        "豊島 与志雄"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000906/card42731.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 3893,
+        "paragraphs": 27,
+        "method": "head-cut at blank line"
+      },
+      "chars": 3841,
+      "sha256": "736a296f8e68ba770d19456a402d626de7c0bdec15d97f776e5f4a28462c96cf",
+      "keywords": [
+        "説話"
+      ]
+    },
+    {
+      "task": "t09",
+      "control": "history",
+      "work_id": "aozora:054709",
+      "title": "銭形平次捕物控 126 辻斬",
+      "authors": [
+        "野村 胡堂"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001670/card54709.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4389,
+        "paragraphs": 107,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4176,
+      "sha256": "770b5f03e2831c1ca5fd00eee845d3b4050c079d348379d059a9cb28deaf43d0",
+      "keywords": [
+        "辻斬"
+      ]
+    },
+    {
+      "task": "t09",
+      "control": "history",
+      "work_id": "aozora:058019",
+      "title": "新編忠臣蔵",
+      "authors": [
+        "吉川 英治"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001562/card58019.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4392,
+        "paragraphs": 114,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4166,
+      "sha256": "74e118c05b3a1998feca9f6be1b77d60f4300065d09fba70514011590b60310a",
+      "keywords": [
+        "忠臣蔵"
+      ]
+    },
+    {
+      "task": "t09",
+      "control": "history",
+      "work_id": "aozora:043209",
+      "title": "明治開化　安吾捕物 07 その六　血を見る真珠",
+      "authors": [
+        "坂口 安吾"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001095/card43209.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4252,
+        "paragraphs": 30,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4194,
+      "sha256": "83f8af2b6bf4b475e83cdfbf7945646fad373591e131f164c791e8908404b4ca",
+      "keywords": [
+        "明治"
+      ]
+    },
+    {
+      "task": "t10",
+      "control": "history",
+      "work_id": "aozora:057593",
+      "title": "其角と山賊と殿様",
+      "authors": [
+        "山本 周五郎"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001869/card57593.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4422,
+        "paragraphs": 125,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4172,
+      "sha256": "4b82df3f4fbde47c5bfb3aa059a733808472147b97120aee016135571be0d776",
+      "keywords": [
+        "殿様"
+      ]
+    },
+    {
+      "task": "t10",
+      "control": "history",
+      "work_id": "aozora:001944",
+      "title": "北守将軍と三人兄弟の医者",
+      "authors": [
+        "宮沢 賢治"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/000081/card1944.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4374,
+        "paragraphs": 95,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4185,
+      "sha256": "7931377a4b472e5c10b2c759b54d0e0b8c09a16604d6a9d7289794c9f2e61dd0",
+      "keywords": [
+        "将軍"
+      ]
+    },
+    {
+      "task": "t10",
+      "control": "history",
+      "work_id": "aozora:060805",
+      "title": "現代語訳　平家物語 04 第四巻",
+      "authors": [
+        "尾崎 士郎",
+        "作者不詳"
+      ],
+      "url": "https://www.aozora.gr.jp/cards/001529/card60805.html",
+      "genre": "913 小説・物語（日本文学）",
+      "kind": "excerpt",
+      "range": {
+        "start_char": 0,
+        "end_char": 4254,
+        "paragraphs": 35,
+        "method": "head-cut at blank line"
+      },
+      "chars": 4186,
+      "sha256": "947f800eb0dfbae171b6e3326b8c19aaa472f06b47ad0625db979d8aa90a9f22",
+      "keywords": [
+        "平家"
+      ]
+    }
+  ]
+}
