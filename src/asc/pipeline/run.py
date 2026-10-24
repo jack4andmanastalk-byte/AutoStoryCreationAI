@@ -118,6 +118,7 @@ class RunLedger:
             "prompt_hash": request.prompt_hash,
             "prompt": request.prompt,
             "temperature": request.temperature,
+            "max_tokens": request.max_tokens,
             "seed": request.seed,
             "context": dict(request.context),
             "response_sha256": hashlib.sha256(result.text.encode("utf-8")).hexdigest(),

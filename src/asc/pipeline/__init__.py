@@ -6,7 +6,7 @@ restyles the revised chapters against a voice guide.
 """
 from .llm import (
     CommandProvider, GenerationRequest, GenerationResult, Provider, ProviderError,
-    ScriptedProvider, digest, load_scripted_responses,
+    ResponsePendingError, ScriptedProvider, digest, load_scripted_responses,
 )
 from .design import (
     DOCS as DESIGN_DOCS, Design, DesignError, DocResult, build_design,
@@ -29,7 +29,8 @@ from .voicepass import VoicePass, VoicePassError, build_voice_pass, voice_guide_
 
 __all__ = [
     "CommandProvider", "GenerationRequest", "GenerationResult", "Provider",
-    "ProviderError", "ScriptedProvider", "digest", "load_scripted_responses",
+    "ProviderError", "ResponsePendingError", "ScriptedProvider", "digest",
+    "load_scripted_responses",
     "Plan", "PlanError", "build_plan", "canon_coverage", "normalise_canon",
     "parse_plan", "validate_payload",
     "DESIGN_DOCS", "Design", "DesignError", "DocResult", "build_design",

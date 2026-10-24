@@ -453,6 +453,25 @@ class ProjectStore:
             if stage in checkpoints
             for artifact in checkpoints[stage].artifacts
         ]
+        pending = []
+        for stage in stage_order:
+            checkpoint = checkpoints.get(stage)
+            if checkpoint is None or checkpoint.status != "waiting_response":
+                continue
+            details = dict(checkpoint.pending or {})
+            response_path = details.get("response_path")
+            pending.append({
+                "project_id": project_id,
+                "node_id": node.id,
+                "revision_id": revision.id,
+                "attempt_id": checkpoint.attempt_id,
+                "stage": stage,
+                "run_id": checkpoint.run_id,
+                **details,
+                "response_ready": bool(
+                    response_path and Path(response_path).is_file()
+                ),
+            })
         values = set(stages.values())
         if all(stages.get(stage) == "done" for stage in DEFAULT_STAGES):
             state = "complete"
@@ -468,12 +487,17 @@ class ProjectStore:
             state = "not_started"
         checkpoint_times = [item.updated_at for item in checkpoints.values()]
         attempt_ids = sorted({item.attempt_id for item in checkpoints.values()})
+        latest_attempt = (
+            max(checkpoints.values(), key=lambda item: item.updated_at).attempt_id
+            if checkpoints else None
+        )
         return {
             "schema_version": SCHEMA_VERSION,
             "project_id": project.id,
             "title": project.title,
             "state": state,
-            "attempt_id": attempt_ids[0] if len(attempt_ids) == 1 else None,
+            "attempt_id": latest_attempt,
+            "attempt_ids": attempt_ids,
             "root_node_id": node.id,
             "current_revision_id": revision.id,
             "spec_sha256": revision.spec_sha256,
@@ -488,6 +512,7 @@ class ProjectStore:
             },
             "artifacts": artifacts,
             "artifact_refs": artifact_refs,
+            "pending": pending,
             "runs": runs,
             "project_dir": str(directory),
         }

@@ -258,6 +258,10 @@ class StageCheckpoint:
     run_id: str | None = None
     artifacts: tuple[ArtifactRef, ...] = ()
     error: str | None = None
+    seed: int | None = None
+    temperature: float | None = None
+    resume_of: str | None = None
+    pending: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -272,6 +276,10 @@ class StageCheckpoint:
             "run_id": self.run_id,
             "artifacts": [artifact.to_dict() for artifact in self.artifacts],
             "error": self.error,
+            "seed": self.seed,
+            "temperature": self.temperature,
+            "resume_of": self.resume_of,
+            "pending": self.pending,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
         }
@@ -289,6 +297,10 @@ class StageCheckpoint:
             run_id=data.get("run_id"),
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
             error=data.get("error"),
+            seed=data.get("seed"),
+            temperature=data.get("temperature"),
+            resume_of=data.get("resume_of"),
+            pending=data.get("pending"),
             created_at=data["created_at"],
             updated_at=data["updated_at"],
         )

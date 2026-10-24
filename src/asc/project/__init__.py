@@ -10,7 +10,8 @@ from .model import (
     WorkProject,
     WorkSpec,
 )
-from .runner import ProjectRunError, ProjectRunResult, ProjectRunner
+from .resume import ResumeError, ResumeProvider
+from .runner import ProjectRunError, ProjectRunPending, ProjectRunResult, ProjectRunner
 from .schema import SCHEMA_VERSION, ProjectValidationError
 from .store import (
     ProjectCorruptError,
@@ -31,11 +32,14 @@ __all__ = [
     "ProjectLockError",
     "ProjectNotFoundError",
     "ProjectRunError",
+    "ProjectRunPending",
     "ProjectRunResult",
     "ProjectRunner",
     "ProjectSnapshot",
     "ProjectStore",
     "ProjectValidationError",
+    "ResumeError",
+    "ResumeProvider",
     "SCHEMA_VERSION",
     "StageCheckpoint",
     "WorkNode",
