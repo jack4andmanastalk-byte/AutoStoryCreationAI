@@ -50,3 +50,8 @@ python3 scripts/relay_prompts.py export --dir runs/operator/arena-l1-t01
 `--provider command` のアダプタは、標準入力の JSON（`GenerationRequest`）に対して
 標準出力に `{"text": "..."}` を返すものです。`scripts/judge_adapter.py` を使う L2 判定は
 凍結中なので、新規実験には接続しません。
+
+完了runの記録済み応答を外部providerなしで再実行する場合は `--provider replay` を使います。
+source hash、request key、prompt全文、response hash、成果物一致を検査する手順は
+[`../docs/replay.md`](../docs/replay.md) を参照してください。replayは新規生成やG5の
+モデル再現性の証拠ではなく、既存の実験結果を上書きしないよう新しい出力先が必要です。

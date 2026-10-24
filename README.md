@@ -164,6 +164,7 @@ gh release download datasets-narou-commercialized
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
 | [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
+| [`docs/replay.md`](docs/replay.md) | 記録済み応答を外部providerなしで再実行し、prompt・response・成果物の一致を監査する方法 |
 | [`docs/ci.md`](docs/ci.md) | CI の実行枠設計（なぜ CI が待たされていたか、どう直したか） |
 
 ```bash

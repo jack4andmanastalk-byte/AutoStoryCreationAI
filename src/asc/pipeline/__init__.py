@@ -21,6 +21,7 @@ from .plan import (
     validate_payload,
 )
 from .prompts import PromptError, PromptTemplate, load_prompt
+from .replay import ReplayError, ReplayProvider, generation_request_key
 from .revise import Revision, RevisionError, build_revision
 from .run import RunLedger, git_commit, make_run_id
 from .tasks import PROTOCOL_VERSION, Task, TaskError, TaskSet, load_tasks
@@ -35,6 +36,7 @@ __all__ = [
     "design_notes_for_chapter",
     "Draft", "DraftError", "ChapterDraft", "build_story", "canon_brief",
     "chapter_plan", "check_chapter", "clean_text", "draft_story",
+    "ReplayError", "ReplayProvider", "generation_request_key",
     "Revision", "RevisionError", "build_revision",
     "VoicePass", "VoicePassError", "build_voice_pass", "voice_guide_text",
     "PromptError", "PromptTemplate", "load_prompt",

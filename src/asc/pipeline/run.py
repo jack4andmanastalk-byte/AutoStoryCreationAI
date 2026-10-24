@@ -7,6 +7,7 @@ commit and a configuration instead of a memory.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import secrets
 import subprocess
@@ -118,6 +119,8 @@ class RunLedger:
             "prompt": request.prompt,
             "temperature": request.temperature,
             "seed": request.seed,
+            "context": dict(request.context),
+            "response_sha256": hashlib.sha256(result.text.encode("utf-8")).hexdigest(),
             "response": result.as_dict(),
         }
         with (self.path / "responses.jsonl").open("a", encoding="utf-8") as handle:
@@ -142,7 +145,16 @@ class RunLedger:
         self.finished_at = utc_now()
         self.write_manifest()
 
+    def _responses_integrity(self) -> tuple[str | None, int]:
+        path = self.path / "responses.jsonl"
+        if not path.is_file():
+            return None, 0
+        raw = path.read_bytes()
+        count = sum(1 for line in raw.decode("utf-8").splitlines() if line.strip())
+        return hashlib.sha256(raw).hexdigest(), count
+
     def manifest(self) -> dict:
+        responses_sha256, response_count = self._responses_integrity()
         return {
             "run_id": self.run_id,
             "task_id": self.task_id,
@@ -153,6 +165,8 @@ class RunLedger:
             "provider": self.provider,
             "temperature": self.temperature,
             "prompt_hashes": dict(sorted(self.prompt_hashes.items())),
+            "responses_sha256": responses_sha256,
+            "response_count": response_count,
             "git_commit": self.commit,
             "protocol_version": self.protocol_version,
             "started_at": self.started_at,

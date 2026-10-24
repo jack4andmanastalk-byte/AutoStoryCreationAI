@@ -28,8 +28,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.pipeline import (  # noqa: E402
-    CommandProvider, DraftError, PlanError, ProviderError, RevisionError, RunLedger,
-    ScriptedProvider, TaskError, VoicePassError, build_design, build_plan,
+    CommandProvider, DraftError, PlanError, ProviderError, ReplayError, ReplayProvider,
+    RevisionError, RunLedger, ScriptedProvider, TaskError, VoicePassError,
+    build_design, build_plan,
     build_revision, build_story, build_voice_pass, git_commit,
     load_scripted_responses, load_tasks,
 )
@@ -178,6 +179,12 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
             summary["ced_per_10k_chars"] = None
         summary["provider_requests"], summary["response_provenance"] = \
             _response_metrics(ledger)
+        if isinstance(provider, ReplayProvider):
+            replay_report = provider.finalize(ledger)
+            ledger.write_json("replay-audit.json", replay_report)
+            summary["replay"] = replay_report["summary"]
+            if not replay_report["summary"]["ok"]:
+                raise ReplayError("replay verification failed; see replay-audit.json")
         ledger.write_json("cell-summary.json", summary)
         ledger.finish("ok")
         summary["status"] = "ok"
@@ -316,6 +323,11 @@ def render_note(experiment: dict, results: dict, scripted: bool,
             "- **この結果は台本（scripted fixture）による配線検証であり、モデルの性能ではありません。**",
             "- 章は 200〜280 字で、プロトコルの 1,000〜1,400 字に届いていません。",
         ]
+    if experiment.get("provider") == "replay":
+        lines.append(
+            "- **これは記録済み応答の offline replay であり、新規生成ではありません。**"
+            "prompt・response・成果物の一致は配線の監査結果であり、"
+            "モデルが同じ応答を再生成できること（G5）の証拠ではありません。")
     if not experiment.get("design", True):
         lines.append(
             "- **設計ステージが off のため、S1 は設計書なしの条件である。**"
@@ -362,13 +374,19 @@ def main(argv: list[str] | None = None) -> int:
                         choices=["s0", "s1", "s2", "s3"])
     parser.add_argument("--seeds", nargs="+", type=int, default=[0])
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
-    parser.add_argument("--provider", default="scripted", choices=["scripted", "command"])
+    parser.add_argument("--provider", default="scripted",
+                        choices=["scripted", "command", "replay"])
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT),
                         help="scripted responses for S1 and later systems")
     parser.add_argument("--script-s0", default=str(
         REPO_ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "draft-baseline-demo.json"),
         help="scripted responses for the S0 baseline")
     parser.add_argument("--command", help="external provider command")
+    parser.add_argument("--replay-from", help="completed run directory for --provider replay")
+    parser.add_argument("--replay-manifest-sha256", default=None,
+                        help="optional exact source manifest SHA-256 pin")
+    parser.add_argument("--replay-responses-sha256", default=None,
+                        help="optional exact source responses.jsonl SHA-256 pin")
     parser.add_argument("--model", default=None,
                         help="model name to record (with --provider command)")
     parser.add_argument("--model-version", default=None,
@@ -394,7 +412,37 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     providers = {}
-    if args.provider == "command":
+    if args.provider == "replay":
+        if not args.replay_from:
+            print("error: --provider replay requires --replay-from", file=sys.stderr)
+            return 2
+        if len(selected) * len(args.systems) * len(args.seeds) != 1:
+            print("error: replay requires exactly one task/system/seed cell", file=sys.stderr)
+            return 2
+        if args.model or args.model_version:
+            print("error: replay uses the source model metadata; omit --model/--model-version",
+                  file=sys.stderr)
+            return 2
+        try:
+            provider = ReplayProvider(
+                args.replay_from,
+                expected_manifest_sha256=args.replay_manifest_sha256,
+                expected_responses_sha256=args.replay_responses_sha256)
+        except (ProviderError, OSError, json.JSONDecodeError, UnicodeError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 2
+        source = provider.source_manifest
+        expected_cell = (selected[0].id, args.systems[0], args.seeds[0])
+        source_cell = (source.get("task_id"), source.get("system"), source.get("seed"))
+        if source_cell != expected_cell:
+            print(f"error: replay source cell {source_cell} != requested {expected_cell}",
+                  file=sys.stderr)
+            return 2
+        if source.get("protocol_version") != tasks.protocol:
+            print("error: replay source protocol differs from --tasks-file", file=sys.stderr)
+            return 2
+        providers = {args.systems[0]: provider}
+    elif args.provider == "command":
         if not args.command:
             print("error: --provider command requires --command", file=sys.stderr)
             return 2
@@ -414,6 +462,9 @@ def main(argv: list[str] | None = None) -> int:
         provider = providers[args.systems[0]]
 
     out = Path(args.out) if args.out else REPO_ROOT / "experiments" / args.id
+    if args.provider == "replay" and (out / "results.json").is_file():
+        print("error: replay output already exists; choose a new --out/--id", file=sys.stderr)
+        return 2
     out.mkdir(parents=True, exist_ok=True)
     runs_root = Path(args.runs)
     runs_root.mkdir(parents=True, exist_ok=True)
@@ -444,6 +495,13 @@ def main(argv: list[str] | None = None) -> int:
     results = {"experiment": {k: v for k, v in experiment.items() if k != "cells"},
                "evaluation_scope": evaluation_scope,
                **aggregate(cells)}
+    if isinstance(provider, ReplayProvider):
+        results["replay"] = {
+            "source": provider.source_summary(),
+            "cells": [{"run_id": cell["run_id"], "run_dir": cell["run_dir"],
+                       "status": cell["status"], "verification": cell.get("replay"),
+                       "error": cell.get("error")} for cell in cells],
+        }
     (out / "results.json").write_text(
         json.dumps(results, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     (out / "note.md").write_text(
