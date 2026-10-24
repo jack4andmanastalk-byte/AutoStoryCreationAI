@@ -1,0 +1,112 @@
+{
+  "schema": "design-prompt-contract-report-v1",
+  "date": "2026-10-24",
+  "code_commit": "44a87923f97ec5cc4e97fca53e83d77295b5936d",
+  "scope": "L1 structural and canon-reference contracts only; scripted fixtures, no fresh model generation, no quality judgment",
+  "test_file": "tests/test_design_prompt_contracts.py",
+  "new_tests": {
+    "total": 29,
+    "prompt_contract": 7,
+    "valid_json": 7,
+    "semantic_and_canon_failures": 7,
+    "wrong_nested_json_types": 7,
+    "gained_fact_withheld_with_reason": 1
+  },
+  "targeted_regression": {
+    "command": ".venv/bin/python -m pytest tests/test_design_prompt_contracts.py tests/test_pipeline_design.py tests/test_scene_information.py tests/test_voice_style.py -q",
+    "passed": 61,
+    "failed": 0
+  },
+  "full_ci": {
+    "command": "make ci",
+    "passed": 423,
+    "failed": 0,
+    "warnings": 3,
+    "catalog": "up to date",
+    "continuity_demo": "completed",
+    "evaluation_fixture": "completed as a frozen fixture"
+  },
+  "documents": {
+    "world": {
+      "valid": true,
+      "failure_checks": ["geography_grounded", "disclosure_ordered"],
+      "wrong_type": "rules as a string"
+    },
+    "history": {
+      "valid": true,
+      "failure_checks": ["chronology_ordered", "causality_linked", "knowledge_consistent"],
+      "wrong_type": "event year as a string"
+    },
+    "character": {
+      "valid": true,
+      "failure_checks": ["core_declared", "choices_predicted", "canon_grounded"],
+      "wrong_type": "speech as a string"
+    },
+    "relation": {
+      "valid": true,
+      "failure_checks": ["knowledge_matches_canon", "change_staged"],
+      "wrong_type": "change pair as a string"
+    },
+    "plot": {
+      "valid": true,
+      "failure_checks": ["acts_cover", "turns_placed", "debts_listed"],
+      "wrong_type": "ending as a string"
+    },
+    "scene": {
+      "valid": true,
+      "failure_checks": ["knowledge_tracked", "foreshadow_tagged"],
+      "wrong_type": "disclosure as a string",
+      "positive_contract": "a gained fact may be withheld with a reason"
+    },
+    "voice": {
+      "valid": true,
+      "failure_checks": ["viewpoint_declared", "sample_declared", "banned_reason"],
+      "wrong_type": "viewpoint as a string"
+    }
+  },
+  "repair_contract": {
+    "bad_initial_and_bad_repair_become": "unresolved",
+    "attempts_per_document": 2,
+    "findings_preserved": true,
+    "previous_response_in_repair_prompt": true,
+    "pipeline_continues_without_provider_exception": true
+  },
+  "implementation_changes": [
+    "scene/check.py now accepts a gained fact in either disclosed or reasoned withheld, matching prompts/design-scene.md",
+    "pipeline/design.py now checks first-person pronouns, a fixed voice sample, and reasons for banned expressions at design time"
+  ],
+  "post_change_replay": {
+    "t02": {
+      "run_id": "20261024T143333Z-t02-s1-s0-b1e64fa7",
+      "source_run_id": "20261024T141921Z-t02-s1-s0-39192327",
+      "status": "ok",
+      "responses": 12,
+      "matched_artifacts": 42,
+      "compared_artifacts": 42,
+      "source_unchanged": true
+    },
+    "t03": {
+      "run_id": "20261024T143333Z-t03-s1-s0-2d849daf",
+      "source_run_id": "20261024T141921Z-t03-s1-s0-cab323d1",
+      "status": "ok",
+      "responses": 12,
+      "matched_artifacts": 42,
+      "compared_artifacts": 42,
+      "source_unchanged": true
+    }
+  },
+  "unchanged": {
+    "protocol": "protocol-v1",
+    "tasks": "benchmarks/protocol-v1/tasks.yaml",
+    "controls": "30 frozen works",
+    "design_prompt_versions": "seven non-brief prompts remain 1.0; brief remains 1.1",
+    "formal_experiment_results": true,
+    "l2_l3": "frozen_not_measured"
+  },
+  "limits": [
+    "Scripted contract tests do not measure model quality, genre fit, or semantic story quality.",
+    "Selected malformed responses are not an exhaustive fuzzing proof.",
+    "Unresolved design documents are intentionally fail-open and must not be misreported as clean.",
+    "Recorded-response replay does not establish G5 model reproducibility."
+  ]
+}
