@@ -268,8 +268,8 @@ def _validate_doc(name: str, path: Path, canon: Canon | None) -> tuple[list[dict
     """Load and check one design document. Returns (findings, checks_failed).
 
     Structural errors raise ValueError, which the caller turns into a repair
-    round. Voice has no text to check against yet, so a successful load is a
-    pass and the text checks are deferred to the draft.
+    round. Voice has no manuscript to check yet, so only its design-time
+    viewpoint/sample/ban contracts are checked here; text checks are deferred.
     """
     if name == "brief":
         from ..brief import check_brief, load_brief
@@ -294,8 +294,26 @@ def _validate_doc(name: str, path: Path, canon: Canon | None) -> tuple[list[dict
         report = check_scenes(load_scenes(path), canon)
     elif name == "voice":
         from ..style import load_voice
-        load_voice(path)  # structural only; text checks need the draft
-        return [], 0
+        voice = load_voice(path)  # manuscript checks are deferred to the draft
+        findings = []
+        if voice.person == "first" and not voice.pronouns:
+            findings.append({
+                "check": "viewpoint_declared", "severity": "medium",
+                "message_ja": "一人称の自称（pronouns）を宣言する。",
+            })
+        if not voice.sample:
+            findings.append({
+                "check": "sample_declared", "severity": "medium",
+                "message_ja": "文体の固定サンプル（sample）を書く。",
+            })
+        for banned in voice.banned:
+            if not banned.message_ja.strip():
+                findings.append({
+                    "check": "banned_reason", "severity": "medium",
+                    "message_ja": f"禁止表現 {banned.id} に理由（message_ja）を書く。",
+                })
+        failed = len({item["check"] for item in findings})
+        return findings, failed
     else:  # pragma: no cover - DOCS is fixed
         raise ValueError(f"unknown design document: {name}")
     failed = sum(1 for check in report["checks"] if check["status"] == "fail")
