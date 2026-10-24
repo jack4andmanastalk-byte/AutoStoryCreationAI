@@ -71,6 +71,37 @@ def _measure_final_text(text_dir, task) -> tuple[int, float]:
     return chars, rate
 
 
+def _response_metrics(ledger: RunLedger) -> tuple[int, dict]:
+    """Count answers and preserve their declared origin without guessing.
+
+    Older operator responses have no provenance field. They are reported as
+    ``unspecified`` rather than being silently promoted to fresh generation.
+    """
+    path = ledger.path / "responses.jsonl"
+    if not path.is_file():
+        return 0, {"counts": {}, "reused_source_run_ids": []}
+    counts: dict[str, int] = {}
+    reused_sources: set[str] = set()
+    requests = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        entry = json.loads(line)
+        requests += 1
+        provenance = (entry.get("response") or {}).get("provenance") or {}
+        if not isinstance(provenance, dict):
+            provenance = {}
+        origin = str(provenance.get("origin") or "unspecified")
+        counts[origin] = counts.get(origin, 0) + 1
+        source = provenance.get("source_run_id")
+        if origin == "reused" and source:
+            reused_sources.add(str(source))
+    return requests, {
+        "counts": dict(sorted(counts.items())),
+        "reused_source_run_ids": sorted(reused_sources),
+    }
+
+
 def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
              max_rounds: int = 1, design: bool = True) -> dict:
     ledger = RunLedger.create(
@@ -93,13 +124,21 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
                 result = build_design(task, provider, ledger, canon,
                                       temperature=temperature, seed=seed)
                 design_dir = ledger.path / "design"
-                summary["design_findings"] = result.as_dict()["findings"]
-                summary["design_unresolved"] = len(result.as_dict()["unresolved"])
-                summary["design_missing"] = len(result.as_dict()["missing"])
+                design_summary = result.as_dict()
+                summary["design_findings"] = design_summary["findings"]
+                summary["design_unresolved"] = len(design_summary["unresolved"])
+                summary["design_missing"] = len(design_summary["missing"])
+                summary["design_attempts"] = design_summary["attempts"]
+                summary["design_repairs"] = design_summary["repairs"]
+                summary["design_first_attempt_findings"] = \
+                    design_summary["first_attempt_findings"]
             else:
                 summary["design_findings"] = None
                 summary["design_unresolved"] = None
                 summary["design_missing"] = None
+                summary["design_attempts"] = None
+                summary["design_repairs"] = None
+                summary["design_first_attempt_findings"] = None
         draft = build_story(task, provider, ledger, canon=canon, chapters=tasks.chapters,
                             temperature=temperature, seed=seed, design_dir=design_dir)
         summary["warnings"] = len(draft.warnings)
@@ -137,6 +176,8 @@ def run_cell(task, system, seed, provider, tasks, runs_root, temperature,
             summary["high"] = None
             summary["checks_skipped"] = None
             summary["ced_per_10k_chars"] = None
+        summary["provider_requests"], summary["response_provenance"] = \
+            _response_metrics(ledger)
         ledger.write_json("cell-summary.json", summary)
         ledger.finish("ok")
         summary["status"] = "ok"
@@ -160,7 +201,8 @@ def aggregate(cells: list[dict]) -> dict:
         for metric in ("chars", "must_include_rate", "violations", "high",
                        "checks_skipped", "ced_per_10k_chars", "warnings",
                        "injected_markers", "revision_rounds", "design_findings",
-                       "design_unresolved"):
+                       "design_unresolved", "provider_requests", "design_attempts",
+                       "design_repairs", "design_first_attempt_findings"):
             values = [row[metric] for row in ok if row.get(metric) is not None]
             if not values:
                 continue
@@ -170,6 +212,17 @@ def aggregate(cells: list[dict]) -> dict:
                 "ci95": bootstrap_ci([float(v) for v in values]),
                 "n": len(values),
             }
+        origin_counts: dict[str, int] = {}
+        reused_sources: set[str] = set()
+        for row in ok:
+            provenance = row.get("response_provenance") or {}
+            for origin, count in (provenance.get("counts") or {}).items():
+                origin_counts[origin] = origin_counts.get(origin, 0) + count
+            reused_sources.update(provenance.get("reused_source_run_ids") or [])
+        entry["response_provenance"] = {
+            "counts": dict(sorted(origin_counts.items())),
+            "reused_source_run_ids": sorted(reused_sources),
+        }
         by_system_summary[system] = entry
 
     result: dict = {"by_system": by_system_summary}

@@ -66,3 +66,34 @@ def test_l1_scope_and_arena_limits_are_recorded(tmp_path):
     assert "G3/G4 は未測定" in note
     assert "G5 を主張しません" in note
     assert "探索的な参考値" in note
+
+
+def test_response_origins_are_counted_without_guessing(tmp_path):
+    import importlib.util
+    sys.path.insert(0, str(REPO_ROOT / "src"))
+    from asc.pipeline import GenerationRequest, RunLedger
+    from asc.pipeline.llm import GenerationResult
+
+    spec = importlib.util.spec_from_file_location("run_experiment", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    ledger = RunLedger.create(tmp_path / "runs", task_id="t01", system="s1",
+                              seed=0, protocol_version="protocol-v1")
+    for purpose, provenance in (
+            ("plan", {"origin": "fresh"}),
+            ("design:brief", {"origin": "reused", "source_run_id": "run-old"}),
+            ("draft:ch01", {})):
+        request = GenerationRequest(purpose=purpose, prompt=purpose)
+        ledger.record(request, GenerationResult(
+            text="応答", provider="command", model="m", provenance=provenance))
+
+    requests, provenance = module._response_metrics(ledger)
+    assert requests == 3
+    assert provenance == {
+        "counts": {"fresh": 1, "reused": 1, "unspecified": 1},
+        "reused_source_run_ids": ["run-old"],
+    }
+    row = {"system": "s1", "status": "ok", "provider_requests": requests,
+           "response_provenance": provenance}
+    aggregate = module.aggregate([row])["by_system"]["s1"]
+    assert aggregate["response_provenance"] == provenance

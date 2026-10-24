@@ -67,7 +67,8 @@ def test_missing_answer_stops_the_run_and_names_the_file(tmp_path):
 
 def test_stored_answer_is_returned_with_its_model(tmp_path):
     payload = request()
-    answer(tmp_path, "s1-t01-s0-draft-ch01-a1", "嵐の音で、灯台の窓が鳴っていた。")
+    answer(tmp_path, "s1-t01-s0-draft-ch01-a1", "嵐の音で、灯台の窓が鳴っていた。",
+           provenance={"origin": "reused", "source_run_id": "run-old"})
     result = call(tmp_path, payload)
     assert result.returncode == 0, result.stderr
     out = json.loads(result.stdout)
@@ -75,6 +76,7 @@ def test_stored_answer_is_returned_with_its_model(tmp_path):
     assert out["model"] == "arena-agent-mode"
     assert out["model_version"] == "unversioned"
     assert out["usage"]["key"] == "s1-t01-s0-draft-ch01-a1"
+    assert out["provenance"] == {"origin": "reused", "source_run_id": "run-old"}
     served = (tmp_path / "served.jsonl").read_text(encoding="utf-8").splitlines()
     assert json.loads(served[-1])["prompt_hash"] == "deadbeefdeadbeef"
 

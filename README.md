@@ -283,6 +283,10 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 * `scripts/chat_operator.py` は、**鍵を持たない環境で実テキストを通す**ための経路です。
   プロンプトを `requests/` に書き出し、応答を `responses/` に置くと、次回からはそれを返します。
   応答が無ければ **exit 3**、プロンプトが変わった応答は **exit 4** で止まります。
+  応答JSONには `provenance: {"origin": "fresh"}`、再利用なら
+  `provenance: {"origin": "reused", "source_run_id": "..."}` を記録できます。
+  未指定は `unspecified` であり、新規応答とは見なしません。`run_experiment.py` は
+  request数、design attempts / repairs、初回findings、応答来歴を集計します。
   チャットに貼って返してもらう場合の受け渡しは `scripts/relay_prompts.py` が担当します
   （`export` でタグ付きの貼り付け用ファイル、`ingest` で返答案の取り込み）
   モデル版を固定できないため **G5 は満たさず**、値は参考値です

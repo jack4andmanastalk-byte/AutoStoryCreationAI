@@ -200,14 +200,24 @@ class DocResult:
     attempts: int
     findings: tuple[dict, ...] = ()
     checks_failed: int = 0
+    first_attempt_findings: tuple[dict, ...] = ()
+    first_attempt_checks_failed: int = 0
 
     def as_dict(self) -> dict:
         by_severity: dict[str, int] = {}
         for item in self.findings:
             by_severity[item["severity"]] = by_severity.get(item["severity"], 0) + 1
+        first_by_severity: dict[str, int] = {}
+        for item in self.first_attempt_findings:
+            severity = item["severity"]
+            first_by_severity[severity] = first_by_severity.get(severity, 0) + 1
         return {"status": self.status, "attempts": self.attempts,
+                "repairs": max(0, self.attempts - 1),
                 "findings": len(self.findings), "by_severity": by_severity,
-                "checks_failed": self.checks_failed}
+                "checks_failed": self.checks_failed,
+                "first_attempt_findings": len(self.first_attempt_findings),
+                "first_attempt_by_severity": first_by_severity,
+                "first_attempt_checks_failed": self.first_attempt_checks_failed}
 
 
 @dataclass(frozen=True)
@@ -229,6 +239,10 @@ class Design:
                         if doc.status == "missing"],
             "findings": sum(len(doc.findings) for doc in self.docs),
             "by_severity": by_severity,
+            "attempts": sum(doc.attempts for doc in self.docs),
+            "repairs": sum(max(0, doc.attempts - 1) for doc in self.docs),
+            "first_attempt_findings": sum(
+                len(doc.first_attempt_findings) for doc in self.docs),
         }
 
 
@@ -326,6 +340,8 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
         template = templates[name]
         findings: list[dict] = []
         checks_failed = 0
+        first_findings: list[dict] = []
+        first_checks_failed = 0
         last_text = ""
         attempts = 0
         for attempt in range(1, max_attempts + 1):
@@ -371,6 +387,9 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                 ledger.write_text(
                     f"design/attempts/{name}-attempt-{attempt}.error.txt",
                     findings[0]["message_ja"] + "\n")
+                if attempt == 1:
+                    first_findings = list(findings)
+                    first_checks_failed = checks_failed
                 continue
             candidate.write_text(json.dumps(payload, ensure_ascii=False,
                                             indent=2) + "\n", encoding="utf-8")
@@ -383,7 +402,13 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                 ledger.write_text(
                     f"design/attempts/{name}-attempt-{attempt}.error.txt",
                     findings[0]["message_ja"] + "\n")
+                if attempt == 1:
+                    first_findings = list(findings)
+                    first_checks_failed = checks_failed
                 continue
+            if attempt == 1:
+                first_findings = list(findings)
+                first_checks_failed = checks_failed
             if not _needs_repair(findings):
                 break
 
@@ -399,12 +424,17 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
             status = "missing"
         for leftover in design_dir.glob(f".{name}.attempt-*.json"):
             leftover.unlink()
-        results.append(DocResult(name=name, status=status, attempts=attempts,
-                                 findings=tuple(findings),
-                                 checks_failed=checks_failed))
+        results.append(DocResult(
+            name=name, status=status, attempts=attempts,
+            findings=tuple(findings), checks_failed=checks_failed,
+            first_attempt_findings=tuple(first_findings),
+            first_attempt_checks_failed=first_checks_failed))
         ledger.write_json(f"design/{name}.report.json", {
             "doc": name, "status": status, "attempts": attempts,
+            "repairs": max(0, attempts - 1),
             "findings": findings, "checks_failed": checks_failed,
+            "first_attempt": {"findings": first_findings,
+                              "checks_failed": first_checks_failed},
             "prompt": {"name": used.name, "version": used.version,
                        "digest": used.digest},
         })

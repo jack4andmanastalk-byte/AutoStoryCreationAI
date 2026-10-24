@@ -267,3 +267,48 @@ def test_experiment_cell_records_design_counts(task, responses, tmp_path):
     assert cell["design"] == "on"
     assert cell["design_findings"] == 0
     assert cell["design_unresolved"] == 0
+    assert cell["provider_requests"] == 12
+    assert cell["design_attempts"] == 8
+    assert cell["design_repairs"] == 0
+    assert cell["design_first_attempt_findings"] == 0
+    assert cell["response_provenance"] == {
+        "counts": {"scripted": 12}, "reused_source_run_ids": []}
+
+
+def test_experiment_cell_aggregates_first_attempt_repairs_and_provenance(
+        task, responses, tmp_path):
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import run_experiment
+    tasks = load_tasks(TASKS)
+    bad_brief = json.loads(responses["design:brief:t01"])
+    bad_brief["logline"] = "短い"
+    repaired = dict(responses)
+    repaired["design:brief:t01"] = json.dumps(bad_brief, ensure_ascii=False)
+    repaired["design:brief:repair:t01"] = responses["design:brief:t01"]
+
+    cell = run_experiment.run_cell(
+        task, "s1", 0, ScriptedProvider(repaired), tasks,
+        tmp_path / "runs", 0.8)
+
+    assert cell["status"] == "ok"
+    assert cell["provider_requests"] == 13
+    assert cell["design_attempts"] == 9
+    assert cell["design_repairs"] == 1
+    assert cell["design_first_attempt_findings"] > 0
+    assert cell["design_findings"] == 0
+    assert cell["response_provenance"]["counts"] == {"scripted": 13}
+    run_dir = Path(cell["run_dir"])
+    report = json.loads((run_dir / "design" / "brief.report.json"
+                         ).read_text(encoding="utf-8"))
+    assert report["attempts"] == 2
+    assert report["repairs"] == 1
+    assert report["first_attempt"]["findings"]
+    assert report["findings"] == []
+
+    aggregate = run_experiment.aggregate([cell])["by_system"]["s1"]
+    assert aggregate["provider_requests"]["mean"] == 13
+    assert aggregate["design_attempts"]["mean"] == 9
+    assert aggregate["design_repairs"]["mean"] == 1
+    assert aggregate["design_first_attempt_findings"]["mean"] > 0
+    assert aggregate["response_provenance"] == {
+        "counts": {"scripted": 13}, "reused_source_run_ids": []}
