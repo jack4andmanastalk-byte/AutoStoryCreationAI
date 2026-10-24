@@ -52,3 +52,17 @@ def test_model_defaults_are_unchanged_without_the_flag(tmp_path):
     results = run(tmp_path)
     assert results["experiment"]["model"] == "external"
     assert results["experiment"]["model_version"] is None
+
+
+def test_l1_scope_and_arena_limits_are_recorded(tmp_path):
+    results = run(tmp_path, "--model", "arena-agent-mode",
+                  "--model-version", "unversioned-2026-10-24")
+    scope = results["evaluation_scope"]
+    assert scope["mode"] == "l1-only"
+    assert scope["active_layers"] == ["L1"]
+    assert set(scope["frozen_layers"]) == {"L2", "L3"}
+    note = (tmp_path / "out" / "note.md").read_text(encoding="utf-8")
+    assert "評価範囲は L1-only" in note
+    assert "G3/G4 は未測定" in note
+    assert "G5 を主張しません" in note
+    assert "探索的な参考値" in note

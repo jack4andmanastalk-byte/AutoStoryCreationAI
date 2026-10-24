@@ -3,20 +3,37 @@
 `skills/evaluation-harness` が使う素材を置く。**評価の対象（作品）と、評価の基準（ルーブリック）を
 分けて管理する**ため、ケースは `cases/` に、基準は `rubrics/` に置いている。
 
+> 現在の研究運用は L1-only。L2/L3 の実証・較正・追加開発は 2026-10-24 に凍結した。
+> このディレクトリの L2/L3 ルーブリック・fixture・較正ツールは、回帰検査と既存結果の
+> 再現のために保存する凍結資産である（[`../docs/evaluation_scope.md`](../docs/evaluation_scope.md)）。
+
 ```
 harness/
 ├── patterns.yaml              # 決定論的に検出する禁止パターン（L1）
 ├── rubrics/
 │   └── story-quality-v0.yaml  # 6 次元のルーブリック（L2）
 ├── fixtures/
-│   └── judgements-demo.json   # 記録済み判定（オフライン再現・テスト用）
+│   ├── judgements-demo.json   # 記録済み判定（オフライン再現・テスト用）
+│   ├── labels-demo/           # 2 名×3 ペアの人間ラベル（κ=0.5 の検証用）
+│   └── verdicts-demo.json     # 盲検ペアへの判定器の verdict（較正用）
 └── cases/
     ├── demo/                  # 矛盾を 7 件仕込んだ 5 章の作品
     │   ├── canon/             # 設定台帳
     │   ├── text/              # 本文（ch01〜ch05）
     │   └── EXPECTED.md        # 期待される検出結果
-    └── demo-baseline/         # 比較用の初稿（要約調・マーカーなし）
-        └── text/
+    ├── demo-baseline/         # 比較用の初稿（要約調・マーカーなし）
+    │   └── text/
+    ├── brief-demo/            # 企画核の良好／不良デモ（premise-brief）
+    ├── world-demo/            # 世界規則の良好／不良デモ（world-rules）
+    ├── history-demo/          # 年表の良好／不良デモ（history-timeline）
+    ├── character-demo/        # 人物核の良好／不良デモ（character-core）
+    ├── relation-demo/         # 関係網の良好／不良デモ（relationship-web）
+    ├── plot-demo/             # 筋立ての良好／不良デモ（plot-architecture）
+    ├── scene-demo/            # 場面設計の良好／不良デモ（scene-information）
+    ├── voice-demo/            # 文体仕様＋2 章（4 件の仕込み、voice-style）
+    ├── branch-demo/           # 分岐構造の良好／不良デモ（interactive-branch）
+    ├── adaptation-demo/       # 翻案設計の良好／不良デモ（adaptation）
+    └── revision-demo/         # 2 章＋パッチ（改稿で 2 件解消、revision-loop）
 ```
 
 ## 実行

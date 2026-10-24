@@ -1,0 +1,22 @@
+# seed-07 の不良デモ: 6 検査すべてを fail にする仕込み。
+scenes:
+  - id: sx
+    chapter: ch99
+    purpose: ""
+    conflict: ""
+    change: ""
+    tension: exciting
+    knowledge:
+      - character: zorro
+        entry: [F-00]
+        gained: [F-07]
+    disclosure:
+      disclosed: [F-07]
+      withheld:
+        - fact: F-07
+          reason: ""
+    foreshadows:
+      planted:
+        - id: fs-001
+          payoff: ch01
+      paid: [fs-999]

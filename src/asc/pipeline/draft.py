@@ -177,7 +177,8 @@ def ensure_markers(text: str, chapter: dict) -> tuple[str, tuple[str, ...]]:
 
 
 def _prompt_values(task: Task, chapter: dict, index: int, chapters: int,
-                   target: tuple[int, int], prior: str, canon: Canon | None) -> dict:
+                   target: tuple[int, int], prior: str, canon: Canon | None,
+                   design: str = "（設計メモなし）") -> dict:
     return {
         "title": task.title_ja,
         "logline": task.logline,
@@ -192,6 +193,7 @@ def _prompt_values(task: Task, chapter: dict, index: int, chapters: int,
         "target_max": str(target[1]),
         "prior": prior or "（これが最初の章）",
         "canon": canon_brief(canon),
+        "design": design,
     }
 
 
@@ -200,7 +202,8 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
                 target: tuple[int, int] = CHAPTER_TARGET,
                 prompt_dir: str | Path | None = None, temperature: float = 0.8,
                 max_tokens: int = 2500, seed: int = 0,
-                max_attempts: int = 2) -> Draft:
+                max_attempts: int = 2,
+                design_dir: str | Path | None = None) -> Draft:
     template = load_prompt("draft-chapter" if canon is not None else "draft-baseline",
                            prompt_dir)
     ledger.prompt_hashes[template.name] = template.digest
@@ -212,8 +215,14 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
     for index, chapter in enumerate(plan, start=1):
         last_problems: list[str] = []
         produced: ChapterDraft | None = None
+        if canon is not None:
+            from .design import design_notes_for_chapter
+            notes = design_notes_for_chapter(design_dir, chapter["id"])
+        else:
+            notes = "（設計メモなし）"
         for attempt in range(1, max_attempts + 1):
-            values = _prompt_values(task, chapter, index, chapters, target, prior, canon)
+            values = _prompt_values(task, chapter, index, chapters, target, prior, canon,
+                                    notes)
             request = GenerationRequest(
                 purpose=f"draft:{chapter['id']}", prompt=template.render(values),
                 temperature=temperature, max_tokens=max_tokens, seed=seed + index,

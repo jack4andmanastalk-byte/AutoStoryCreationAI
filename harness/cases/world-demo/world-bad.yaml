@@ -1,0 +1,17 @@
+# seed-02 の不良デモ: 5 検査すべてを fail にする仕込み。
+# 照合先は harness/cases/demo/canon。
+axioms: []
+rules:
+  - id: R-01
+    statement: 強い灯りはどんな嵐でも消えない。
+    cost: ""
+  - id: R-02
+    statement: 鍵は誰でも複製できる。
+    cost: 複製に時間はかからない。
+    exception: ただし王族の鍵は複製できない。
+    exception_condition: ""
+institutions: []
+geography: [灯台, 雲の都]
+disclosure:
+  - info: 灯り
+    chapter: ch09

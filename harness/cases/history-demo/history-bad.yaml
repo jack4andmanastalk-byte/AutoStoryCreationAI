@@ -1,0 +1,30 @@
+# seed-03 の不良デモ: 5 検査すべてを fail にする仕込み。
+eras:
+  - id: chaos
+    name: 混乱期
+    begins: 200
+    ends: 100
+events:
+  - id: E-02
+    year: 150
+    title: 鍵の貸借の制度化
+    cause: E-09
+    effect: 制度ができた。
+    trace: 帳面。
+    era: chaos
+  - id: E-01
+    year: 12
+    title: 最初の灯台の点火
+    effect: 航路が使えた。
+    trace: ""
+    era: chaos
+sources:
+  - id: S-01
+    kind: 年代記
+    holder: ""
+    origin: cited
+apocrypha: [E-07]
+knowledge:
+  zorro:
+    knows: [E-01, E-05]
+    unknown: [E-01]

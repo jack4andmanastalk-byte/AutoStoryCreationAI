@@ -1,0 +1,21 @@
+# seed-06 の不良デモ: 5 検査すべてを fail にする仕込み。
+logline: ""
+acts:
+  - id: everything
+    chapters: [ch01, ch02, ch03, ch04, ch05, ch99]
+    question: ""
+turns:
+  - id: t1
+    chapter: ch99
+    choice_ja: ""
+subplots:
+  - id: loose
+    beats: []
+    converges: ""
+ending:
+  kind: happy
+  summary: ""
+  aftertaste_ja: ""
+unresolved:
+  - item: 消えた布石の行方
+    foreshadowing: fs-999

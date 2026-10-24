@@ -100,10 +100,18 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 * 1 タスクあたり 3 作品、合計 30 作品を固定リストにする（v1 では選定時に記録し、以後変えない）。
 * なろう作品は**ローカル集計のみ**（再配布しない）。対照群として公開比較に使わない。
 * 対照群は「お手本」ではなく**ものさし**である。ここから規則を抽出して実装するのは §8 の範囲外。
+* 選定の手順は `scripts/select_controls.py` に固定する（規則版 `controls-rules-v1`）。
+  `propose` が候補表と取得リストを出し、人が 1 タスク 3 作品を承認し、
+  `freeze` が権利・ジャンル・本文・文字数を厳密検証して
+  `benchmarks/protocol-v1/controls.json` に確定する。承認なし・重複・
+  作品不足はすべて exit 2 で止まる。取得リストの本文は
+  `setup_dataset.py aozora-texts --ids-file` で落とす。
 
 ## 7. 手続き
 
 1. `scripts/run_pipeline.py` で run を作る。出力は `runs/<run_id>/`（git 管理外）。
+   S1 以降は plan → design → draft の順に進む。design は 8 種の設計書を検査器で
+   検証し、検査落ちは修復再試行（上限 2 試行）、それでも落ちたら記録して続行する。
    `--provider scripted` は配線検証用の台本、`--provider command` が実モデル用。
    鍵を持たない環境では `scripts/chat_operator.py` を `--provider command` の
    コマンドとして渡し、プロンプトを `requests/` に落として応答を `responses/` に
@@ -148,20 +156,28 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 スキルの追加・改良、プロンプトの改善、モデルの更新は**版を上げない**（それが測る対象）。
 ただしモデルを変えた比較は、同一モデル内の比較と分けて報告する。
 
-## 10. 現状（2026-10-23）
+## 10. 現状（2026-10-24）
+
+**運用範囲**: 利用者の決定により、Arena.ai × L1 を継続対象とし、L2/L3 の実証・較正・
+追加開発を凍結した（[`evaluation_scope.md`](evaluation_scope.md)）。これは §0–9 の
+プロトコルや閾値の変更ではない。G3/G4 は `frozen_not_measured` とし、未達・合格の
+どちらにも扱わない。版を固定できない Arena の run では G5 を主張せず、L1 の値も
+探索的な参考値として扱う。したがって「G1–G5 をすべて満たした」とは言わない。
 
 | 項目 | 状態 |
 | --- | --- |
 | タスクセット 10 題 | 作成済み（`benchmarks/protocol-v1/tasks.yaml`） |
 | L1 | 実装済み（継続性監査・指標・禁止パターン） |
-| L2 | 実装済み。**実モデル未接続、較正未実施** |
-| L3 | ラベル形式と一致率の計算のみ。評定は未実施 |
-| 生成（S0–S3） | **S0 / S1 実装済み**（`scripts/run_pipeline.py`）。S2 改稿・S3 文体は未実装 |
+| L2 | 既存実装を凍結資産として保存。**実証・較正・追加開発は 2026-10-24 に凍結** |
+| L3 | ラベル形式・κ・判定器一致率の計算を保存。**評定・較正・追加開発は 2026-10-24 に凍結** |
+| 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S1 以降は plan → design → draft の順で、8 種の設計書を検査器で検証する（台本での配線検証のみ、`tests/test_pipeline_design.py`）。実モデル未接続 |
+| スキル（13 種） | seed-01〜13 すべて実装済み（構造検査のみ）。意味の判定は L2/L3 凍結のため評価しない |
+| L3 較正の道具 | 実装済み（`scripts/judge_pairs.py`、`scripts/calibrate_judge.py`、κ の fixture 検証）。固定デモの再生のみ。新規評定・較正は凍結 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
 | 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
-| L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。**実モデルでの較正は未実施** |
-| 対照群 30 作品 | 未選定 |
+| L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。固定デモの再生のみ。**実モデルでの較正・追加開発は凍結** |
+| 対照群 30 作品 | 選定ツール実装済み（`scripts/select_controls.py`、`tests/test_select_controls.py`）。候補本文を取得し、30 作品・重複なし・権利/NDC/文字数の機械検査を通過。**[`controls.proposed.md`](../benchmarks/protocol-v1/controls.proposed.md) / [`controls.proposed.json`](../benchmarks/protocol-v1/controls.proposed.json) は未承認のドラフトで、`controls.json` は未作成。承認・凍結は未実施** |
 
 この表は PR ごとに更新する。**「実装済み」と「検証済み」を混ぜて書かない。**
 
