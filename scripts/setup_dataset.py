@@ -388,15 +388,29 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
     if not index:
         LOGGER.warning("no mirrored texts found - the official archives will be used")
 
-    target = args.works or cfg.aozora.sample_works
-    pool_size = max(target * 2, target + 25)
-    chosen = sample_works(
-        works,
-        count=pool_size,
-        seed=cfg.aozora.sample_seed,
-        min_chars=cfg.aozora.min_chars,
-    )
-    LOGGER.info("sampling up to %s public-domain works (pool %s)", target, len(chosen))
+    if getattr(args, "ids_file", None):
+        wanted = [line.strip() for line in Path(args.ids_file).read_text(
+            encoding="utf-8").splitlines() if line.strip()]
+        by_id = {work.id: work for work in works}
+        chosen = []
+        for work_id in wanted:
+            if work_id in by_id:
+                chosen.append(by_id[work_id])
+            else:
+                LOGGER.warning("unknown work id %s - skipping", work_id)
+        target = len(chosen)
+        LOGGER.info("fetching %s requested works (--ids-file)", target)
+    else:
+        target = args.works or cfg.aozora.sample_works
+        pool_size = max(target * 2, target + 25)
+        chosen = sample_works(
+            works,
+            count=pool_size,
+            seed=cfg.aozora.sample_seed,
+            min_chars=cfg.aozora.min_chars,
+        )
+        LOGGER.info("sampling up to %s public-domain works (pool %s)",
+                    target, len(chosen))
 
     renderer = build_renderer(cfg) if args.pdf else None
     raw_dir = cfg.paths.raw_dir / "aozora" / "texts"
@@ -2007,6 +2021,9 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     p = sub.add_parser("aozora-texts", help="download texts (and PDFs) of Aozora works")
     p.add_argument("--works", type=int, default=None)
+    p.add_argument("--ids-file", default=None,
+                   help="fetch exactly these work ids (one per line), "
+                        "e.g. the download list from select_controls.py propose")
     p.add_argument("--pdf", action="store_true", help="also render PDF files")
     p.set_defaults(func=cmd_aozora_texts)
 

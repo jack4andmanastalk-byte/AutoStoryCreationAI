@@ -100,6 +100,12 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 * 1 タスクあたり 3 作品、合計 30 作品を固定リストにする（v1 では選定時に記録し、以後変えない）。
 * なろう作品は**ローカル集計のみ**（再配布しない）。対照群として公開比較に使わない。
 * 対照群は「お手本」ではなく**ものさし**である。ここから規則を抽出して実装するのは §8 の範囲外。
+* 選定の手順は `scripts/select_controls.py` に固定する（規則版 `controls-rules-v1`）。
+  `propose` が候補表と取得リストを出し、人が 1 タスク 3 作品を承認し、
+  `freeze` が権利・ジャンル・本文・文字数を厳密検証して
+  `benchmarks/protocol-v1/controls.json` に確定する。承認なし・重複・
+  作品不足はすべて exit 2 で止まる。取得リストの本文は
+  `setup_dataset.py aozora-texts --ids-file` で落とす。
 
 ## 7. 手続き
 
@@ -165,7 +171,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
 | 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。**実モデルでの較正は未実施** |
-| 対照群 30 作品 | 未選定 |
+| 対照群 30 作品 | 選定ツール実装済み（`scripts/select_controls.py`、`tests/test_select_controls.py`）。候補表は作成済み（`build/controls/proposal.json`、git 管理外）。**30 作品の承認・確定は未実施** |
 
 この表は PR ごとに更新する。**「実装済み」と「検証済み」を混ぜて書かない。**
 

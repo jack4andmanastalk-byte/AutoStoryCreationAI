@@ -311,7 +311,7 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）
 * 評価ハーネスの L2 を実モデルで較正する（`judge_pairs`＋`calibrate_judge` は実装済み。評定は未実施）
-* 対照群 30 作品の選定（G3/G4 の前提。青空文庫から長さを揃えて固定リスト化）
+* 対照群 30 作品の承認・確定（G3/G4 の前提。選定ツールと候補表は作成済み。`make controls-propose` → 人が 3 作品/題を承認 → `select_controls.py freeze`）
 * 固定版モデルでの本実験（10 題×3 seed×S0〜S3。`make pilot-model SYSTEMS="s0 s1 s2 s3"`）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
 * 縦組み PDF / EPUB 出力（現在は横組み A5）

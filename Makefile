@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -41,6 +41,9 @@ pull-datasets: ## fetch prebuilt datasets and plain texts from the 'datasets' br
 
 report: ## print statistics about the generated datasets
 	$(BIN)/python scripts/dataset_report.py --config $(CONFIG)
+
+controls-propose: ## rank Aozora control-group candidates per task (needs data/)
+	$(BIN)/python scripts/select_controls.py propose
 
 research: ## rebuild the unified research catalog from research/curated
 	$(PYTHON) scripts/build_research_catalog.py
