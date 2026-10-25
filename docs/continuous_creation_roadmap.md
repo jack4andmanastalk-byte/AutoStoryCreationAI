@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜17を実装済み。index・queue・incremental検査は不要と判断、部分編纂と世界record警告のrecord単位集約を追加**
+- 状態: **PR 1〜18を実装済み。index・queue・incremental検査は不要と判断、部分編纂・世界record警告の集約・design未解決文書の可視化を追加**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -618,6 +618,56 @@ node数に比例する部分は約120 bytes/nodeに留まる（100 nodeでも約
 
 残した候補: 影響nodeが多い場合の`details.nodes`圧縮（`recorded_content_version`ごとに
 `node_ids`をまとめる形）は、100 node規模で実際に読みにくくなってから。
+
+### PR 18: `design` 未解決文書の可視化（実装済み）
+
+PR 15 のdogfoodで、design stageがfail-openのまま全8文書を `unresolved` にして生成を続けても、
+`doctor` は `ok / findings 0` を返すことを確認した。`design.json` を開かない限り、
+「設計が検証できないまま本文が書かれた」事実は見えない。
+
+- `doctor._inspect_design_report`：現行revisionの `design` checkpointが参照する `design.json`
+  （hash検証済みartifact）を読み、`unresolved` / `missing` が空でなければ
+  `design.unresolved` warningを**1 nodeにつき1件**出す。`details`は`stage` / `run_id` /
+  `unresolved` / `missing` / 各count / `report_path` / `attempts` / `findings`。
+  人間向け表示は先頭4文書名＋件数。
+- **`next_actions`には出さない**：直接解消する既存CLIはなく、`revise --design <doc>` は
+  新しいrevisionを作る重い操作で、同じcheckerに再度落ちうる。`next_actions`は
+  「止まっている・ずれている状態を戻す」読み取り/再開/採用に限定する方針を維持した。
+- 既存のcheck名（7個）は変えず、`checkpoints` checkの`warn`として集計する。`ok`は`true`、
+  exit 0。reportを持たない古いrun・`design` checkpointの無いnodeでは何も出さない。
+  report自体が読めない場合は`design.report_unreadable`（warning）。
+
+dogfood（scripted fixture＋briefのみchecker非適合、`prj-clean18` / `prj-design18`）:
+
+| | clean（root+子2） | brief非適合（root+子3） |
+| --- | --- | --- |
+| `doctor --json` findings | 0 | 4（すべて`design.unresolved`） |
+| `unresolved` / `missing` | — | 各node `["brief"]` / `[]` |
+| exit / `ok` | 0 / true | 0 / true |
+| `checkpoints` check | pass | warn（他6つはpass） |
+| `doctor --json` bytes | 2,150 | 4,574 |
+| `doctor` text | 8行 | 12行 |
+| `status` | 変化なし（`inspected`に`design`は入らない） | 同左 |
+
+`revise prj-design18 --node node-w1 --design brief`（clean briefで再生成）後、設計が通った
+新revisionでは警告が消え（4→3件）、旧revisionの `design.json` はそのまま残った。
+`status`/`doctor`/`context show` 前後でproject全体のdigestは一致（read-only）。
+
+**判断**：`unresolved`/`missing` の**件数と文書名**までを出し、checkごとの内訳
+（`design.json` の `docs[*].checks_failed` / `by_severity`）は展開しない。理由は、
+(a) 修復は `revise --design` でしか行えず、`doctor` がcheckerの内訳を出すと「直し方」を
+提示しているように読める、(b) 内訳は `design.json` に既にあり、必要なら開けばよい、
+(c) `doctor` の出力量を規模に対して抑える（4,574 bytes @4 node）。
+
+確認: `tests/test_project_doctor.py` の
+`test_unresolved_design_documents_are_reported_per_node`（2 node → 2 finding、details、
+`next_actions`空、`checkpoints=warn`、read-only digest）、
+`test_clean_design_reports_do_not_warn`、`test_design_checkpoint_without_a_report_is_not_a_finding`、
+`test_unreadable_design_report_is_a_warning`、
+`test_doctor_cli_reports_unresolved_design_without_failing`（exit 0、JSONと人間向け表示）。
+
+残した候補: 未解決文書ごとの内訳を`doctor`に出すかは、`revise --design` を実際に回す運用で
+「内訳がないと直せない」と確認できてから。`status`側に件数だけを出すかも同様に後置する。
 
 ### その後の候補
 
