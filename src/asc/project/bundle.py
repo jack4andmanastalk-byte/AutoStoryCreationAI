@@ -18,6 +18,7 @@ from typing import Any
 from .model import utc_now
 from .schema import validate_id
 from .store import ProjectError, ProjectStore
+from .world_store import WorldStore
 
 BUNDLE_TYPE = "asc-project-replay-bundle"
 BUNDLE_SCHEMA_VERSION = 1
@@ -87,6 +88,7 @@ class ReplayBundle:
         # verifies all currently pinned done artifacts before they are exported.
         with self.store.execution_lock(project_id):
             status = self.store.status(project_id)
+            WorldStore(self.store).validate(project_id)
             files, directories = self._source_entries(source)
             temporary = Path(tempfile.mkdtemp(
                 prefix=f".{destination.name}.tmp-", dir=destination.parent,
@@ -211,7 +213,9 @@ class ReplayBundle:
             extra = sorted(actual - listed)
             raise BundleError(f"bundle payload file list differs (missing={missing}, extra={extra})")
         try:
-            status = ProjectStore(bundle_dir / "payload").status(project_id)
+            payload_store = ProjectStore(bundle_dir / "payload")
+            status = payload_store.status(project_id)
+            WorldStore(payload_store).validate(project_id)
         except (ProjectError, OSError, ValueError) as exc:
             raise BundleError(f"bundle project records are invalid: {exc}") from exc
         return {
@@ -253,7 +257,9 @@ class ReplayBundle:
                 if _sha256(target_file) != row["sha256"]:
                     raise BundleError(f"restored file hash differs: {relative}")
             # Validate the complete restored project before exposing its final ID.
-            ProjectStore(temporary_root).status(project_id)
+            temporary_store = ProjectStore(temporary_root)
+            temporary_store.status(project_id)
+            WorldStore(temporary_store).validate(project_id)
             if target.exists():
                 raise BundleError(f"restore destination already exists: {target}")
             os.replace(temporary_project, target)
@@ -261,7 +267,9 @@ class ReplayBundle:
             shutil.rmtree(temporary_root, ignore_errors=True)
             raise
         shutil.rmtree(temporary_root, ignore_errors=True)
-        status = ProjectStore(destination_root).status(project_id)
+        destination_store = ProjectStore(destination_root)
+        status = destination_store.status(project_id)
+        WorldStore(destination_store).validate(project_id)
         return {
             "ok": True,
             "restored": True,

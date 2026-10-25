@@ -4,10 +4,11 @@
 創作projectを永続化するための入口です。現在のschema versionは **1** です。
 
 現在は、projectの **作成・単一/多段入れ子作品のS1生成・依存順実行・中断再開・
-continuation・replay bundle・再帰編纂出力・operator pending確認・状態確認** ができます。
+continuation・replay bundle・再帰編纂出力・世界model・operator pending確認・状態確認** ができます。
 S1生成はplan → design → draftのvertical sliceで、S2/S3改稿や品質監査は通りません。
-世界modelと時代・地域・文化を指定する完全なContextPacketは後のincrementです。
-既存の `run_pipeline.py` と厳密replayの後方互換性は維持しています。
+世界modelは複数時間軸・地域・文化状態・版付きbinding・明示的canon採用を保存します。
+時代・地域・文化で生成文脈を選ぶ完全なContextPacketと、年代記・地誌などの編纂viewは
+後のincrementです。既存の `run_pipeline.py` と厳密replayの後方互換性は維持しています。
 
 ## 作成
 
@@ -206,9 +207,100 @@ packetは各stageの`project-input.json`に記録され、plan/design/draftのpr
 小さな前身です。resumeは旧runに記録されたpacketを明示的に再利用するため、待機中に祖先が完了しても
 子のpromptを変えません。記録packet・prompt・requestの照合に失敗した場合は再開を拒否します。
 
+## 世界model：時間・空間・文化・世界canon
+
+世界資料は作品の親子木とは別の参照graphとして、同じproject内の `world/` に保存します。
+地域を作品や文化の唯一の親にはせず、子作品は必要な時間・地域・文化状態のIDを明示的に選びます。
+この層は資料の参照と版を管理するもので、文化的描写や歴史的記述の品質を保証するものではありません。
+
+### 世界recordの追加
+
+`world add` は1 JSON fileから1件の不変recordを追加します。kindは `timeframe`、`time-span`、
+`time-conversion`、`region`、`spatial-relation`、`culture`、`culture-state`、`culture-relation`、
+`canon`、`binding` です。`record_type`、`schema_version`、`project_id`、`created_at` と、
+版付きrecordの `content_version` はCLIが補います。長期間参照するIDはfile内で明示する運用を推奨します。
+
+```json
+{
+  "id": "tf-empire",
+  "name": "帝国暦",
+  "calendar": "solar",
+  "epoch": "建国"
+}
+```
+
+```bash
+python3 scripts/story_project.py world add prj-seaside timeframe \
+  --file /external/world/timeframe.json --json
+python3 scripts/story_project.py world add prj-seaside time-span \
+  --file /external/world/span.json --json
+python3 scripts/story_project.py world status prj-seaside --json
+```
+
+主なrecordと制約は次のとおりです。
+
+- `TimeFrame` は暦・epochを持つ永続時間軸です。複数の時間軸を一つの日付系へ統合しません。
+- `TimeSpan` は `exact` / `approximate` / `range` / `unknown` を持ちます。`unknown` は
+  絶対座標なしで保存でき、`before_span_ids` による前後関係は絶対時刻とは別に記録します。
+  既知の前後関係もcycleなく保存します。
+- `TimeConversion` は二つの時間軸間の明示的な `scale` / `offset` による順序保存変換です。
+  変換が登録されていない時間軸同士を自動換算せず、relative orderから絶対時刻を推定しません。
+- `Region` は `parent_region_id` による入れ子と任意の `valid_span_id` を持てます。
+  `SpatialRelation` は接続種別・任意の有効期間・既知の場合だけ `travel_days` を持ちます。
+  未指定の移動日数を、既存planの同名地域や他の関係から推定して埋めることはありません。
+- `Culture` は文化の永続ID、`CultureState` は時代・複数地域・属性を持つ版です。
+  `previous_state_id` と `culture-relation` の `inheritance` / `split` / `contact` で、
+  継承・分裂・接触をstate間の関係として保存します。新しいstateを追加しても旧stateは書き変わりません。
+
+### 子作品revisionへのbinding
+
+`world bind` は、選択nodeの**現在のwork revision**に世界参照を固定します。時間軸が異なる
+TimeSpanや、異なる時代・文化のCultureStateを同じproject内に保持できます。
+
+```bash
+python3 scripts/story_project.py world bind prj-seaside --node node-tide-side \
+  --time-span span-empire-early --time-span span-tide-12 \
+  --region region-harbor --culture-state state-tide-early \
+  --binding-id binding-tide-early --json
+python3 scripts/story_project.py world status prj-seaside --node node-tide-side --json
+```
+
+binding自体にもIDと `content_version` があり、同じnode revisionへの重複bindingは拒否します。
+子作品をcontinuationしてcurrent revisionが進んでも、旧bindingを新版へ暗黙に引き継ぎません。
+`world status` の `selected_binding` は、選択nodeのcurrent revisionに対するbindingだけです。
+未来のCultureStateを新規追加した場合も、旧bindingの `culture_state_ids` は変わりません。
+
+### 世界canonへの明示的採用とscope overlay
+
+plan/draftを生成しただけでは、root・子作品のlocal canonは世界正史へ登録されません。
+世界canonへの採用は、完了nodeのpinned plan JSONから値を選ぶ別操作です。採用元のpathは
+`status --node ... --json` のplan checkpointで確認できます。
+
+```bash
+python3 scripts/story_project.py world adopt-canon prj-seaside \
+  --node node-tide-side \
+  --artifact "runs/<plan-run-id>-plan/canon/facts.json" \
+  --pointer "/facts/0" --scope global --subject "F-01" \
+  --valid-span span-empire-early --entry-id canon-world-f01 --json
+```
+
+`--pointer` はRFC 6901 JSON pointerで、省略するとdocument全体を採用します。採用recordには
+選択したcontentだけでなく、source node・source work revision・ArtifactRef（path/SHA-256/run）・
+JSON pointer・採用contentの `content_version` を保存します。scopeは `global`、`timeframe`、
+`region`、`culture`、`work`、`node` で、global以外は `--scope-id` が必要です。異なるscopeの
+entryをoverlayとして併存でき、任意の `valid_span_id` も保持します。人手で確定した正史は
+`source: null` のcanon JSONを `world add canon` で追加できます。
+
+source nodeをcontinuationしても、採用済みcontentとsource revisionは自動更新しません。
+`world status` は各採用entryの `current` / `stale` と現在のsource revisionを表示するだけです。
+新版を採用する場合は、もう一度 `adopt-canon` を実行し、必要なら `--supersedes` に
+旧entry IDを指定します。supersedeしても旧entryは残り、同じentryから複数の後継を分岐させることは
+拒否します。scope解決や生成promptへのcanon選択はPR 8のContextPacket側の責務で、この操作では
+行いません。
+
 ## replay bundleの外部保存
 
-project metadata、全node/revision/link、checkpoint、全runのmanifest・prompt/response・
+project metadata、全node/revision/link、世界record、checkpoint、全runのmanifest・prompt/response・
 生成artifact・結合artifactを一つの外部directoryへexportできます。lockと一時fileだけを除外し、
 創作資料はGitへ入れません。
 
@@ -222,7 +314,8 @@ python3 scripts/story_project.py --root /external/restored-projects \
 ```
 
 `bundle.json` は全payload fileのrelative path・size・SHA-256を保持します。verifyはhashと
-file一覧を再計算し、さらに復元先と同じ `ProjectStore` の参照・artifact検査を行います。
+file一覧を再計算し、さらに復元先と同じ `ProjectStore` / `WorldStore` の参照・artifact検査を
+行います。世界record間のID、work revision binding、canonのpinned source contentも対象です。
 restoreは既存projectを上書きせず、一時directoryで検査してから最終pathへ配置します。
 bundle自体を変更した場合はverify/restoreを拒否します。
 
@@ -261,6 +354,7 @@ runs/projects/<project_id>/
 │   ├── revisions/<revision_id>.json
 │   ├── checkpoints/<stage>.json
 │   └── links/<link_id>.json        # 任意の親から子へのpinned参照
+├── world/<record-kind>/<record-id>.json
 ├── artifacts/<node_id>/combined-<version>.md
 └── runs/<attempt-id>-<stage>/
 ```
@@ -275,6 +369,10 @@ runs/projects/<project_id>/
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json` もあり、旧runは別directoryに残る。
 - `artifacts/`: node別の結合markdownとmanifest。S1の個別生成物は各runから直接参照します。
+- `world/`: `timeframes`、`time_spans`、`time_conversions`、`regions`、
+  `spatial_relations`、`cultures`、`culture_states`、`culture_state_relations`、
+  `canon_entries`、`bindings` のJSON。世界recordも `record_type` / `schema_version` を持ち、
+  CultureState・canon・bindingは内容hashによる `content_version` を持ちます。
 
 project・node・revisionには、それぞれ `record_type` と `schema_version` があります。
 WorkSpecの一部だけを変更して古いhashを残したrecordは読み込み時に拒否します。
@@ -301,6 +399,10 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 - 結合versionには時刻を含めず、同じ親revisionと全階層のpinned内容から同じ結合bytesを再現する。
 - 親子関係はroot=0・最大深さ8の木に限定し、循環・orphan・深さ超過と親関係の変更を拒否する。
 - `run-tree`はparent-before-descendantの順序を守り、未完・失敗・待機中の依存を飛び越えない。
+- 世界参照はIDと有効期間を検査し、変換不能な時間軸の統合・未知の移動日数の推定をしない。
+- work revisionへのbindingとCultureStateの選択を明示し、新版や未来状態を暗黙に共有しない。
+- 子作品の生成と世界canon採用を分離し、source node/revision/artifactへpinする。source改訂は
+  stale通知に留め、採用content・旧entry・参照版を自動更新しない。
 - 祖先の章本文を子の文脈へコピーせず、選択したcanon・構造要約・参照IDだけを記録する。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
@@ -309,6 +411,7 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 6では、孫作品・循環検出・深さ制限・依存順実行・再帰compose・祖先文脈packetを追加しました。
-PR 5のpinned link、個別run/resume/continuation、bundle互換を保ち、世界model（PR 7）と
-時代・地域・文化を指定する完全なContextPacket（PR 8）は後のincrementです。
+PR 7では、複数時間軸・地域・文化状態・revision固定binding・scope付き世界canonを追加しました。
+生成からの自動正史昇格は行わず、source改訂のstale通知と明示的な再採用、bundleでの世界record検証を
+実装しています。次のPR 8では、これらの版付き資料から時代・地域・文化で選ぶ完全なContextPacketと、
+年代記・地誌・文化圏・作品集の編纂viewを追加します。
