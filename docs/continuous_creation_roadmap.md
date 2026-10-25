@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜16を実装済み。中規模dogfoodの実測によりindex・queue・incremental検査は不要と判断し、未完成の子を含む部分編纂（`compose --partial`）を追加**
+- 状態: **PR 1〜17を実装済み。index・queue・incremental検査は不要と判断、部分編纂と世界record警告のrecord単位集約を追加**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -579,6 +579,45 @@ dogfood（`prj-partial`：root + 子3、子1つ未開始）: 既定の`compose`�
 
 残した候補: `world compile` のcollection profileも同じ`--partial`を持つかは、部分編纂を
 編纂viewとして使う運用が実際に起きたときに判断する（今は`compose --partial`のみ）。
+
+### PR 17: `world.record_changed` の record 単位集約（実装済み）
+
+PR 15 のdogfoodで、世界recordを1件書き換えると**それを記録した全nodeに同じ警告と`diff`案内**が出て、
+`doctor` の出力が膨らむことを確認した（7 nodeで警告7件・`diff` 7件、JSON 2,148 → 9,843 bytes、
+text 8 → 30行）。1回の編集は1つの事実なので、record単位にまとめた。
+
+- `doctor._check_record_changes`：nodeをまたいで `(record_type, record_id)` で集約し、findingは
+  record1件につき1件。`details`は`node_ids` / `node_count` / `nodes`（`node_id`・`run_id`・
+  `recorded_content_version`）を持ち、`node_id`は影響nodeが1つのときだけ入る（複数なら`null`）。
+  後方互換のため`details.run_id`と`details.recorded_content_version`は先頭影響nodeの値を返す。
+- `observability.actions_from_record_changes`：`diff`案内もrecord単位に1件。先頭影響nodeで
+  実行でき、`node_ids`に全nodeを持つ。旧来のper-run形（`run_id`/`node_id`/`count`）も受け付ける。
+- `build_actions`：reasonが「どのrecordが」「何runに記録されていたか」を名指しする
+  （従来は「7 world record(s)」と、record数とnode数を取り違えていた）。
+
+実測（`prj-noise`：root + 子6、全て同じ世界選択をbind、`region-harbor`の名称のみ改称）:
+
+| | 変更前 | 変更後 |
+| --- | --- | --- |
+| `world.record_changed` findings | 7 | 1 |
+| `diff` actions | 7 | 1 |
+| `doctor --json` | 9,843 bytes | 4,956 bytes |
+| `doctor` text | 30行 / 3,677 bytes | 12行 / 1,089 bytes |
+| 影響nodeの情報 | 各findingに1 node | `details.node_ids` に7 node・各run_id |
+
+**判断**：`details.nodes`は全nodeを持つ（切り詰めない）。1 record 1 findingの効果が主で、
+node数に比例する部分は約120 bytes/nodeに留まる（100 nodeでも約12 KB、PR 15の再検討閾値
+100 KBには遠い）。切り詰めると「どのnodeが影響を受けたか」という最も知りたい情報を失うため。
+
+確認: `tests/test_project_observability.py` の
+`test_one_edited_record_is_one_finding_and_one_action`（root + 子3が同じrecordを記録し、
+1件の改称でfinding 1件・diff action 1件・`node_ids`が全node・`details.nodes`が各runを持つこと、
+2 record目の編集でfindingが2件になること）と `test_build_actions_is_pure_and_ordered`
+（集約、record単位のreason、旧per-run形の受け付け）。既存の単一node時の期待
+（`node_id`が子、`details.run_id`が案内commandと一致）はそのまま通る。
+
+残した候補: 影響nodeが多い場合の`details.nodes`圧縮（`recorded_content_version`ごとに
+`node_ids`をまとめる形）は、100 node規模で実際に読みにくくなってから。
 
 ### その後の候補
 

@@ -612,7 +612,13 @@ class ProjectDoctor:
         cannot be detected from the record alone.  A packet recorded by an
         earlier run pins the hash it saw; comparing that with the current value
         is the only read-only way to notice the change.
+
+        The finding is per *record*, not per node.  One edited record is one
+        fact even when every bound node recorded it, so the affected nodes are
+        listed inside the finding instead of repeating an almost identical
+        warning (and a ``diff`` command) once per node.
         """
+        grouped: dict[tuple[str, str], dict[str, Any]] = {}
         for node in nodes:
             try:
                 current = build_context_packet(self.store, project_id, node.id)
@@ -638,33 +644,67 @@ class ProjectDoctor:
                     continue
                 if key not in then or then[key] == now[key]:
                     continue
-                self._record_changes.append({
-                    "node_id": node.id,
-                    "run_id": run_id,
+                entry = grouped.setdefault(key, {
                     "record_type": record_type,
                     "record_id": record_id,
-                    "recorded_content_version": then[key],
                     "current_content_version": now[key],
+                    "nodes": [],
                 })
-                self._add(
-                    "world.record_changed", WARNING,
-                    f"world record {record_type} {record_id} differs from the "
-                    f"version recorded by run {run_id} "
-                    f"(inspect with diff --left run:{run_id} --right current)",
-                    "world", node_id=node.id,
-                    details={
-                        "run_id": run_id,
-                        "record_type": record_type,
-                        "record_id": record_id,
-                        "recorded_content_version": then[key],
-                        "current_content_version": now[key],
-                        "note": (
-                            "this record type stores no content_version; world "
-                            "records are append-only, so a difference means the "
-                            "stored JSON was edited after the run"
-                        ),
-                    },
+                entry["nodes"].append({
+                    "node_id": node.id,
+                    "run_id": run_id,
+                    "recorded_content_version": then[key],
+                })
+        for key in sorted(grouped):
+            entry = grouped[key]
+            entry["nodes"].sort(key=lambda row: str(row["node_id"]))
+            first = entry["nodes"][0]
+            node_ids = [str(row["node_id"]) for row in entry["nodes"]]
+            count = len(node_ids)
+            subject = f"world record {entry['record_type']} {entry['record_id']}"
+            one_node = count == 1
+            if one_node:
+                message = (
+                    f"{subject} differs from the version recorded by run "
+                    f"{first['run_id']} "
+                    f"(inspect with diff --left run:{first['run_id']} --right current)"
                 )
+            else:
+                message = (
+                    f"{subject} differs from the version {count} runs recorded "
+                    f"(inspect one with diff --left run:{first['run_id']} --right "
+                    f"current; {count} nodes are affected, listed in details.nodes)"
+                )
+            self._record_changes.append({
+                "record_type": entry["record_type"],
+                "record_id": entry["record_id"],
+                "current_content_version": entry["current_content_version"],
+                "nodes": [dict(row) for row in entry["nodes"]],
+                "node_ids": node_ids,
+                "node_count": count,
+                "node_id": node_ids[0] if one_node else None,
+                "run_id": first["run_id"],
+                "recorded_content_version": first["recorded_content_version"],
+            })
+            self._add(
+                "world.record_changed", WARNING, message, "world",
+                node_id=node_ids[0] if one_node else None,
+                details={
+                    "run_id": first["run_id"],
+                    "record_type": entry["record_type"],
+                    "record_id": entry["record_id"],
+                    "recorded_content_version": first["recorded_content_version"],
+                    "current_content_version": entry["current_content_version"],
+                    "node_ids": node_ids,
+                    "node_count": count,
+                    "nodes": [dict(row) for row in entry["nodes"]],
+                    "note": (
+                        "this record type stores no content_version; world "
+                        "records are append-only, so a difference means the "
+                        "stored JSON was edited after the run"
+                    ),
+                },
+            )
 
     def _inspect_world(self, project_id: str, nodes: list[Any] | None = None) -> None:
         before = len(self._findings)
