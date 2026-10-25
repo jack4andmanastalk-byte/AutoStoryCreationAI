@@ -32,6 +32,8 @@ from .model import (
 from .resume import ResumeError, ResumeProvider
 from .schema import SCHEMA_VERSION
 from .store import DEFAULT_STAGES, ProjectError, ProjectStore
+from .world import WorkWorldBinding
+from .world_store import WorldStore
 
 
 class ProjectRunError(ProjectError):
@@ -204,7 +206,7 @@ class ProjectRunner:
         additional_chapters: int | None = None, total_chapters: int | None = None,
         seed: int = 0, temperature: float | None = None,
         title: str | None = None, premise: str | None = None,
-        node_id: str | None = None,
+        node_id: str | None = None, world_binding_id: str | None = None,
     ) -> ProjectRunResult:
         """Append a new revision while retaining the parent runs and chapter text."""
         with self.store.execution_lock(project_id):
@@ -217,6 +219,21 @@ class ProjectRunner:
                     project_id=project_id,
                 )
             old_revision = snapshot.revision
+            parent_world_binding = None
+            if world_binding_id is not None:
+                world = WorldStore(self.store)
+                parent_world_binding = next((
+                    item for item in world.validate(project_id).bindings
+                    if item.id == world_binding_id
+                    and item.node_id == snapshot.root_node.id
+                    and item.revision_id == old_revision.id
+                ), None)
+                if parent_world_binding is None:
+                    raise ProjectRunError(
+                        "world_binding_id must identify a binding of the node's "
+                        "current parent revision",
+                        project_id=project_id,
+                    )
             if additional_chapters is not None and total_chapters is not None:
                 raise ProjectRunError(
                     "specify only one of additional_chapters and total_chapters",
@@ -263,6 +280,15 @@ class ProjectRunner:
                 parent_runs=parent_runs,
             )
             self.store.save_revision(new_revision)
+            if parent_world_binding is not None:
+                WorldStore(self.store).save_binding(WorkWorldBinding.create(
+                    id=new_id("binding"), project_id=project_id,
+                    node_id=snapshot.root_node.id, revision_id=new_revision.id,
+                    time_span_ids=parent_world_binding.time_span_ids,
+                    region_ids=parent_world_binding.region_ids,
+                    culture_state_ids=parent_world_binding.culture_state_ids,
+                    created_at=utc_now(),
+                ))
             self.store.save_node(replace(
                 snapshot.root_node,
                 current_revision_id=new_revision.id,

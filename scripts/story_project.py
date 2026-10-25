@@ -16,7 +16,8 @@ replay materials to an external directory.  ``add-child`` creates an independent
 child below any node; ``run-tree`` uses parent-first dependency order;
 ``render`` and ``compose`` provide single-work and recursive pinned outputs.
 ``world`` persists multiple timeframes, regions, culture states, revision-pinned
-work bindings, and explicitly adopted scoped canon.
+work bindings, and explicitly adopted scoped canon.  It also selects those
+records for generation and compiles chronicle/gazetteer/culture/collection views.
 """
 from __future__ import annotations
 
@@ -42,6 +43,7 @@ from asc.project import (  # noqa: E402
     ProjectStore,
     ProjectValidationError,
     WorkSpec,
+    WorldCompiler,
     WorldStore,
 )
 
@@ -66,6 +68,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     init.add_argument("--chapters", type=int, default=3)
     init.add_argument("--target-chars", type=int, default=1600)
     init.add_argument("--form", default="novel")
+    init.add_argument(
+        "--knowledge-character",
+        help="filter ancestor facts to this character ID's canon knows list",
+    )
     init.add_argument("--json", dest="json_output", action="store_true")
 
     run = subparsers.add_parser("run", help="run plan, design, and draft for a new revision")
@@ -106,6 +112,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     continuation.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     continuation.add_argument("--command", dest="provider_command", help="external provider command")
     continuation.add_argument("--model")
+    continuation.add_argument(
+        "--world-binding",
+        help="explicitly reuse this parent-revision world binding for the new revision",
+    )
     continuation.add_argument("--seed", type=int, default=0)
     continuation.add_argument("--temperature", type=float)
     continuation.add_argument("--json", dest="json_output", action="store_true")
@@ -133,6 +143,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     child.add_argument("--chapters", type=int, default=3)
     child.add_argument("--target-chars", type=int, default=1600)
     child.add_argument("--form", default="novel")
+    child.add_argument(
+        "--knowledge-character",
+        help="filter ancestor facts to this character ID's canon knows list",
+    )
     child.add_argument("--json", dest="json_output", action="store_true")
 
     adopt = subparsers.add_parser(
@@ -214,12 +228,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     world_adopt.add_argument("--supersedes")
     world_adopt.add_argument("--entry-id")
     world_adopt.add_argument("--json", dest="json_output", action="store_true")
+    world_profile = world_commands.add_parser(
+        "add-profile", help="add a chronicle, gazetteer, culture, or collection profile",
+    )
+    world_profile.add_argument("project_id")
+    world_profile.add_argument("--file", required=True, help="UTF-8 compilation profile JSON")
+    world_profile.add_argument("--json", dest="json_output", action="store_true")
+    world_profiles = world_commands.add_parser("profiles", help="list compilation profiles")
+    world_profiles.add_argument("project_id")
+    world_profiles.add_argument("--json", dest="json_output", action="store_true")
+    world_compile = world_commands.add_parser(
+        "compile", help="compile a deterministic world or work-collection view",
+    )
+    world_compile.add_argument("project_id")
+    world_compile.add_argument("profile_id")
+    world_compile.add_argument("--out", help="optional additional external UTF-8 markdown output")
+    world_compile.add_argument("--json", dest="json_output", action="store_true")
 
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     status.add_argument("--json", dest="json_output", action="store_true")
     return parser.parse_args(argv)
+
+
+def _work_options(args: argparse.Namespace) -> dict:
+    if not args.knowledge_character:
+        return {}
+    return {"context_knowledge": {"character_id": args.knowledge_character}}
 
 
 def _make_provider(args: argparse.Namespace):
@@ -312,6 +348,7 @@ def main(argv: list[str] | None = None) -> int:
                 chapter_count=args.chapters,
                 target_chars_per_chapter=args.target_chars,
                 form=args.form,
+                options=_work_options(args),
             )
             snapshot = store.create_project(spec, project_id=args.project_id)
             status = store.status(snapshot.project.id)
@@ -331,6 +368,7 @@ def main(argv: list[str] | None = None) -> int:
                     title=args.title, premise=premise, language=args.language,
                     chapter_count=args.chapters,
                     target_chars_per_chapter=args.target_chars, form=args.form,
+                    options=_work_options(args),
                 ),
                 parent_node_id=args.parent_node_id, order=args.order,
                 child_node_id=args.child_node_id, link_id=args.link_id,
@@ -424,12 +462,43 @@ def main(argv: list[str] | None = None) -> int:
                     "record": record.to_dict(),
                     "counts": world.status(args.project_id)["counts"],
                 }
+            elif args.world_command == "add-profile":
+                payload = json.loads(Path(args.file).expanduser().read_text(encoding="utf-8"))
+                profile = WorldCompiler(store).add_profile(args.project_id, payload)
+                report = {"project_id": args.project_id, "record": profile.to_dict()}
+            elif args.world_command == "profiles":
+                report = {
+                    "project_id": args.project_id,
+                    "profiles": [
+                        profile.to_dict()
+                        for profile in WorldCompiler(store).list_profiles(args.project_id)
+                    ],
+                }
+            elif args.world_command == "compile":
+                result = WorldCompiler(store).compile(args.project_id, args.profile_id)
+                report = result.to_dict()
+                if args.out:
+                    output = Path(args.out).expanduser()
+                    output.parent.mkdir(parents=True, exist_ok=True)
+                    output.write_text(result.text, encoding="utf-8")
+                    report["external_out"] = str(output)
             else:
                 report = world.status(args.project_id, args.node_id)
             if args.json_output:
+                if args.world_command == "compile":
+                    report["text"] = result.text
                 print(json.dumps(report, ensure_ascii=False, sort_keys=True))
             elif args.world_command == "status":
                 _print_world(report)
+            elif args.world_command == "profiles":
+                for profile in report["profiles"]:
+                    print(f"{profile['id']}: {profile['kind']} {profile['content_version']}")
+            elif args.world_command == "compile":
+                if args.out:
+                    print(f"Output: {Path(args.out).expanduser()}")
+                    print(f"SHA-256: {result.sha256}")
+                else:
+                    print(result.text, end="")
             else:
                 print(f"World record: {report['record']['id']}")
                 print(f"Type: {report['record']['record_type']}")
@@ -479,6 +548,7 @@ def main(argv: list[str] | None = None) -> int:
                     total_chapters=args.chapters,
                     seed=args.seed, temperature=args.temperature,
                     title=args.title, premise=args.premise, node_id=args.node_id,
+                    world_binding_id=args.world_binding,
                 )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id

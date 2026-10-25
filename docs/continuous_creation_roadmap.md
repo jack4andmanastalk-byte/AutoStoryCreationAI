@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜7を実装済み。次はPR 8（世界規模の生成文脈と編纂）**
+- 状態: **PR 1〜8を実装済み。X-01は実運用上必要になった場合だけ追加する**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -358,6 +358,14 @@ stale通知を実装し、world recordもreplay bundleのhash・復元検証へ�
 
 ### PR 8: 世界規模の生成文脈と編纂（W-05, W-06）
 
+実装: `world_context.py`で、現在revisionのbindingが明示したTimeSpan・Region・CultureStateと、
+current・scope・有効期間に合うcanonだけを選択。`WorkSpec.options.context_knowledge`と祖先
+`Character.knows`で人物別のfacts選択も行う。`asc-context-packet-world1`に参照ID・content version・
+overlay順を記録し、指定なしprojectのpre1 packetを維持する。resumeは記録packetを再利用し、
+continuationは`--world-binding`を指定した場合だけ旧選択を新版へ複製する。
+`world_compile.py`と`world add-profile|profiles|compile`で、時間軸別の年代記、地域別の地誌、
+文化圏、pinned作品集を生成し、profileと選択sourceの版から決定的な出力versionを作る。
+
 - ContextPacketを生成し、子作品へ必要な世界情報だけを渡す。
 - 年代記・地域別・文化圏別・作品集の出力を追加する。
 
@@ -419,7 +427,9 @@ PR 5で `nested.py`、`WorkLink`、node別runner、`add-child` / `adopt-child` /
 `compose`、pinned結合の回帰testを追加した。PR 6で多段ancestry・`run-tree`・再帰compose・
 `context.py`と多段の回帰testを追加した。PR 7で `world.py` / `world_store.py`、
 `story_project world add|status|bind|adopt-canon`、二時間軸・文化状態・canon stale/再採用・
-bundle復元の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` /
-protocol-v1は、新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
+bundle復元の回帰testを追加した。PR 8で `world_context.py` / `world_compile.py`、
+`world add-profile|profiles|compile`、子作品別の選択・人物知識・未来canon除外・resume固定・
+編纂決定性の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、
+新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**したがって、次の実装はPR 8の世界規模の生成文脈と編纂から開始する。**
+**PR 1〜8は実装済み。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**

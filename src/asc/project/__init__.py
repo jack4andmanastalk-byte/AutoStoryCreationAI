@@ -50,6 +50,14 @@ from .world import (
     WorldCanonEntry,
 )
 from .world_store import WorldRecords, WorldStore
+from .world_compile import (
+    COMPILATION_KINDS,
+    CompilationError,
+    CompilationProfile,
+    WorldCompilationResult,
+    WorldCompiler,
+)
+from .world_context import WORLD_CONTEXT_KIND, build_world_context
 from .store import (
     MAX_NESTING_DEPTH,
     ProjectCorruptError,
@@ -72,6 +80,9 @@ __all__ = [
     "TIMESPAN_PRECISIONS",
     "CanonScope",
     "CanonSource",
+    "COMPILATION_KINDS",
+    "CompilationError",
+    "CompilationProfile",
     "Culture",
     "CultureState",
     "CultureStateRelation",
@@ -113,9 +124,13 @@ __all__ = [
     "WorkSpec",
     "WorkWorldBinding",
     "WorldCanonEntry",
+    "WorldCompilationResult",
+    "WorldCompiler",
     "WorldRecords",
     "WorldStore",
+    "WORLD_CONTEXT_KIND",
     "build_context_packet",
+    "build_world_context",
     "export_bundle",
     "restore_bundle",
     "verify_bundle",
