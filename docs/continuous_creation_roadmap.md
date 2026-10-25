@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜14を実装済み（PR 14はドキュメントのみ）。次は中規模dogfoodで必要性を実測してから候補を決める**
+- 状態: **PR 1〜15を実装済み（PR 14・15はドキュメントのみ）。中規模dogfoodの実測により、index・queue・incremental検査は現時点では不要と判断**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -499,6 +499,59 @@ CLIのJSONと人間向け表示を検査する。`tests/test_project_doctor.py` 
 dogfoodで観測した手戻りとする。
 
 **完了条件**: 上記が `project.md` と本roadmapに明記され、実装・JSON・CLIの変更が無い。
+
+### PR 15: 中規模dogfood（9作品・102章）の実測と判断（ドキュメントのみ・実装なし）
+
+「作品が増えたら index / 依存queue / incremental検査が必要になる」という予想を、実装前に確かめた。
+CLIだけで9作品（root 1 + 子8、各12章 + 1作品のみcontinuation +2章 = 102章）を生成し、
+process再起動・待機応答・再binding・record直接編集・bundleまで1周した。
+
+| 計測 | 3作品 | 8作品（100章） |
+| --- | --- | --- |
+| `status`（project全体、JSON） | 150 ms | 220–250 ms |
+| `status --node` | 130 ms | 130–180 ms（章数にほぼ依存しない） |
+| `doctor --json` | 182 ms（2.6 KB） | 330–360 ms（2.2 KB、record編集後は 10.8 KB） |
+| `compose`（root、全作品） | — | 174 ms（93.7 KB） |
+| `world compile`（collection） | — | 188–222 ms（61.6 KB） |
+| `world status` | 132 ms | 134 ms |
+| `diff`（record単位） | — | 149 ms |
+| 1作品（12章）の生成 | — | 1.0–1.3 s（provider呼び出し14回、local command） |
+| bundle export / verify | — | 840 ms / 413 ms |
+
+規模: 869ファイル、3.67 MB、31 run、274応答、章本文 190 KB。1コマンドあたりの固定費（Python起動と
+JSON読み込み）が約120–130 msで、規模に比例する部分は `doctor` で約30 ms/作品、
+`status` で約18 ms/作品だった。この傾きのまま50作品（約600章）へ外挿すると
+`doctor` 1.7 s、`status` 1.0 s 程度で、対話的に待てる範囲に収まる。
+
+**判断**: 現時点では **index・依存queue・incremental検査を実装しない**。理由は、
+(a) 実測が予算内である、(b) 3つとも「速くする」ための装置で、正しさを上げない、
+(c) 導入すると保存形式か実行経路が増え、いま保証している参照・hash・pinの単純さを失う。
+再検討の引き金は次のいずれかが実測で再現したときとする。
+
+- `doctor` が常時 2 s を超える、または JSON が 100 KB を超えて読めなくなる（現在の傾きで50–60作品）。
+- `compose` が 1 s / 1 MB を超える、または1作品の未pinで全体が失敗する運用が日常化する。
+- 同じ操作列（例: 8作品の `run` を毎回手で並べる）を1セッションに3回以上繰り返す。このときは
+  常駐ワーカーではなく `run-tree` の延長（引数の列挙）で足りるかを先に測る。
+
+**このdogfoodで見つかった、実装候補ではあるが今回は直していない点**（次回の判断材料）:
+
+- `compose` は未pin linkが1つあると全体が exit 2 で失敗する。作業中の子が混ざるだけで作品集が
+  出せないため、`--partial`（未pinを注記して残りを編纂）の必要は実測で確認できた。
+- 世界recordを1件直接編集すると、そのrecordを参照する全nodeに警告と `diff` actionが出る
+  （7 node → 警告7件・action 7件・doctor出力 10.8 KB）。record単位で1件にまとめる余地がある。
+- 合成providerのdesign文書は全件 `unresolved` だったが、`doctor` はこれを finding にしない
+  （`design.json` にのみ記録）。品質ではなく「設計が未解決のまま生成が進んだ」という構造情報なので、
+  可観測性の候補として残す。
+- continuation はbindingを継承しない（設計どおり）。新revisionにbindingが無い間は
+  `world.record_changed` の対象外で、`doctor` は `world bind` を案内する。この往復は期待どおり。
+
+**制限**: 実時間は約5分で、「数日単位の中断」はprocess再起動・別invocation・待機応答で模擬した
+（wall-clockの経過そのものは検証していない）。providerはローカルの決定的スクリプトであり、
+モデルの速度・費用・品質は測っていない。章本文は構造checkerを通すための定型文で、作品としての
+評価は行っていない（L2/L3・人手評定は引き続き凍結）。
+
+**完了条件**: 上記の計測値と判断、再検討の引き金、見つかった候補が文書化され、実装・JSON・CLIの
+変更が無い。
 
 ### その後の候補
 

@@ -777,6 +777,12 @@ bundle・検査・差分確認が一通りCLIから操作できます。
 PR 14では、運用モード（モデルはArena.ai、生成の開始は人間、完全自動運用は非目標）と、
 後から足す場合の拡張点（`WorldEvent` / `KnowledgeState` / `CharacterState` とindex・
 incremental検査のID・scope・互換方針）を文書化しました（実装変更なし）。
+PR 15では、9作品（root 1 + 子8、各12章、1作品のみ+2章のcontinuation = 102章）をCLIだけで生成し、
+`status`・`doctor`・`compose`・`world compile`・`diff`・`bundle` の所要時間と出力量を実測しました
+（`doctor` 182 ms @3作品 → 330–360 ms @8作品、`compose` 174 ms / 93.7 KB、規模869ファイル・3.67 MB）。
+この傾きでは50作品でも `doctor` 1.7 s 程度に収まるため、index・依存queue・incremental検査は
+現時点では実装しないと判断しました。詳細と再検討の引き金は
+[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「PR 15」を参照してください。
 次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
