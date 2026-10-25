@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜12を実装済み。次は`status`と`doctor`の情報統合を候補とする**
+- 状態: **PR 1〜13を実装済み。次は大規模dogfoodで必要性を測ってから候補を決める**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -460,9 +460,35 @@ packetと編纂viewの混在比較は無意味なので拒否する。
 明示canon採用・supersessionと祖先continuationが追加/削除recordとして現れること、
 編纂2版の差分、版未指定の拒否、種類混在の拒否、read-only性、CLIの終了コードを検査する。
 
+### PR 13: `status` / `doctor` の情報統合と世界record改変の警告（実装済み）
+
+`observability.py` に作業要約（`work`、schema `asc-project-work-summary-v1`）と次操作
+（`next_actions`）の共通定義を置き、`status` と `doctor` の両方が同じ形で返す。
+`status` は checkpoints・links・pending だけを読むため、世界record・binding・run manifestの
+件数は `0` ではなく `null`（表示は `not inspected`）とし、「無い」と「調べていない」を区別する。
+`next_actions` は既存CLIのcommand文字列（`resume --retry-failed`、`pending`、`adopt-child`、
+`world bind`、`world adopt-canon`、`diff`、`run`）と理由を返し、`doctor` のfinding文言も
+同じ定義から作るため、案内が実装からずれない。自動実行はしない。
+
+あわせて `doctor` に `world.record_changed` を追加した。`region` や `time_frame` など
+`content_version` を保存しないrecordは、読み込み時のhash検証ができない。そこで各nodeの
+現行revisionが記録したpacketのreference（読み取り時に計算されたhash）と現在値を比べ、
+一致しない場合にwarningを出し、`diff --left run:<run_id> --right current` を案内する。
+追記・明示採用・supersessionは追加/削除として扱い、この警告にはしない。
+
+**完了条件**: 同じ状態に対して `status` と `doctor` の `work` が同じ定義で一致し（`status` は
+未検査を明示）、両者の `next_actions` が同じcommandを出し、`doctor` はread-onlyのまま、
+`content_version` を持たないrecordの直接編集がwarningとして現れる。
+
+確認: `tests/test_project_observability.py` が、要約形状と未検査の`null`、status/doctor の
+一致、failed/pending/stale時のaction、actionによる`adopt-child`・`world bind`の一致、
+record編集の警告と`diff`案内、追記・採用・supersessionで警告しないこと、read-only性、
+CLIのJSONと人間向け表示を検査する。`tests/test_project_doctor.py` の
+「未検出」テストは「記録packetと比べて検出」に置き換えた。
+
 ### その後の候補
 
-- `status` と `doctor` の情報統合（重複する表示の整理。`doctor` はread-onlyのまま）。
+- より大きなdogfood（複数作品・複数時間軸・長期の中断再開）で、次に必要な運用機能を測る。
 - 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
 - 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
 - 上記の実装・運用で繰り返し現れる共通形が見えた場合だけX-01へ進む。
@@ -527,4 +553,4 @@ bundle復元の回帰testを追加した。PR 8で `world_context.py` / `world_c
 編纂決定性の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、
 新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**PR 1〜12は実装済み。次は`status`と`doctor`の情報統合を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**
+**PR 1〜13は実装済み。次は複数作品・長期運用のdogfoodで必要性を測り、その結果から候補を選ぶ。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**

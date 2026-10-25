@@ -414,11 +414,12 @@ def test_doctor_cli_json_and_exit_codes(tmp_path: Path):
     assert "not found" in missing.stderr
 
 
-def test_unversioned_world_record_edit_is_not_detected(tmp_path: Path):
-    """Known limitation: only versioned records carry a content hash.
-
-    A region name has no ``content_version``, so the store cannot tell an edit
-    from the original.  Doctor reports references and structure, not a signature.
+def test_unversioned_world_record_edit_is_detected_against_a_recorded_packet(
+    tmp_path: Path,
+):
+    """A region name has no stored ``content_version``, so the record alone
+    cannot tell an edit from the original.  The packet recorded by an earlier
+    run pins the hash it saw, so the edit becomes a warning instead of silence.
     """
     store = ProjectStore(tmp_path)
     root, child, _ = make_family(store)
@@ -430,4 +431,17 @@ def test_unversioned_world_record_edit_is_not_detected(tmp_path: Path):
     world_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     report = inspect_project(store, root.project.id)
     assert report.ok is True
-    assert report.findings == ()
+    finding = next(
+        item for item in report.findings if item.code == "world.record_changed"
+    )
+    assert finding.severity == "warning"
+    assert finding.node_id == child.child_node_id
+    assert finding.details["record_type"] == "region"
+    assert finding.details["record_id"] == "region-coast"
+    assert finding.details["run_id"]
+    assert (
+        finding.details["recorded_content_version"]
+        != finding.details["current_content_version"]
+    )
+    # No stored hash is rewritten to match: the check stays read-only.
+    assert report.ok is True
