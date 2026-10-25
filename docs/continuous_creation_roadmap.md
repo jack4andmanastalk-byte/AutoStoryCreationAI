@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜8を実装済み。X-01は実運用上必要になった場合だけ追加する**
+- 状態: **PR 1〜8を実装済み。次はPR 9（運用dogfoodと可観測性）、その後はPR 10（改訂・分岐）を候補とする**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -372,9 +372,39 @@ continuationは`--world-binding`を指定した場合だけ旧選択を新版へ
 **完了条件**: 同じ世界資料から、子作品別の文脈と複数の編纂出力を生成できる。
 全歴史をpromptへ渡さず、参照した資料のIDと版を記録できる。
 
+### PR 9: 運用dogfoodと可観測性（次の実装）
+
+- Arena operatorで、二つの時間軸・少数の時代/地域/文化・親子孫作品を使う小規模な実創作を行う。
+- 中断再開、continuation、世界binding、canon採用、stale/adopt、編纂、bundle復元を一通り操作する。
+- 作品品質ではなく、operator操作回数、pending/staleの解消手順、ContextPacketサイズ、選択資料と版、
+  中断・復元が必要になった箇所を記録する。生成した創作データはGitへ入れない。
+- まずは`story_project doctor`と`context show`を最小実装の候補とし、dogfoodで確認した必要性に応じて
+  `diff`・`next`を後続PRへ分割する。検査は生成や自動採用を行わず、現在/記録済みの版を読む操作に限定する。
+
+**完了条件**: project・世界record・参照artifactの異常とpending/staleを検査でき、選択nodeの
+ContextPacketと参照ID/content versionを確認できる。同じ小規模projectで運用手順を再現し、
+発見した問題を品質評価と混同せず次の実装対象へ分類できる。
+
+### PR 10: 章単位の改訂・分岐workflow（次の本体候補）
+
+- 完成した任意revisionから`revise`で新版を作り、指定した章・設計だけを再生成する。
+- 変更しない章とartifactはbyte-identicalに引き継ぎ、旧run・旧版を上書きしない。
+- 旧revisionからのwhat-if `branch`を作り、世界bindingは明示指定した場合だけ複製する。
+- 変更による親・子・canonへの影響はstale通知とし、新版の採用は明示的なadoptに限定する。
+- 改訂・分岐版もresume、厳密replay、bundle、pinned composeと整合させる。
+
+**完了条件**: 旧版の任意revisionから分岐し、選択した章だけを改訂しても、旧版と未選択章の
+bytesが変わらない。中断再開とbundle復元ができ、親のpinned出力はadoptまで変わらない。
+
+### その後の候補
+
+- 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
+- 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
+- 上記の実装・運用で繰り返し現れる共通形が見えた場合だけX-01へ進む。
+
 ### X-01: skill registryは後置する
 
-PR 1〜8で必要になった共通形だけをregistryへ移す。
+PR 1〜8と今後の実運用で必要になった共通形だけをregistryへ移す。
 先に大きな抽象化を作らず、world/history/character/branch/adaptationなどのoptional workflowは、
 実際の創作操作が必要になった時点で追加する。
 
@@ -432,4 +462,4 @@ bundle復元の回帰testを追加した。PR 8で `world_context.py` / `world_c
 編纂決定性の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、
 新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**PR 1〜8は実装済み。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**
+**PR 1〜8は実装済み。次はPR 9の運用dogfoodと可観測性から開始し、その後にPR 10の改訂・分岐を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**
