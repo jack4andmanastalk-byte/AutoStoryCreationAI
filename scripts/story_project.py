@@ -12,9 +12,9 @@ subcommand to select another store.  ``run`` executes the single-work S1
 vertical slice, and ``resume`` continues an interrupted revision without
 regenerating its completed response prefix.  ``continue`` creates a new
 revision for a completed work, and ``bundle export|verify|restore`` moves its
-replay materials to an external directory.  ``add-child`` creates a depth-one
-child with its own node state; ``render`` and ``compose`` provide single-work
-and pinned combined outputs.
+replay materials to an external directory.  ``add-child`` creates an independent
+child below any node; ``run-tree`` uses parent-first dependency order;
+``render`` and ``compose`` provide single-work and recursive pinned outputs.
 """
 from __future__ import annotations
 
@@ -66,7 +66,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     run = subparsers.add_parser("run", help="run plan, design, and draft for a new revision")
     run.add_argument("project_id")
-    run.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    run.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     run.add_argument("--provider", choices=["scripted", "command"], default="command")
     run.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     run.add_argument("--command", dest="provider_command", help="external provider command")
@@ -75,11 +75,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run.add_argument("--temperature", type=float)
     run.add_argument("--json", dest="json_output", action="store_true")
 
+    tree = subparsers.add_parser(
+        "run-tree", help="run a node and its descendants in parent-first order",
+    )
+    tree.add_argument("project_id")
+    tree.add_argument("--node", dest="node_id", help="subtree root (default: project root)")
+    tree.add_argument("--provider", choices=["scripted", "command"], default="command")
+    tree.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+    tree.add_argument("--command", dest="provider_command", help="external provider command")
+    tree.add_argument("--model")
+    tree.add_argument("--seed", type=int, default=0)
+    tree.add_argument("--temperature", type=float)
+    tree.add_argument("--json", dest="json_output", action="store_true")
+
     continuation = subparsers.add_parser(
         "continue", help="create a new revision with additional chapters",
     )
     continuation.add_argument("project_id")
-    continuation.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    continuation.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     chapter_change = continuation.add_mutually_exclusive_group()
     chapter_change.add_argument("--add-chapters", type=int)
     chapter_change.add_argument("--chapters", type=int, help="new total chapter count")
@@ -95,16 +108,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
     resume.add_argument("project_id")
-    resume.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    resume.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     resume.add_argument("--provider", choices=["scripted", "command"], default="command")
     resume.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     resume.add_argument("--command", dest="provider_command", help="external provider command")
     resume.add_argument("--model")
     resume.add_argument("--json", dest="json_output", action="store_true")
 
-    child = subparsers.add_parser("add-child", help="add a depth-one independent child work")
+    child = subparsers.add_parser("add-child", help="add an independent child below any node")
     child.add_argument("project_id")
-    child.add_argument("--parent-node", dest="parent_node_id", help="root node (default)")
+    child.add_argument("--parent-node", dest="parent_node_id", help="parent node (default: root)")
     child.add_argument("--node-id", dest="child_node_id", help="optional stable child node ID")
     child.add_argument("--link-id", help="optional stable link ID")
     child.add_argument("--order", type=int, help="positive output order; default: append")
@@ -127,20 +140,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     render = subparsers.add_parser("render", help="render one node's current completed draft")
     render.add_argument("project_id")
-    render.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    render.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     render.add_argument("--out", help="optional external UTF-8 markdown output")
     render.add_argument("--json", dest="json_output", action="store_true")
 
     compose = subparsers.add_parser(
-        "compose", help="compile the root and its pinned child revisions",
+        "compose", help="recursively compile a node and its pinned descendants",
     )
     compose.add_argument("project_id")
+    compose.add_argument("--node", dest="node_id", help="subtree root (default: project root)")
     compose.add_argument("--out", help="optional additional external UTF-8 markdown output")
     compose.add_argument("--json", dest="json_output", action="store_true")
 
     pending = subparsers.add_parser("pending", help="list operator responses still needed")
     pending.add_argument("project_id")
-    pending.add_argument("--node", dest="node_id", help="child node ID (default: root and its children)")
+    pending.add_argument("--node", dest="node_id", help="subtree root (default: root and all descendants)")
     pending.add_argument("--json", dest="json_output", action="store_true")
 
     bundle = subparsers.add_parser("bundle", help="export, verify, or restore replay sources")
@@ -158,7 +172,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
-    status.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     status.add_argument("--json", dest="json_output", action="store_true")
     return parser.parse_args(argv)
 
@@ -295,7 +309,7 @@ def main(argv: list[str] | None = None) -> int:
             result = (
                 composer.render(args.project_id, args.node_id)
                 if args.command == "render"
-                else composer.compose(args.project_id)
+                else composer.compose(args.project_id, args.node_id)
             )
             if args.out:
                 output = Path(args.out).expanduser()
@@ -310,6 +324,31 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"SHA-256: {result.sha256}")
             else:
                 print(result.text, end="")
+            return 0
+
+        if args.command == "run-tree":
+            provider = _make_provider(args)
+            result = ProjectRunner(store).run_tree(
+                args.project_id, provider, node_id=args.node_id,
+                seed=args.seed, temperature=args.temperature,
+            )
+            status = dict(result.status)
+            status["order"] = list(result.order)
+            status["tree_runs"] = [
+                {
+                    "node_id": item.status["node_id"],
+                    "attempt_id": item.attempt_id,
+                    "stage_runs": item.stage_runs,
+                    "state": item.status["state"],
+                }
+                for item in result.results
+            ]
+            if args.json_output:
+                print(json.dumps(status, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_human(status, created=False)
+                print("Topological order: " + " -> ".join(result.order))
+                print(f"Nodes run: {len(result.results)}")
             return 0
 
         if args.command in {"run", "resume", "continue"}:
@@ -357,7 +396,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "pending":
             report = {
                 "project_id": status["project_id"],
-                "node_id": status["root_node_id"],
+                "node_id": status["node_id"],
                 "state": status["state"],
                 "pending": status["pending"],
             }

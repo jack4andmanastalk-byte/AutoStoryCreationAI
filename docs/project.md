@@ -3,11 +3,11 @@
 `story_project.py` は、固定されたprotocol-v1 taskとは別に、任意のpremiseを持つ
 創作projectを永続化するための入口です。現在のschema versionは **1** です。
 
-現在は、projectの **作成・単一/深さ1入れ子作品のS1生成・中断再開・continuation・
-replay bundle・編纂出力・operator pending確認・状態確認** ができます。S1生成は
-plan → design → draftのvertical sliceで、S2/S3改稿や品質監査は通りません。
-多段入れ子と世界modelは後のincrementです。既存の `run_pipeline.py` と厳密replayの
-後方互換性は維持しています。
+現在は、projectの **作成・単一/多段入れ子作品のS1生成・依存順実行・中断再開・
+continuation・replay bundle・再帰編纂出力・operator pending確認・状態確認** ができます。
+S1生成はplan → design → draftのvertical sliceで、S2/S3改稿や品質監査は通りません。
+世界modelと時代・地域・文化を指定する完全なContextPacketは後のincrementです。
+既存の `run_pipeline.py` と厳密replayの後方互換性は維持しています。
 
 ## 作成
 
@@ -134,48 +134,77 @@ python3 scripts/story_project.py resume prj-seaside \
   --provider command --command "<provider command>"
 ```
 
-## 深さ1の入れ子作品
+## 多段入れ子作品と依存順実行
 
-root作品の直下に、独立した子nodeを複数配置できます。子は自分のrevision・canon・
-checkpoint・runを持ち、親のcanonや本文を暗黙に継承しません。`--order`は結合時の順序で、
-同じ親の中で一意な正の整数です。
+任意のnodeの直下に、独立した子nodeを配置できます。rootの深さは0で、最大8段（rootを
+含めて9 node）までです。親関係の後付け変更・循環・rootへ繋がらない親参照・深さ超過は
+拒否します。各子は自分のrevision・canon・checkpoint・runを持ち、親の本文を暗黙に継承しません。
+`--order`は同じ親の中で一意な正の整数です。
 
 ```bash
 python3 scripts/story_project.py add-child prj-seaside \
   --node-id node-tide-side --title "潮の側話" \
   --premise "本編の港で起きた別の出来事。" --order 1 --json
+python3 scripts/story_project.py add-child prj-seaside \
+  --parent-node node-tide-side --node-id node-tide-grandchild \
+  --title "灯台の記録" --premise "側話のさらに内側の出来事。" --json
 python3 scripts/story_project.py run prj-seaside --node node-tide-side \
   --provider command --command "<provider command>"
 ```
 
-`run`・`resume`・`continue`・`status`・`pending`は `--node` で子を選択します。
-省略時はrootです。rootの`status`には`children`と`links`が出て、子のstateやpinned revisionを
-個別に確認できます。rootの`pending`には子の未回答もnode ID付きで集約されます。
-
-各linkは子の`child_revision_id`・`order`・draft `ArtifactRef`・`content_version`を保持し、
-子本文そのものは保存しません。子をcontinuationするとcurrent revisionだけが進み、linkは
-`stale: true`になります。旧いpinned出力を自動で書き換えず、完了した新版を明示的に採用します。
+`run`・`resume`・`continue`・`status`・`pending`は `--node` で任意の子・孫を選択します。
+省略時はrootです。各nodeの`status`には直下の`children`と`links`が出て、さらに下位nodeの
+状態を再帰的に確認できます。rootの`pending`には全 descendantの未回答がnode ID付きで集約されます。
+単独runはPR 5どおり子を独立に開始できますが、親を先に完了させてから子・孫を進める場合は
+`run-tree`を使います。
 
 ```bash
-python3 scripts/story_project.py continue prj-seaside --node node-tide-side \
+python3 scripts/story_project.py run-tree prj-seaside \
+  --provider command --command "<provider command>" --json
+```
+
+`run-tree`はlink順を保ったparent-before-descendantのtopological orderで、未開始nodeだけを
+実行し、完了nodeは再実行しません。未完・失敗・応答待ちのnodeを飛び越えず、 descendantを
+生成せずに停止します。中断したnodeは個別に`resume`してから再度`run-tree`を実行します。
+`--node`を指定すると、そのsubtreeだけを対象にできます（上位の依存は完了している必要があります）。
+
+各linkは子の`child_revision_id`・`order`・draft `ArtifactRef`・`content_version`を保持し、
+子本文そのものは保存しません。子・孫をcontinuationするとcurrent revisionだけが進み、対応する
+linkは`stale: true`になります。旧いpinned出力を自動で書き換えず、完了した新版をlink IDで明示的に
+採用します。nested linkも同じcontractで、親のpinned参照を勝手に更新しません。
+
+```bash
+python3 scripts/story_project.py continue prj-seaside --node node-tide-grandchild \
   --add-chapters 1 --provider command --command "<provider command>"
-python3 scripts/story_project.py status prj-seaside --json
+python3 scripts/story_project.py status prj-seaside --node node-tide-side --json
 python3 scripts/story_project.py adopt-child prj-seaside LINK_ID --json
 ```
 
-単一nodeの出力と、root＋子の結合出力は別の操作です。`render`は選択nodeの現在の完了draft、
-`compose`はrootの完了draftと全linkのpinned draftを順序どおりに編纂します。
+単一nodeの出力と再帰結合出力は別の操作です。`render`は選択nodeの現在の完了draftだけを出し、
+`compose`は選択nodeの完了draftと全 descendantのpinned draftを順序どおりに編纂します。
+選択nodeを`#`、子を`##`、孫を`###`のように、深さから決定的に見出しを付けます。
 
 ```bash
 python3 scripts/story_project.py render prj-seaside --node node-tide-side --out /external/child.md
 python3 scripts/story_project.py compose prj-seaside --out /external/combined.md
+python3 scripts/story_project.py compose prj-seaside --node node-tide-side --out /external/subtree.md
 ```
 
-結合結果は`artifacts/<root-node>/combined-<version>.md`と同名のJSON manifestにも保存します。
-versionは親revisionとpinned link/artifactから決まり、時刻や子のcurrent revisionでは変わりません。
-したがって、子がstaleになった後もadopt前の`compose`は同じbytesを再現します。adopt後の
-`compose`だけが新しいversionを追加し、旧い結合artifactも残ります。PR 5ではroot直下の深さ1だけを
-許可し、孫nodeや親関係の後付け変更を拒否します。
+結合結果は`artifacts/<selected-node>/combined-<version>.md`と同名のJSON manifestにも保存します。
+versionは選択nodeのrevisionと全階層のpinned link/artifactから決まり、時刻や子のcurrent revisionでは
+変わりません。したがって、descendantがstaleになった後もadopt前の`compose`は同じbytesを再現します。
+adopt後の`compose`だけが新しいversionを追加し、旧い結合artifactも残ります。
+
+### 祖先文脈の選択（ContextPacket前身）
+
+多段nodeの生成では、祖先の全本文をpromptへ投入しません。`context.py`がrootから直近の親までを
+対象に、compactなcanon（人物・事実・場所・章構造など）と、章ID・文字数・時日・場所などの
+構造要約だけを`asc-context-packet-pre1`として組み立てます。章本文とdraftのtext fieldは除外します。
+packetは各stageの`project-input.json`に記録され、plan/design/draftのpromptにも同じ内容が付与されます。
+祖先が未完の単独runでは、その祖先の構造と状態だけを記録し、完了したcanonがないことを隠しません。
+これは世界modelの時代・地域・文化選択を行う完全なContextPacketではなく、後のincrementへ渡す
+小さな前身です。resumeは旧runに記録されたpacketを明示的に再利用するため、待機中に祖先が完了しても
+子のpromptを変えません。記録packet・prompt・requestの照合に失敗した場合は再開を拒否します。
 
 ## replay bundleの外部保存
 
@@ -231,7 +260,7 @@ runs/projects/<project_id>/
 │   ├── current.json
 │   ├── revisions/<revision_id>.json
 │   ├── checkpoints/<stage>.json
-│   └── links/<link_id>.json        # rootの子へのpinned参照
+│   └── links/<link_id>.json        # 任意の親から子へのpinned参照
 ├── artifacts/<node_id>/combined-<version>.md
 └── runs/<attempt-id>-<stage>/
 ```
@@ -241,8 +270,8 @@ runs/projects/<project_id>/
 - `<revision_id>.json`: 完全なWorkSpec、そのSHA-256、版付きartifact参照。continuation版は
   `parent_revision_id` と親stageの `parent_runs` も持ち、旧recordは追記・上書きしない。
 - `checkpoints/<stage>.json`: current revisionのstage状態、attempt、run、版付きartifact参照。
-- `links/<link_id>.json`: rootから子への順序・pinned revision・content version・draft artifact参照。
-  子の本文は含めず、新版の採用は`adopt-child`だけが変更する。
+- `links/<link_id>.json`: 任意の親から子への順序・pinned revision・content version・draft artifact参照。
+  子の本文は含めず、新版の採用は`adopt-child`だけが変更する。linkは全階層で探索できる。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json` もあり、旧runは別directoryに残る。
 - `artifacts/`: node別の結合markdownとmanifest。S1の個別生成物は各runから直接参照します。
@@ -269,8 +298,10 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 - replay bundleは全payloadをhashで検査し、restore時の上書きを拒否する。
 - 子nodeは独立したrevision/checkpoint/runを持ち、親linkはpinned artifactだけを保持する。
   子のcurrent revisionとlinkが違う場合はstaleとして表示し、自動採用しない。
-- 結合versionには時刻を含めず、同じ親revisionとpinned内容から同じ結合bytesを再現する。
-- PR 5の親子関係はroot直下の深さ1に限定し、親関係の変更と孫nodeを拒否する。
+- 結合versionには時刻を含めず、同じ親revisionと全階層のpinned内容から同じ結合bytesを再現する。
+- 親子関係はroot=0・最大深さ8の木に限定し、循環・orphan・深さ超過と親関係の変更を拒否する。
+- `run-tree`はparent-before-descendantの順序を守り、未完・失敗・待機中の依存を飛び越えない。
+- 祖先の章本文を子の文脈へコピーせず、選択したcanon・構造要約・参照IDだけを記録する。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
 これは破損や意図しない不整合を検出する仕組みであり、悪意ある改ざんに対する
@@ -278,5 +309,6 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 6で、孫作品・循環検出・深さ制限・依存順実行を追加します。PR 5のpinned linkと
-編纂viewを保ちながら、多段の文脈選択を別層として実装します。
+PR 6では、孫作品・循環検出・深さ制限・依存順実行・再帰compose・祖先文脈packetを追加しました。
+PR 5のpinned link、個別run/resume/continuation、bundle互換を保ち、世界model（PR 7）と
+時代・地域・文化を指定する完全なContextPacket（PR 8）は後のincrementです。

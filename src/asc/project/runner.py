@@ -25,6 +25,7 @@ from ..pipeline import (
 from ..story.canon import Canon, load_canon
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
 from .continuation import ContinuationContext, validate_continuation_canon
+from .context import ContextPacket, build_context_packet
 from .model import (
     ArtifactRef, ProjectSnapshot, StageCheckpoint, WorkNodeRevision, new_id, utc_now,
 )
@@ -45,6 +46,19 @@ class ProjectRunError(ProjectError):
         self.stage = stage
         self.run_id = run_id
         self.run_dir = run_dir
+
+
+class ProjectDependencyError(ProjectRunError):
+    """A tree attempt cannot safely cross an unfinished dependency."""
+
+    def __init__(
+        self, message: str, *, project_id: str, node_id: str,
+        dependency_id: str | None = None, dependency_state: str | None = None,
+    ):
+        super().__init__(message, project_id=project_id)
+        self.node_id = node_id
+        self.dependency_id = dependency_id
+        self.dependency_state = dependency_state
 
 
 class ProjectRunPending(ProjectRunError):
@@ -69,11 +83,29 @@ class ProjectRunResult:
 
 
 @dataclass(frozen=True)
+class ProjectTreeRunResult:
+    """Results of a parent-before-descendant attempt over a containment tree."""
+
+    project_id: str
+    root_node_id: str
+    order: tuple[str, ...]
+    results: tuple[ProjectRunResult, ...]
+    status: dict[str, Any]
+
+    @property
+    def stage_runs(self) -> dict[str, dict[str, str]]:
+        return {
+            result.status["node_id"]: result.stage_runs for result in self.results
+        }
+
+
+@dataclass(frozen=True)
 class _Attempt:
     snapshot: ProjectSnapshot
     pipeline: PipelineInput
     attempt_id: str
     continuation: ContinuationContext | None = None
+    context_packet: ContextPacket | None = None
 
 
 @dataclass(frozen=True)
@@ -92,6 +124,20 @@ class _StageResult:
 
 def _default_temperature(stage: str) -> float:
     return 0.8 if stage == "draft" else 0.6
+
+
+class _ContextProvider:
+    """Add the same recorded ancestor packet to design/draft requests only."""
+
+    def __init__(self, delegate: Provider, suffix: str):
+        self.delegate = delegate
+        self.suffix = suffix
+        self.name = delegate.name
+        self.model = delegate.model
+        self.model_version = delegate.model_version
+
+    def generate(self, request):
+        return self.delegate.generate(replace(request, prompt=request.prompt + self.suffix))
 
 
 def _project_brief(attempt: _Attempt) -> str:
@@ -338,23 +384,183 @@ class ProjectRunner:
                         else _default_temperature(stage)
                     ),
                 )
+            recorded_context = self._recorded_context_override(
+                snapshot, existing, source_dir,
+            )
             attempt = self._attempt(
                 snapshot, continuation=self._continuation_for_snapshot(snapshot),
+                context_packet_override=recorded_context,
             )
             return self._execute(
                 attempt, provider, configs, existing,
                 resume_stage=target if source_dir is not None else None,
             )
 
-    @staticmethod
+    def _recorded_context_override(
+        self, snapshot: ProjectSnapshot, existing: dict[str, StageCheckpoint],
+        preferred_source: Path | None,
+    ) -> tuple[bool, ContextPacket | None] | None:
+        """Pin resume to the packet recorded by the original attempt.
+
+        An ancestor may finish or gain a revision while a child is waiting.  That
+        must not make the child's recorded prompt impossible to resume.  The old
+        packet is therefore an explicit input to the new attempt, just like the
+        old response prefix.  A legacy run without the field uses no packet.
+        """
+        candidates: list[Path] = []
+        if preferred_source is not None:
+            candidates.append(preferred_source)
+        for stage in DEFAULT_STAGES:
+            checkpoint = existing.get(stage)
+            if checkpoint is not None and checkpoint.run_id:
+                candidates.append(
+                    self.store.project_dir(snapshot.project.id) / "runs" / checkpoint.run_id
+                )
+        seen: set[Path] = set()
+        for run_dir in candidates:
+            if run_dir in seen:
+                continue
+            seen.add(run_dir)
+            input_path = run_dir / "project-input.json"
+            if not input_path.is_file():
+                continue
+            data = self._read_run_json(input_path)
+            raw = data.get("context_packet")
+            if raw is None:
+                return True, None
+            try:
+                packet = ContextPacket.from_dict(raw)
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ProjectRunError(
+                    f"invalid recorded context packet: {input_path}: {exc}",
+                    project_id=snapshot.project.id,
+                ) from exc
+            if (
+                packet.project_id != snapshot.project.id
+                or packet.node_id != snapshot.root_node.id
+                or packet.revision_id != snapshot.revision.id
+            ):
+                raise ProjectRunError(
+                    "recorded context packet does not match the current node/revision",
+                    project_id=snapshot.project.id,
+                )
+            return True, packet
+        return None
+
+    def dependency_order(
+        self, project_id: str, node_id: str | None = None,
+    ) -> list[str]:
+        """Return stable parent-before-descendant topological order.
+
+        Links are already order-checked by the store.  The explicit visiting
+        set is a second line of defence for malformed hand-edited projects.
+        """
+        snapshot = self.store.load_node_snapshot(project_id, node_id)
+        order: list[str] = []
+        visiting: set[str] = set()
+        visited: set[str] = set()
+
+        def visit(node_id: str) -> None:
+            if node_id in visiting:
+                raise ProjectDependencyError(
+                    f"cycle detected in work containment at {node_id}",
+                    project_id=project_id, node_id=node_id,
+                )
+            if node_id in visited:
+                return
+            visiting.add(node_id)
+            order.append(node_id)
+            for link in self.store.list_links(project_id, node_id):
+                visit(link.child_node_id)
+            visiting.remove(node_id)
+            visited.add(node_id)
+
+        visit(snapshot.root_node.id)
+        return order
+
+    # Both names are useful to callers: this is a topological sort restricted
+    # to the containment tree, not a general reference-graph sort.
+    topological_order = dependency_order
+
+    def _check_tree_dependencies(self, project_id: str, node_id: str) -> None:
+        node = self.store.load_node(project_id, node_id)
+        seen: set[str] = set()
+        while node.parent_id is not None:
+            if node.id in seen:
+                raise ProjectDependencyError(
+                    f"cycle detected in work containment at {node.id}",
+                    project_id=project_id, node_id=node.id,
+                )
+            seen.add(node.id)
+            dependency = self.store.load_node(project_id, node.parent_id)
+            dependency_status = self.store.status(
+                project_id, dependency.id, include_descendants=False,
+            )
+            if dependency_status["state"] != "complete":
+                raise ProjectDependencyError(
+                    f"node {node_id} is blocked by {dependency.id} "
+                    f"({dependency_status['state']}); complete or resume the dependency first",
+                    project_id=project_id, node_id=node_id,
+                    dependency_id=dependency.id,
+                    dependency_state=dependency_status["state"],
+                )
+            node = dependency
+
+    def run_tree(
+        self, project_id: str, provider: Provider, *, node_id: str | None = None,
+        seed: int = 0, temperature: float | None = None,
+    ) -> ProjectTreeRunResult:
+        """Run every not-started node in parent-first order, stopping safely.
+
+        Completed nodes are left untouched.  A failed, waiting, or otherwise
+        unfinished node is never bypassed, so descendants cannot be generated
+        against an incomplete ancestor.  Individual ``resume`` and
+        ``continue_project`` operations remain available for that node.
+        """
+        order = self.dependency_order(project_id, node_id)
+        results: list[ProjectRunResult] = []
+        for current_id in order:
+            self._check_tree_dependencies(project_id, current_id)
+            state = self.store.status(
+                project_id, current_id, include_descendants=False,
+            )["state"]
+            if state == "complete":
+                continue
+            if state != "not_started":
+                raise ProjectDependencyError(
+                    f"node {current_id} is {state}; run-tree will not skip an "
+                    "unfinished or failed dependency (use resume for an interrupted run)",
+                    project_id=project_id, node_id=current_id,
+                    dependency_id=current_id, dependency_state=state,
+                )
+            results.append(self.run(
+                project_id, provider, node_id=current_id,
+                seed=seed, temperature=temperature,
+            ))
+        selected = self.store.load_node_snapshot(project_id, node_id).root_node.id
+        return ProjectTreeRunResult(
+            project_id=project_id,
+            root_node_id=selected,
+            order=tuple(order),
+            results=tuple(results),
+            status=self.store.status(project_id, selected),
+        )
+
     def _attempt(
-        snapshot: ProjectSnapshot, *, continuation: ContinuationContext | None = None,
+        self, snapshot: ProjectSnapshot, *, continuation: ContinuationContext | None = None,
+        context_packet_override: tuple[bool, ContextPacket | None] | None = None,
     ) -> _Attempt:
+        packet = (
+            build_context_packet(self.store, snapshot.project.id, snapshot.root_node.id)
+            if context_packet_override is None
+            else context_packet_override[1]
+        )
         return _Attempt(
             snapshot=snapshot,
             pipeline=adapt_work_spec(snapshot.root_node.id, snapshot.revision.spec),
             attempt_id=new_id("att"),
             continuation=continuation,
+            context_packet=packet,
         )
 
     def _continuation_for_snapshot(
@@ -454,11 +660,15 @@ class ProjectRunner:
             source_run_id = old.run_id if stage == resume_stage else None
             resume_provider = None
             stage_provider = provider
+            if attempt.context_packet is not None and stage != "plan":
+                stage_provider = _ContextProvider(
+                    provider, attempt.context_packet.prompt_suffix(),
+                )
             if source_run_id is not None:
                 try:
                     resume_provider = ResumeProvider(
                         self.store.project_dir(project_id) / "runs" / source_run_id,
-                        provider,
+                        stage_provider,
                         expected_input=self._expected_input(attempt, stage),
                         expected_seed=configs[stage].seed,
                         expected_temperature=configs[stage].temperature,
@@ -526,6 +736,10 @@ class ProjectRunner:
             "spec_sha256": attempt.snapshot.revision.spec_sha256,
             "spec": attempt.snapshot.revision.spec.to_dict(),
             "stage": stage,
+            **(
+                {"context_packet": attempt.context_packet.to_dict()}
+                if attempt.context_packet else {}
+            ),
         }
 
     @staticmethod
@@ -593,7 +807,11 @@ class ProjectRunner:
             temperature=ledger.temperature if ledger.temperature is not None else 0.6,
             seed=seed,
             prompt_suffix=(
-                attempt.continuation.prompt_suffix if attempt.continuation else ""
+                (attempt.continuation.prompt_suffix if attempt.continuation else "")
+                + (
+                    attempt.context_packet.prompt_suffix()
+                    if attempt.context_packet else ""
+                )
             ),
         )
         # Keep the frozen-task implementation untouched; replace only its
@@ -675,6 +893,10 @@ class ProjectRunner:
                 "revision_id": attempt.snapshot.revision.id,
                 "spec_sha256": attempt.snapshot.revision.spec_sha256,
                 "spec": attempt.snapshot.revision.spec.to_dict(),
+                **(
+                    {"context_packet": attempt.context_packet.to_dict()}
+                    if attempt.context_packet else {}
+                ),
                 "input_artifacts": [item.to_dict() for item in input_artifacts],
                 "resume_of": resume_of,
                 "resume_source_responses_sha256": (

@@ -43,6 +43,7 @@ from .schema import (
 )
 
 DEFAULT_STAGES = ("plan", "design", "draft")
+MAX_NESTING_DEPTH = 8
 T = TypeVar("T")
 
 
@@ -293,11 +294,40 @@ class ProjectStore:
             raise ProjectCorruptError(f"{path}: revision identity does not match its path")
         return revision
 
+    def node_depth(
+        self, project_id: str, node_id: str, *, max_depth: int = MAX_NESTING_DEPTH,
+    ) -> int:
+        """Return root=0 depth while rejecting cycles, orphans, and excess depth."""
+        if isinstance(max_depth, bool) or not isinstance(max_depth, int) or max_depth < 0:
+            raise ProjectValidationError("max_depth must be a non-negative integer")
+        project = self.load_project(project_id)
+        current = self.load_node(project_id, node_id)
+        seen: set[str] = set()
+        depth = 0
+        while current.parent_id is not None:
+            if current.id in seen:
+                raise ProjectValidationError(f"cycle detected in work containment at {current.id}")
+            seen.add(current.id)
+            depth += 1
+            if depth > max_depth:
+                raise ProjectValidationError(
+                    f"work nesting depth exceeds the limit of {max_depth}"
+                )
+            current = self.load_node(project_id, current.parent_id)
+        if current.id in seen:
+            raise ProjectValidationError(f"cycle detected in work containment at {current.id}")
+        if current.id != project.root_node_id:
+            raise ProjectValidationError(
+                f"work containment does not terminate at the root: {node_id}"
+            )
+        return depth
+
     def load_node_snapshot(
         self, project_id: str, node_id: str | None = None,
     ) -> ProjectSnapshot:
         project = self.load_project(project_id)
         node = self.load_node(project_id, node_id or project.root_node_id)
+        self.node_depth(project_id, node.id)
         revision = self.load_revision(
             project_id, node.id, node.current_revision_id,
         )
@@ -324,17 +354,17 @@ class ProjectStore:
 
     def _validate_link_relationship(self, link: WorkLink) -> WorkNodeRevision:
         validate_link(link.to_dict())
-        project = self.load_project(link.project_id)
         parent = self.load_node(link.project_id, link.parent_node_id)
         child = self.load_node(link.project_id, link.child_node_id)
+        parent_depth = self.node_depth(link.project_id, parent.id)
+        child_depth = self.node_depth(link.project_id, child.id)
         if (
-            parent.id != project.root_node_id
-            or parent.parent_id is not None
-            or child.parent_id != parent.id
+            child.parent_id != parent.id
             or child.kind != "embedded_work"
+            or child_depth != parent_depth + 1
         ):
             raise ProjectValidationError(
-                "only depth-one embedded_work links below the root node are allowed"
+                "link must connect an embedded_work child to its direct parent"
             )
         revision = self.load_revision(
             link.project_id, child.id, link.child_revision_id,
@@ -392,18 +422,48 @@ class ProjectStore:
         ]
         return sorted(links, key=lambda item: (item.order, item.id))
 
+    def list_nodes(self, project_id: str) -> list[WorkNode]:
+        """Load all nodes and validate every ancestry chain, including cycles."""
+        self.load_project(project_id)
+        directory = self.project_dir(project_id) / "nodes"
+        nodes: list[WorkNode] = []
+        if directory.is_dir():
+            for path in sorted(directory.iterdir(), key=lambda item: item.name):
+                current = path / "current.json"
+                if not path.is_dir() or not current.is_file():
+                    continue
+                node = self._parse(current, WorkNode.from_dict)
+                if node.id != path.name or node.project_id != project_id:
+                    raise ProjectCorruptError(
+                        f"{current}: node identity does not match its path"
+                    )
+                self.node_depth(project_id, node.id)
+                nodes.append(node)
+        return sorted(nodes, key=lambda node: node.id)
+
+    def list_all_links(self, project_id: str) -> list[WorkLink]:
+        """Return links at every depth in stable parent/order order."""
+        links = [
+            link
+            for node in self.list_nodes(project_id)
+            for link in self.list_links(project_id, node.id)
+        ]
+        return sorted(links, key=lambda item: (item.parent_node_id, item.order, item.id))
+
     def create_child(
         self, project_id: str, spec: WorkSpec, *, parent_node_id: str | None = None,
         order: int | None = None, child_node_id: str | None = None,
-        link_id: str | None = None,
+        link_id: str | None = None, max_depth: int = MAX_NESTING_DEPTH,
     ) -> WorkLink:
-        """Create one independent child node and an ordered root link."""
+        """Create one independent child below any node within the depth limit."""
         validate_spec(spec.to_dict())
         project = self.load_project(project_id)
         parent_id = parent_node_id or project.root_node_id
-        parent = self.load_node(project_id, parent_id)
-        if parent.id != project.root_node_id or parent.parent_id is not None:
-            raise ProjectValidationError("PR 5 allows children only directly below the root")
+        parent_depth = self.node_depth(project_id, parent_id, max_depth=max_depth)
+        if parent_depth >= max_depth:
+            raise ProjectValidationError(
+                f"work nesting depth exceeds the limit of {max_depth}"
+            )
         child_id = child_node_id or new_id("node")
         validate_id(child_id, "child_node_id")
         link_id = link_id or new_id("link")
@@ -416,7 +476,7 @@ class ProjectStore:
                 raise ProjectValidationError("child order must be a positive integer")
             if any(link.order == order for link in links):
                 raise ProjectValidationError(f"child order is already used: {order}")
-            if any(link.id == link_id for link in links):
+            if any(link.id == link_id for link in self.list_all_links(project_id)):
                 raise ProjectExistsError(f"link already exists: {link_id}")
             child_dir = self.node_dir(project_id, child_id)
             if child_dir.exists():
@@ -492,7 +552,7 @@ class ProjectStore:
         )
         updated = []
         with self.writer_lock(project_id):
-            for link in self.list_links(project_id):
+            for link in self.list_all_links(project_id):
                 if link.child_node_id != child_node_id or link.child_revision_id != revision_id:
                     continue
                 new_link = replace(
@@ -510,10 +570,16 @@ class ProjectStore:
     def adopt_child(self, project_id: str, link_id: str) -> WorkLink:
         """Explicitly pin a link to the child's current completed revision."""
         with self.execution_lock(project_id):
-            project = self.load_project(project_id)
-            link = self.load_link(project_id, project.root_node_id, link_id)
+            matches = [
+                item for item in self.list_all_links(project_id) if item.id == link_id
+            ]
+            if not matches:
+                raise ProjectNotFoundError(f"link not found: {link_id}")
+            if len(matches) != 1:
+                raise ProjectValidationError(f"link id is ambiguous: {link_id}")
+            link = matches[0]
             child = self.load_node(project_id, link.child_node_id)
-            status = self.status(project_id, child.id)
+            status = self.status(project_id, child.id, include_descendants=False)
             if status["state"] != "complete":
                 raise ProjectValidationError(
                     f"child {child.id} must be complete before its revision can be adopted"
@@ -584,12 +650,7 @@ class ProjectStore:
                 raise ProjectValidationError("node.created_at cannot be changed")
             if existing.parent_id != node.parent_id or existing.kind != node.kind:
                 raise ProjectValidationError("node.parent_id and node.kind are immutable")
-            if node.parent_id is not None:
-                project = self.load_project(node.project_id)
-                if node.id == project.root_node_id or node.parent_id != project.root_node_id:
-                    raise ProjectValidationError(
-                        "PR 5 allows only non-root children directly below the root"
-                    )
+            self.node_depth(node.project_id, node.id)
             self.load_revision(node.project_id, node.id, node.current_revision_id)
             _atomic_write_json(
                 self.node_dir(node.project_id, node.id) / "current.json", node.to_dict(),
@@ -734,9 +795,10 @@ class ProjectStore:
         return True
 
     def status(
-        self, project_id: str, node_id: str | None = None,
+        self, project_id: str, node_id: str | None = None, *,
+        include_descendants: bool = True,
     ) -> dict[str, Any]:
-        """Return a machine-readable summary for the root or one child node."""
+        """Summarize one node, optionally aggregating its complete subtree."""
         snapshot = self.load_node_snapshot(project_id, node_id)
         project = snapshot.project
         node = snapshot.root_node
@@ -819,35 +881,36 @@ class ProjectStore:
         links: list[dict[str, Any]] = []
         children: list[dict[str, Any]] = []
         link_times: list[str] = []
-        if node.id == project.root_node_id:
-            for link in self.list_links(project_id, node.id):
-                child = self.load_node(project_id, link.child_node_id)
-                child_status = self.status(project_id, child.id)
-                ready = self._link_ready(project_id, link)
-                stale = child.current_revision_id != link.child_revision_id
-                link_data = link.to_dict()
-                link_data.update({
-                    "stale": stale,
-                    "ready": ready,
-                    "state": "stale" if stale else "ready" if ready else "pending",
-                    "current_child_revision_id": child.current_revision_id,
-                    "child_state": child_status["state"],
-                })
-                links.append(link_data)
-                children.append({
-                    "node_id": child.id,
-                    "parent_node_id": node.id,
-                    "kind": child.kind,
-                    "title": child_status["title"],
-                    "state": child_status["state"],
-                    "current_revision_id": child.current_revision_id,
-                    "revision_ids": child_status["revision_ids"],
-                    "link_id": link.id,
-                    "order": link.order,
-                    "stale": stale,
-                })
-                pending.extend(child_status["pending"])
-                link_times.append(link.updated_at)
+        for link in (
+            self.list_links(project_id, node.id) if include_descendants else ()
+        ):
+            child = self.load_node(project_id, link.child_node_id)
+            child_status = self.status(project_id, child.id)
+            ready = self._link_ready(project_id, link)
+            stale = child.current_revision_id != link.child_revision_id
+            link_data = link.to_dict()
+            link_data.update({
+                "stale": stale,
+                "ready": ready,
+                "state": "stale" if stale else "ready" if ready else "pending",
+                "current_child_revision_id": child.current_revision_id,
+                "child_state": child_status["state"],
+            })
+            links.append(link_data)
+            children.append({
+                "node_id": child.id,
+                "parent_node_id": node.id,
+                "kind": child.kind,
+                "title": child_status["title"],
+                "state": child_status["state"],
+                "current_revision_id": child.current_revision_id,
+                "revision_ids": child_status["revision_ids"],
+                "link_id": link.id,
+                "order": link.order,
+                "stale": stale,
+            })
+            pending.extend(child_status["pending"])
+            link_times.append(link.updated_at)
 
         title = project.title if node.id == project.root_node_id else revision.spec.title
         return {
