@@ -410,18 +410,14 @@ def _print_human(status: dict, *, created: bool) -> None:
     print(f"Selected node: {status.get('node_id', status['root_node_id'])}")
     print(f"Current revision: {status['current_revision_id']}")
     print(f"Spec SHA-256: {status['spec_sha256']}")
-    stages = ", ".join(f"{name}={value}" for name, value in status["stages"].items())
-    print(f"Stages: {stages}")
     print(
         f"Artifact refs: {len(status.get('artifact_refs', []))}; "
         f"runs: {len(status['runs'])}"
     )
     if status.get("attempt_id"):
         print(f"Attempt: {status['attempt_id']}")
-    failed = [
-        name for name, row in status.get("checkpoints", {}).items()
-        if row.get("status") == "failed"
-    ]
+    work = status.get("work") or {}
+    failed = list(work.get("failed_stages") or ())
     if failed:
         print(
             f"Failed stages: {', '.join(failed)} "
@@ -433,10 +429,13 @@ def _print_human(status: dict, *, created: bool) -> None:
     ]
     if retried:
         print(f"Retried stages: {', '.join(retried)}")
-    print(f"Pending responses: {len(status.get('pending', []))}")
+    if work:
+        _print_work(work)
+    else:
+        print(f"Pending responses: {len(status.get('pending', []))}")
+    _print_actions(list(status.get("next_actions") or ()))
     if status.get("links"):
-        stale = sum(1 for link in status["links"] if link["stale"])
-        print(f"Child links: {len(status['links'])}; stale: {stale}")
+        print(f"Child links: {len(status['links'])}")
     print(f"Directory: {status['project_dir']}")
 
 
@@ -466,6 +465,41 @@ def _print_bundle(report: dict) -> None:
     print("Verified: yes")
 
 
+def _print_actions(actions: list[dict]) -> None:
+    if not actions:
+        return
+    print("Next:")
+    for action in actions:
+        print(f"  {action['command']}")
+        print(f"    {action['reason']}")
+
+
+def _print_work(work: dict) -> None:
+    def count(value) -> str:
+        return "not inspected" if value is None else str(value)
+
+    stages = work.get("stages")
+    label = "node" if work.get("scope") == "node" else "project"
+    scope = f"{label} {work['node_id']}" if work.get("node_id") else label
+    detail = ", ".join(
+        f"{name}={value}" for name, value in (stages or {}).items()
+    ) or "stages unknown"
+    pending = work["pending"]
+    stale = work["stale"]
+    runs = work["runs"]
+    print(f"Work ({scope}): state={work['state']}; {detail}")
+    print(
+        f"  pending: {pending['count']} "
+        f"(ready {pending['ready']}, awaiting reply {pending['waiting_for_reply']}); "
+        f"runs: {count(runs['count'])} (interrupted {count(runs['interrupted'])})"
+    )
+    print(
+        f"  stale: links={count(stale['links'])}, canon={count(stale['canon'])}, "
+        f"bindings={count(stale['bindings'])}"
+    )
+    print(f"  inspected: {', '.join(work['inspected'])}")
+
+
 def _print_doctor(report: dict) -> None:
     summary = report["summary"]
     state = "ok" if report["ok"] else "errors found"
@@ -480,7 +514,8 @@ def _print_doctor(report: dict) -> None:
     )
     print(f"Checks: {checks}")
     pending = report["pending"]
-    print(f"Pending responses: {len(pending)}")
+    if pending:
+        print(f"Pending responses: {len(pending)}")
     for row in pending:
         print(
             f"  {row['node_id']} stage={row['stage']} ready={row['response_ready']} "
@@ -489,10 +524,11 @@ def _print_doctor(report: dict) -> None:
         if row.get("response_path"):
             print(f"    response: {row['response_path']}")
     stale = report["stale"]
-    print(
-        f"Stale: links={len(stale['links'])}, canon={len(stale['canon'])}, "
-        f"bindings={len(stale['bindings'])}"
-    )
+    if stale.get("total"):
+        print(
+            f"Stale items: links={len(stale['links'])}, canon={len(stale['canon'])}, "
+            f"bindings={len(stale['bindings'])}"
+        )
     for row in stale["links"]:
         print(
             f"  link {row['link_id']} ({row['child_node_id']}) pinned="
@@ -515,6 +551,9 @@ def _print_doctor(report: dict) -> None:
             f"  [{finding['severity']}] {finding['code']}{node}{path}: "
             f"{finding['message']}"
         )
+    if report.get("work"):
+        _print_work(report["work"])
+    _print_actions(list(report.get("next_actions") or ()))
     print(f"Directory: {report['project_dir']}")
 
 

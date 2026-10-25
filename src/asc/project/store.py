@@ -30,6 +30,7 @@ from .model import (
     new_id,
     utc_now,
 )
+from .observability import build_actions, summarize
 from .schema import (
     SCHEMA_VERSION,
     ProjectValidationError,
@@ -913,6 +914,28 @@ class ProjectStore:
             pending.extend(child_status["pending"])
             link_times.append(link.updated_at)
 
+        stale_links = sum(1 for link in links if link["stale"])
+        work = summarize(
+            state=state,
+            stages=stages,
+            pending=pending,
+            stale_links=stale_links,
+            run_count=len(runs),
+            node_id=node.id,
+            scope="node",
+        )
+        stale_link_id = next(
+            (link["id"] for link in links if link["stale"]), None,
+        )
+        next_actions = build_actions(
+            project_id=project.id,
+            state=state,
+            failed_stages=work["failed_stages"],
+            waiting_stages=work["waiting_stages"],
+            pending_ready=work["pending"]["ready"],
+            stale_links=stale_links,
+            link_id=stale_link_id,
+        )
         title = project.title if node.id == project.root_node_id else revision.spec.title
         return {
             "schema_version": SCHEMA_VERSION,
@@ -959,5 +982,7 @@ class ProjectStore:
             "runs": runs,
             "links": links,
             "children": children,
+            "work": work,
+            "next_actions": next_actions,
             "project_dir": str(directory),
         }

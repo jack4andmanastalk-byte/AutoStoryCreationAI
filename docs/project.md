@@ -444,6 +444,19 @@ WorkSpec、設定SHA-256を返します。初期状態は `not_started` で、
 `pending/ready/stale`の状態とcurrent child revisionが入ります。`pending` には、待機中のrequest key、
 project/node/stage、request/response path、response fileの有無が集約されます。
 
+`work` は `doctor` と共通の作業要約です（schema `asc-project-work-summary-v1`）。
+
+- `state`、`stages`、`completed_stages` / `failed_stages` / `waiting_stages`、`next_stage`。
+- `pending`（`count` / `ready` / `waiting_for_reply`）、`stale`（`links` / `canon` / `bindings`）、
+  `runs`（`count` / `interrupted`）。
+- `inspected` は**そのコマンドが実際に調べた範囲**です。`status` は checkpoints・links・pending
+  だけを読み、世界record・binding・run manifestは調べません。そのため未検査の件数は `0` ではなく
+  `null`（人間向け表示は `not inspected`）になります。「無い」と「見ていない」を混同しません。
+- `next_actions` は状態から決まる次の操作で、既存CLIのcommand文字列と理由を持ちます
+  （例: `failed` → `resume --retry-failed`、待機中 → `pending`、stale link → `adopt-child`、
+  編纂や採用の版ずれ → `world bind` / `world adopt-canon`、記録との差 → `diff`）。
+  commandは表示専用で、自動実行はしません。
+
 既定の保存先は `runs/projects/` です。testや外部保存では、**subcommandの前**に
 `--root` を指定できます。
 
@@ -473,7 +486,8 @@ project record、node木、revision、checkpoint、link、世界record、run man
 - `error`: 読み込み・参照・hash検証が破綻している（project unreadable、orphan node、
   artifact missing / hash_differs、run missing、`world.invalid` など）。
 - `warning`: 運用上の判断待ち。`checkpoint.failed` / `checkpoint.running` / `link.stale` /
-  `world.canon_stale` / `run.running`（終了記録のない中断process）/ `run.status_unknown`。
+  `world.canon_stale` / `world.record_changed` / `run.running`（終了記録のない中断process）/
+  `run.status_unknown`。
 - 同じ`artifact`でも、revision・checkpoint・link・runのどこから参照されているかで
   複数checkに現れます。1つのfile欠落が `revisions` と `links` の両方に出るのは正常です。
 
@@ -482,6 +496,24 @@ project record、node木、revision、checkpoint、link、世界record、run man
 source改訂で古くなった世界canon、現在revision以外を指すworld bindingが入り、
 それぞれ「どのlink・binding・entryを、どの`adopt-child` / `world adopt-canon` / 再bindingで
 解消するか」までを対象IDとして示します。解消操作自体は行いません。
+
+`world.record_changed` は、`region` や `time_frame` のように `content_version` を保存しない
+世界recordが、**記録済みpacketのhashと一致しない**場合に出ます。これらのrecordは追記専用の
+CLIしかないため、差がある場合は保存JSONがrun後に直接編集されたことを意味します
+（`content_version` を持つ `culture_state`・`world_canon_entry`・`work_world_binding` は
+読み込み時にhash検証され、不一致は `world.invalid` のerrorになります）。findingの`details`に
+`record_type` / `record_id` / `recorded_content_version` / `current_content_version` を出し、
+解消手順として `diff --left run:<run_id> --right current` を案内します。判定はread-onlyで、
+recordもhashも書き換えません。
+
+binding の stale 一覧は「現在revision以外を指すbinding」を履歴も含めて示すため、再binding後も
+古いbindingが残ります。これに対し `next_actions` の `world bind` は、現在revisionにbindingが
+無いnodeがある場合だけ出ます（履歴を数えて永久に同じ操作を勧めないため）。
+
+`doctor` も `status` と同じ `work` 要約（root node基準）と `next_actions` を返します。
+`doctor` は世界record・binding・run manifestまで調べるため、`work.stale` と `work.runs` が
+数値で埋まり、`inspected` も広くなります。`next_actions` は全nodeの状態から集約するので、
+未開始の子nodeがあっても「`run` せよ」とは言いません。
 
 `--json` の `schema` は `asc-project-doctor-v1`、`read_only` は常に `true` です。
 findingsが`error`を含めばexit 1、なければ0、projectが存在しなければ2です。
@@ -571,7 +603,8 @@ resumeが記録packetを固定していることを確認できました。復�
 - providerへ渡すcommand文字列の誤りはstage単位の`failed`として記録される。`doctor` は
   これをwarningとして対象stageとrunを示すが、修復方法は提示しない。
 - `doctor` の検出は保存済みrecordの参照・hashに限る。`content_version` を持たない
-  世界record（例: regionの名称）の書き換えは検出できない。署名付きstorageではない。
+  世界record（例: regionの名称）の書き換えは、記録済みpacketと比べる `world.record_changed`
+  で警告できるが、packetを一度も記録していないnodeでは検出できない。署名付きstorageではない。
 - 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
   どのrecordの差で変わったかをCLIから一覧できない（PR 12の `diff` で解消）。
 
@@ -696,6 +729,8 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
   年代記を時間軸ごとに作り、無関係な追加で旧viewを上書きしない。
 - `doctor` と `context show` は読み取り専用で、生成・再開・採用・編纂・復元を起動しない。
   検査のためのtemp fileやlockも作らず、同じ状態に対して同じ結果を返す。
+- `status` と `doctor` の作業要約（`work`）と次の操作（`next_actions`）は同じ定義を共有し、
+  未検査の件数を`0`と表示しない。`next_actions` は既存CLIのcommandだけで構成し、自動実行しない。
 - `revise` / `branch` は既存revisionとrunを書き換えず、指定外の章・設計資料を元のbytesのまま
   新revisionへコピーする。生成し直す章の指定は `derived` と `revise.json` に残し、
   章数・章順は変えない。世界bindingの複製と親linkの更新は明示操作だけが行う。
@@ -708,10 +743,11 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 PR 9では運用可観測性（`doctor` / `context show`）を、PR 10では章単位の `revise` と
 what-if `branch` を、PR 11では失敗したstageの明示的な再試行（`resume --retry-failed`）を、
-PR 12ではContextPacketと編纂viewのrecord単位差分（`diff`）を追加しました。創作projectの
-生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・bundle・検査・差分確認が
-一通りCLIから操作できます。
-次に検討する候補は、`status` と `doctor` の情報統合です。詳細は
+PR 12ではContextPacketと編纂viewのrecord単位差分（`diff`）を、PR 13では `status` と
+`doctor` の情報統合（共通の `work` 要約と `next_actions`、`world.record_changed` 検査）を
+追加しました。創作projectの生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・
+bundle・検査・差分確認が一通りCLIから操作できます。
+次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。

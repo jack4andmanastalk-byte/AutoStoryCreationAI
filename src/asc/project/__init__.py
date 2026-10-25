@@ -38,6 +38,11 @@ from .model import (
     WorkSpec,
 )
 from .nested import CompositionResult, NestedError, ProjectComposer
+from .observability import (
+    WORK_SUMMARY_SCHEMA,
+    build_actions,
+    summarize,
+)
 from .resume import ResumeError, ResumeProvider
 from .revise import ReviseContext, ReviseError
 from .runner import (
@@ -160,6 +165,9 @@ __all__ = [
     "WorldRecords",
     "WorldStore",
     "WORLD_CONTEXT_KIND",
+    "WORK_SUMMARY_SCHEMA",
+    "build_actions",
+    "summarize",
     "build_context_packet",
     "build_context_view",
     "build_diff",

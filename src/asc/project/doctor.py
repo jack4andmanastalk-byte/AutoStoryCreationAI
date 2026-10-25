@@ -29,10 +29,18 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from .context import build_context_packet
+from .observability import (
+    STAGE_ORDER,
+    UNVERSIONED_WORLD_TYPES,
+    actions_from_record_changes,
+    build_actions,
+    summarize,
+)
 from .model import StageCheckpoint
 from .store import ProjectError, ProjectNotFoundError, ProjectStore
 from .world_store import WorldStore
@@ -84,6 +92,8 @@ class DoctorReport:
     stale: dict[str, Any]
     summary: dict[str, Any]
     project_dir: str
+    work: dict[str, Any] = field(default_factory=dict)
+    next_actions: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -96,6 +106,8 @@ class DoctorReport:
             "pending": list(self.pending),
             "stale": self.stale,
             "summary": self.summary,
+            "work": self.work,
+            "next_actions": [dict(row) for row in self.next_actions],
             "project_dir": self.project_dir,
         }
 
@@ -119,6 +131,11 @@ class ProjectDoctor:
         self._stale: dict[str, list[dict[str, Any]]] = {
             "links": [], "canon": [], "bindings": [],
         }
+        self._node_stages: dict[str, dict[str, str]] = {}
+        self._record_changes: list[dict[str, Any]] = []
+        self._run_count = 0
+        self._interrupted_runs = 0
+        self._binding_gaps: list[str] = []
 
     # -- small helpers -----------------------------------------------------
     def _add(
@@ -337,6 +354,9 @@ class ProjectDoctor:
                     # Historical checkpoints belong to an older revision.  That
                     # is expected after a continuation; it is not an error.
                     continue
+                self._node_stages.setdefault(node.id, {})[checkpoint.stage] = (
+                    checkpoint.status
+                )
                 if checkpoint.status == "done":
                     self._inspect_done_checkpoint(
                         project_id, node.id, checkpoint, path,
@@ -344,10 +364,14 @@ class ProjectDoctor:
                 elif checkpoint.status == "waiting_response":
                     self._add_pending(project_id, node, checkpoint)
                 elif checkpoint.status == "failed":
+                    retry = build_actions(
+                        project_id=project_id, state="failed",
+                        failed_stages=(checkpoint.stage,),
+                    )[0]["action"]
                     self._add(
                         "checkpoint.failed", WARNING,
                         f"stage {checkpoint.stage} is recorded as failed "
-                        "(retry it with resume --retry-failed)",
+                        f"(retry it with {retry})",
                         "checkpoint", node_id=node.id, path=path,
                         details={
                             "stage": checkpoint.stage,
@@ -546,7 +570,103 @@ class ProjectDoctor:
                 )
         self._check("links", before)
 
-    def _inspect_world(self, project_id: str) -> None:
+    def _recorded_packet(self, project_id: str, node: Any) -> tuple[str, dict] | None:
+        """Return the newest packet recorded for a node's current revision."""
+        runs_dir = self.store.project_dir(project_id) / "runs"
+        if not runs_dir.is_dir():
+            return None
+        best: tuple[tuple[int, str], str, dict] | None = None
+        for path in sorted(runs_dir.iterdir()):
+            input_path = path / "project-input.json"
+            if not path.is_dir() or not input_path.is_file():
+                continue
+            try:
+                payload = self.store._read_json(input_path)
+            except (ProjectError, OSError, ValueError):
+                continue
+            if (
+                not isinstance(payload, dict)
+                or payload.get("node_id") != node.id
+                or payload.get("revision_id") != node.current_revision_id
+            ):
+                continue
+            packet = payload.get("context_packet")
+            if not isinstance(packet, dict):
+                continue
+            stage = str(payload.get("stage") or "")
+            rank = (
+                -STAGE_ORDER.index(stage) if stage in STAGE_ORDER else -99,
+                path.name,
+            )
+            if best is None or rank > best[0]:
+                best = (rank, path.name, packet)
+        if best is None:
+            return None
+        return best[1], best[2]
+
+    def _check_record_changes(self, project_id: str, nodes: list[Any]) -> None:
+        """Warn when an append-only world record was rewritten in place.
+
+        ``region``, ``time_frame`` and the other unversioned record types store
+        no ``content_version`` of their own, so a hand edit of the stored JSON
+        cannot be detected from the record alone.  A packet recorded by an
+        earlier run pins the hash it saw; comparing that with the current value
+        is the only read-only way to notice the change.
+        """
+        for node in nodes:
+            try:
+                current = build_context_packet(self.store, project_id, node.id)
+            except (ProjectError, OSError, ValueError):
+                continue
+            if current is None:
+                continue
+            recorded = self._recorded_packet(project_id, node)
+            if recorded is None:
+                continue
+            run_id, packet = recorded
+            now = {
+                (row.get("record_type"), row.get("id")): row.get("content_version")
+                for row in (current.world or {}).get("references") or ()
+            }
+            then = {
+                (row.get("record_type"), row.get("id")): row.get("content_version")
+                for row in (packet.get("world") or {}).get("references") or ()
+            }
+            for key in sorted(now):
+                record_type, record_id = key
+                if record_type not in UNVERSIONED_WORLD_TYPES:
+                    continue
+                if key not in then or then[key] == now[key]:
+                    continue
+                self._record_changes.append({
+                    "node_id": node.id,
+                    "run_id": run_id,
+                    "record_type": record_type,
+                    "record_id": record_id,
+                    "recorded_content_version": then[key],
+                    "current_content_version": now[key],
+                })
+                self._add(
+                    "world.record_changed", WARNING,
+                    f"world record {record_type} {record_id} differs from the "
+                    f"version recorded by run {run_id} "
+                    f"(inspect with diff --left run:{run_id} --right current)",
+                    "world", node_id=node.id,
+                    details={
+                        "run_id": run_id,
+                        "record_type": record_type,
+                        "record_id": record_id,
+                        "recorded_content_version": then[key],
+                        "current_content_version": now[key],
+                        "note": (
+                            "this record type stores no content_version; world "
+                            "records are append-only, so a difference means the "
+                            "stored JSON was edited after the run"
+                        ),
+                    },
+                )
+
+    def _inspect_world(self, project_id: str, nodes: list[Any] | None = None) -> None:
         before = len(self._findings)
         try:
             records = WorldStore(self.store).validate(project_id)
@@ -590,6 +710,22 @@ class ProjectDoctor:
                         "current_source_revision_id": node.current_revision_id,
                     },
                 )
+            current_revisions: dict[str, str] = {}
+            for binding in records.bindings:
+                try:
+                    node = self.store.load_node(project_id, binding.node_id)
+                except (ProjectError, OSError, ValueError):
+                    continue
+                current_revisions[node.id] = node.current_revision_id
+            bound_now = {
+                binding.node_id for binding in records.bindings
+                if current_revisions.get(binding.node_id) == binding.revision_id
+            }
+            # A binding pinned to an older revision is history; it needs an
+            # action only when the current revision has no binding at all.
+            self._binding_gaps = sorted(
+                {binding.node_id for binding in records.bindings} - bound_now
+            )
             for binding in records.bindings:
                 try:
                     node = self.store.load_node(project_id, binding.node_id)
@@ -605,6 +741,8 @@ class ProjectDoctor:
                 })
         except (ProjectError, OSError, ValueError) as exc:  # pragma: no cover
             self._add("world.unreadable", ERROR, str(exc), "world")
+        if nodes:
+            self._check_record_changes(project_id, list(nodes))
         self._check("world", before)
 
     def _inspect_runs(self, project_id: str) -> None:
@@ -616,6 +754,7 @@ class ProjectDoctor:
         for path in sorted(runs_dir.iterdir()):
             if not path.is_dir():
                 continue
+            self._run_count += 1
             manifest = path / "manifest.json"
             if not manifest.is_file():
                 self._add(
@@ -630,6 +769,7 @@ class ProjectDoctor:
                 continue
             status = payload.get("status")
             if status == "running":
+                self._interrupted_runs += 1
                 self._add(
                     "run.running", WARNING,
                     "run never recorded a finish (interrupted process?)", "run",
@@ -650,6 +790,11 @@ class ProjectDoctor:
         self._checks = []
         self._pending = []
         self._stale = {"links": [], "canon": [], "bindings": []}
+        self._node_stages = {}
+        self._record_changes = []
+        self._run_count = 0
+        self._interrupted_runs = 0
+        self._binding_gaps = []
         project = self._inspect_project(project_id)
         if project is None:
             report = self._build_report(project_id, ())
@@ -658,7 +803,7 @@ class ProjectDoctor:
         self._inspect_revisions(project_id, nodes)
         self._inspect_checkpoints(project_id, nodes)
         self._inspect_links(project_id, nodes)
-        self._inspect_world(project_id)
+        self._inspect_world(project_id, nodes)
         self._inspect_runs(project_id)
         return self._build_report(project_id, tuple(nodes))
 
@@ -683,6 +828,54 @@ class ProjectDoctor:
                 1 for check in self._checks if check["status"] == "warn"
             ),
         }
+        root_id = None
+        try:
+            root_id = self.store.load_project(project_id).root_node_id
+        except (ProjectError, OSError, ValueError):
+            root_id = None
+        root_stages = self._node_stages.get(root_id or "", None)
+        root_pending = [
+            row for row in self._pending if row.get("node_id") == (root_id or row.get("node_id"))
+        ]
+        work = summarize(
+            state=_state_from_stages(root_stages),
+            stages=root_stages,
+            pending=root_pending,
+            stale_links=len(self._stale["links"]),
+            stale_canon=len(self._stale["canon"]),
+            stale_bindings=len(self._stale["bindings"]),
+            run_count=self._run_count,
+            interrupted_runs=self._interrupted_runs,
+            node_id=root_id,
+            scope="node",
+        )
+        failed_stages = sorted({
+            stage for stages in self._node_stages.values()
+            for stage, value in stages.items() if value == "failed"
+        })
+        waiting_stages = sorted({
+            stage for stages in self._node_stages.values()
+            for stage, value in stages.items() if value == "waiting_response"
+        })
+        next_actions = build_actions(
+            project_id=project_id,
+            state=_aggregate_state(self._node_stages),
+            failed_stages=failed_stages,
+            waiting_stages=waiting_stages,
+            pending_ready=sum(1 for row in self._pending if row.get("response_ready")),
+            stale_links=len(self._stale["links"]),
+            stale_canon=len(self._stale["canon"]),
+            stale_bindings=len(self._binding_gaps),
+            interrupted_runs=self._interrupted_runs,
+            record_changes=actions_from_record_changes(self._record_changes),
+            link_id=(self._stale["links"][0].get("link_id")
+                     if self._stale["links"] else None),
+            binding_node_id=(self._binding_gaps[0] if self._binding_gaps else None),
+            canon_entry_id=(self._stale["canon"][0].get("entry_id")
+                            if self._stale["canon"] else None),
+        )
+        summary["work"] = work
+        summary["next_actions"] = len(next_actions)
         return DoctorReport(
             project_id=project_id,
             ok=counts[ERROR] == 0,
@@ -697,7 +890,48 @@ class ProjectDoctor:
             },
             summary=summary,
             project_dir=str(self.store.project_dir(project_id)),
+            work=work,
+            next_actions=tuple(next_actions),
         )
+
+
+def _aggregate_state(node_stages: dict[str, dict[str, str]]) -> str:
+    """Project-wide state used for next-action hints.
+
+    ``doctor`` inspects every node, so the hint list must not claim the project
+    has not started just because one node (often a fresh child) has not.
+    """
+    if not node_stages:
+        return "not_started"
+    values = {value for stages in node_stages.values() for value in stages.values()}
+    per_node = [_state_from_stages(stages) for stages in node_stages.values()]
+    if "failed" in values:
+        return "failed"
+    if "waiting_response" in values:
+        return "waiting_response"
+    if per_node and all(state == "complete" for state in per_node):
+        return "complete"
+    if values & {"done", "ready", "running"}:
+        return "in_progress"
+    return "not_started"
+
+
+def _state_from_stages(stages: dict[str, str] | None) -> str:
+    """Stage-only state, matching ``status`` for every stage-driven case."""
+    if not stages:
+        return "not_started"
+    values = set(stages.values())
+    if all(stages.get(stage) == "done" for stage in STAGE_ORDER):
+        return "complete"
+    if "waiting_response" in values:
+        return "waiting_response"
+    if values & {"ready", "running"}:
+        return "in_progress"
+    if "failed" in values:
+        return "failed"
+    if values & {"done"}:
+        return "in_progress"
+    return "not_started"
 
 
 def inspect_project(store: ProjectStore, project_id: str) -> DoctorReport:
