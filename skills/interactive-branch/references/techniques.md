@@ -1,7 +1,7 @@
 # 依拠した技法と、本実装で補った条件
 
-seed-11 が引く 25 件のうち、本実装が直接使う 10 件を記録する。
-実行可能度は `executable` 5 件、`partial` 5 件。
+seed-11 が引く 25 件のうち、この表には 10 件を記録する。
+実行可能度は `executable` 4 件、`partial` 6 件（`research/catalog/executability.jsonl`）。
 `us_2025` の 3 件（`reference_only`）は設計の参照に留め、検査条件には使わない。
 T096（セーブ／ロード比較）は検査ではなく運用（`--fail-on` の使い分け）に回した。
 
