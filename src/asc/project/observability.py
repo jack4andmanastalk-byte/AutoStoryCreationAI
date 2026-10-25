@@ -196,17 +196,31 @@ def build_actions(
             name="adopt-child", link_id=link_id,
         ))
     if record_changes:
-        total = sum(int(entry.get("count", 1)) for entry in record_changes)
         for entry in record_changes:
             command = f"{base} diff {project_id}"
             if entry.get("node_id"):
                 command += f" --node {entry['node_id']}"
             command += f" --left run:{entry['run_id']} --right current"
+            count = int(entry.get("count", 1) or 1)
+            label = "world record"
+            if entry.get("record_type") and entry.get("record_id"):
+                label = f"world record {entry['record_type']} {entry['record_id']}"
+            if count > 1:
+                reason = f"{label} differs from the version {count} runs recorded"
+                if entry.get("node_id"):
+                    reason += (
+                        f"; this diff inspects {entry['node_id']}, all nodes are "
+                        "listed in the finding"
+                    )
+            else:
+                reason = f"{label} differs from the recorded version"
             actions.append(_action(
-                command,
-                f"{total} world record(s) differ from the recorded version",
+                command, reason,
                 name="diff", run_id=entry.get("run_id"),
                 node_id=entry.get("node_id"),
+                record_type=entry.get("record_type"),
+                record_id=entry.get("record_id"),
+                node_ids=entry.get("node_ids"),
             ))
     if state == "not_started":
         actions.append(_action(
@@ -220,15 +234,56 @@ def build_actions(
 def actions_from_record_changes(
     changes: Sequence[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    """Group world-record version changes into one ``diff`` hint per run."""
-    by_run: dict[tuple[str, str], int] = {}
+    """Group world-record version changes into one ``diff`` hint per record.
+
+    One edited record is one operator question.  The hint names the first
+    affected node (so the command runs as-is) and keeps every affected
+    node/run pair in ``nodes``; emitting one almost identical command per node
+    only buried the one line that mattered.
+
+    A change recorded in the older per-run shape (``run_id`` / ``node_id`` /
+    ``count``) is still accepted.
+    """
+    grouped: dict[tuple[str, str], dict[str, Any]] = {}
     for change in changes:
-        key = (str(change.get("node_id")), str(change.get("run_id")))
-        by_run[key] = by_run.get(key, 0) + 1
-    return [
-        {"run_id": run_id, "node_id": node_id, "count": count}
-        for (node_id, run_id), count in sorted(by_run.items())
-    ]
+        nodes: list[dict[str, Any]] = [
+            dict(row) for row in change.get("nodes") or ()
+            if isinstance(row, dict) and row.get("node_id")
+        ]
+        if not nodes and change.get("run_id"):
+            nodes = [{
+                "node_id": change.get("node_id"),
+                "run_id": change.get("run_id"),
+                "recorded_content_version": change.get("recorded_content_version"),
+            }]
+        if not nodes:
+            continue
+        key = (str(change.get("record_type") or ""), str(change.get("record_id") or ""))
+        entry = grouped.setdefault(key, {
+            "record_type": key[0], "record_id": key[1], "nodes": [],
+        })
+        known = {str(row.get("node_id")) for row in entry["nodes"]}
+        for row in nodes:
+            node_id = str(row.get("node_id"))
+            if node_id in known:
+                continue
+            entry["nodes"].append(row)
+            known.add(node_id)
+    result: list[dict[str, Any]] = []
+    for key in sorted(grouped):
+        entry = grouped[key]
+        entry["nodes"].sort(key=lambda row: str(row.get("node_id")))
+        first = entry["nodes"][0]
+        result.append({
+            "record_type": entry["record_type"],
+            "record_id": entry["record_id"],
+            "node_id": first.get("node_id"),
+            "run_id": first.get("run_id"),
+            "count": len(entry["nodes"]),
+            "node_ids": [str(row.get("node_id")) for row in entry["nodes"]],
+            "nodes": [dict(row) for row in entry["nodes"]],
+        })
+    return result
 
 
 __all__ = [

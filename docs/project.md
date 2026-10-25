@@ -557,6 +557,22 @@ CLIしかないため、差がある場合は保存JSONがrun後に直接編集�
 解消手順として `diff --left run:<run_id> --right current` を案内します。判定はread-onlyで、
 recordもhashも書き換えません。
 
+findingは**record単位**です。1つのrecordを書き換えた事実は1つなので、そのrecordを記録した
+nodeがいくつあっても警告は1件で、影響したnodeは`details.node_ids`と`details.nodes`
+（`node_id` / `run_id` / `recorded_content_version`）に並べます。
+
+- `details.node_id` は影響nodeが1つだけのときだけ入り、複数nodeに及ぶ場合は`null`になります
+  （特定の1 nodeの問題ではないため）。
+- 後方互換のため`details.run_id` / `details.recorded_content_version`は
+  **先頭の影響node**（`node_ids`の辞書順先頭）の値を返します。
+- `next_actions`の`diff`もrecord単位で1件です。commandは先頭の影響nodeを使い、
+  `node_ids`に全nodeを持つので、他のnodeを見たいときは`--node`を差し替えて実行します。
+- 2つのrecordを書き換えた場合は2件（recordごと）になります。
+
+同じrecordを7 nodeが記録している状態で1件を改称した実測では、7 warnings + 7 `diff` commands
+（doctor JSON 9,843 bytes、text 30行）が、1 warning + 1 `diff` command（4,956 bytes、12行）に
+なりました（PR 17のdogfood）。
+
 binding の stale 一覧は「現在revision以外を指すbinding」を履歴も含めて示すため、再binding後も
 古いbindingが残ります。これに対し `next_actions` の `world bind` は、現在revisionにbindingが
 無いnodeがある場合だけ出ます（履歴を数えて永久に同じ操作を勧めないため）。
@@ -656,6 +672,8 @@ resumeが記録packetを固定していることを確認できました。復�
 - `doctor` の検出は保存済みrecordの参照・hashに限る。`content_version` を持たない
   世界record（例: regionの名称）の書き換えは、記録済みpacketと比べる `world.record_changed`
   で警告できるが、packetを一度も記録していないnodeでは検出できない。署名付きstorageではない。
+  警告はrecord単位にまとめるため、影響nodeが多い場合でも`details.nodes`の大きさだけが増える
+  （1 nodeあたり約120 bytes。100 nodeで1 recordあたり約12 KB）。
 - 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
   どのrecordの差で変わったかをCLIから一覧できない（PR 12の `diff` で解消）。
 
@@ -809,7 +827,10 @@ PR 15では、9作品（root 1 + 子8、各12章、1作品のみ+2章のcontinua
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「PR 15」を参照してください。
 PR 16では、そのdogfoodで確認した「子1作品が未完成だと作品集が出せない」を、
 `compose --partial`（未収録を明示して残りを編纂）で塞ぎました（前述「未完成の子を含む部分編纂」）。
-次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を測ってから決めます。詳細は
+PR 17では、世界recordを1件書き換えたときの `doctor` の警告と`diff`案内を**record単位**に
+まとめました（複数nodeが同じrecordを記録していても警告1件・`diff`1件、影響nodeは
+`details.nodes`）。次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を
+測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。

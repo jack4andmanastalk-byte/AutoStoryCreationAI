@@ -37,6 +37,7 @@ from asc.project import (  # noqa: E402
 from asc.project.observability import (  # noqa: E402
     UNVERSIONED_WORLD_TYPES,
     WORK_SUMMARY_SCHEMA,
+    actions_from_record_changes,
 )
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -287,7 +288,118 @@ def test_stale_link_and_binding_actions_come_from_one_place(tmp_path: Path):
     )
 
 
+def test_one_edited_record_is_one_finding_and_one_action(tmp_path: Path):
+    """One edited record is one fact, even when every bound node recorded it.
+
+    Before grouping, seven bound nodes produced seven nearly identical
+    warnings and seven ``diff`` commands for a single renamed region, which
+    buried the one line an operator needed.
+    """
+    store = ProjectStore(tmp_path)
+    root = store.create_project(spec("親"), project_id="prj-group")
+    children = [
+        store.create_child(
+            root.project.id, spec(f"子{i}"), order=i,
+            child_node_id=f"node-g{i}", link_id=f"link-g{i}",
+        )
+        for i in (1, 2, 3)
+    ]
+    # The records are created once; every node gets its own explicit binding so
+    # each one records the world selection it actually generated from.
+    add_world(store, root.project.id, root.root_node.id, binding_id="binding-g0")
+    for index, child in enumerate(children, start=1):
+        WorldStore(store).bind_work(
+            root.project.id, child.child_node_id, time_span_ids=("span-120",),
+            region_ids=("region-harbor",), culture_state_ids=("state-lamp",),
+            binding_id=f"binding-g{index}",
+        )
+    run = ProjectRunner(store)
+    run.run(root.project.id, ScriptedProvider(responses()))
+    for child in children:
+        run.run(
+            root.project.id, ScriptedProvider(responses()),
+            node_id=child.child_node_id,
+        )
+    assert inspect_project(store, root.project.id).findings == ()
+
+    world_file = (
+        store.project_dir(root.project.id) / "world" / "regions" / "region-harbor.json"
+    )
+    payload = json.loads(world_file.read_text(encoding="utf-8"))
+    payload["name"] = "港（改称）"
+    world_file.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = inspect_project(store, root.project.id)
+    assert report.ok is True
+    changes = [item for item in report.findings if item.code == "world.record_changed"]
+    assert len(changes) == 1
+    change = changes[0]
+    assert change.severity == "warning"
+    # The finding is project-wide, so it names no single node.
+    assert change.node_id is None
+    assert change.details["record_type"] == "region"
+    assert change.details["record_id"] == "region-harbor"
+    node_ids = change.details["node_ids"]
+    assert node_ids == sorted(node_ids)
+    assert sorted(node_ids) == sorted(
+        [root.root_node.id] + [child.child_node_id for child in children]
+    )
+    assert change.details["node_count"] == len(node_ids)
+    assert [row["node_id"] for row in change.details["nodes"]] == node_ids
+    run_ids = {row["run_id"] for row in change.details["nodes"]}
+    assert len(run_ids) == len(node_ids)
+    assert all(row["recorded_content_version"] for row in change.details["nodes"])
+    # The legacy keys still describe the first affected node.
+    assert change.details["run_id"] == change.details["nodes"][0]["run_id"]
+    assert change.details["recorded_content_version"] == (
+        change.details["nodes"][0]["recorded_content_version"]
+    )
+    assert f"run:{change.details['run_id']}" in change.message
+    assert f"{len(node_ids)} nodes are affected" in change.message
+
+    diffs = [row for row in report.to_dict()["next_actions"] if row["action"] == "diff"]
+    assert len(diffs) == 1
+    assert diffs[0]["node_id"] == node_ids[0]
+    assert diffs[0]["node_ids"] == node_ids
+    assert diffs[0]["record_id"] == "region-harbor"
+    assert f"--left run:{change.details['run_id']}" in diffs[0]["command"]
+    assert f"{len(node_ids)} runs recorded" in diffs[0]["reason"]
+
+    # A second edited record is a second question, not more noise per node.
+    span_file = (
+        store.project_dir(root.project.id) / "world" / "time_spans" / "span-120.json"
+    )
+    span = json.loads(span_file.read_text(encoding="utf-8"))
+    span["label"] = "開港百二十年"
+    span_file.write_text(json.dumps(span, ensure_ascii=False), encoding="utf-8")
+    report = inspect_project(store, root.project.id)
+    pairs = [
+        (item.details["record_type"], item.details["record_id"])
+        for item in report.findings if item.code == "world.record_changed"
+    ]
+    assert pairs == [("region", "region-harbor"), ("time_span", "span-120")]
+    diffs = [row for row in report.to_dict()["next_actions"] if row["action"] == "diff"]
+    assert len(diffs) == 2
+
+
 def test_build_actions_is_pure_and_ordered():
+    changes = actions_from_record_changes([
+        {
+            "record_type": "region", "record_id": "region-harbor",
+            "current_content_version": "c" * 64,
+            "nodes": [
+                {"node_id": "node-b", "run_id": "att-2-plan",
+                 "recorded_content_version": "b" * 64},
+                {"node_id": "node-a", "run_id": "att-1-plan",
+                 "recorded_content_version": "a" * 64},
+            ],
+        },
+    ])
+    # One edited record is one action, whichever nodes recorded it.
+    assert len(changes) == 1
+    assert changes[0]["node_id"] == "node-a"
+    assert changes[0]["run_id"] == "att-1-plan"
+    assert changes[0]["node_ids"] == ["node-a", "node-b"]
     actions = build_actions(
         project_id="prj-x",
         state="failed",
@@ -296,7 +408,7 @@ def test_build_actions_is_pure_and_ordered():
         stale_bindings=1,
         stale_canon=2,
         stale_links=1,
-        record_changes=[{"run_id": "att-1-design", "node_id": "node-a", "count": 2}],
+        record_changes=changes,
     )
     assert [row["action"] for row in actions] == [
         "resume --retry-failed", "resume", "world bind", "world adopt-canon",
@@ -307,9 +419,37 @@ def test_build_actions_is_pure_and_ordered():
     )
     assert actions[-1]["command"] == (
         "python3 scripts/story_project.py diff prj-x --node node-a "
-        "--left run:att-1-design --right current"
+        "--left run:att-1-plan --right current"
     )
-    assert "2 world record(s)" in actions[-1]["reason"]
+    assert "region-harbor" in actions[-1]["reason"]
+    assert "2 runs recorded" in actions[-1]["reason"]
+    assert actions[-1]["record_id"] == "region-harbor"
+    assert actions[-1]["node_ids"] == ["node-a", "node-b"]
+
+    # Two different edited records stay two separate questions.
+    two = actions_from_record_changes([
+        {"record_type": "region", "record_id": "region-harbor", "nodes": [
+            {"node_id": "node-a", "run_id": "att-1-plan"}]},
+        {"record_type": "time_frame", "record_id": "tf-main", "nodes": [
+            {"node_id": "node-a", "run_id": "att-1-plan"}]},
+    ])
+    assert [(row["record_type"], row["record_id"]) for row in two] == [
+        ("region", "region-harbor"), ("time_frame", "tf-main"),
+    ]
+    single = build_actions(
+        project_id="prj-x", state="complete", record_changes=two[:1],
+    )
+    assert single[0]["reason"] == (
+        "world record region region-harbor differs from the recorded version"
+    )
+
+    # The older per-run shape is still accepted and collapses to one action.
+    legacy = actions_from_record_changes([
+        {"run_id": "att-1-plan", "node_id": "node-a", "count": 2},
+        {"run_id": "att-1-plan", "node_id": "node-a", "count": 2},
+    ])
+    assert len(legacy) == 1 and legacy[0]["count"] == 1
+
     assert summarize(state="not_started")["next_stage"] is None
     assert build_actions(project_id="prj-x", state="not_started")[0]["action"] == "run"
 
