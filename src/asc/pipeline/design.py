@@ -469,9 +469,62 @@ def _is_usable(name: str, design_dir: Path, attempts: int) -> bool:
     return (design_dir / f".{name}.attempt-{attempts}.json").is_file()
 
 
+def _plot_notes_for_chapter(design_dir: Path, chapter_id: str,
+                            canon: Canon | None) -> list[str]:
+    """Pass only this chapter's checked act and turns to the draft prompt.
+
+    An unresolved design is still saved by build_design (fail-open), so the
+    existence of plot.json alone cannot authorize its use. Carried project
+    revisions may lack the original per-document report; those need a canon
+    so the checker can validate the inherited plot before it is used.
+    """
+    plot_path = design_dir / "plot.json"
+    report_path = design_dir / "plot.report.json"
+    if not plot_path.is_file():
+        if report_path.is_file():
+            return ["（プロット設計書が欠損したため、幕メモを省略）"]
+        return []
+    if report_path.is_file():
+        try:
+            report = json.loads(report_path.read_text(encoding="utf-8"))
+            status = report.get("status") if isinstance(report, dict) else None
+        except (OSError, ValueError):
+            status = None
+        if status != "clean":
+            return ["（プロット設計の検査記録が未解決または読取不可のため、幕メモを省略）"]
+    elif canon is None:
+        return ["（プロット設計の検査記録と canon がないため、幕メモを省略）"]
+
+    from ..plot import check_plot, load_plot
+    from ..plot.check import _chapter_key  # use the checker's chapter matching
+    try:
+        plot = load_plot(plot_path)
+        if canon is not None:
+            checked = check_plot(plot, canon)
+            if _needs_repair(checked["findings"]):
+                return ["（プロット設計が現在の canon で未解決のため、幕メモを省略）"]
+    except (OSError, TypeError, ValueError):
+        return ["（プロット設計書を読めないため、幕メモを省略）"]
+
+    key = _chapter_key(chapter_id)
+    lines: list[str] = []
+    # Model-written fields stay on a single line: no other chapters or full
+    # plot/ending are copied into a chapter request.
+    def single_line(text: str) -> str:
+        return " ".join(text.split())
+
+    for act in plot.acts:
+        if any(_chapter_key(ch) == key for ch in act.chapters):
+            lines.append(f"- 幕 {single_line(act.id)}／問い: {single_line(act.question)}")
+    for turn in plot.turns:
+        if _chapter_key(turn.chapter) == key:
+            lines.append(f"- 転換点 {single_line(turn.id)}／選択: {single_line(turn.choice_ja)}")
+    return lines
+
+
 def design_notes_for_chapter(design_dir: str | Path | None,
-                             chapter_id: str) -> str:
-    """Scene notes and the voice line for one chapter, for the draft prompt.
+                             chapter_id: str, canon: Canon | None = None) -> str:
+    """Checked plot, scene and voice notes for one chapter's draft prompt.
 
     Returns a compact block, or a marker recording that no design was used —
     the prompt then says so explicitly, which keeps ablations honest.
@@ -481,9 +534,9 @@ def design_notes_for_chapter(design_dir: str | Path | None,
     design_dir = Path(design_dir)
     scenes_path = design_dir / "scene.json"
     voice_path = design_dir / "voice.json"
-    if not scenes_path.is_file() and not voice_path.is_file():
+    lines = _plot_notes_for_chapter(design_dir, chapter_id, canon)
+    if not scenes_path.is_file() and not voice_path.is_file() and not lines:
         return "（設計メモなし）"
-    lines: list[str] = []
     if scenes_path.is_file():
         try:
             scenes = json.loads(scenes_path.read_text(encoding="utf-8")

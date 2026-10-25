@@ -174,19 +174,25 @@ def test_unparseable_documents_are_missing_not_fatal(task, responses, tmp_path):
 
 # -- the draft connection -----------------------------------------------------
 
-def test_design_notes_name_the_chapters_scenes(task, responses, tmp_path):
+def test_design_notes_name_only_the_chapters_plot_scenes_and_voice(
+        task, responses, tmp_path):
     ledger = make_ledger(tmp_path)
     canon = plan_canon(task, responses, ledger)
     build_design(task, ScriptedProvider(responses), ledger, canon,
                  prompt_dir=PROMPTS)
-    notes = design_notes_for_chapter(ledger.path / "design", "ch01")
+    notes = design_notes_for_chapter(ledger.path / "design", "ch01", canon)
+    assert "幕 setup／問い: 鍵を追う資格は誰の手にあるか" in notes
+    assert "転換点 t1／選択: アリアは父の命令に背き" in notes
     assert "s01" in notes
     assert "文体" in notes
-    assert design_notes_for_chapter(None, "ch01") == "（設計メモなし）"
-    assert design_notes_for_chapter(tmp_path, "ch01") == "（設計メモなし）"
+    assert "記録と情のどちらを取るか" not in notes  # ch02's act
+    assert "転換点 t2" not in notes
+    assert "鍵は返るが借り手の死の真相は残る" not in notes  # full ending
+    assert design_notes_for_chapter(None, "ch01", canon) == "（設計メモなし）"
+    assert design_notes_for_chapter(tmp_path, "ch01", canon) == "（設計メモなし）"
 
 
-def test_draft_prompt_carries_scene_notes_when_design_ran(task, responses, tmp_path):
+def test_draft_prompt_carries_checked_plot_per_chapter(task, responses, tmp_path):
     ledger = make_ledger(tmp_path)
     canon = plan_canon(task, responses, ledger)
     build_design(task, ScriptedProvider(responses), ledger, canon,
@@ -194,9 +200,144 @@ def test_draft_prompt_carries_scene_notes_when_design_ran(task, responses, tmp_p
     provider = ScriptedProvider(responses)
     build_story(task, provider, ledger, canon=canon, prompt_dir=PROMPTS,
                 design_dir=ledger.path / "design")
-    first = provider.calls[0]
-    assert "s01" in first.prompt
-    assert "設計メモ" in first.prompt
+    assert [call.purpose for call in provider.calls] == [
+        "draft:ch01", "draft:ch02", "draft:ch03"]
+    questions = ["鍵を追う資格は誰の手にあるか", "記録と情のどちらを取るか",
+                 "自分の選択で灯りを守れるか"]
+    for index, call in enumerate(provider.calls):
+        assert "設計メモ" in call.prompt
+        assert "設定台帳と矛盾しない範囲で" in call.prompt
+        assert "幕 " in call.prompt
+        assert "転換点 t" + str(index + 1) in call.prompt
+        assert questions[index] in call.prompt
+        for other in questions[:index] + questions[index + 1:]:
+            assert other not in call.prompt
+    assert "s01" in provider.calls[0].prompt  # scene and voice still flow
+    assert "文体" in provider.calls[0].prompt
+    recorded = [json.loads(line) for line in (ledger.path / "responses.jsonl")
+                .read_text(encoding="utf-8").splitlines()]
+    recorded = [row for row in recorded if row["purpose"].startswith("draft:")]
+    assert [row["prompt_hash"] for row in recorded] == [
+        call.prompt_hash for call in provider.calls]
+    assert "幕" in recorded[0]["prompt"]
+    assert "draft-chapter" in json.loads((ledger.path / "manifest.json")
+                                         .read_text(encoding="utf-8"))["prompt_hashes"]
+
+
+def test_unresolved_plot_is_omitted_from_the_draft_prompt(
+        task, responses, tmp_path):
+    bad = json.loads(responses["design:plot:t01"])
+    bad["acts"][0]["chapters"] = ["ch99"]  # fail the acts_cover check
+    bad["turns"][0]["choice_ja"] = "未検証の転換点を本文に渡さない"
+    text = json.dumps(bad, ensure_ascii=False)
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    result = build_design(task, StubProvider({
+        "design:plot": [text], "design:plot:repair": [text],
+    }), ledger, canon, prompt_dir=PROMPTS, docs=("plot",))
+    assert result.as_dict()["docs"]["plot"]["status"] == "unresolved"
+    assert (ledger.path / "design" / "plot.json").is_file()  # fail-open
+    notes = design_notes_for_chapter(ledger.path / "design", "ch01", canon)
+    assert "未解決" in notes
+    assert "未検証の転換点" not in notes
+    provider = ScriptedProvider(responses)
+    build_story(task, provider, ledger, canon=canon, prompt_dir=PROMPTS,
+                design_dir=ledger.path / "design")
+    assert "未解決" in provider.calls[0].prompt
+    assert "未検証の転換点" not in provider.calls[0].prompt
+
+
+def test_missing_plot_is_not_used_and_the_draft_explains_why(
+        task, responses, tmp_path):
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    result = build_design(task, StubProvider({
+        "design:plot": ["not json"], "design:plot:repair": ["still not json"],
+    }), ledger, canon, prompt_dir=PROMPTS, docs=("plot",))
+    assert result.as_dict()["docs"]["plot"]["status"] == "missing"
+    assert not (ledger.path / "design" / "plot.json").exists()
+    assert (ledger.path / "design" / "plot.report.json").is_file()
+    notes = design_notes_for_chapter(ledger.path / "design", "ch01", canon)
+    assert "設計書が欠損" in notes
+    provider = ScriptedProvider(responses)
+    build_story(task, provider, ledger, canon=canon, prompt_dir=PROMPTS,
+                design_dir=ledger.path / "design")
+    assert "設計書が欠損" in provider.calls[0].prompt
+    assert "- 幕 " not in provider.calls[0].prompt
+
+
+def test_carried_plot_is_rechecked_and_stale_or_unreadable_plot_is_omitted(
+        task, responses, tmp_path):
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    design_dir = tmp_path / "carried"
+    design_dir.mkdir()
+    plot_path = design_dir / "plot.json"
+    report_path = design_dir / "plot.report.json"
+    plot_path.write_text(responses["design:plot:t01"], encoding="utf-8")
+
+    # Carried project revisions have no per-document report, but a fresh
+    # check against the current canon authorizes the note.
+    assert "検査記録と canon がない" in design_notes_for_chapter(design_dir, "ch01")
+    assert "幕 setup" in design_notes_for_chapter(design_dir, "ch01", canon)
+
+    stale = json.loads(responses["design:plot:t01"])
+    stale["acts"][0]["chapters"] = ["ch99"]
+    plot_path.write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+    assert "現在の canon で未解決" in design_notes_for_chapter(
+        design_dir, "ch01", canon)  # inherited without report, but still invalid
+    report_path.write_text('{"status": "clean"}', encoding="utf-8")
+    assert "現在の canon で未解決" in design_notes_for_chapter(
+        design_dir, "ch01", canon)
+    assert "幕 setup" not in design_notes_for_chapter(design_dir, "ch01", canon)
+
+    plot_path.write_text(responses["design:plot:t01"], encoding="utf-8")
+    report_path.write_text('{"status": "unresolved"}', encoding="utf-8")
+    assert "幕メモを省略" in design_notes_for_chapter(design_dir, "ch01", canon)
+    report_path.write_text("{bad report", encoding="utf-8")
+    assert "読取不可" in design_notes_for_chapter(design_dir, "ch01", canon)
+    report_path.write_text('{"status": "clean"}', encoding="utf-8")
+    plot_path.write_text("{bad plot", encoding="utf-8")
+    assert "読めない" in design_notes_for_chapter(design_dir, "ch01", canon)
+
+
+def test_plot_note_matches_chapter_alias_and_flattens_multiline_fields(
+        task, responses, tmp_path):
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    design_dir = tmp_path / "design"
+    design_dir.mkdir()
+    plot = json.loads(responses["design:plot:t01"])
+    plot["acts"][0]["chapters"] = ["第1章"]
+    plot["turns"][0]["chapter"] = "第1章"
+    plot["acts"][0]["question"] = "鍵を追う資格は\n誰の手にあるか"
+    (design_dir / "plot.json").write_text(
+        json.dumps(plot, ensure_ascii=False), encoding="utf-8")
+    (design_dir / "plot.report.json").write_text(
+        '{"status": "clean"}', encoding="utf-8")
+    notes = design_notes_for_chapter(design_dir, "ch01", canon)
+    assert "幕 setup／問い: 鍵を追う資格は 誰の手にあるか" in notes
+    assert "転換点 t1" in notes
+    assert "第1章" not in notes  # code and checker normalize the same way
+
+
+def test_plot_handoff_does_not_require_three_acts(task, responses, tmp_path):
+    ledger = make_ledger(tmp_path)
+    canon = plan_canon(task, responses, ledger)
+    design_dir = tmp_path / "two-acts"
+    design_dir.mkdir()
+    plot = json.loads(responses["design:plot:t01"])
+    plot["acts"] = [
+        {"id": "opening", "chapters": ["ch01", "ch02"], "question": "誰が鍵を守るか"},
+        {"id": "closing", "chapters": ["ch03"], "question": "灯りを守れるか"},
+    ]
+    (design_dir / "plot.json").write_text(
+        json.dumps(plot, ensure_ascii=False), encoding="utf-8")
+    (design_dir / "plot.report.json").write_text(
+        '{"status": "clean"}', encoding="utf-8")
+    assert "幕 opening／問い: 誰が鍵を守るか" in design_notes_for_chapter(
+        design_dir, "ch02", canon)
+    assert "幕 closing" not in design_notes_for_chapter(design_dir, "ch02", canon)
 
 
 def test_draft_prompt_says_so_when_no_design_ran(task, responses, tmp_path):
@@ -240,6 +381,12 @@ def test_cli_no_design_skips_and_says_so(tmp_path):
     assert len(run_dirs) == 1
     summary = json.loads((run_dirs[0] / "run-summary.json").read_text(encoding="utf-8"))
     assert summary["design"]["status"] == "skipped"
+    recorded = [json.loads(line) for line in (
+        run_dirs[0] / "responses.jsonl"
+    ).read_text(encoding="utf-8").splitlines()]
+    drafts = [row["prompt"] for row in recorded if row["purpose"].startswith("draft:")]
+    assert drafts and all("（設計メモなし）" in prompt and "- 幕 " not in prompt
+                          for prompt in drafts)
 
 
 def test_cli_s3_uses_the_designed_voice(tmp_path):
@@ -273,6 +420,13 @@ def test_experiment_cell_records_design_counts(task, responses, tmp_path):
     assert cell["design_first_attempt_findings"] == 0
     assert cell["response_provenance"] == {
         "counts": {"scripted": 12}, "reused_source_run_ids": []}
+    recorded = [json.loads(line) for line in (
+        Path(cell["run_dir"]) / "responses.jsonl"
+    ).read_text(encoding="utf-8").splitlines()]
+    draft = next(row for row in recorded if row["purpose"] == "draft:ch01")
+    assert "幕 setup／問い" in draft["prompt"]
+    assert "転換点 t1／選択" in draft["prompt"]
+    assert "転換点 t2／選択" not in draft["prompt"]
 
 
 def test_experiment_cell_aggregates_first_attempt_repairs_and_provenance(

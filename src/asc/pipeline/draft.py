@@ -260,7 +260,7 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
         produced: ChapterDraft | None = None
         if canon is not None:
             from .design import design_notes_for_chapter
-            notes = design_notes_for_chapter(design_dir, chapter["id"])
+            notes = design_notes_for_chapter(design_dir, chapter["id"], canon)
         else:
             notes = "（設計メモなし）"
         for attempt in range(1, max_attempts + 1):
