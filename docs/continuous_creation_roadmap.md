@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜8を実装済み。次はPR 9（運用dogfoodと可観測性）、その後はPR 10（改訂・分岐）を候補とする**
+- 状態: **PR 1〜11を実装済み。次は編纂view/packetの`diff`と`status`/`doctor`の情報統合を候補とする**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -424,9 +424,27 @@ bytesが変わらない。中断再開とbundle復元ができ、親のpinned出
 CLIでは同じprojectで、子作品の第2章だけをoperatorが改訂し、`compose`がadoptまで
 byte-identicalであること、分岐がprovider呼び出し0回で作れることを確認した。
 
+### PR 11: 失敗したstageの明示的な再試行（実装済み）
+
+`resume --retry-failed` で、`failed` になったstageだけを新しいrunとしてやり直す。既定の
+`resume` は従来どおり失敗stageを拒否し、`pending`（未回答request）が残るstageは従来の再開手順
+（response fileを埋めて`resume`）を使う。再試行は失敗runを書き換えず、新checkpointの
+`retry_of` に失敗run IDを残す。失敗runのresponseは再利用しない（`resume-audit.json` は
+作られない）ため、再開（prefix再生）と再試行（新規生成）が記録上区別できる。
+
+`status` は `Failed stages:` と `Retried stages: <stage><-<旧run>` を表示し、`doctor` の
+`checkpoint.failed` findingも再試行commandを案内する。改訂（`revise`）の途中で失敗した場合の
+再試行でも、引き継いだ章のbytesと`revise.json`の`copied`は変わらない。
+
+**完了条件**: 失敗stageの再試行が明示操作でだけ起き、旧runと完了済みstageがbyte単位で
+不変、再試行後のprojectが通常の`doctor`検査を通る。
+
+確認: `tests/test_project_retry.py` が、既定`resume`の拒否、`retry_of`の記録、旧runの
+bytes不変、完了stageの再利用、draft/revise失敗からの再試行、未回答requestを持つstageの
+拒否、CLIの終了コードと表示を検査する。
+
 ### その後の候補
 
-- `failed` stageの再試行（`resume`の受付状態拡張）と、`doctor` のfindingからの復旧手順の提示。
 - 編纂view・ContextPacketのrecord単位差分（`diff`）と、`status` / `doctor` の情報統合。
 - 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
 - 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
@@ -492,4 +510,4 @@ bundle復元の回帰testを追加した。PR 8で `world_context.py` / `world_c
 編纂決定性の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、
 新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**PR 1〜8は実装済み。次はPR 9の運用dogfoodと可観測性から開始し、その後にPR 10の改訂・分岐を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**
+**PR 1〜11は実装済み。次は編纂view/packetのrecord単位`diff`と`status`/`doctor`の情報統合を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**

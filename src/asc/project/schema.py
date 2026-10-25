@@ -297,6 +297,7 @@ def validate_checkpoint(data: Any) -> None:
     ):
         raise ProjectValidationError("checkpoint.temperature must be a finite number")
     _optional_id(data.get("resume_of"), "checkpoint.resume_of")
+    _optional_id(data.get("retry_of"), "checkpoint.retry_of")
     pending = data.get("pending")
     if status == "waiting_response":
         pending = _mapping(pending, "checkpoint.pending")

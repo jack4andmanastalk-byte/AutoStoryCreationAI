@@ -346,7 +346,8 @@ class ProjectDoctor:
                 elif checkpoint.status == "failed":
                     self._add(
                         "checkpoint.failed", WARNING,
-                        f"stage {checkpoint.stage} is recorded as failed",
+                        f"stage {checkpoint.stage} is recorded as failed "
+                        "(retry it with resume --retry-failed)",
                         "checkpoint", node_id=node.id, path=path,
                         details={
                             "stage": checkpoint.stage,

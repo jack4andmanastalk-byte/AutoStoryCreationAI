@@ -632,8 +632,16 @@ class ProjectRunner:
 
     def resume(
         self, project_id: str, provider: Provider, *, node_id: str | None = None,
+        retry_failed: bool = False,
     ) -> ProjectRunResult:
-        """Resume the first unfinished stage without regenerating completed work."""
+        """Resume the first unfinished stage without regenerating completed work.
+
+        A ``failed`` stage is not resumed automatically: the old error may have
+        come from the provider or from the generated text.  ``retry_failed``
+        starts that stage again as a fresh run (same seed and temperature, no
+        reuse of the failed run's responses) and records ``retry_of`` on the new
+        checkpoint so the failed attempt stays inspectable.
+        """
         with self.store.execution_lock(project_id):
             snapshot = self.store.load_node_snapshot(project_id, node_id)
             status = self.store.status(project_id, node_id)
@@ -666,11 +674,25 @@ class ProjectRunner:
                     f"project {project_id} has no resumable stage", project_id=project_id,
                 )
             checkpoint = existing.get(target)
+            retry_of: str | None = None
             if checkpoint is not None and checkpoint.status == "failed":
+                if not retry_failed:
+                    raise ProjectRunError(
+                        f"{target} is failed, not interrupted; resume only accepts "
+                        "running, waiting_response, ready, or pending stages "
+                        "(pass --retry-failed to start that stage again)",
+                        project_id=project_id, stage=target, run_id=checkpoint.run_id,
+                    )
+                retry_of = checkpoint.run_id
+            elif retry_failed:
+                current_status = (
+                    checkpoint.status if checkpoint is not None else "pending"
+                )
                 raise ProjectRunError(
-                    f"{target} is failed, not interrupted; resume only accepts "
-                    "running, waiting_response, ready, or pending stages",
-                    project_id=project_id, stage=target, run_id=checkpoint.run_id,
+                    f"--retry-failed needs a failed stage; {target} is "
+                    f"{current_status}",
+                    project_id=project_id, stage=target,
+                    run_id=checkpoint.run_id if checkpoint is not None else None,
                 )
             if checkpoint is not None and checkpoint.status == "waiting_response":
                 pending = checkpoint.pending or {}
@@ -694,13 +716,18 @@ class ProjectRunner:
                 )
                 if (candidate / "manifest.json").is_file():
                     source_manifest = self._read_run_json(candidate / "manifest.json")
+                # Only an interrupted run is a replay source.  A failed run keeps
+                # its records for inspection but is never replayed: retrying it
+                # starts a new attempt instead.
+                if checkpoint.status in {"running", "waiting_response"}:
                     if (candidate / "project-input.json").is_file():
                         source_dir = candidate
-                if checkpoint.status in {"running", "waiting_response"} and source_dir is None:
-                    raise ProjectRunError(
-                        f"{target} has no complete resume source records",
-                        project_id=project_id, stage=target, run_id=checkpoint.run_id,
-                    )
+                    else:
+                        raise ProjectRunError(
+                            f"{target} has no complete resume source records",
+                            project_id=project_id, stage=target,
+                            run_id=checkpoint.run_id,
+                        )
             base_seed = (
                 checkpoint.seed if checkpoint is not None and checkpoint.seed is not None
                 else source_manifest.get("seed", 0)
@@ -733,6 +760,8 @@ class ProjectRunner:
             return self._execute(
                 attempt, provider, configs, existing,
                 resume_stage=target if source_dir is not None else None,
+                retry_stage=target if retry_of is not None else None,
+                retry_of=retry_of,
             )
 
     def _recorded_context_override(
@@ -987,6 +1016,8 @@ class ProjectRunner:
         existing: dict[str, StageCheckpoint],
         *,
         resume_stage: str | None = None,
+        retry_stage: str | None = None,
+        retry_of: str | None = None,
     ) -> ProjectRunResult:
         project_id = attempt.snapshot.project.id
         results: dict[str, _StageResult] = {}
@@ -1063,6 +1094,7 @@ class ProjectRunner:
                 operation=operation,
                 resume_of=source_run_id,
                 resume_provider=resume_provider,
+                retry_of=retry_of if stage == retry_stage else None,
             )
 
         current = self.store.load_node_snapshot(
@@ -1368,6 +1400,7 @@ class ProjectRunner:
         operation: Callable[[RunLedger], Any],
         resume_of: str | None,
         resume_provider: ResumeProvider | None,
+        retry_of: str | None = None,
     ) -> _StageResult:
         project_id = attempt.snapshot.project.id
         run_id = f"{attempt.attempt_id}-{stage}"
@@ -1375,6 +1408,7 @@ class ProjectRunner:
             self._new_checkpoint(attempt, stage, "ready", config=config),
             run_id=run_id,
             resume_of=resume_of,
+            retry_of=retry_of,
         )
         self.store.save_checkpoint(checkpoint)
         ledger: RunLedger | None = None
@@ -1409,6 +1443,7 @@ class ProjectRunner:
                 ),
                 "input_artifacts": [item.to_dict() for item in input_artifacts],
                 "resume_of": resume_of,
+                "retry_of": retry_of,
                 "resume_source_responses_sha256": (
                     resume_provider.source_responses_sha256 if resume_provider else None
                 ),

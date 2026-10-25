@@ -110,6 +110,31 @@ ledgerが `ok` になった直後、checkpointを `done` にする前にprocess�
 呼ばず全応答をoffline再生する別機能です。resumeの一致は、モデルの独立再現性や作品品質を
 示すものではありません。
 
+### 失敗したstageの再試行
+
+`failed` は「providerや生成textが原因で、記録済みresponseを再生しても同じ結果になる」状態です。
+そのため `resume` は既定で拒否し、exit 2で `--retry-failed` を案内します。
+
+```bash
+python3 scripts/story_project.py status prj-seaside        # Failed stages: ... と案内が出る
+python3 scripts/story_project.py resume prj-seaside \
+  --provider command --command "<provider command>" --model "<model label>" \
+  --retry-failed
+```
+
+再試行の意味は「新規attemptとして同じstageをやり直す」ことであり、再開ではありません。
+
+- 失敗したrunのmanifest・project-input・responses・artifactはそのまま残し、書き換えない。
+- 新しいrunはseed・temperatureをcheckpointから引き継ぎ、失敗runのresponseは再利用しない
+  （`resume-audit.json` は作られない）。
+- 新checkpointの `retry_of` に失敗runのIDを記録する。`status` は
+  `Retried stages: plan<-att-...` と表示し、`--json` では `checkpoints.<stage>.retry_of` に出る。
+- `done` のstageは再生成せず、artifact hashを検査してloadする。chapter改訂の再試行でも、
+  引き継いだ章のbytesは同一のまま `revise.json` の `copied` に残る。
+- 対象stageが `failed` でない場合（未開始・完了・`waiting_response` など）は拒否する。
+  未回答requestが残っているstageは従来どおり `pending` を埋めて `resume` する。
+- 再試行後のrunは通常のrunと同じ検査対象で、`doctor` は再試行後もfindingを出さない。
+
 ## 完成後のcontinuation
 
 完成したrevisionにだけ、章を追加する新版を作れます。`--add-chapters` は追加数、
@@ -649,10 +674,11 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 ## 次のincrement
 
 PR 9では運用可観測性（`doctor` / `context show`）を、PR 10では章単位の `revise` と
-what-if `branch` を追加しました。PR 1〜10の予定機能は実装済みで、創作projectの生成・再開・
-continuation・改訂・分岐・世界文脈・編纂・bundle・検査が一通りCLIから操作できます。
-次に検討する候補は、dogfoodで観測した `failed` stageの再試行手段、編纂viewとpacketの
-record単位差分（`diff`）、`status` と `doctor` の情報統合です。詳細は
+what-if `branch` を、PR 11では失敗したstageの明示的な再試行（`resume --retry-failed`）を
+追加しました。創作projectの生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・
+bundle・検査が一通りCLIから操作できます。
+次に検討する候補は、編纂viewとpacketのrecord単位差分（`diff`）、`status` と `doctor` の
+情報統合です。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。
