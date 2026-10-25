@@ -9,9 +9,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = REPO_ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "plan-demo.json"
 
 
-def test_plot_ablation_runner_pairs_shared_inputs_and_reports_l1_only(tmp_path):
+def _prepare_shared_design(tmp_path):
     shared_root = tmp_path / "shared"
-    prep = subprocess.run(
+    subprocess.run(
         [
             sys.executable, str(REPO_ROOT / "scripts" / "run_pipeline.py"),
             "--task", "t01", "--system", "s1", "--provider", "scripted",
@@ -20,26 +20,57 @@ def test_plot_ablation_runner_pairs_shared_inputs_and_reports_l1_only(tmp_path):
         ],
         cwd=REPO_ROOT, check=True, capture_output=True, text=True,
     )
-    del prep
-    shared_run = shared_root / "shared-design"
-    experiment_out = tmp_path / "experiment"
-    runs_root = tmp_path / "runs"
-    completed = subprocess.run(
-        [
-            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
-            "--id", "fixture-pair", "--task", "t01",
-            "--canon", str(shared_run / "canon"),
-            "--design-dir", str(shared_run / "design"),
-            "--provider", "scripted", "--script", str(FIXTURE),
-            "--out", str(experiment_out), "--runs-root", str(runs_root),
-        ],
-        cwd=REPO_ROOT, check=True, capture_output=True, text=True,
-    )
+    return shared_root / "shared-design"
 
-    result = json.loads((experiment_out / "results.json").read_text(encoding="utf-8"))
-    assert result["scope"] == "exploratory paired L1 only; not creative quality evidence"
+
+def _run_ablation(tmp_path, shared_run, experiment_id, provider):
+    args = [
+        sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+        "--id", experiment_id, "--task", "t01",
+        "--canon", str(shared_run / "canon"),
+        "--design-dir", str(shared_run / "design"),
+        "--provider", provider,
+        "--out", str(tmp_path / "experiment"),
+        "--runs-root", str(tmp_path / "runs"),
+        "--operator-root", str(tmp_path / "operator"),
+    ]
+    if provider == "scripted":
+        args.extend(["--script", str(FIXTURE)])
+    return subprocess.run(args, cwd=REPO_ROOT, capture_output=True, text=True)
+
+
+def _ingest_all_pending(operator_root: Path, arms: tuple[str, ...]):
+    body = "灯台と鍵の行方を思う嵐の夜だった。" * 30
+    for arm in arms:
+        operator_dir = operator_root / arm
+        index = json.loads((operator_dir / "relay" / "index.json").read_text(encoding="utf-8"))
+        assert index["pending"], f"{arm} has no relay request"
+        blocks = []
+        for item in index["pending"]:
+            blocks.append(
+                f"<<<ANSWER {item['tag']}>>>\n{body}\n<<<END {item['tag']}>>>")
+        answer_file = operator_dir / "answers.txt"
+        answer_file.write_text("\n\n".join(blocks), encoding="utf-8")
+        subprocess.run(
+            [
+                sys.executable, str(REPO_ROOT / "scripts" / "relay_prompts.py"),
+                "ingest", "--dir", str(operator_dir), "--file", str(answer_file),
+                "--model", "arena-agent-mode", "--model-version", "unversioned",
+            ],
+            cwd=REPO_ROOT, check=True, capture_output=True, text=True,
+        )
+
+
+def test_scripted_fixture_runner_is_l1_plumbing_not_a_model_experiment(tmp_path):
+    shared_run = _prepare_shared_design(tmp_path)
+    completed = _run_ablation(tmp_path, shared_run, "fixture-pair", "scripted")
+    assert completed.returncode == 0, completed.stderr
+
+    result = json.loads((tmp_path / "experiment" / "results.json").read_text(encoding="utf-8"))
+    assert result["scope"] == "scripted fixture wiring check only; not a model experiment"
     assert result["target"] == "Plot-SKILL-derived memo handoff only; not overall SKILL efficacy"
     assert result["evaluation_scope"] == {
+        "provider_constraint": "arena-only",
         "l2": "frozen_not_measured", "l3": "frozen_not_measured"}
     assert result["g5"] == "not_established_by_single_pair"
     assert result["prompt_control"]["ch01_diff_only_plot_memo_lines"] is True
@@ -58,5 +89,50 @@ def test_plot_ablation_runner_pairs_shared_inputs_and_reports_l1_only(tmp_path):
     assert result["paired_l1_deltas"]["chars_excluding_markers"][
         "delta_with_minus_without"] == 0
     assert "cannot establish a general effect" in (
-        experiment_out / "note.md").read_text(encoding="utf-8")
-    assert "completed" in completed.stdout
+        tmp_path / "experiment" / "note.md").read_text(encoding="utf-8")
+
+
+def test_arena_relay_resumes_both_arms_with_separate_namespaces(tmp_path):
+    shared_run = _prepare_shared_design(tmp_path)
+    operator_root = tmp_path / "operator" / "arena-pair"
+    first = _run_ablation(tmp_path, shared_run, "arena-pair", "arena")
+    assert first.returncode == 3, first.stderr
+    first_progress = json.loads(
+        (tmp_path / "experiment" / "progress.json").read_text(encoding="utf-8"))
+    assert first_progress["status"] == "waiting_for_arena_responses"
+    assert set(first_progress["relay"]) == {"no_plot", "with_plot"}
+
+    # Each arm has a separate request namespace/tag set; the same response is
+    # not accidentally attached to both prompts.
+    no_plot_index = json.loads(
+        (operator_root / "no_plot" / "relay" / "index.json").read_text(encoding="utf-8"))
+    with_plot_index = json.loads(
+        (operator_root / "with_plot" / "relay" / "index.json").read_text(encoding="utf-8"))
+    assert no_plot_index["pending"][0]["tag"] != with_plot_index["pending"][0]["tag"]
+
+    for attempt in range(3):
+        _ingest_all_pending(operator_root, ("no_plot", "with_plot"))
+        resumed = subprocess.run(
+            [
+                sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+                "--id", "arena-pair", "--task", "t01",
+                "--canon", str(shared_run / "canon"),
+                "--design-dir", str(shared_run / "design"),
+                "--provider", "arena", "--out", str(tmp_path / "experiment"),
+                "--runs-root", str(tmp_path / "runs"),
+                "--operator-root", str(tmp_path / "operator"), "--resume",
+            ],
+            cwd=REPO_ROOT, capture_output=True, text=True,
+        )
+        if attempt < 2:
+            assert resumed.returncode == 3, resumed.stderr
+        else:
+            assert resumed.returncode == 0, resumed.stderr
+
+    result = json.loads((tmp_path / "experiment" / "results.json").read_text(encoding="utf-8"))
+    assert result["scope"] == "Arena × L1 exploratory reference only"
+    assert result["model"]["name"] == "arena-agent-mode"
+    assert result["model"]["version"] == "unversioned"
+    assert result["model"]["version_pinned"] is False
+    assert result["evaluation_scope"]["provider_constraint"] == "arena-only"
+    assert result["g5"] == "not_established_by_single_pair"

@@ -51,31 +51,36 @@
 
 実装は `build_story(..., include_plot_memos=False)` と `run_pipeline.py --stage draft --canon ... --design-dir ... --no-plot-memos`。既定（フラグなし）が Plot メモありの条件である。比較用CLIは `plot.report.json=status=clean` と `plot.json`・`scene.json`・`voice.json` を要求し、現在の canon でも Plot を再検査する。両 run は同じ外部 canon/design を読み、canon は各 run にコピーされる。`run-summary.json` の `draft_condition` に `canon_files_sha256` / `design_files_sha256` として canon/design 全ファイルの SHA-256 を記録する。L1 の指標・閾値、L2/L3、S1 の定義は変更していない。
 
-実モデルに固定版 API を使える場合の手順例（`PROVIDER` は同じモデル・版を指定する同一コマンド、認証情報は環境変数から渡し、値をログやGitへ書かない）。準備段階で一度だけ canon と clean な設計を作り、その成果物を両条件で共有する。
+現行スコープは `configs/evaluation_scope.yaml` のとおり **Arena.ai のみ**であり、外部APIモデルを比較に使わない。まずArena relayで canon と設計書を一度だけ作り、その同じ成果物を両条件で共有する。準備用の下記 `stage all` は共有canon/designに加えて初稿も作るが、その初稿は ablation の比較結果には含めない。回答待ちで停止したら relay に回答を入れ、同じコマンドを新しいrunとして再実行する。
 
 ```sh
-PROVIDER='.venv/bin/python scripts/model_adapter.py --model MODEL --model-version VERSION'
-.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage plan \\
-  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.6 \\
-  --out runs/plot-ablation --run-id shared-plan
-.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage design \\
-  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.6 \\
-  --canon runs/plot-ablation/shared-plan/canon --out runs/plot-ablation --run-id shared-design
+PREP_OP=runs/operator/plot-ablation/shared-prep
+PREP_CMD="python3 scripts/chat_operator.py --dir $PREP_OP"
+python3 scripts/run_pipeline.py --task t01 --system s1 --provider command \\
+  --command "$PREP_CMD" --model arena-agent-mode --seed 0 \\
+  --out runs/plot-ablation/shared-prep --report-only
+# exit 2 / NEED RESPONSE のとき: export → Arenaで回答 → ingest → 同じコマンドを再実行
+python3 scripts/relay_prompts.py export --dir "$PREP_OP"
+# Arena の回答を answers.txt に保存後:
+python3 scripts/relay_prompts.py ingest --dir "$PREP_OP" --file answers.txt \\
+  --model arena-agent-mode --model-version unversioned
 
-SHARED_CANON=runs/plot-ablation/shared-plan/canon
-SHARED_DESIGN=runs/plot-ablation/shared-design/design
-.venv/bin/python scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
+# Replace PASTE_SUCCESSFUL_RUN_ID with the run id printed after stage all completes.
+PREP_RUN=runs/plot-ablation/shared-prep/PASTE_SUCCESSFUL_RUN_ID
+SHARED_CANON="$PREP_RUN/canon"
+SHARED_DESIGN="$PREP_RUN/design"
+python3 scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
   --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
-  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.8 \\
+  --provider arena --seed 0 --temperature 0.8 \\
   --out experiments/2026-10-plot-ablation-t01
 ```
 
-`MODEL`・`VERSION` は指定する同じ固定版の値に置き換える。runner は条件別のDraft runとL1評価を行い、`experiments/<id>/results.json` / `note.md` / `l1/` を出力する。生の応答と本文はGit管理外の `runs/plot-ablation/<id>/` に保持する。canon/design 全ファイルのハッシュ、モデル・版、seed、温度を確認し、**ch01のプロンプト差が幕／転換点行だけ**であることを検査する。後続章は前章本文の違いが伝播しうるので、その差を独立した章ごとの直接効果と解釈しない。固定版がなくても探索 run は可能だが、`version_pinned=false` と G5 未達を記録する。scripted fixture は回帰テスト専用で、実モデル実験と混同しない。
+A/B runner は、回答が未着なら exit 3 で止まり、arm別の `PROMPTS.md` と `note.md` を出す。各armの `relay_prompts.py ingest` で回答を取り込み、同じ runner コマンドに `--resume` を付けて再実行する。別々のrequest namespaceを用いてarm間の応答取り違えを防ぐ。完了すると `experiments/<id>/results.json` / `note.md` / `l1/` を出力し、生の応答と本文はGit管理外の `runs/` に残す。canon/designの全ファイルhash、条件、モデル来歴を記録し、**ch01のプロンプト差が幕／転換点行だけ**であることを検査する。Arenaのモデル版は固定されないため `version_pinned=false`、G5未達、L1は探索的参考値となる。後続章は前章本文の違いが伝播する媒介効果を含む。scripted fixtureは統合テスト専用で実験結果として扱わない。
 
 runner のL1出力では、必須語、タスク固有の禁止語、共通の禁止パターン、継続性監査（違反・高 severity・未実行検査・CED）、文字数・記述統計を個別に記録する。L1レポートを総合点や品質判定にまとめず、L2/L3は実行しない。
 
 ### 2026-10-25 の実施状態
 
-本セッションでは**実モデル比較を実施していない**。`OPENAI_API_KEY` と `MODEL_BASE_URL` は環境に無く、利用可能な接続先もこの環境のネットワーク許可対象外である。実応答・L1効果は記録していない。`scripts/run_plot_ablation.py` は追加したが、その統合テストは `plan-demo.json` の scripted fixture のみである。固定台本やそのテスト結果を実モデル応答／SKILLの有効性として扱わない。回帰テストはPlot行以外のプロンプト一致、共有入力ハッシュ、L1出力の構造を確認するだけである。
+本セッションでは**実モデル比較を実施していない**。Arena relayに投入した回答もまだない。`scripts/run_plot_ablation.py` の統合テストは、`plan-demo.json` とテスト用の固定回答だけを使った配線／resume検査である。これらのテスト値を実モデル応答やSKILLの有効性として扱わない。テストが確認するのは、arm分離、prompt差分、共有入力hash、L1-only出力構造までであり、実応答・L1効果は未測定である。
 
 未検証: 実モデルの出力差と L1 指標差、モデル版をまたぐ一般化、Plot メモが物語の質や面白さに与える影響。L1 はその質の証拠ではない。L2/L3 は引き続き凍結。

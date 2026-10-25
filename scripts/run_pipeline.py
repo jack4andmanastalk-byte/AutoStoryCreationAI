@@ -60,6 +60,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
     parser.add_argument("--canon", help="reuse an existing canon instead of planning")
+    parser.add_argument("--request-namespace", default=None,
+                        help="separate provider request keys for paired relay conditions; "
+                             "does not alter prompt text")
     parser.add_argument("--design-dir", default=None,
                         help="reuse shared design JSON files for --stage draft only")
     parser.add_argument("--no-plot-memos", action="store_true",
@@ -173,7 +176,7 @@ def main(argv: list[str] | None = None) -> int:
             args.out, task_id=task.id, system=args.system, seed=args.seed,
             protocol_version=tasks.protocol, run_id=args.run_id,
             model=args.model or provider.model, provider=provider.name,
-            temperature=temperature,
+            temperature=temperature, revision_id=args.request_namespace,
         )
     except FileExistsError:
         print(f"error: run already exists: {args.out}", file=sys.stderr)
