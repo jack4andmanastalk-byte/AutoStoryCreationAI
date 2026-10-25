@@ -504,5 +504,9 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 PR 8では、revision bindingから選ぶ世界ContextPacketと、年代記・地誌・文化圏・作品集の
 編纂profile / viewを追加しました。指定外・未来の資料を除外し、参照IDと版をprompt / runへ記録し、
-resumeでは記録packetを固定します。PR 1〜8の予定機能は実装済みです。X-01のskill registryは、
-実際の創作操作で共通形が必要になった時点だけを対象とし、品質評価やL2/L3の再開は行いません。
+resumeでは記録packetを固定します。PR 1〜8の予定機能は実装済みです。
+次は小規模な実創作dogfoodと`doctor` / `context show`を中心とする運用可観測性を整え、その後に
+章単位の`revise`・`branch`を実装する方針です。詳細と完了条件は
+[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)のPR 9〜10を参照してください。
+WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
+共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。
