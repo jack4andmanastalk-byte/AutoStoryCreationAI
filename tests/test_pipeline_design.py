@@ -224,6 +224,87 @@ def test_draft_prompt_carries_checked_plot_per_chapter(task, responses, tmp_path
                                          .read_text(encoding="utf-8"))["prompt_hashes"]
 
 
+def test_plot_memo_ablation_changes_only_plot_lines_in_draft_prompts(
+        task, responses, tmp_path):
+    """A paired prompt ablation keeps canon, scene, voice and prior text fixed."""
+    source = make_ledger(tmp_path / "source")
+    canon = plan_canon(task, responses, source)
+    build_design(task, ScriptedProvider(responses), source, canon,
+                 prompt_dir=PROMPTS)
+    shared_design = source.path / "design"
+
+    with_plot = ScriptedProvider(responses)
+    build_story(task, with_plot, make_ledger(tmp_path / "with"), canon=canon,
+                prompt_dir=PROMPTS, design_dir=shared_design)
+    without_plot = ScriptedProvider(responses)
+    build_story(task, without_plot, make_ledger(tmp_path / "without"), canon=canon,
+                prompt_dir=PROMPTS, design_dir=shared_design,
+                include_plot_memos=False)
+
+    assert len(with_plot.calls) == len(without_plot.calls) == 3
+    for included, omitted in zip(with_plot.calls, without_plot.calls):
+        assert included.purpose == omitted.purpose
+        assert included.temperature == omitted.temperature
+        assert included.seed == omitted.seed
+        assert "- 幕 " in included.prompt and "- 転換点 " in included.prompt
+        assert "- 幕 " not in omitted.prompt and "- 転換点 " not in omitted.prompt
+        assert "対立:" in included.prompt and "対立:" in omitted.prompt
+        assert "文体" in included.prompt and "文体" in omitted.prompt
+        # Once the designated chapter-local Plot memo lines are removed, the
+        # complete request is byte-identical, including canon/prior context.
+        without_plot_lines = "\n".join(
+            line for line in included.prompt.split("\n")
+            if not line.startswith("- 幕 ") and not line.startswith("- 転換点 "))
+        assert without_plot_lines == omitted.prompt
+
+
+def test_run_pipeline_draft_ablation_reuses_shared_inputs(task, responses, tmp_path):
+    source = make_ledger(tmp_path / "source")
+    canon = plan_canon(task, responses, source)
+    build_design(task, ScriptedProvider(responses), source, canon,
+                 prompt_dir=PROMPTS)
+    shared_design = source.path / "design"
+    shared_canon = source.path / "canon"
+
+    outputs = {}
+    for arm, extra in (("without-plot", ["--no-plot-memos"]), ("with-plot", [])):
+        run_root = tmp_path / arm
+        command = [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_pipeline.py"),
+            "--task", "t01", "--system", "s1", "--stage", "draft",
+            "--provider", "scripted", "--script", str(FIXTURE),
+            "--canon", str(shared_canon), "--design-dir", str(shared_design),
+            "--out", str(run_root), "--run-id", arm,
+            "--report-only", "--quiet", *extra,
+        ]
+        subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
+        run_dir = run_root / arm
+        outputs[arm] = {
+            "summary": json.loads((run_dir / "run-summary.json").read_text(encoding="utf-8")),
+            "prompts": [json.loads(row)["prompt"] for row in
+                        (run_dir / "responses.jsonl").read_text(encoding="utf-8").splitlines()],
+        }
+
+    base = outputs["without-plot"]
+    treatment = outputs["with-plot"]
+    assert base["summary"]["draft_condition"]["plot_memos"] is False
+    assert treatment["summary"]["draft_condition"]["plot_memos"] is True
+    assert base["summary"]["draft_condition"]["canon_source"] == \
+        treatment["summary"]["draft_condition"]["canon_source"]
+    assert base["summary"]["draft_condition"]["design_source"] == \
+        treatment["summary"]["draft_condition"]["design_source"]
+    assert base["summary"]["draft_condition"]["canon_files_sha256"] == \
+        treatment["summary"]["draft_condition"]["canon_files_sha256"]
+    assert base["summary"]["draft_condition"]["design_files_sha256"] == \
+        treatment["summary"]["draft_condition"]["design_files_sha256"]
+    assert len(base["prompts"]) == len(treatment["prompts"]) == 3
+    for prompt_with, prompt_without in zip(treatment["prompts"], base["prompts"]):
+        scrubbed = "\n".join(
+            line for line in prompt_with.split("\n")
+            if not line.startswith("- 幕 ") and not line.startswith("- 転換点 "))
+        assert scrubbed == prompt_without
+
+
 def test_unresolved_plot_is_omitted_from_the_draft_prompt(
         task, responses, tmp_path):
     bad = json.loads(responses["design:plot:t01"])

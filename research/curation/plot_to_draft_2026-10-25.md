@@ -44,3 +44,50 @@
 ## 次に実測するときの条件
 
 モデルが実際に答える場合は、**同じ題材・seed・温度・モデル版**で、Plot → Draft の受け渡しだけを変えた条件を別々の run として記録し、マーカー被覆、必須語、禁止表現、継続性違反、長さ等の **L1 指標を個別に**比較する。モデル版を固定できない Arena 経路なら探索的な参考値に留め、G5 や作品品質の改善を主張しない（[現行の評価範囲](../../docs/evaluation_scope.md)）。今回の固定台本比較は、その実測の代わりにはならない。根拠の不足が実際に判明した項目に限って、次に追加調査する。
+
+## 次の一手: Plot メモだけの draft 条件差
+
+目的は、**同一の canon・Plot/scene/voice 設計書を使い、章別 Plot メモを Draft に含めるかだけを変える**小さな L1 条件比較である。ここでいう「Plot だけ」は入力介入の定義であり、後続章の「前章末尾」文脈は先行する章の応答によって変わりうる。この伝播は下流の媒介として記録し、独立した章ごとの直接効果とは解釈しない。
+
+実装は `build_story(..., include_plot_memos=False)` と `run_pipeline.py --stage draft --canon ... --design-dir ... --no-plot-memos`。既定（フラグなし）が Plot メモありの条件である。比較用CLIは `plot.report.json=status=clean` と `plot.json`・`scene.json`・`voice.json` を要求し、現在の canon でも Plot を再検査する。両 run は同じ外部 canon/design を読み、canon は各 run にコピーされる。`run-summary.json` の `draft_condition` に `canon_files_sha256` / `design_files_sha256` として canon/design 全ファイルの SHA-256 を記録する。L1 の指標・閾値、L2/L3、S1 の定義は変更していない。
+
+実モデルに固定版 API を使える場合の手順例（`PROVIDER` は同じモデル・版を指定する同一コマンド、認証情報は環境変数から渡し、値をログやGitへ書かない）。準備段階で一度だけ canon と clean な設計を作り、その成果物を両条件で共有する。
+
+```sh
+PROVIDER='.venv/bin/python scripts/model_adapter.py --model MODEL --model-version VERSION'
+.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage plan \\
+  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.6 \\
+  --out runs/plot-ablation --run-id shared-plan
+.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage design \\
+  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.6 \\
+  --canon runs/plot-ablation/shared-plan/canon --out runs/plot-ablation --run-id shared-design
+
+SHARED_CANON=runs/plot-ablation/shared-plan/canon
+SHARED_DESIGN=runs/plot-ablation/shared-design/design
+.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage draft \\
+  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.8 \\
+  --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
+  --out runs/plot-ablation/no-plot --run-id t01-s1-s0-no-plot \\
+  --no-plot-memos --report-only --quiet
+.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage draft \\
+  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.8 \\
+  --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
+  --out runs/plot-ablation/with-plot --run-id t01-s1-s0-with-plot \\
+  --report-only --quiet
+```
+
+`MODEL`・`VERSION` は指定する同じ固定版の値に置き換える。応答本文・`responses.jsonl`・manifest・summary は両 run ごとに保持する。比較前に prompt の差が章ごとの幕／転換点行だけであること、`draft_condition` の canon/design hash、モデル/版・temperature・seed が一致することを確認する。失敗応答や修復が起きた場合も除外せず記録する。
+
+L1 は各 run の `run-summary.json`（文字数、必須語、監査違反/coverage/CED）と、以下のように `run_evaluation.py` で同一 `harness/patterns.yaml` を使った禁止パターンを別々に記録する。評価レポートを品質点へまとめない。
+
+```sh
+.venv/bin/python scripts/run_evaluation.py --candidate runs/plot-ablation/with-plot/<run-id>/text \\
+  --canon runs/plot-ablation/with-plot/<run-id>/canon --patterns harness/patterns.yaml \\
+  --out runs/plot-ablation/l1-with-plot --report-only
+```
+
+### 2026-10-25 の実施状態
+
+本セッションでは**実モデル比較を実施していない**。`OPENAI_API_KEY` と `MODEL_BASE_URL` は環境に無く、利用可能な接続先もこの環境のネットワーク許可対象外である。実応答・L1効果は記録していない。提示した固定台本は配線検査であり、実モデル応答として扱わない。再現性は新しい `tests/test_pipeline_design.py` のペア条件回帰（Plot 行以外の完全一致、同一共有入力ハッシュ）で検査しただけである。
+
+未検証: 実モデルの出力差と L1 指標差、モデル版をまたぐ一般化、Plot メモが物語の質や面白さに与える影響。L1 はその質の証拠ではない。L2/L3 は引き続き凍結。

@@ -209,6 +209,7 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
                 max_tokens: int = 2500, seed: int = 0,
                 max_attempts: int = 2,
                 design_dir: str | Path | None = None,
+                include_plot_memos: bool = True,
                 initial_drafts: tuple[ChapterDraft, ...] = (),
                 preserve: tuple[ChapterDraft, ...] = ()) -> Draft:
     """Draft the chapters that are not already final.
@@ -260,7 +261,9 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
         produced: ChapterDraft | None = None
         if canon is not None:
             from .design import design_notes_for_chapter
-            notes = design_notes_for_chapter(design_dir, chapter["id"], canon)
+            notes = design_notes_for_chapter(
+                design_dir, chapter["id"], canon,
+                include_plot_memos=include_plot_memos)
         else:
             notes = "（設計メモなし）"
         for attempt in range(1, max_attempts + 1):

@@ -20,7 +20,9 @@ Exit codes: 0 ok, 1 artifacts produced but the protocol gates are not met,
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -58,6 +60,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
     parser.add_argument("--canon", help="reuse an existing canon instead of planning")
+    parser.add_argument("--design-dir", default=None,
+                        help="reuse shared design JSON files for --stage draft only")
+    parser.add_argument("--no-plot-memos", action="store_true",
+                        help="draft ablation: omit only chapter-local Plot memos; "
+                             "requires --stage draft, --canon and a clean shared --design-dir")
     parser.add_argument("--max-rounds", type=int, default=1,
                         help="revision rounds for s2/s3 (default: 1)")
     parser.add_argument("--voice", default=None,
@@ -74,6 +81,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report-only", action="store_true",
                         help="always exit 0 and report the gates (for demos and docs)")
     return parser.parse_args(argv)
+
+
+def _sha256_tree(path: Path) -> dict[str, str]:
+    """Hash regular files in a shared input directory in stable relative order."""
+    return {
+        file.relative_to(path).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
+        for file in sorted(path.rglob("*")) if file.is_file()
+    }
 
 
 def _measure_text_dir(text_dir: Path, task) -> dict:
@@ -115,6 +130,34 @@ def main(argv: list[str] | None = None) -> int:
     if args.system == "s0" and args.stage == "design":
         print("error: s0 has no design stage (the baseline gets no canon)", file=sys.stderr)
         return 2
+    if args.design_dir and args.stage != "draft":
+        print("error: --design-dir is only supported with --stage draft", file=sys.stderr)
+        return 2
+    if args.no_plot_memos:
+        if args.stage != "draft" or args.system == "s0" or not args.canon or not args.design_dir:
+            print("error: --no-plot-memos requires --stage draft, --canon and --design-dir",
+                  file=sys.stderr)
+            return 2
+    if args.design_dir:
+        design_path = Path(args.design_dir)
+        required = ("plot.json", "plot.report.json", "scene.json", "voice.json")
+        missing = [name for name in required if not (design_path / name).is_file()]
+        if missing:
+            print(f"error: shared design is missing: {', '.join(missing)}", file=sys.stderr)
+            return 2
+        try:
+            plot_report = json.loads(
+                (design_path / "plot.report.json").read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"error: cannot read shared plot report: {exc}", file=sys.stderr)
+            return 2
+        if plot_report.get("status") != "clean":
+            print("error: controlled Plot ablation requires plot.report.json status=clean",
+                  file=sys.stderr)
+            return 2
+        if not args.canon or args.system == "s0":
+            print("error: --design-dir requires a non-S0 system and --canon", file=sys.stderr)
+            return 2
 
     try:
         provider = make_provider(args)
@@ -145,6 +188,26 @@ def main(argv: list[str] | None = None) -> int:
     }
     canon = None
     design_ran = False
+
+    # Draft-only paired runs share a frozen canon and design directory; copy
+    # the canon into each run so audit and provenance are self-contained.
+    if args.stage == "draft" and args.canon:
+        try:
+            canon = load_canon(args.canon)
+            source_canon = Path(args.canon)
+            shutil.copytree(source_canon, ledger.path / "canon")
+        except (CanonError, OSError) as exc:
+            print(f"error: cannot reuse canon: {exc}", file=sys.stderr)
+            return 2
+        summary["draft_condition"] = {
+            "plot_memos": not args.no_plot_memos,
+            "canon_source": str(source_canon),
+            "design_source": str(Path(args.design_dir)) if args.design_dir else None,
+            "canon_files_sha256": _sha256_tree(source_canon),
+            "design_files_sha256": _sha256_tree(Path(args.design_dir))
+            if args.design_dir else None,
+        }
+        design_ran = bool(args.design_dir)
 
     # -- plan -------------------------------------------------------------
     if args.system != "s0" and args.stage in {"plan", "all"}:
@@ -218,7 +281,9 @@ def main(argv: list[str] | None = None) -> int:
             draft = build_story(
                 task, provider, ledger, canon=canon, chapters=tasks.chapters,
                 temperature=temperature, seed=args.seed,
-                design_dir=(ledger.path / "design") if design_ran else None,
+                design_dir=(Path(args.design_dir) if args.design_dir else
+                            (ledger.path / "design") if design_ran else None),
+                include_plot_memos=not args.no_plot_memos,
             )
         except DraftError as exc:
             print(f"error: {exc}", file=sys.stderr)

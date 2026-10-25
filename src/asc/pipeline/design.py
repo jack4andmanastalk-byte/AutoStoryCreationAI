@@ -523,9 +523,12 @@ def _plot_notes_for_chapter(design_dir: Path, chapter_id: str,
 
 
 def design_notes_for_chapter(design_dir: str | Path | None,
-                             chapter_id: str, canon: Canon | None = None) -> str:
+                             chapter_id: str, canon: Canon | None = None, *,
+                             include_plot_memos: bool = True) -> str:
     """Checked plot, scene and voice notes for one chapter's draft prompt.
 
+    ``include_plot_memos=False`` is a narrow ablation: it omits only the
+    chapter-local checked plot lines, retaining the same scene and voice notes.
     Returns a compact block, or a marker recording that no design was used —
     the prompt then says so explicitly, which keeps ablations honest.
     """
@@ -534,7 +537,8 @@ def design_notes_for_chapter(design_dir: str | Path | None,
     design_dir = Path(design_dir)
     scenes_path = design_dir / "scene.json"
     voice_path = design_dir / "voice.json"
-    lines = _plot_notes_for_chapter(design_dir, chapter_id, canon)
+    lines = (_plot_notes_for_chapter(design_dir, chapter_id, canon)
+             if include_plot_memos else [])
     if not scenes_path.is_file() and not voice_path.is_file() and not lines:
         return "（設計メモなし）"
     if scenes_path.is_file():
