@@ -454,6 +454,7 @@ class ProjectStore:
         self, project_id: str, spec: WorkSpec, *, parent_node_id: str | None = None,
         order: int | None = None, child_node_id: str | None = None,
         link_id: str | None = None, max_depth: int = MAX_NESTING_DEPTH,
+        derived: dict[str, Any] | None = None,
     ) -> WorkLink:
         """Create one independent child below any node within the depth limit."""
         validate_spec(spec.to_dict())
@@ -484,7 +485,7 @@ class ProjectStore:
             timestamp = utc_now()
             revision = WorkNodeRevision.create(
                 revision_id=new_id("rev"), node_id=child_id, project_id=project_id,
-                spec=spec, created_at=timestamp,
+                spec=spec, created_at=timestamp, derived=derived,
             )
             child = WorkNode(
                 id=child_id, project_id=project_id, parent_id=parent_id,
@@ -935,9 +936,11 @@ class ProjectStore:
                     "parent_runs": dict(sorted(item.parent_runs.items())),
                     "spec_sha256": item.spec_sha256,
                     "chapter_count": item.spec.chapter_count,
+                    "derived": item.derived,
                 }
                 for item in revision_records
             ],
+            "derived": revision.derived,
             "spec_sha256": revision.spec_sha256,
             "spec": revision.spec.to_dict(),
             "created_at": project.created_at,

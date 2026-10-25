@@ -21,7 +21,9 @@ records for generation and compiles chronicle/gazetteer/culture/collection views
 ``doctor`` inspects project, revision, world, and artifact integrity together
 with pending/stale references, and ``context show`` prints the current or a
 recorded ContextPacket.  Both are read-only: they never generate, resume, or
-adopt.
+adopt.  ``revise`` makes a new revision of a finished work and ``branch`` makes
+a new node from it; both regenerate only the chapters and design documents
+named on the command line and copy the rest byte-for-byte.
 """
 from __future__ import annotations
 
@@ -126,6 +128,64 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     continuation.add_argument("--seed", type=int, default=0)
     continuation.add_argument("--temperature", type=float)
     continuation.add_argument("--json", dest="json_output", action="store_true")
+
+    def _derived_arguments(parser) -> None:
+        parser.add_argument(
+            "--chapter", dest="chapters", action="append", default=[],
+            metavar="ID", help="chapter to regenerate (repeatable)",
+        )
+        parser.add_argument(
+            "--design", dest="design", action="append", default=[],
+            metavar="DOC", help="design document to regenerate (repeatable)",
+        )
+        parser.add_argument("--title")
+        parser.add_argument("--premise")
+        parser.add_argument("--target-chars", type=int)
+        parser.add_argument(
+            "--world-binding",
+            help="explicitly copy this source-revision world binding to the new revision",
+        )
+        parser.add_argument(
+            "--provider", choices=["scripted", "command"], default=None,
+            help="model provider; omit when nothing is regenerated",
+        )
+        parser.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+        parser.add_argument("--command", dest="provider_command", help="external provider command")
+        parser.add_argument("--model")
+        parser.add_argument("--seed", type=int, default=0)
+        parser.add_argument("--temperature", type=float)
+        parser.add_argument("--json", dest="json_output", action="store_true")
+
+    revise = subparsers.add_parser(
+        "revise",
+        help="create a new revision and regenerate only the selected chapters/design",
+    )
+    revise.add_argument("project_id")
+    revise.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
+    revise.add_argument(
+        "--revision", dest="source_revision", help="source revision (default: current)",
+    )
+    _derived_arguments(revise)
+
+    branch = subparsers.add_parser(
+        "branch", help="create a new node from a revision, regenerating only the selected parts",
+    )
+    branch.add_argument("project_id")
+    branch.add_argument(
+        "--from-node", dest="from_node", help="source node ID (default: root)",
+    )
+    branch.add_argument(
+        "--from-revision", dest="source_revision",
+        help="source revision (default: the source node's current revision)",
+    )
+    branch.add_argument(
+        "--parent-node", dest="parent_node_id",
+        help="parent of the new node (default: the source node's parent)",
+    )
+    branch.add_argument("--node-id", dest="child_node_id", help="stable new node ID")
+    branch.add_argument("--link-id", help="stable new link ID")
+    branch.add_argument("--order", type=int, help="positive output order; default: append")
+    _derived_arguments(branch)
 
     resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
     resume.add_argument("project_id")
@@ -293,7 +353,23 @@ def _work_options(args: argparse.Namespace) -> dict:
     return {"context_knowledge": {"character_id": args.knowledge_character}}
 
 
-def _make_provider(args: argparse.Namespace):
+class _UnusedProvider:
+    """A provider for operations that regenerate nothing at all."""
+
+    name = "none"
+    model = None
+    model_version = None
+
+    def generate(self, request):  # pragma: no cover - guarded by the CLI
+        raise ProviderError(
+            "this operation needs a model: name a chapter or design document "
+            "and pass --provider"
+        )
+
+
+def _make_provider(args: argparse.Namespace, *, allow_none: bool = False):
+    if allow_none and args.provider is None:
+        return _UnusedProvider()
     if args.provider == "scripted":
         if not args.script:
             raise ProviderError("--provider scripted requires --script")
@@ -714,6 +790,71 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(status, ensure_ascii=False, sort_keys=True))
             else:
                 _print_human(status, created=False)
+            return 0
+
+        if args.command in {"revise", "branch"}:
+            regenerate = bool(args.chapters or args.design)
+            if regenerate and args.provider is None:
+                raise ProviderError(
+                    f"{args.command} regenerates {', '.join(args.chapters + args.design)}; "
+                    "pass --provider scripted --script ... or --provider command --command ..."
+                )
+            provider = _make_provider(args, allow_none=True)
+            runner = ProjectRunner(store)
+            if args.command == "revise":
+                result = runner.revise(
+                    args.project_id, provider,
+                    node_id=args.node_id,
+                    source_revision_id=args.source_revision,
+                    chapters=tuple(args.chapters),
+                    design=tuple(args.design),
+                    title=args.title, premise=args.premise,
+                    target_chars_per_chapter=args.target_chars,
+                    world_binding_id=args.world_binding,
+                    seed=args.seed, temperature=args.temperature,
+                )
+            else:
+                source_node = store.load_node_snapshot(
+                    args.project_id, args.from_node,
+                ).root_node
+                parent = args.parent_node_id
+                if parent is None:
+                    parent = source_node.parent_id
+                result = runner.branch(
+                    args.project_id, provider,
+                    child_node_id=args.child_node_id, link_id=args.link_id,
+                    source_node_id=args.from_node,
+                    source_revision_id=args.source_revision,
+                    parent_node_id=parent, order=args.order,
+                    chapters=tuple(args.chapters),
+                    design=tuple(args.design),
+                    title=args.title, premise=args.premise,
+                    target_chars_per_chapter=args.target_chars,
+                    world_binding_id=args.world_binding,
+                    seed=args.seed, temperature=args.temperature,
+                )
+            status = dict(result.status)
+            status["attempt_id"] = result.attempt_id
+            if args.json_output:
+                print(json.dumps(status, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_human(status, created=False)
+                derived = status.get("derived") or {}
+                if derived:
+                    print(
+                        f"{derived['kind']} of {derived['source_revision_id']}"
+                        f" (node {derived['source_node_id']})"
+                    )
+                    print(
+                        "Regenerated chapters: "
+                        + (", ".join(derived.get("chapters") or []) or "none")
+                    )
+                    print(
+                        "Regenerated design: "
+                        + (", ".join(derived.get("design") or []) or "none")
+                    )
+                    if not regenerate:
+                        print("Provider calls: none (the revision was copied in full)")
             return 0
 
         if args.command == "doctor":

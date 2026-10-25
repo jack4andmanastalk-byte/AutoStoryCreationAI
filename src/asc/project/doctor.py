@@ -258,6 +258,7 @@ class ProjectDoctor:
                 )
                 continue
             for revision in revisions:
+                self._inspect_derived(project_id, node.id, revision)
                 for artifact in revision.artifacts:
                     problem = self._artifact_problem(project_id, artifact)
                     if problem is not None:
@@ -272,6 +273,39 @@ class ProjectDoctor:
                             },
                         )
         self._check("revisions", before)
+
+    def _inspect_derived(self, project_id: str, node_id: str, revision: Any) -> None:
+        """Check that a revised/branched revision still points at its source."""
+        derived = revision.derived
+        if not derived:
+            return
+        try:
+            self.store.load_revision(
+                project_id, derived["source_node_id"], derived["source_revision_id"],
+            )
+        except (ProjectError, OSError, ValueError) as exc:
+            self._add(
+                "revision.derived_source_missing", ERROR,
+                f"{derived['kind']} source revision is unreadable: "
+                f"{derived['source_revision_id']}",
+                "revision", node_id=node_id,
+                details={
+                    "revision_id": revision.id,
+                    "source_node_id": derived["source_node_id"],
+                    "source_revision_id": derived["source_revision_id"],
+                    "error": str(exc),
+                },
+            )
+        runs = derived.get("source_runs") or {}
+        for stage, run_id in sorted(runs.items()):
+            directory = self.store.project_dir(project_id) / "runs" / run_id
+            if not (directory / "manifest.json").is_file():
+                self._add(
+                    "revision.derived_run_missing", ERROR,
+                    f"{derived['kind']} source run for {stage} is missing: {run_id}",
+                    "revision", node_id=node_id,
+                    details={"revision_id": revision.id, "stage": stage, "run_id": run_id},
+                )
 
     def _inspect_checkpoints(self, project_id: str, nodes: list[Any]) -> None:
         before = len(self._findings)

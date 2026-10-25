@@ -27,6 +27,13 @@ STAGE_STATUSES = {
     "stale", "skipped",
 }
 
+#: Kinds of revision derived from earlier content instead of a fresh run.
+DERIVED_KINDS = {"revise", "branch"}
+DERIVED_FIELDS = {
+    "kind", "source_node_id", "source_revision_id", "source_runs",
+    "chapters", "design",
+}
+
 _ID_RE = re.compile(r"[a-z0-9][a-z0-9._-]{0,62}")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
 
@@ -178,6 +185,8 @@ def validate_revision(data: Any) -> None:
         raise ProjectValidationError("revision.spec_sha256 must be 64 lowercase hex characters")
     if recorded_hash != spec_sha256(spec):
         raise ProjectValidationError("revision.spec_sha256 does not match revision.spec")
+    if data.get("derived") is not None:
+        validate_derived(data["derived"], "revision.derived")
     artifacts = data.get("artifacts")
     if not isinstance(artifacts, list):
         raise ProjectValidationError("revision.artifacts must be a list")
@@ -193,6 +202,43 @@ def validate_revision(data: Any) -> None:
             raise ProjectValidationError(f"duplicate artifact path: {path}")
         artifact_ids.add(artifact_id)
         artifact_paths.add(path)
+
+
+def validate_derived(data: Any, field: str = "derived") -> dict[str, Any]:
+    """Validate the provenance of a revision carried over from older content.
+
+    A ``revise`` keeps the same node and names the revision it was derived from
+    as ``parent_revision_id``.  A ``branch`` starts a new node, so it records
+    the source node and revision here instead.  Both list the chapters and
+    design documents that may be regenerated; everything else is carried
+    byte-for-byte from the source runs.
+    """
+    data = _mapping(data, field)
+    unknown = sorted(set(data) - DERIVED_FIELDS)
+    if unknown:
+        raise ProjectValidationError(f"{field} has unknown fields: {', '.join(unknown)}")
+    kind = _nonempty(data.get("kind"), f"{field}.kind")
+    if kind not in DERIVED_KINDS:
+        raise ProjectValidationError(
+            f"{field}.kind must be one of {', '.join(sorted(DERIVED_KINDS))}"
+        )
+    validate_id(data.get("source_node_id"), f"{field}.source_node_id")
+    validate_id(data.get("source_revision_id"), f"{field}.source_revision_id")
+    runs = _mapping(data.get("source_runs") or {}, f"{field}.source_runs")
+    for stage, run_id in runs.items():
+        validate_id(stage, f"{field}.source_runs stage")
+        validate_id(run_id, f"{field}.source_runs.{stage}")
+    for key in ("chapters", "design"):
+        values = data.get(key) or []
+        if not isinstance(values, list):
+            raise ProjectValidationError(f"{field}.{key} must be a list")
+        seen: set[str] = set()
+        for index, value in enumerate(values):
+            validate_id(value, f"{field}.{key}[{index}]")
+            if value in seen:
+                raise ProjectValidationError(f"{field}.{key} repeats {value}")
+            seen.add(value)
+    return data
 
 
 def validate_link(data: Any) -> None:

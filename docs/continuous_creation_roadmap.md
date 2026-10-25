@@ -400,7 +400,14 @@ CLIにないこと、`content_version`を持たない世界recordの改変を検
 ContextPacketと参照ID/content versionを確認できる。同じ小規模projectで運用手順を再現し、
 発見した問題を品質評価と混同せず次の実装対象へ分類できる。
 
-### PR 10: 章単位の改訂・分岐workflow（次の本体候補・未実装）
+### PR 10: 章単位の改訂・分岐workflow（実装済み）
+
+`runner.revise` / `runner.branch` と `revise.py` で、完成した任意revisionから新しいrevision
+（または新しいnode）を作る。指定した章と設計資料だけを生成し直し、それ以外は元runから
+byte単位でコピーする。planと未指定のdesign資料はproviderを呼ばないcarried stageとして
+新しいrunに記録し、`revise.json` にコピー元hashと再生成対象を残す。改訂章のpromptには
+「改訂する章／本文を保持する章」を明示し、旧本文は渡さない。中断した改訂は`resume`でき、
+親のpinned出力は`adopt-child`まで変わらない。世界bindingは`--world-binding`指定時だけ複製する。
 
 - 完成した任意revisionから`revise`で新版を作り、指定した章・設計だけを再生成する。
 - 変更しない章とartifactはbyte-identicalに引き継ぎ、旧run・旧版を上書きしない。
@@ -411,8 +418,16 @@ ContextPacketと参照ID/content versionを確認できる。同じ小規模proj
 **完了条件**: 旧版の任意revisionから分岐し、選択した章だけを改訂しても、旧版と未選択章の
 bytesが変わらない。中断再開とbundle復元ができ、親のpinned出力はadoptまで変わらない。
 
+確認: `tests/test_project_revise.py` と `tests/test_project_branch.py` が、未選択章と
+旧revision・旧runのbytes一致、旧revisionからの改訂、設計資料だけの再生成、中断→resume、
+改訂後のcontinuation、bindingの明示複製、bundle復元後の`doctor`一致を検査する。
+CLIでは同じprojectで、子作品の第2章だけをoperatorが改訂し、`compose`がadoptまで
+byte-identicalであること、分岐がprovider呼び出し0回で作れることを確認した。
+
 ### その後の候補
 
+- `failed` stageの再試行（`resume`の受付状態拡張）と、`doctor` のfindingからの復旧手順の提示。
+- 編纂view・ContextPacketのrecord単位差分（`diff`）と、`status` / `doctor` の情報統合。
 - 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
 - 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
 - 上記の実装・運用で繰り返し現れる共通形が見えた場合だけX-01へ進む。

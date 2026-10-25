@@ -24,6 +24,7 @@ from .schema import (
     spec_sha256 as hash_spec,
     validate_artifact,
     validate_checkpoint,
+    validate_derived,
     validate_link,
     validate_node,
     validate_project,
@@ -195,6 +196,8 @@ class WorkNodeRevision:
     parent_revision_id: str | None = None
     artifacts: tuple[ArtifactRef, ...] = ()
     parent_runs: dict[str, str] = field(default_factory=dict)
+    #: Set when the revision carries an older revision's content forward.
+    derived: dict[str, Any] | None = None
 
     @classmethod
     def create(
@@ -208,8 +211,9 @@ class WorkNodeRevision:
         parent_revision_id: str | None = None,
         artifacts: tuple[ArtifactRef, ...] = (),
         parent_runs: dict[str, str] | None = None,
+        derived: dict[str, Any] | None = None,
     ) -> "WorkNodeRevision":
-        return cls(
+        revision = cls(
             id=revision_id,
             node_id=node_id,
             project_id=project_id,
@@ -219,7 +223,10 @@ class WorkNodeRevision:
             parent_revision_id=parent_revision_id,
             artifacts=artifacts,
             parent_runs=dict(parent_runs or {}),
+            derived=dict(derived) if derived is not None else None,
         )
+        validate_revision(revision.to_dict())
+        return revision
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -233,6 +240,7 @@ class WorkNodeRevision:
             "spec": self.spec.to_dict(),
             "spec_sha256": self.spec_sha256,
             "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+            "derived": self.derived,
             "created_at": self.created_at,
         }
 
@@ -248,6 +256,7 @@ class WorkNodeRevision:
             spec_sha256=data["spec_sha256"],
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
             parent_runs=dict(data.get("parent_runs") or {}),
+            derived=dict(data["derived"]) if data.get("derived") is not None else None,
             created_at=data["created_at"],
         )
 

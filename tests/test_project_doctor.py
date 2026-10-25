@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -337,6 +338,42 @@ def test_stale_canon_and_non_current_binding_are_reported(tmp_path: Path):
     assert "world.canon_stale" in codes
     assert report.stale["canon"][0]["source_revision_id"] == child.child_revision_id
     assert report.stale["canon"][0]["current_source_revision_id"] != child.child_revision_id
+
+
+def test_derived_revision_is_healthy_and_a_missing_source_run_is_an_error(
+    tmp_path: Path,
+):
+    store = ProjectStore(tmp_path)
+    root, child, _ = make_family(store)
+    run_node(store, root.project.id, child.child_node_id)
+    ProjectRunner(store).revise(
+        root.project.id, ScriptedProvider(project_responses()),
+        node_id=child.child_node_id, chapters=("ch02",),
+    )
+    report = inspect_project(store, root.project.id)
+    assert report.ok is True
+    # The revise makes the parent's link stale until it is explicitly adopted.
+    assert {finding.code for finding in report.findings} == {"link.stale"}
+    store.adopt_child(root.project.id, child.id)
+    assert inspect_project(store, root.project.id).findings == ()
+    revision = store.load_revision(
+        root.project.id, child.child_node_id,
+        store.status(root.project.id, child.child_node_id)["current_revision_id"],
+    )
+    assert revision.derived is not None
+
+    source_run = revision.derived["source_runs"]["draft"]
+    shutil.rmtree(store.project_dir(root.project.id) / "runs" / source_run)
+    broken = inspect_project(store, root.project.id)
+    assert broken.ok is False
+    codes = {finding.code for finding in broken.findings}
+    assert "revision.derived_run_missing" in codes
+    finding = next(
+        item for item in broken.findings
+        if item.code == "revision.derived_run_missing"
+    )
+    assert finding.details["stage"] == "draft"
+    assert finding.details["run_id"] == source_run
 
 
 def test_doctor_cli_json_and_exit_codes(tmp_path: Path):

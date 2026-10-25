@@ -209,7 +209,16 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
                 max_tokens: int = 2500, seed: int = 0,
                 max_attempts: int = 2,
                 design_dir: str | Path | None = None,
-                initial_drafts: tuple[ChapterDraft, ...] = ()) -> Draft:
+                initial_drafts: tuple[ChapterDraft, ...] = (),
+                preserve: tuple[ChapterDraft, ...] = ()) -> Draft:
+    """Draft the chapters that are not already final.
+
+    ``initial_drafts`` is the continuation prefix: chapters copied from the
+    previous revision.  ``preserve`` is a set of chapters that must stay as
+    they are, at any position (a revision regenerates selected chapters only).
+    Preserved chapters are written back verbatim; regenerated ones are placed
+    in canon order between them.
+    """
     template = load_prompt("draft-chapter" if canon is not None else "draft-baseline",
                            prompt_dir)
     ledger.prompt_hashes[template.name] = template.digest
@@ -221,10 +230,31 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
     expected_initial = [chapter["id"] for chapter in plan[:len(drafts)]]
     if [chapter.id for chapter in drafts] != expected_initial:
         raise DraftError("initial chapters are not the prefix of the new canon")
+    kept = {chapter.id: chapter for chapter in preserve}
+    if len(kept) != len(preserve):
+        raise DraftError("preserved chapters repeat an id")
+    known = [chapter["id"] for chapter in plan]
+    unknown = sorted(set(kept) - set(known))
+    if unknown:
+        raise DraftError(f"preserved chapters are not in the canon: {', '.join(unknown)}")
+    overlap = sorted(set(kept) & {chapter.id for chapter in drafts})
+    if overlap:
+        raise DraftError(
+            f"chapters cannot be both initial and preserved: {', '.join(overlap)}"
+        )
     warnings: list[str] = []
     prior = drafts[-1].text[-400:] if drafts else ""
     for index, chapter in enumerate(plan, start=1):
         if index <= len(drafts):
+            continue
+        if chapter["id"] in kept:
+            preserved = kept[chapter["id"]]
+            drafts.append(ChapterDraft(
+                id=preserved.id, text=preserved.text, day=preserved.day,
+                location=preserved.location, injected=preserved.injected,
+                preserve_text=True,
+            ))
+            prior = preserved.text[-400:]
             continue
         last_problems: list[str] = []
         produced: ChapterDraft | None = None
@@ -279,6 +309,8 @@ def build_story(task: Task, provider: Provider, ledger: RunLedger, *,
         drafts.append(produced)
         prior = produced.text[-400:]
 
+    if [chapter.id for chapter in drafts] != known:
+        raise DraftError("drafted chapters are not in canon order")
     draft = Draft(task=task, chapters=tuple(drafts), warnings=tuple(warnings))
     draft.write_text_dir(ledger.path / "text")
     ledger.track([f"text/{chapter.id}.md" for chapter in draft.chapters])
