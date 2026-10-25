@@ -3,10 +3,11 @@
 `story_project.py` は、固定されたprotocol-v1 taskとは別に、任意のpremiseを持つ
 創作projectを永続化するための入口です。現在のschema versionは **1** です。
 
-現在は、projectの **作成・単一作品のS1生成・中断再開・continuation・replay bundle・
-operator pending確認・状態確認** ができます。S1生成はplan → design → draftのvertical sliceで、
-S2/S3改稿や品質監査は通りません。入れ子作品は後のincrementです。既存の `run_pipeline.py` と
-厳密replayの後方互換性は維持しています。
+現在は、projectの **作成・単一/深さ1入れ子作品のS1生成・中断再開・continuation・
+replay bundle・編纂出力・operator pending確認・状態確認** ができます。S1生成は
+plan → design → draftのvertical sliceで、S2/S3改稿や品質監査は通りません。
+多段入れ子と世界modelは後のincrementです。既存の `run_pipeline.py` と厳密replayの
+後方互換性は維持しています。
 
 ## 作成
 
@@ -133,10 +134,54 @@ python3 scripts/story_project.py resume prj-seaside \
   --provider command --command "<provider command>"
 ```
 
+## 深さ1の入れ子作品
+
+root作品の直下に、独立した子nodeを複数配置できます。子は自分のrevision・canon・
+checkpoint・runを持ち、親のcanonや本文を暗黙に継承しません。`--order`は結合時の順序で、
+同じ親の中で一意な正の整数です。
+
+```bash
+python3 scripts/story_project.py add-child prj-seaside \
+  --node-id node-tide-side --title "潮の側話" \
+  --premise "本編の港で起きた別の出来事。" --order 1 --json
+python3 scripts/story_project.py run prj-seaside --node node-tide-side \
+  --provider command --command "<provider command>"
+```
+
+`run`・`resume`・`continue`・`status`・`pending`は `--node` で子を選択します。
+省略時はrootです。rootの`status`には`children`と`links`が出て、子のstateやpinned revisionを
+個別に確認できます。rootの`pending`には子の未回答もnode ID付きで集約されます。
+
+各linkは子の`child_revision_id`・`order`・draft `ArtifactRef`・`content_version`を保持し、
+子本文そのものは保存しません。子をcontinuationするとcurrent revisionだけが進み、linkは
+`stale: true`になります。旧いpinned出力を自動で書き換えず、完了した新版を明示的に採用します。
+
+```bash
+python3 scripts/story_project.py continue prj-seaside --node node-tide-side \
+  --add-chapters 1 --provider command --command "<provider command>"
+python3 scripts/story_project.py status prj-seaside --json
+python3 scripts/story_project.py adopt-child prj-seaside LINK_ID --json
+```
+
+単一nodeの出力と、root＋子の結合出力は別の操作です。`render`は選択nodeの現在の完了draft、
+`compose`はrootの完了draftと全linkのpinned draftを順序どおりに編纂します。
+
+```bash
+python3 scripts/story_project.py render prj-seaside --node node-tide-side --out /external/child.md
+python3 scripts/story_project.py compose prj-seaside --out /external/combined.md
+```
+
+結合結果は`artifacts/<root-node>/combined-<version>.md`と同名のJSON manifestにも保存します。
+versionは親revisionとpinned link/artifactから決まり、時刻や子のcurrent revisionでは変わりません。
+したがって、子がstaleになった後もadopt前の`compose`は同じbytesを再現します。adopt後の
+`compose`だけが新しいversionを追加し、旧い結合artifactも残ります。PR 5ではroot直下の深さ1だけを
+許可し、孫nodeや親関係の後付け変更を拒否します。
+
 ## replay bundleの外部保存
 
-project metadata、全revision、checkpoint、全runのmanifest・prompt/response・生成artifactを
-一つの外部directoryへexportできます。lockと一時fileだけを除外し、創作資料はGitへ入れません。
+project metadata、全node/revision/link、checkpoint、全runのmanifest・prompt/response・
+生成artifact・結合artifactを一つの外部directoryへexportできます。lockと一時fileだけを除外し、
+創作資料はGitへ入れません。
 
 ```bash
 python3 scripts/story_project.py bundle export prj-seaside \
@@ -165,8 +210,10 @@ WorkSpec、設定SHA-256を返します。初期状態は `not_started` で、
 `complete` になります。`attempt_id` は最新のcheckpointが属するattempt、
 `attempt_ids` は同一revisionに関わった全attemptです。`revision_ids` / `revisions` には
 旧版を含む版履歴、currentの `parent_revision_id` / `parent_runs` にはcontinuationの参照が入ります。
-`artifact_refs` から、現在の章本文と設計資料を内容hash付きで辿れます。`pending` には、
-待機中のrequest key、project/node/stage、request/response path、response fileの有無が集約されます。
+`artifact_refs` から、現在の章本文と設計資料を内容hash付きで辿れます。`--node`を指定すると
+その子の`revision_ids`・`runs`・`checkpoints`だけを返します。rootの`links`には
+`pending/ready/stale`の状態とcurrent child revisionが入ります。`pending` には、待機中のrequest key、
+project/node/stage、request/response path、response fileの有無が集約されます。
 
 既定の保存先は `runs/projects/` です。testや外部保存では、**subcommandの前**に
 `--root` を指定できます。
@@ -183,8 +230,9 @@ runs/projects/<project_id>/
 ├── nodes/<node_id>/
 │   ├── current.json
 │   ├── revisions/<revision_id>.json
-│   └── checkpoints/<stage>.json
-├── artifacts/
+│   ├── checkpoints/<stage>.json
+│   └── links/<link_id>.json        # rootの子へのpinned参照
+├── artifacts/<node_id>/combined-<version>.md
 └── runs/<attempt-id>-<stage>/
 ```
 
@@ -193,9 +241,11 @@ runs/projects/<project_id>/
 - `<revision_id>.json`: 完全なWorkSpec、そのSHA-256、版付きartifact参照。continuation版は
   `parent_revision_id` と親stageの `parent_runs` も持ち、旧recordは追記・上書きしない。
 - `checkpoints/<stage>.json`: current revisionのstage状態、attempt、run、版付きartifact参照。
+- `links/<link_id>.json`: rootから子への順序・pinned revision・content version・draft artifact参照。
+  子の本文は含めず、新版の採用は`adopt-child`だけが変更する。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json` もあり、旧runは別directoryに残る。
-- `artifacts/`: 後の編纂出力などのための領域。S1の生成物は各runから直接参照します。
+- `artifacts/`: node別の結合markdownとmanifest。S1の個別生成物は各runから直接参照します。
 
 project・node・revisionには、それぞれ `record_type` と `schema_version` があります。
 WorkSpecの一部だけを変更して古いhashを残したrecordは読み込み時に拒否します。
@@ -217,6 +267,10 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 - continuationは完了版から新版を追加し、旧revision・旧run・旧章の内容を変更しない。
   新版のdraftでは旧章をコピーし、追加章だけをproviderへ要求する。
 - replay bundleは全payloadをhashで検査し、restore時の上書きを拒否する。
+- 子nodeは独立したrevision/checkpoint/runを持ち、親linkはpinned artifactだけを保持する。
+  子のcurrent revisionとlinkが違う場合はstaleとして表示し、自動採用しない。
+- 結合versionには時刻を含めず、同じ親revisionとpinned内容から同じ結合bytesを再現する。
+- PR 5の親子関係はroot直下の深さ1に限定し、親関係の変更と孫nodeを拒否する。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
 これは破損や意図しない不整合を検出する仕組みであり、悪意ある改ざんに対する
@@ -224,5 +278,5 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 5で、独立した子作品を親作品へ版付きで配置する深さ1の入れ子作品を実装します。
-continuation・resume・厳密replayは別機能のまま維持します。
+PR 6で、孫作品・循環検出・深さ制限・依存順実行を追加します。PR 5のpinned linkと
+編纂viewを保ちながら、多段の文脈選択を別層として実装します。

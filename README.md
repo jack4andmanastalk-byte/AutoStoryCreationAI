@@ -166,7 +166,7 @@ gh release download datasets-narou-commercialized
 | [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
 | [`docs/replay.md`](docs/replay.md) | 記録済み応答を外部providerなしで再実行し、prompt・response・成果物の一致を監査する方法 |
 | [`docs/continuous_creation_roadmap.md`](docs/continuous_creation_roadmap.md) | 単一作品の再開から、続編・入れ子作品・世界スケール親作品までの設計と実装順序 |
-| [`docs/project.md`](docs/project.md) | 任意premiseの創作projectを作成し、S1のplan/design/draftを実行・中断再開・continuation・外部replay bundleのexport/verify/restore・永続化する方法 |
+| [`docs/project.md`](docs/project.md) | 任意premiseの創作projectを作成し、S1のplan/design/draftを実行・中断再開・continuation・深さ1入れ子作品のpinned編纂・外部replay bundleのexport/verify/restore・永続化する方法 |
 | [`docs/ci.md`](docs/ci.md) | CI の実行枠設計（なぜ CI が待たされていたか、どう直したか） |
 
 ```bash

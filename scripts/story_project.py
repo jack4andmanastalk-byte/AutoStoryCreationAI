@@ -12,7 +12,9 @@ subcommand to select another store.  ``run`` executes the single-work S1
 vertical slice, and ``resume`` continues an interrupted revision without
 regenerating its completed response prefix.  ``continue`` creates a new
 revision for a completed work, and ``bundle export|verify|restore`` moves its
-replay materials to an external directory. Nested works are a later increment.
+replay materials to an external directory.  ``add-child`` creates a depth-one
+child with its own node state; ``render`` and ``compose`` provide single-work
+and pinned combined outputs.
 """
 from __future__ import annotations
 
@@ -28,6 +30,7 @@ from asc.pipeline import (  # noqa: E402
     CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
 )
 from asc.project import (  # noqa: E402
+    ProjectComposer,
     ProjectError,
     ReplayBundle,
     ProjectRunError,
@@ -63,6 +66,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     run = subparsers.add_parser("run", help="run plan, design, and draft for a new revision")
     run.add_argument("project_id")
+    run.add_argument("--node", dest="node_id", help="child node ID (default: root)")
     run.add_argument("--provider", choices=["scripted", "command"], default="command")
     run.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     run.add_argument("--command", dest="provider_command", help="external provider command")
@@ -75,6 +79,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "continue", help="create a new revision with additional chapters",
     )
     continuation.add_argument("project_id")
+    continuation.add_argument("--node", dest="node_id", help="child node ID (default: root)")
     chapter_change = continuation.add_mutually_exclusive_group()
     chapter_change.add_argument("--add-chapters", type=int)
     chapter_change.add_argument("--chapters", type=int, help="new total chapter count")
@@ -90,14 +95,52 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
     resume.add_argument("project_id")
+    resume.add_argument("--node", dest="node_id", help="child node ID (default: root)")
     resume.add_argument("--provider", choices=["scripted", "command"], default="command")
     resume.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     resume.add_argument("--command", dest="provider_command", help="external provider command")
     resume.add_argument("--model")
     resume.add_argument("--json", dest="json_output", action="store_true")
 
+    child = subparsers.add_parser("add-child", help="add a depth-one independent child work")
+    child.add_argument("project_id")
+    child.add_argument("--parent-node", dest="parent_node_id", help="root node (default)")
+    child.add_argument("--node-id", dest="child_node_id", help="optional stable child node ID")
+    child.add_argument("--link-id", help="optional stable link ID")
+    child.add_argument("--order", type=int, help="positive output order; default: append")
+    child.add_argument("--title", required=True)
+    child_premise = child.add_mutually_exclusive_group(required=True)
+    child_premise.add_argument("--premise")
+    child_premise.add_argument("--premise-file")
+    child.add_argument("--language", default="ja")
+    child.add_argument("--chapters", type=int, default=3)
+    child.add_argument("--target-chars", type=int, default=1600)
+    child.add_argument("--form", default="novel")
+    child.add_argument("--json", dest="json_output", action="store_true")
+
+    adopt = subparsers.add_parser(
+        "adopt-child", help="explicitly adopt a child's current completed revision",
+    )
+    adopt.add_argument("project_id")
+    adopt.add_argument("link_id")
+    adopt.add_argument("--json", dest="json_output", action="store_true")
+
+    render = subparsers.add_parser("render", help="render one node's current completed draft")
+    render.add_argument("project_id")
+    render.add_argument("--node", dest="node_id", help="child node ID (default: root)")
+    render.add_argument("--out", help="optional external UTF-8 markdown output")
+    render.add_argument("--json", dest="json_output", action="store_true")
+
+    compose = subparsers.add_parser(
+        "compose", help="compile the root and its pinned child revisions",
+    )
+    compose.add_argument("project_id")
+    compose.add_argument("--out", help="optional additional external UTF-8 markdown output")
+    compose.add_argument("--json", dest="json_output", action="store_true")
+
     pending = subparsers.add_parser("pending", help="list operator responses still needed")
     pending.add_argument("project_id")
+    pending.add_argument("--node", dest="node_id", help="child node ID (default: root and its children)")
     pending.add_argument("--json", dest="json_output", action="store_true")
 
     bundle = subparsers.add_parser("bundle", help="export, verify, or restore replay sources")
@@ -115,6 +158,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
+    status.add_argument("--node", dest="node_id", help="child node ID (default: root)")
     status.add_argument("--json", dest="json_output", action="store_true")
     return parser.parse_args(argv)
 
@@ -137,6 +181,7 @@ def _print_human(status: dict, *, created: bool) -> None:
     print(f"Title: {status['title']}")
     print(f"State: {status['state']}")
     print(f"Root node: {status['root_node_id']}")
+    print(f"Selected node: {status.get('node_id', status['root_node_id'])}")
     print(f"Current revision: {status['current_revision_id']}")
     print(f"Spec SHA-256: {status['spec_sha256']}")
     stages = ", ".join(f"{name}={value}" for name, value in status["stages"].items())
@@ -148,6 +193,9 @@ def _print_human(status: dict, *, created: bool) -> None:
     if status.get("attempt_id"):
         print(f"Attempt: {status['attempt_id']}")
     print(f"Pending responses: {len(status.get('pending', []))}")
+    if status.get("links"):
+        stale = sum(1 for link in status["links"] if link["stale"])
+        print(f"Child links: {len(status['links'])}; stale: {stale}")
     print(f"Directory: {status['project_dir']}")
 
 
@@ -201,23 +249,88 @@ def main(argv: list[str] | None = None) -> int:
                 _print_human(status, created=True)
             return 0
 
+        if args.command == "add-child":
+            premise = args.premise
+            if args.premise_file:
+                premise = Path(args.premise_file).read_text(encoding="utf-8")
+            link = store.create_child(
+                args.project_id,
+                WorkSpec(
+                    title=args.title, premise=premise, language=args.language,
+                    chapter_count=args.chapters,
+                    target_chars_per_chapter=args.target_chars, form=args.form,
+                ),
+                parent_node_id=args.parent_node_id, order=args.order,
+                child_node_id=args.child_node_id, link_id=args.link_id,
+            )
+            report = {
+                "project_id": args.project_id,
+                "link": link.to_dict(),
+                "child": store.status(args.project_id, link.child_node_id),
+                "parent": store.status(args.project_id),
+            }
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                print(f"Child node: {link.child_node_id}")
+                print(f"Link: {link.id}; order: {link.order}")
+                print(f"Pinned revision: {link.child_revision_id}")
+            return 0
+
+        if args.command == "adopt-child":
+            link = store.adopt_child(args.project_id, args.link_id)
+            report = {
+                "project_id": args.project_id,
+                "link": link.to_dict(),
+                "parent": store.status(args.project_id),
+            }
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                print(f"Adopted {link.child_revision_id} for {link.child_node_id}")
+            return 0
+
+        if args.command in {"render", "compose"}:
+            composer = ProjectComposer(store)
+            result = (
+                composer.render(args.project_id, args.node_id)
+                if args.command == "render"
+                else composer.compose(args.project_id)
+            )
+            if args.out:
+                output = Path(args.out).expanduser()
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_text(result.text, encoding="utf-8")
+            if args.json_output:
+                report = result.to_dict()
+                report["text"] = result.text
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            elif args.out:
+                print(f"Output: {Path(args.out).expanduser()}")
+                print(f"SHA-256: {result.sha256}")
+            else:
+                print(result.text, end="")
+            return 0
+
         if args.command in {"run", "resume", "continue"}:
             provider = _make_provider(args)
             runner = ProjectRunner(store)
             if args.command == "run":
                 result = runner.run(
                     args.project_id, provider,
-                    seed=args.seed, temperature=args.temperature,
+                    seed=args.seed, temperature=args.temperature, node_id=args.node_id,
                 )
             elif args.command == "resume":
-                result = runner.resume(args.project_id, provider)
+                result = runner.resume(
+                    args.project_id, provider, node_id=args.node_id,
+                )
             else:
                 result = runner.continue_project(
                     args.project_id, provider,
                     additional_chapters=args.add_chapters,
                     total_chapters=args.chapters,
                     seed=args.seed, temperature=args.temperature,
-                    title=args.title, premise=args.premise,
+                    title=args.title, premise=args.premise, node_id=args.node_id,
                 )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id
@@ -240,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
                 _print_bundle(report)
             return 0
 
-        status = store.status(args.project_id)
+        status = store.status(args.project_id, args.node_id)
         if args.command == "pending":
             report = {
                 "project_id": status["project_id"],
@@ -264,7 +377,14 @@ def main(argv: list[str] | None = None) -> int:
         else:
             print(f"pending: {exc}", file=sys.stderr)
             print(f"response: {exc.pending.get('response_path')}", file=sys.stderr)
-            print(f"resume after writing the response: story_project.py resume {exc.project_id}")
+            node_option = ""
+            if exc.status.get("node_id") != exc.status.get("root_node_id"):
+                node_option = f" --node {exc.status['node_id']}"
+            print(
+                "resume after writing the response: "
+                f"story_project.py resume {exc.project_id}{node_option}",
+                file=sys.stderr,
+            )
         return 3
     except ProjectRunError as exc:
         print(f"error: {exc}", file=sys.stderr)

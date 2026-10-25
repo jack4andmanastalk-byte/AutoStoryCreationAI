@@ -13,12 +13,14 @@ from .continuation import ContinuationContext
 from .model import (
     ArtifactRef,
     ProjectSnapshot,
+    WorkLink,
     StageCheckpoint,
     WorkNode,
     WorkNodeRevision,
     WorkProject,
     WorkSpec,
 )
+from .nested import CompositionResult, NestedError, ProjectComposer
 from .resume import ResumeError, ResumeProvider
 from .runner import ProjectRunError, ProjectRunPending, ProjectRunResult, ProjectRunner
 from .schema import SCHEMA_VERSION, ProjectValidationError
@@ -36,8 +38,11 @@ __all__ = [
     "BUNDLE_TYPE",
     "BundleError",
     "ContinuationContext",
+    "CompositionResult",
+    "NestedError",
     "PROJECT_PROTOCOL",
     "PipelineInput",
+    "ProjectComposer",
     "ProjectCorruptError",
     "ProjectError",
     "ProjectExistsError",
@@ -57,6 +62,7 @@ __all__ = [
     "StageCheckpoint",
     "WorkNode",
     "adapt_work_spec",
+    "WorkLink",
     "WorkNodeRevision",
     "WorkProject",
     "WorkSpec",
