@@ -10,6 +10,7 @@ from .bundle import (
     verify_bundle,
 )
 from .continuation import ContinuationContext
+from .context import AncestorContext, ContextPacket, build_context_packet
 from .model import (
     ArtifactRef,
     ProjectSnapshot,
@@ -22,9 +23,17 @@ from .model import (
 )
 from .nested import CompositionResult, NestedError, ProjectComposer
 from .resume import ResumeError, ResumeProvider
-from .runner import ProjectRunError, ProjectRunPending, ProjectRunResult, ProjectRunner
+from .runner import (
+    ProjectDependencyError,
+    ProjectRunError,
+    ProjectRunPending,
+    ProjectRunResult,
+    ProjectRunner,
+    ProjectTreeRunResult,
+)
 from .schema import SCHEMA_VERSION, ProjectValidationError
 from .store import (
+    MAX_NESTING_DEPTH,
     ProjectCorruptError,
     ProjectError,
     ProjectExistsError,
@@ -34,12 +43,15 @@ from .store import (
 )
 
 __all__ = [
+    "AncestorContext",
     "ArtifactRef",
     "BUNDLE_TYPE",
     "BundleError",
     "ContinuationContext",
+    "ContextPacket",
     "CompositionResult",
     "NestedError",
+    "MAX_NESTING_DEPTH",
     "PROJECT_PROTOCOL",
     "PipelineInput",
     "ProjectComposer",
@@ -48,9 +60,11 @@ __all__ = [
     "ProjectExistsError",
     "ProjectLockError",
     "ProjectNotFoundError",
+    "ProjectDependencyError",
     "ProjectRunError",
     "ProjectRunPending",
     "ProjectRunResult",
+    "ProjectTreeRunResult",
     "ProjectRunner",
     "ProjectSnapshot",
     "ProjectStore",
@@ -66,6 +80,7 @@ __all__ = [
     "WorkNodeRevision",
     "WorkProject",
     "WorkSpec",
+    "build_context_packet",
     "export_bundle",
     "restore_bundle",
     "verify_bundle",

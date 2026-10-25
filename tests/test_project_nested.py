@@ -122,10 +122,11 @@ def test_two_children_have_independent_runs_and_depth_one_links(tmp_path: Path):
     run_node(store, root.project.id, root.root_node.id)
     assert store.status(root.project.id)["state"] == "complete"
     assert store.status(root.project.id, second.child_node_id)["state"] == "not_started"
-    with pytest.raises(ProjectValidationError, match="directly below the root"):
-        store.create_child(
-            root.project.id, spec("孫作品"), parent_node_id=first.child_node_id,
-        )
+    grandchild = store.create_child(
+        root.project.id, spec("孫作品"), parent_node_id=first.child_node_id,
+        child_node_id="node-grandchild",
+    )
+    assert store.node_depth(root.project.id, grandchild.child_node_id) == 2
     child = store.load_node(root.project.id, first.child_node_id)
     with pytest.raises(ProjectValidationError, match="immutable"):
         store.save_node(replace(child, parent_id=child.id))

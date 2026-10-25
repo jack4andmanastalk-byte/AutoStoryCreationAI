@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜5を実装済み。次はPR 6（多段入れ子と依存順序）**
+- 状態: **PR 1〜6を実装済み。次はPR 7（世界model）**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -191,13 +191,15 @@ replayの記録読み取り層は共通化できるが、厳密replayが要求�
 
 ## 6. 入れ子作品の設計
 
-### 6.1 最初は深さ1に限定する
+### 6.1 深さ1から多段へ拡張する
 
-- 親作品に複数の子作品を配置できる。
+- 親作品に複数の子作品を配置でき、子の下にも孫作品を配置できる。
+- root=0・最大深さ8のcontainment treeとして、全nodeのancestryを検証する。
 - 子作品は独立した `WorkNode` とpipeline状態を持つ。
 - 親は子作品の `ArtifactRef` と `content_version` を保持する。
 - 子作品の本文を親のmetadataへコピーしない。
-- 循環する親子関係は拒否する。
+- 循環・orphan・深さ超過の親子関係は拒否する。
+- 依存順実行はparent-before-descendantのtopological orderとし、未完の依存を飛び越えない。
 
 ### 6.2 版とstale
 
@@ -327,10 +329,18 @@ revision-scoped request keyを使い、revisionを持たない旧request keyは�
 
 ### PR 6: 多段入れ子と依存順序（N-05）
 
-- 孫作品、循環検出、深さ制限、依存順の実行を追加する。
-- 親への全本文投入ではなく、ContextPacketの前身となる要約・canon選択を使う。
+実装: root=0・最大深さ8の任意親への子作成、全nodeのancestry/cycle検証、全階層の
+link/status/pending集約、nested linkのsync/adopt、深さ付き再帰composeを追加。`run-tree`と
+`dependency_order`はlink順のparent-before-descendant topological orderを使い、完了nodeを
+再実行せず、未完・失敗・待機中のnodeとそのdescendantで安全に停止する。単独nodeの
+run/resume/continuationとPR 5のpinned/stale契約は維持する。
+
+`context.py`の`asc-context-packet-pre1`は、祖先のcompact canonと章の構造要約だけを選択し、
+章本文を除外してpromptと`project-input.json`へ記録するContextPacket前身である。世界modelの
+時代・地域・文化選択はまだ行わない。
 
 **完了条件**: 親→子→孫を個別に再開でき、循環や未完了の依存を検出して停止できる。
+多段のpinned結合が決定的で、bundle復元後も同じ本文を再現できることをoffline testで確認した。
 
 ### PR 7: 世界model（W-01〜04）
 
@@ -400,7 +410,8 @@ PR 2で `runner.py` と既存pipelineへのadapterを追加し、PR 3で `resume
 `story_project resume/pending`、stage別の再開testを追加した。PR 4で `continuation.py` /
 `bundle.py`、project `continue` / `bundle export|verify|restore`、版履歴と追加章生成を追加した。
 PR 5で `nested.py`、`WorkLink`、node別runner、`add-child` / `adopt-child` / `render` /
-`compose`、pinned結合の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` /
+`compose`、pinned結合の回帰testを追加した。PR 6で多段ancestry・`run-tree`・再帰compose・
+`context.py`と多段の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` /
 protocol-v1は、新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**したがって、次の実装はPR 6の多段入れ子と依存順序から開始する。**
+**したがって、次の実装はPR 7の世界modelから開始する。**

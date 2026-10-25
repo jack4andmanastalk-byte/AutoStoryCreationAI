@@ -1,4 +1,4 @@
-"""Depth-one nested-work links and deterministic compilation.
+"""Multi-level nested-work links and deterministic recursive compilation.
 
 Children own their revisions, runs, and canon.  A parent link contains only
 ordered references to a pinned child draft; child prose is read at compilation
@@ -92,7 +92,7 @@ class ProjectComposer:
         self, project_id: str, node_id: str,
     ) -> tuple[WorkNode, WorkNodeRevision, tuple[ArtifactRef, ...]]:
         snapshot = self.store.load_node_snapshot(project_id, node_id)
-        status = self.store.status(project_id, node_id)
+        status = self.store.status(project_id, node_id, include_descendants=False)
         if status["state"] != "complete":
             raise NestedError(
                 f"node {node_id} is {status['state']}; a complete draft is required"
@@ -148,9 +148,13 @@ class ProjectComposer:
         return "\n\n".join(texts)
 
     @staticmethod
-    def _heading(node: WorkNode, revision: WorkNodeRevision) -> list[str]:
+    def _heading(
+        node: WorkNode, revision: WorkNodeRevision, *, level: int = 1,
+    ) -> list[str]:
+        if level < 1:
+            raise NestedError(f"composition heading level must be positive: {level}")
         return [
-            f"# {revision.spec.title}",
+            f"{'#' * level} {revision.spec.title}",
             "",
             f"<!-- asc-node: {node.id} revision={revision.id} -->",
             "",
@@ -172,41 +176,63 @@ class ProjectComposer:
         )
 
     def compose(self, project_id: str, node_id: str | None = None) -> CompositionResult:
-        """Compile a root draft plus its pinned child drafts in link order."""
+        """Compile one current draft and all pinned descendants recursively.
+
+        The selected node is heading level one; each descendant adds one level.
+        Child and grandchild prose is read only from the revision/artifacts pinned
+        by its link.  A child's current revision therefore cannot silently change
+        an ancestor's composition.  Nested link payloads are part of the content
+        identity, while mutable link timestamps are excluded.
+        """
         snapshot = self.store.load_node_snapshot(project_id, node_id)
         parent_id = snapshot.root_node.id
-        if parent_id != snapshot.project.root_node_id:
-            raise NestedError("PR 5 combined output is available for the root node only")
         with self.store.execution_lock(project_id):
             parent, parent_revision, parent_artifacts = self._current_draft(
                 project_id, parent_id,
             )
             parent_body = self._chapters(project_id, parent_artifacts)
-            links = self.store.list_links(project_id, parent_id)
             sections = [*self._heading(parent, parent_revision), parent_body]
-            link_payloads = []
-            for link in links:
-                if not link.artifacts:
-                    raise NestedError(
-                        f"link {link.id} has no pinned draft; run the child or adopt its completed revision"
+            visiting: set[str] = {parent_id}
+
+            def append_children(node: WorkNode, level: int) -> list[dict[str, Any]]:
+                if node.id not in visiting:
+                    raise NestedError(f"composition ancestry lost track of node {node.id}")
+                payloads: list[dict[str, Any]] = []
+                for link in self.store.list_links(project_id, node.id):
+                    if not link.artifacts:
+                        raise NestedError(
+                            f"link {link.id} has no pinned draft; "
+                            "run the child or adopt its completed revision"
+                        )
+                    child = self.store.load_node(project_id, link.child_node_id)
+                    if child.id in visiting:
+                        raise NestedError(f"cycle detected while composing node {child.id}")
+                    child_revision = self.store.load_revision(
+                        project_id, child.id, link.child_revision_id,
                     )
-                child = self.store.load_node(project_id, link.child_node_id)
-                child_revision = self.store.load_revision(
-                    project_id, child.id, link.child_revision_id,
-                )
-                child_body = self._chapters(project_id, link.artifacts)
-                link_payloads.append(_pinned_link_dict(link))
-                sections.extend([
-                    "",
-                    f"## {child_revision.spec.title}",
-                    "",
-                    (
-                        f"<!-- asc-embedded: link={link.id} node={child.id} "
-                        f"revision={child_revision.id} content_version={link.content_version} -->"
-                    ),
-                    "",
-                    child_body,
-                ])
+                    child_body = self._chapters(project_id, link.artifacts)
+                    payload = _pinned_link_dict(link)
+                    sections.extend([
+                        "",
+                        f"{'#' * (level + 1)} {child_revision.spec.title}",
+                        "",
+                        (
+                            f"<!-- asc-embedded: link={link.id} node={child.id} "
+                            f"revision={child_revision.id} "
+                            f"content_version={link.content_version} -->"
+                        ),
+                        "",
+                        child_body,
+                    ])
+                    visiting.add(child.id)
+                    nested = append_children(child, level + 1)
+                    visiting.remove(child.id)
+                    if nested:
+                        payload["children"] = nested
+                    payloads.append(payload)
+                return payloads
+
+            link_payloads = append_children(parent, 1)
             text = "\n".join(sections).rstrip() + "\n"
             text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
             parent_version = WorkLink.version_for(parent_revision, parent_artifacts)
