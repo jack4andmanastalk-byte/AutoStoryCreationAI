@@ -537,8 +537,8 @@ project record、node木、revision、checkpoint、link、世界record、run man
 - `error`: 読み込み・参照・hash検証が破綻している（project unreadable、orphan node、
   artifact missing / hash_differs、run missing、`world.invalid` など）。
 - `warning`: 運用上の判断待ち。`checkpoint.failed` / `checkpoint.running` / `link.stale` /
-  `world.canon_stale` / `world.record_changed` / `run.running`（終了記録のない中断process）/
-  `run.status_unknown`。
+  `world.canon_stale` / `world.record_changed` / `design.unresolved` /
+  `run.running`（終了記録のない中断process）/ `run.status_unknown`。
 - 同じ`artifact`でも、revision・checkpoint・link・runのどこから参照されているかで
   複数checkに現れます。1つのfile欠落が `revisions` と `links` の両方に出るのは正常です。
 
@@ -572,6 +572,29 @@ nodeがいくつあっても警告は1件で、影響したnodeは`details.node_
 同じrecordを7 nodeが記録している状態で1件を改称した実測では、7 warnings + 7 `diff` commands
 （doctor JSON 9,843 bytes、text 30行）が、1 warning + 1 `diff` command（4,956 bytes、12行）に
 なりました（PR 17のdogfood）。
+
+`design.unresolved` は、`design` stage が**checkerを通らないまま記録した設計文書**がある場合に出ます。
+design stageはfail-openで、修復しても通らない文書を `unresolved`（parse不能なら `missing`）として
+`design.json` に残し、runは続行します。そのため生成が完了していても、検証できなかった設計文書が
+残ることがあります。`doctor` は現行revisionの `design` checkpointが参照する `design.json`
+（hash検証済みのartifact）を読み、`unresolved` / `missing` が空でなければ**1 nodeにつき1件**の
+warningにします。
+
+- `details`: `stage` / `run_id` / `unresolved` / `missing` / `unresolved_count` / `missing_count` /
+  `report_path` / `attempts` / `findings`。人間向け表示は文書名を先頭4件まで出します。
+- 品質の判定ではありません。「設計が未検証のまま生成が進んだ」という**構造情報**です。
+  `ok` は `true` のまま、exit 0です（`checkpoints` checkは`warn`）。
+- **`next_actions` には出しません。** 既存CLIでこの状態を直接解消する操作はなく、内容を作り直す
+  `revise --design <doc>` は新しいrevisionを作る重い操作で、同じcheckerに再度落ちる可能性も
+  あります。`next_actions` は「止まっている・ずれている状態を戻す」読み取り/再開/採用の操作に
+  限定しているため、内容の作り直しは案内しません（必要な場合の手順は
+  [章単位の改訂とwhat-if分岐](#章単位の改訂とwhat-if分岐)を参照）。
+- 対象は**現行revisionのcheckpointだけ**です。`revise` で新しいrevisionを作れば、その新しい
+  `design.json` が判定対象になり、古いrevisionのreportはそのまま残ります。
+- `design.json` を持たない古いrunや、`design` checkpointが無いnodeでは何も出しません。
+  report自体が壊れている場合は `design.report_unreadable`（warning）になります。
+- `status` はrun artifactを読まないため、この項目は`doctor`だけが出します
+  （`work.inspected`は従来どおり `design` を含みません）。
 
 binding の stale 一覧は「現在revision以外を指すbinding」を履歴も含めて示すため、再binding後も
 古いbindingが残ります。これに対し `next_actions` の `world bind` は、現在revisionにbindingが
@@ -676,6 +699,10 @@ resumeが記録packetを固定していることを確認できました。復�
   （1 nodeあたり約120 bytes。100 nodeで1 recordあたり約12 KB）。
 - 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
   どのrecordの差で変わったかをCLIから一覧できない（PR 12の `diff` で解消）。
+- `design.unresolved` は「checkerを通らなかった文書がある」ことだけを示す。どのcheckがどう
+  落ちたかは `design.json` の `docs[*]`（`checks_failed` / `by_severity`）を開く必要があり、
+  `doctor` はそこまで展開しない。文書を作り直しても同じcheckerに落ちる可能性があり、
+  `doctor` は修復も再生成もしない（read-only）。
 
 ## 章単位の改訂とwhat-if分岐
 
@@ -829,7 +856,9 @@ PR 16では、そのdogfoodで確認した「子1作品が未完成だと作品�
 `compose --partial`（未収録を明示して残りを編纂）で塞ぎました（前述「未完成の子を含む部分編纂」）。
 PR 17では、世界recordを1件書き換えたときの `doctor` の警告と`diff`案内を**record単位**に
 まとめました（複数nodeが同じrecordを記録していても警告1件・`diff`1件、影響nodeは
-`details.nodes`）。次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を
+`details.nodes`）。PR 18では、design stageがfail-openで残す `unresolved` / `missing` の設計文書を `doctor` の
+`design.unresolved`（warning、1 node 1件、`next_actions`なし）として可視化しました。
+次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を
 測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは

@@ -46,6 +46,13 @@ from .store import ProjectError, ProjectNotFoundError, ProjectStore
 from .world_store import WorldStore
 
 DOCTOR_SCHEMA = "asc-project-doctor-v1"
+
+#: The stage whose recorded report lists documents that failed their checkers.
+DESIGN_STAGE = "design"
+
+#: The recorded design report, a verified artifact of the design checkpoint.
+DESIGN_REPORT_SUFFIX = "/design.json"
+
 ERROR = "error"
 WARNING = "warning"
 INFO = "info"
@@ -402,6 +409,85 @@ class ProjectDoctor:
                         )
         self._check("checkpoints", before)
 
+    def _inspect_design_report(
+        self, project_id: str, node_id: str, checkpoint: Any,
+    ) -> None:
+        """Report design documents that never passed their checkers.
+
+        The design stage is fail-open: a document that still fails after its
+        repairs is recorded as ``unresolved`` (or ``missing`` when unparseable)
+        and the run continues.  That keeps a short voice sample from wasting
+        every generation before it, but it also means a completed project can
+        carry design documents nobody could validate.  The recorded report is
+        the only place that fact survives, so it is read here as structural
+        information -- not as a quality judgement, and never as a repair.
+        """
+        report_ref = next(
+            (artifact for artifact in checkpoint.artifacts
+             if artifact.path.endswith(DESIGN_REPORT_SUFFIX)),
+            None,
+        )
+        if report_ref is None:
+            # A run recorded before the report existed, or a non-project run.
+            return
+        if self._artifact_problem(project_id, report_ref) is not None:
+            return  # already reported by the artifact loop
+        try:
+            payload = json.loads(
+                self.store.read_artifact(project_id, report_ref).decode("utf-8")
+            )
+        except (ProjectError, OSError, ValueError) as exc:
+            self._add(
+                "design.report_unreadable", WARNING,
+                f"the recorded design report cannot be read: {exc}",
+                "checkpoints", node_id=node_id,
+                path=report_ref.path,
+                details={"stage": checkpoint.stage, "run_id": checkpoint.run_id},
+            )
+            return
+        if not isinstance(payload, dict):
+            self._add(
+                "design.report_unreadable", WARNING,
+                "the recorded design report is not a JSON object",
+                "checkpoints", node_id=node_id,
+                path=report_ref.path,
+                details={"stage": checkpoint.stage, "run_id": checkpoint.run_id},
+            )
+            return
+        unresolved = sorted(
+            str(name) for name in payload.get("unresolved") or ()
+            if isinstance(name, str)
+        )
+        missing = sorted(
+            str(name) for name in payload.get("missing") or ()
+            if isinstance(name, str)
+        )
+        if not unresolved and not missing:
+            return
+        names = unresolved + missing
+        shown = ", ".join(names[:4]) + (" …" if len(names) > 4 else "")
+        self._add(
+            "design.unresolved", WARNING,
+            (
+                f"design documents did not pass their checkers "
+                f"(unresolved={len(unresolved)}, missing={len(missing)}: {shown}); "
+                "the design stage is fail-open, so the run continued"
+            ),
+            "checkpoints", node_id=node_id,
+            path=report_ref.path,
+            details={
+                "stage": checkpoint.stage,
+                "run_id": checkpoint.run_id,
+                "unresolved": unresolved,
+                "missing": missing,
+                "unresolved_count": len(unresolved),
+                "missing_count": len(missing),
+                "report_path": report_ref.path,
+                "attempts": payload.get("attempts"),
+                "findings": payload.get("findings"),
+            },
+        )
+
     def _inspect_done_checkpoint(
         self, project_id: str, node_id: str, checkpoint: Any, path: Path,
     ) -> None:
@@ -484,6 +570,8 @@ class ProjectDoctor:
                     "artifact", node_id=node_id, path=artifact.path,
                     details={"stage": checkpoint.stage, "run_id": checkpoint.run_id},
                 )
+        if checkpoint.stage == DESIGN_STAGE:
+            self._inspect_design_report(project_id, node_id, checkpoint)
 
     def _add_pending(self, project_id: str, node: Any, checkpoint: Any) -> None:
         details = dict(checkpoint.pending or {})

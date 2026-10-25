@@ -6,6 +6,7 @@ import json
 import shutil
 import subprocess
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,12 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from asc.pipeline import (  # noqa: E402
     GenerationRequest,
+    GenerationResult,
     ResponsePendingError,
     ScriptedProvider,
     load_scripted_responses,
 )
 from asc.project import (  # noqa: E402
     CanonScope,
+    ProjectDoctor,
     ProjectRunPending,
     ProjectRunner,
     ProjectStore,
@@ -445,3 +448,161 @@ def test_unversioned_world_record_edit_is_detected_against_a_recorded_packet(
     )
     # No stored hash is rewritten to match: the check stays read-only.
     assert report.ok is True
+
+
+class BadDesign:
+    """Answer some design documents with text that never passes its checkers.
+
+    The design stage is fail-open, so the run still completes; the recorded
+    report is the only place the unresolved documents remain visible.
+    """
+
+    name = "bad-design"
+    model = "bad-design-fixture"
+    model_version = "v1"
+
+    #: Parses, but the brief checker rejects it (no similar works, short logline).
+    BAD_BRIEF = json.dumps({
+        "logline": "短い", "premise": "x", "theme": "務め対情",
+        "elements": {"who": "a", "where": "b", "wants": "c", "obstacle": "d"},
+        "similar": [], "prohibitions": [], "failure_questions": [],
+        "genre": "幻想短編", "audience": "大人",
+    }, ensure_ascii=False)
+
+    def __init__(self, delegate):
+        self.delegate = delegate
+
+    @staticmethod
+    def _result(text: str):
+        return GenerationResult(
+            text=text, provider="bad-design", model="bad-design-fixture",
+            model_version="v1",
+        )
+
+    def generate(self, request: GenerationRequest):
+        if request.purpose in {"design:brief", "design:brief:repair"}:
+            return self._result(self.BAD_BRIEF)
+        if request.purpose in {"design:voice", "design:voice:repair"}:
+            return self._result("これはJSONではない")
+        return self.delegate.generate(request)
+
+
+def test_unresolved_design_documents_are_reported_per_node(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    root, child, _ = make_family(store)
+    run = ProjectRunner(store)
+    run.run(root.project.id, BadDesign(ScriptedProvider(project_responses())))
+    run.run(
+        root.project.id, BadDesign(ScriptedProvider(project_responses())),
+        node_id=child.child_node_id,
+    )
+    before = tree_digest(tmp_path)
+
+    report = inspect_project(store, root.project.id)
+    assert report.ok is True
+    changes = [item for item in report.findings if item.code == "design.unresolved"]
+    assert len(changes) == 2
+    assert sorted(item.node_id for item in changes) == sorted(
+        [root.root_node.id, child.child_node_id]
+    )
+    for item in changes:
+        assert item.severity == "warning"
+        assert item.details["stage"] == "design"
+        assert item.details["unresolved"] == ["brief"]
+        assert item.details["missing"] == ["voice"]
+        assert item.details["unresolved_count"] == 1
+        assert item.details["missing_count"] == 1
+        assert item.details["run_id"]
+        assert item.details["report_path"].endswith("/design.json")
+        assert item.details["attempts"] >= 1
+        assert "fail-open" in item.message
+        assert "brief, voice" in item.message
+    # Structural information, not an operational blocker: nothing is suggested
+    # and nothing is regenerated.
+    assert report.to_dict()["next_actions"] == []
+    statuses = {check["name"]: check["status"] for check in report.to_dict()["checks"]}
+    assert statuses["checkpoints"] == "warn"
+    assert statuses["runs"] == "pass"
+    # Read-only, like every other doctor check.
+    assert tree_digest(tmp_path) == before
+
+
+def test_clean_design_reports_do_not_warn(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    root = store.create_project(spec(), project_id="prj-doctor-clean")
+    run_node(store, root.project.id, root.root_node.id)
+    report = inspect_project(store, root.project.id)
+    assert [item.code for item in report.findings] == []
+    assert report.to_dict()["next_actions"] == []
+
+
+def test_design_checkpoint_without_a_report_is_not_a_finding(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    root = store.create_project(spec(), project_id="prj-doctor-noreport")
+    run_node(store, root.project.id, root.root_node.id)
+    path = (
+        store.node_dir(root.project.id, root.root_node.id) / "checkpoints" / "design.json"
+    )
+    checkpoint = StageCheckpoint.from_dict(
+        json.loads(path.read_text(encoding="utf-8"))
+    )
+    assert [item.path for item in checkpoint.artifacts if item.path.endswith("/design.json")]
+    doctor = ProjectDoctor(store)
+    doctor._inspect_design_report(
+        root.project.id, root.root_node.id,
+        replace(checkpoint, artifacts=tuple(
+            item for item in checkpoint.artifacts
+            if not item.path.endswith("/design.json")
+        )),
+    )
+    assert doctor._findings == []
+
+
+def test_unreadable_design_report_is_a_warning(tmp_path: Path, monkeypatch):
+    store = ProjectStore(tmp_path)
+    root = store.create_project(spec(), project_id="prj-doctor-badreport")
+    run_node(store, root.project.id, root.root_node.id)
+    original = ProjectStore.read_artifact
+
+    def broken(self, project_id, artifact):
+        if artifact.path.endswith("/design.json"):
+            raise ValueError("report is not valid JSON")
+        return original(self, project_id, artifact)
+
+    monkeypatch.setattr(ProjectStore, "read_artifact", broken)
+    report = inspect_project(store, root.project.id)
+    codes = [item.code for item in report.findings]
+    assert codes == ["design.report_unreadable"]
+    assert report.ok is True
+    assert report.findings[0].severity == "warning"
+    assert "report is not valid JSON" in report.findings[0].message
+
+
+def test_doctor_cli_reports_unresolved_design_without_failing(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    root = store.create_project(spec(), project_id="prj-doctor-cli-design")
+    ProjectRunner(store).run(
+        root.project.id, BadDesign(ScriptedProvider(project_responses())),
+    )
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--root", str(tmp_path), "doctor",
+         root.project.id, "--json"],
+        capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is True
+    rows = [row for row in payload["findings"] if row["code"] == "design.unresolved"]
+    assert len(rows) == 1
+    assert rows[0]["severity"] == "warning"
+    assert rows[0]["details"]["unresolved"] == ["brief"]
+    assert payload["next_actions"] == []
+    # The human-readable output names the documents instead of a bare count.
+    text = subprocess.run(
+        [sys.executable, str(SCRIPT), "--root", str(tmp_path), "doctor",
+         root.project.id],
+        capture_output=True, text=True, check=False,
+    )
+    assert text.returncode == 0, text.stderr
+    assert "design.unresolved" in text.stdout
+    assert "brief, voice" in text.stdout
