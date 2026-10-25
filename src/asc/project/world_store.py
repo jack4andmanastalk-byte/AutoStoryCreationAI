@@ -146,6 +146,8 @@ class WorldStore:
         payload.setdefault("record_type", WORLD_RECORD_TYPES[normalized_kind])
         payload.setdefault("schema_version", 1)
         payload.setdefault("project_id", project_id)
+        if payload["project_id"] != project_id:
+            raise ProjectValidationError("world record project_id differs from the target")
         payload.setdefault("id", new_id(_ID_PREFIXES[normalized_kind]))
         payload.setdefault("created_at", utc_now())
         # Version hashes cover normalized content, including explicit empty

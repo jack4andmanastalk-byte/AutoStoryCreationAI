@@ -1,9 +1,8 @@
-"""Small, deterministic ancestor context packets for nested project runs.
+"""Deterministic ancestor and revision-bound world context packets.
 
-This is deliberately a predecessor of the later world-model ContextPacket.  It
-contains selected structured canon and chapter metadata, never ancestor chapter
-prose.  The packet is recorded in each project run's ``project-input.json`` and
-is also rendered as a deterministic prompt suffix for the S1 stages.
+Packets contain selected structured canon and chapter metadata, never ancestor
+chapter prose.  World records are added only for an explicitly bound work
+revision; unbound legacy projects retain the original pre1 packet shape.
 """
 from __future__ import annotations
 
@@ -14,10 +13,12 @@ from pathlib import Path
 from typing import Any
 
 from ..story.canon import Canon, load_canon
-from .schema import SCHEMA_VERSION, canonical_json
+from .schema import SCHEMA_VERSION, ProjectValidationError, canonical_json
 from .store import ProjectStore
+from .world_context import build_world_context, validate_world_context
 
 CONTEXT_PACKET_KIND = "asc-context-packet-pre1"
+CONTEXT_PACKET_WORLD_KIND = "asc-context-packet-world1"
 MAX_CONTEXT_ITEMS = 32
 MAX_CONTEXT_TEXT = 800
 
@@ -33,13 +34,29 @@ def _items(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return values[:MAX_CONTEXT_ITEMS]
 
 
-def _canon_selection(canon: Canon) -> dict[str, Any]:
-    """Select compact canon records, excluding all draft/prose payloads."""
+def _canon_selection(
+    canon: Canon, knowledge: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Select compact canon, optionally limiting facts to a character's knowledge."""
     chapters = sorted(
         canon.chapters.values(),
         key=lambda item: (item.day is None, item.day or 0, item.id),
     )
-    return {
+    known: set[str] | None = None
+    if knowledge is not None:
+        character = canon.characters.get(knowledge["character_id"])
+        known = set(character.knows) if character is not None else set()
+    facts = _items([
+        {
+            "id": item.id,
+            "summary": _text(item.summary),
+            "terms": [_text(term) for term in item.terms[:8]],
+            "setup": item.setup,
+        }
+        for item in sorted(canon.facts.values(), key=lambda item: item.id)
+        if known is None or item.id in known
+    ])
+    result = {
         "characters": _items([
             {
                 "id": item.id,
@@ -50,15 +67,7 @@ def _canon_selection(canon: Canon) -> dict[str, Any]:
             }
             for item in sorted(canon.characters.values(), key=lambda item: item.id)
         ]),
-        "facts": _items([
-            {
-                "id": item.id,
-                "summary": _text(item.summary),
-                "terms": [_text(term) for term in item.terms[:8]],
-                "setup": item.setup,
-            }
-            for item in sorted(canon.facts.values(), key=lambda item: item.id)
-        ]),
+        "facts": facts,
         "locations": _items([
             {"id": item.id, "travel_days": dict(sorted(item.travel_days.items()))}
             for item in sorted(canon.locations.values(), key=lambda item: item.id)
@@ -75,7 +84,33 @@ def _canon_selection(canon: Canon) -> dict[str, Any]:
                 "payoff": item.payoff,
             }
             for item in sorted(canon.foreshadowing.values(), key=lambda item: item.id)
-        ]),
+        ]) if knowledge is None else [],
+    }
+    if knowledge is not None:
+        result["knowledge"] = {
+            "character_id": knowledge["character_id"],
+            "known_fact_ids": [item["id"] for item in facts],
+            "source": "character.knows",
+            "foreshadowing": "excluded",
+        }
+    return result
+
+
+def _knowledge_selection(options: dict[str, Any]) -> dict[str, Any] | None:
+    raw = options.get("context_knowledge")
+    if raw is None:
+        return None
+    if not isinstance(raw, dict) or set(raw) != {"character_id"}:
+        raise ProjectValidationError(
+            "WorkSpec.options.context_knowledge requires only character_id"
+        )
+    character_id = raw["character_id"]
+    if not isinstance(character_id, str) or not character_id.strip():
+        raise ProjectValidationError("context_knowledge.character_id must be non-empty")
+    return {
+        "character_id": character_id,
+        "source": "ancestor_character_knows",
+        "foreshadowing": "excluded",
     }
 
 
@@ -141,52 +176,94 @@ class ContextPacket:
     node_id: str
     revision_id: str
     ancestors: tuple[AncestorContext, ...]
+    world: dict[str, Any] | None = None
+    knowledge: dict[str, Any] | None = None
 
     @property
     def content_sha256(self) -> str:
         return hashlib.sha256(canonical_json(self.to_dict()).encode("utf-8")).hexdigest()
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            "record_type": CONTEXT_PACKET_KIND,
+        data = {
+            "record_type": (
+                CONTEXT_PACKET_WORLD_KIND if self.world is not None
+                else CONTEXT_PACKET_KIND
+            ),
             "schema_version": SCHEMA_VERSION,
             "project_id": self.project_id,
             "node_id": self.node_id,
             "revision_id": self.revision_id,
             "selection": {
-                "scope": "ancestors",
+                "scope": (
+                    "ancestors" if self.world is None
+                    else "ancestors+world" if self.ancestors else "world"
+                ),
                 "canon": "compact_structured_v1",
                 "prose": "excluded",
                 "max_items_per_collection": MAX_CONTEXT_ITEMS,
             },
             "ancestors": [ancestor.to_dict() for ancestor in self.ancestors],
         }
+        if self.knowledge is not None:
+            data["selection"]["knowledge"] = self.knowledge
+        if self.world is not None:
+            data["world"] = self.world
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "ContextPacket":
-        if not isinstance(data, dict) or data.get("record_type") != CONTEXT_PACKET_KIND:
-            raise ValueError("invalid ancestor context packet record")
+        if not isinstance(data, dict) or data.get("record_type") not in {
+            CONTEXT_PACKET_KIND, CONTEXT_PACKET_WORLD_KIND,
+        }:
+            raise ValueError("invalid context packet record")
         if data.get("schema_version") != SCHEMA_VERSION:
-            raise ValueError("unsupported ancestor context packet schema")
+            raise ValueError("unsupported context packet schema")
         ancestors = data.get("ancestors")
         if not isinstance(ancestors, list):
             raise ValueError("context packet ancestors must be a list")
-        packet = cls(
+        selection = data.get("selection")
+        if not isinstance(selection, dict) or selection.get("prose") != "excluded":
+            raise ValueError("context packet must explicitly exclude prose")
+        knowledge = selection.get("knowledge")
+        if knowledge is not None:
+            if (
+                not isinstance(knowledge, dict)
+                or not isinstance(knowledge.get("character_id"), str)
+                or not knowledge["character_id"].strip()
+                or knowledge.get("source") != "ancestor_character_knows"
+            ):
+                raise ValueError("invalid context knowledge selection")
+            canonical_json(knowledge)
+        world = data.get("world")
+        if data.get("record_type") == CONTEXT_PACKET_KIND and world is not None:
+            raise ValueError("pre1 context packet cannot contain world records")
+        if data.get("record_type") == CONTEXT_PACKET_WORLD_KIND:
+            if world is None:
+                raise ValueError("world context packet requires its world selection")
+            validate_world_context(world)
+        return cls(
             project_id=str(data["project_id"]),
             node_id=str(data["node_id"]),
             revision_id=str(data["revision_id"]),
             ancestors=tuple(AncestorContext.from_dict(row) for row in ancestors),
+            world=dict(world) if world is not None else None,
+            knowledge=dict(knowledge) if knowledge is not None else None,
         )
-        selection = data.get("selection")
-        if not isinstance(selection, dict) or selection.get("prose") != "excluded":
-            raise ValueError("context packet must explicitly exclude prose")
-        return packet
 
     def prompt_suffix(self) -> str:
         """Return JSON-only context plus an explicit no-prose instruction."""
+        if self.world is None:
+            return (
+                "\n\n## 祖先作品の選択文脈（本文ではありません）\n"
+                "以下は選択したcanonと構造要約だけです。祖先の章本文は含めず、"
+                "この作品の前提と矛盾する場合はこの作品の指定を優先してください。\n"
+                + canonical_json(self.to_dict())
+            )
         return (
-            "\n\n## 祖先作品の選択文脈（本文ではありません）\n"
-            "以下は選択したcanonと構造要約だけです。祖先の章本文は含めず、"
+            "\n\n## 作品と世界の選択文脈（本文ではありません）\n"
+            "以下はbindingで選んだ世界資料と祖先の構造要約だけです。章本文、"
+            "指定外の時間軸、未来の文化状態・canonは含めません。世界canonは"
+            "selection.overlay_orderの順に適用し、後のscopeを上位overlayとします。"
             "この作品の前提と矛盾する場合はこの作品の指定を優先してください。\n"
             + canonical_json(self.to_dict())
         )
@@ -200,7 +277,10 @@ def _read_json(path: Path) -> dict[str, Any]:
     return value if isinstance(value, dict) else {}
 
 
-def _ancestor_context(store: ProjectStore, project_id: str, node_id: str) -> AncestorContext:
+def _ancestor_context(
+    store: ProjectStore, project_id: str, node_id: str,
+    knowledge: dict[str, Any] | None = None,
+) -> AncestorContext:
     snapshot = store.load_node_snapshot(project_id, node_id)
     status = store.status(project_id, node_id, include_descendants=False)
     revision = snapshot.revision
@@ -211,7 +291,7 @@ def _ancestor_context(store: ProjectStore, project_id: str, node_id: str) -> Anc
     if status["state"] == "complete" and plan_run_id and draft_run_id:
         run_dir = store.project_dir(project_id) / "runs" / plan_run_id
         canon = load_canon(run_dir / "canon")
-        canon_selection = _canon_selection(canon)
+        canon_selection = _canon_selection(canon, knowledge)
         draft = _read_json(
             store.project_dir(project_id) / "runs" / draft_run_id / "draft.json"
         )
@@ -247,15 +327,17 @@ def _ancestor_context(store: ProjectStore, project_id: str, node_id: str) -> Anc
 def build_context_packet(
     store: ProjectStore, project_id: str, node_id: str,
 ) -> ContextPacket | None:
-    """Build an ancestor-only packet; the root has no packet by definition."""
+    """Build ancestor context and, when explicitly bound, world context."""
     snapshot = store.load_node_snapshot(project_id, node_id)
-    if snapshot.root_node.parent_id is None:
+    knowledge = _knowledge_selection(snapshot.revision.spec.options)
+    world = build_world_context(store, project_id, node_id)
+    if snapshot.root_node.parent_id is None and world is None:
         return None
     ancestors: list[AncestorContext] = []
     current = snapshot.root_node
     while current.parent_id is not None:
         parent = store.load_node(project_id, current.parent_id)
-        ancestors.append(_ancestor_context(store, project_id, parent.id))
+        ancestors.append(_ancestor_context(store, project_id, parent.id, knowledge))
         current = parent
     ancestors.reverse()  # root -> immediate parent, stable and human-readable
     return ContextPacket(
@@ -263,4 +345,6 @@ def build_context_packet(
         node_id=snapshot.root_node.id,
         revision_id=snapshot.revision.id,
         ancestors=tuple(ancestors),
+        world=world,
+        knowledge=knowledge,
     )
