@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜13を実装済み。次は大規模dogfoodで必要性を測ってから候補を決める**
+- 状態: **PR 1〜14を実装済み（PR 14はドキュメントのみ）。次は中規模dogfoodで必要性を実測してから候補を決める**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -45,8 +45,10 @@
 - ベンチマークのタスク・seedを増やすこと自体を目的にした作業
 - モデルの独立再現性（G5）の主張
 - 初期段階でのWeb UI、DB、分散実行、複数writerの同時更新
+- 完全自動運用（常駐ワーカー、スケジューラ、依存queueの自動消化、失敗時の自動リトライ）
 
 既存の構造checkerは残すが、新しい作品品質の評価基準は追加しない。
+生成の開始は毎回人間が明示的に行う（[project.md](project.md)の「運用モード」）。
 testは「良い作品」を判定するためではなく、保存・再開・参照・出力が壊れないことを
 確認するために使う。
 
@@ -486,12 +488,48 @@ record編集の警告と`diff`案内、追記・採用・supersessionで警告�
 CLIのJSONと人間向け表示を検査する。`tests/test_project_doctor.py` の
 「未検出」テストは「記録packetと比べて検出」に置き換えた。
 
+### PR 14: 運用モードの明文化と拡張点の予約（ドキュメントのみ・実装なし）
+
+想定するモデルはArena.aiのチャットであり、APIキーをrepositoryに置かない。生成は人間が
+1コマンドで開始し、停止点では `pending` / `status` の `Next:` / `resume` で受け渡す。
+常駐ワーカー・スケジューラ・依存queueの自動消化・自動リトライは非目標とする。
+`WorldEvent` / `KnowledgeState` / `CharacterState` とindex・incremental検査は実装せず、
+**拡張点の約束だけを先に決める**（IDの予約prefix、scopeの持ち方、additive-onlyの互換方針、
+後付けしても既存runのpacketが有効なままであること）。実装の引き金は作品数ではなく、
+dogfoodで観測した手戻りとする。
+
+**完了条件**: 上記が `project.md` と本roadmapに明記され、実装・JSON・CLIの変更が無い。
+
 ### その後の候補
 
 - より大きなdogfood（複数作品・複数時間軸・長期の中断再開）で、次に必要な運用機能を測る。
 - 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
 - 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
 - 上記の実装・運用で繰り返し現れる共通形が見えた場合だけX-01へ進む。
+
+### 予約する拡張点（未実装）
+
+以下は「作らない」ではなく「必要が実測で確認できるまで作らない」項目である。後から足すとき、
+既存の作品・run・packetを移行せずに済むよう、次の約束だけを先に決めておく。
+
+| 拡張 | 状態 | 予約する約束 |
+| --- | --- | --- |
+| `WorldEvent` | 未実装 | record type `world_event`、IDは `event-<sha256[:32]>`。`time_frame_id` と時点（近似・不明を許す）を必須にし、既存recordのID空間とは接頭辞で分ける |
+| `KnowledgeState` | 未実装 | IDは `knowledge-<sha256[:32]>`。`node_id`・`time_frame_id`・保持者・対象recordの組でscopeし、既存のcanon scope（`project`/`time_frame`/`region`/`culture`）に新しい段を足す形にする |
+| `CharacterState` | 未実装 | IDは `character-state-<sha256[:32]>`。人物record本体（`character`）とは別recordにし、時点ごとの差分だけを持つ |
+| index / incremental検査 | 未実装 | 追加時も保存形式は現行のまま（indexは派生で、無くても全走査で同じ結果）。`doctor` の判定結果をindex有無で変えない |
+| 依存queueの自動消化 | 非目標 | `run-tree` は人間が起動し、未完nodeで止まる現行挙動を変えない |
+
+- schemaは引き続き追加のみ（additive）。新しいrecord種別はContextPacketと編纂viewに
+  **追加の欄**として載せ、既存の `references` の意味を変えない。
+- 新しいrecord種別を足しても、その種別を記録していない過去のrunのpacketは有効なままとする
+  （未記録は「無い」ではなく「その版では対象外」）。この区別は `status`/`doctor` の
+  `inspected` と同じ考え方で扱う。
+- 実装の引き金は、dogfoodで観測した具体的な手戻り（年代記の順序を手で直した、過去作品との
+  矛盾を人手で修正した、同じ世界の設定を毎回designに書き直した）のいずれかが再現したこと。
+  作品数・章数の増加だけでは引き金にしない。
+- 意味的な整合性（設定矛盾・時系列破綻）の自動検査は、品質側の凍結が解けるまで追加しない。
+  参照・hash・pinの構造的整合性（`doctor` の現行範囲）とは別物として扱う。
 
 ### X-01: skill registryは後置する
 
