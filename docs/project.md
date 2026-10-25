@@ -517,6 +517,54 @@ resumeが記録packetを固定していることを確認できました。復�
 - 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
   どのrecordの差で変わったかをCLIから一覧できない（`diff`候補）。
 
+## 章単位の改訂とwhat-if分岐
+
+完成した作品の一部だけを作り直す場合は `revise`、別案を独立した作品として残す場合は
+`branch` を使います。どちらも**指定した章・設計資料だけを生成し直し、それ以外は
+元のrunからbyte単位でコピー**します。元のrevision・run・章本文は変更しません。
+
+```bash
+# 現在revisionの第2章だけを作り直す（plan/design/他の章はコピー）
+python3 scripts/story_project.py revise prj-seaside --chapter ch02 \
+  --provider command --command "python3 scripts/chat_operator.py --dir runs/operator/rev"
+
+# 旧revisionから、設計資料のsceneだけ作り直す
+python3 scripts/story_project.py revise prj-seaside --revision rev-1a2b \
+  --design scene --provider command --command "..."
+
+# 旧revisionの内容をそのまま持つ別案を、独立した子作品として作る（生成なし）
+python3 scripts/story_project.py branch prj-seaside --from-node node-tide \
+  --from-revision rev-1a2b --node-id node-whatif --link-id link-whatif \
+  --title "もう一つの潮"
+```
+
+- `--chapter` と `--design` は繰り返し指定できます。指定がなければ全内容をコピーするだけの
+  版（スナップショット）になり、provider呼び出しは0回です。何かを生成する場合は
+  `--provider` が必須です。
+- `--title` / `--premise` / `--target-chars` は新しいrevisionのWorkSpecを上書きします。
+  章数は変更しません（章の追加は `continue` の役割）。
+- `revise` の新revisionは `parent_revision_id` に元revision、`parent_runs` に元の3 runを持ち、
+  `derived` に種別・元node/revision/run・生成し直す章と設計資料を記録します。
+- `branch` は新しいnodeを作り、`create_child` と同じ規則（深さ・order・linkの一意性）で
+  linkを張ります。`derived.kind=branch` として元node/revisionを記録します。
+- 世界bindingは**明示指定した場合だけ**複製します（`--world-binding`）。指定しなければ
+  新revisionは世界文脈を持たず、`context show` も `world` なしのpacketを返します。
+- 新revisionのplanと、再生成しないdesign資料は、新しいrunへコピーされます。コピー元の
+  内容hashは各runの `revise.json` に記録し、`unchanged_bytes: true` とともに残します。
+  コピーを担当したstageのmanifestは `provider: "carried"`、`model: null`、response 0件です。
+- 生成する章のpromptには `## 前版からの改訂` を付け、「改訂する章」と「本文を保持する章」を
+  明示します。旧本文はchatへ渡しません（直前に生成した章の末尾400字だけが文脈）。
+- 中断した `revise` / `branch` は `resume` で続行できます。このときも元runの章bytesは
+  再検証され、一致しなければ失敗します。
+- 親のpinned出力（`compose` / link）は、`adopt-child` するまで変わりません。改訂した子は
+  `doctor` で `link.stale` として表示され、採用は明示操作だけです。
+- 改訂・分岐版も `bundle` / 復元 / `doctor` / `context show` の対象です。`doctor` は
+  `derived` の元revision・元runが失われていれば `revision.derived_source_missing` /
+  `revision.derived_run_missing` を報告します。
+
+旧章のbodyを保ったまま章を追加する `continue` とは別操作です。`continue` は章数と時系列を
+拡張し、`revise` は同じ章数を保ったまま内容を差し替えます。
+
 ## 保存形式
 
 ```text
@@ -538,11 +586,13 @@ runs/projects/<project_id>/
 - `current.json`: nodeの現在のrevisionへの小さな参照。
 - `<revision_id>.json`: 完全なWorkSpec、そのSHA-256、版付きartifact参照。continuation版は
   `parent_revision_id` と親stageの `parent_runs` も持ち、旧recordは追記・上書きしない。
+  改訂・分岐版は加えて `derived`（kind、元node/revision/run、生成し直す章と設計資料）を持つ。
 - `checkpoints/<stage>.json`: current revisionのstage状態、attempt、run、版付きartifact参照。
 - `links/<link_id>.json`: 任意の親から子への順序・pinned revision・content version・draft artifact参照。
   子の本文は含めず、新版の採用は`adopt-child`だけが変更する。linkは全階層で探索できる。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
-  `resume-audit.json` もあり、旧runは別directoryに残る。
+  `resume-audit.json`、改訂・分岐runには `revise.json`（コピー元のhashと生成し直した対象）も
+  あり、旧runは別directoryに残る。
 - `artifacts/`: node別の結合markdownとmanifest、および`world/`以下の世界・作品編纂view。
   S1の個別生成物は各runから直接参照します。
 - `compilations/profiles/`: kind・selector・title・content versionを持つ不変の編纂profile。
@@ -588,6 +638,9 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
   年代記を時間軸ごとに作り、無関係な追加で旧viewを上書きしない。
 - `doctor` と `context show` は読み取り専用で、生成・再開・採用・編纂・復元を起動しない。
   検査のためのtemp fileやlockも作らず、同じ状態に対して同じ結果を返す。
+- `revise` / `branch` は既存revisionとrunを書き換えず、指定外の章・設計資料を元のbytesのまま
+  新revisionへコピーする。生成し直す章の指定は `derived` と `revise.json` に残し、
+  章数・章順は変えない。世界bindingの複製と親linkの更新は明示操作だけが行う。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
 これは破損や意図しない不整合を検出する仕組みであり、悪意ある改ざんに対する
@@ -595,11 +648,11 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 9では、Arena operatorによる小規模な実創作dogfoodと、そこで観測した運用課題に限定した
-`doctor` / `context show` を追加しました。PR 1〜9の予定機能は実装済みで、創作projectの
-生成・再開・continuation・世界文脈・編纂・bundle・検査が一通りCLIから操作できます。
-次は章単位の`revise`・`branch`（PR 10）です。dogfoodで見つかった `failed` stageの再試行手段、
-編纂viewとpacketの差分表示（`diff`候補）はPR 10の本体とは分けて後続で扱います。詳細と完了条件は
-[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)のPR 10以降を参照してください。
+PR 9では運用可観測性（`doctor` / `context show`）を、PR 10では章単位の `revise` と
+what-if `branch` を追加しました。PR 1〜10の予定機能は実装済みで、創作projectの生成・再開・
+continuation・改訂・分岐・世界文脈・編纂・bundle・検査が一通りCLIから操作できます。
+次に検討する候補は、dogfoodで観測した `failed` stageの再試行手段、編纂viewとpacketの
+record単位差分（`diff`）、`status` と `doctor` の情報統合です。詳細は
+[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。

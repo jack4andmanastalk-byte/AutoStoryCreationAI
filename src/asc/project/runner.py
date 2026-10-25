@@ -1,12 +1,18 @@
-"""Run and resume the single-work S1 vertical slice for a creative project.
+"""Run, resume, revise, and branch the S1 vertical slice for a project.
 
 An attempt contains independent plan/design/draft run ledgers.  Resume never
 rewrites an old run: completed stages are loaded from their pinned artifacts,
 and the interrupted stage gets a new run whose provider consumes the old
 response prefix before delegating new requests.
+
+A revise or branch derives a revision from an earlier one.  Plan and any
+unselected design documents are copied byte-for-byte from the source runs, and
+only the selected chapters are generated again; the old revision, its runs and
+its chapter bytes are left untouched.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -14,6 +20,7 @@ from typing import Any, Callable
 
 from ..pipeline import (
     ChapterDraft,
+    Design,
     Draft,
     Provider,
     ResponsePendingError,
@@ -30,6 +37,14 @@ from .model import (
     ArtifactRef, ProjectSnapshot, StageCheckpoint, WorkNodeRevision, new_id, utc_now,
 )
 from .resume import ResumeError, ResumeProvider
+from .revise import (
+    ReviseContext,
+    ReviseError,
+    context_from_revision,
+    copy_carried_files,
+    read_context,
+    runs_for_revision,
+)
 from .schema import SCHEMA_VERSION
 from .store import DEFAULT_STAGES, ProjectError, ProjectStore
 from .world import WorkWorldBinding
@@ -108,6 +123,7 @@ class _Attempt:
     attempt_id: str
     continuation: ContinuationContext | None = None
     context_packet: ContextPacket | None = None
+    revise: ReviseContext | None = None
 
 
 @dataclass(frozen=True)
@@ -124,8 +140,28 @@ class _StageResult:
     artifacts: tuple[ArtifactRef, ...]
 
 
+def _sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
 def _default_temperature(stage: str) -> float:
     return 0.8 if stage == "draft" else 0.6
+
+
+class _CarriedProvider:
+    """Stand-in for stages that copy artifacts instead of calling a model."""
+
+    name = "carried"
+    model = None
+    model_version = None
+
+    def generate(self, request):  # pragma: no cover - carried stages never ask
+        raise ProjectRunError(
+            "a carried stage must not call a provider", project_id="",
+        )
+
+
+_CARRIED = _CarriedProvider()
 
 
 class _ContextProvider:
@@ -178,6 +214,12 @@ class ProjectRunner:
                 raise ProjectRunError(
                     f"project {project_id} is {state}; run requires a not-started revision "
                     "(resume and continuation are separate operations)",
+                    project_id=project_id,
+                )
+            if snapshot.revision.derived is not None:
+                raise ProjectRunError(
+                    "a revised or branched revision is executed by revise/branch; "
+                    "use resume for an interrupted one",
                     project_id=project_id,
                 )
             if snapshot.revision.parent_revision_id is not None:
@@ -318,6 +360,276 @@ class ProjectRunner:
     # Readable alias for callers that use the roadmap's noun for this operation.
     continuation = continue_project
 
+    def revise(
+        self, project_id: str, provider: Provider, *,
+        node_id: str | None = None,
+        source_revision_id: str | None = None,
+        chapters: tuple[str, ...] = (),
+        design: tuple[str, ...] = (),
+        title: str | None = None,
+        premise: str | None = None,
+        target_chars_per_chapter: int | None = None,
+        world_binding_id: str | None = None,
+        seed: int = 0,
+        temperature: float | None = None,
+    ) -> ProjectRunResult:
+        """Create a new revision that regenerates only the selected content.
+
+        The source may be the current revision or any older completed revision
+        of the same node.  Chapters and design documents that are not selected
+        are copied byte-for-byte from the source runs, so the old revision and
+        its artifacts stay unchanged.
+        """
+        with self.store.execution_lock(project_id):
+            snapshot = self.store.load_node_snapshot(project_id, node_id)
+            node = snapshot.root_node
+            source = self._select_source_revision(
+                project_id, snapshot, source_revision_id,
+            )
+            runs = self._source_runs(project_id, snapshot, source)
+            context = self._revise_context(
+                project_id, snapshot, source, runs,
+                kind="revise", chapters=chapters, design=design,
+            )
+            new_spec = self._derived_spec(
+                source, title=title, premise=premise,
+                target_chars_per_chapter=target_chars_per_chapter,
+                project_id=project_id,
+            )
+            revision = WorkNodeRevision.create(
+                revision_id=new_id("rev"),
+                node_id=node.id,
+                project_id=project_id,
+                spec=new_spec,
+                created_at=utc_now(),
+                parent_revision_id=source.id,
+                parent_runs=runs,
+                derived=self._derived_record("revise", node.id, source.id, runs, context),
+            )
+            self.store.save_revision(revision)
+            self._copy_world_binding(
+                project_id, world_binding_id,
+                node_id=node.id, revision_id=revision.id,
+                source_node_id=node.id, source_revision_id=source.id,
+            )
+            self.store.save_node(replace(
+                node, current_revision_id=revision.id, updated_at=utc_now(),
+            ))
+            return self._execute_derived(
+                project_id, node.id, provider, revise=context, seed=seed,
+                temperature=temperature,
+            )
+
+    def branch(
+        self, project_id: str, provider: Provider, *,
+        child_node_id: str | None = None,
+        link_id: str | None = None,
+        source_node_id: str | None = None,
+        source_revision_id: str | None = None,
+        parent_node_id: str | None = None,
+        order: int | None = None,
+        chapters: tuple[str, ...] = (),
+        design: tuple[str, ...] = (),
+        title: str | None = None,
+        premise: str | None = None,
+        target_chars_per_chapter: int | None = None,
+        world_binding_id: str | None = None,
+        seed: int = 0,
+        temperature: float | None = None,
+    ) -> ProjectRunResult:
+        """Create a what-if node from one revision, regenerating only what is asked.
+
+        The new node is independent: it gets its own revision, runs and link.
+        A world binding is copied only when ``world_binding_id`` names one of
+        the source revision's bindings.
+        """
+        with self.store.execution_lock(project_id):
+            source_snapshot = self.store.load_node_snapshot(project_id, source_node_id)
+            source_node = source_snapshot.root_node
+            source = self._select_source_revision(
+                project_id, source_snapshot, source_revision_id,
+            )
+            runs = self._source_runs(project_id, source_snapshot, source)
+            context = self._revise_context(
+                project_id, source_snapshot, source, runs,
+                kind="branch", chapters=chapters, design=design,
+            )
+            new_spec = self._derived_spec(
+                source, title=title, premise=premise,
+                target_chars_per_chapter=target_chars_per_chapter,
+                project_id=project_id,
+            )
+            link = self.store.create_child(
+                project_id, new_spec,
+                parent_node_id=parent_node_id,
+                order=order,
+                child_node_id=child_node_id,
+                link_id=link_id,
+                derived=self._derived_record(
+                    "branch", source_node.id, source.id, runs, context,
+                ),
+            )
+            self._copy_world_binding(
+                project_id, world_binding_id,
+                node_id=link.child_node_id, revision_id=link.child_revision_id,
+                source_node_id=source_node.id, source_revision_id=source.id,
+            )
+            return self._execute_derived(
+                project_id, link.child_node_id, provider, revise=context,
+                seed=seed, temperature=temperature,
+            )
+
+    def _execute_derived(
+        self, project_id: str, node_id: str, provider: Provider, *,
+        revise: ReviseContext, seed: int, temperature: float | None,
+    ) -> ProjectRunResult:
+        """Start the three checkpoints of a derived revision and execute them."""
+        snapshot = self.store.load_node_snapshot(project_id, node_id)
+        attempt = self._attempt(snapshot, revise=revise)
+        configs = {
+            stage: _StageConfig(
+                seed=seed,
+                temperature=temperature if temperature is not None
+                else _default_temperature(stage),
+            )
+            for stage in DEFAULT_STAGES
+        }
+        existing: dict[str, StageCheckpoint] = {}
+        for stage, config in configs.items():
+            checkpoint = self._new_checkpoint(attempt, stage, "pending", config=config)
+            self.store.save_checkpoint(checkpoint)
+            existing[stage] = checkpoint
+        return self._execute(attempt, provider, configs, existing)
+
+    def _select_source_revision(
+        self, project_id: str, snapshot: ProjectSnapshot,
+        source_revision_id: str | None,
+    ) -> WorkNodeRevision:
+        """Return a completed revision of the snapshot's node."""
+        node = snapshot.root_node
+        if source_revision_id is None or source_revision_id == snapshot.revision.id:
+            status = self.store.status(project_id, node.id, include_descendants=False)
+            if status["state"] != "complete":
+                raise ProjectRunError(
+                    f"revision {snapshot.revision.id} is {status['state']}; "
+                    "only a complete revision can be revised or branched",
+                    project_id=project_id,
+                )
+            return snapshot.revision
+        try:
+            source = self.store.load_revision(project_id, node.id, source_revision_id)
+        except ProjectError as exc:
+            raise ProjectRunError(
+                f"revision not found on node {node.id}: {source_revision_id}",
+                project_id=project_id,
+            ) from exc
+        if source.id == snapshot.revision.id:
+            return source
+        # An older revision has no checkpoints any more; completion is proven
+        # by the presence of an ok run for every stage.
+        runs_for_revision(self.store, project_id, node.id, source.id)
+        return source
+
+    def _source_runs(
+        self, project_id: str, snapshot: ProjectSnapshot, source: WorkNodeRevision,
+    ) -> dict[str, str]:
+        node = snapshot.root_node
+        if source.id == snapshot.revision.id:
+            status = self.store.status(project_id, node.id, include_descendants=False)
+            runs = {
+                stage: (status["checkpoints"].get(stage) or {}).get("run_id")
+                for stage in DEFAULT_STAGES
+            }
+            if all(run_id for run_id in runs.values()):
+                return {stage: str(run_id) for stage, run_id in runs.items()}
+        try:
+            return runs_for_revision(self.store, project_id, node.id, source.id)
+        except ReviseError as exc:
+            raise ProjectRunError(str(exc), project_id=project_id) from exc
+
+    def _revise_context(
+        self, project_id: str, snapshot: ProjectSnapshot,
+        source: WorkNodeRevision, runs: dict[str, str], *,
+        kind: str, chapters: tuple[str, ...], design: tuple[str, ...],
+    ) -> ReviseContext:
+        try:
+            return read_context(
+                self.store, project_id, snapshot.root_node.id, source.id, runs,
+                kind=kind, chapters=chapters, design=design,
+            )
+        except ReviseError as exc:
+            raise ProjectRunError(str(exc), project_id=project_id) from exc
+
+    @staticmethod
+    def _derived_spec(
+        source: WorkNodeRevision, *, title: str | None, premise: str | None,
+        target_chars_per_chapter: int | None, project_id: str = "",
+    ):
+        """Copy the source specification; a revise never changes chapter count."""
+        spec = source.spec
+        if target_chars_per_chapter is not None:
+            if (
+                isinstance(target_chars_per_chapter, bool)
+                or not isinstance(target_chars_per_chapter, int)
+                or target_chars_per_chapter < 1
+            ):
+                raise ProjectRunError(
+                    "target_chars_per_chapter must be a positive integer",
+                    project_id=project_id,
+                )
+        return replace(
+            spec,
+            title=spec.title if title is None else title,
+            premise=spec.premise if premise is None else premise,
+            target_chars_per_chapter=(
+                spec.target_chars_per_chapter
+                if target_chars_per_chapter is None else target_chars_per_chapter
+            ),
+        )
+
+    @staticmethod
+    def _derived_record(
+        kind: str, source_node_id: str, source_revision_id: str,
+        runs: dict[str, str], context: ReviseContext,
+    ) -> dict[str, Any]:
+        return {
+            "kind": kind,
+            "source_node_id": source_node_id,
+            "source_revision_id": source_revision_id,
+            "source_runs": dict(sorted(runs.items())),
+            "chapters": list(context.chapters),
+            "design": list(context.design),
+        }
+
+    def _copy_world_binding(
+        self, project_id: str, world_binding_id: str | None, *,
+        node_id: str, revision_id: str,
+        source_node_id: str, source_revision_id: str,
+    ) -> None:
+        """Copy a binding only when the operator names one explicitly."""
+        if world_binding_id is None:
+            return
+        world = WorldStore(self.store)
+        source = next((
+            item for item in world.validate(project_id).bindings
+            if item.id == world_binding_id
+            and item.node_id == source_node_id
+            and item.revision_id == source_revision_id
+        ), None)
+        if source is None:
+            raise ProjectRunError(
+                "world_binding_id must identify a binding of the source revision",
+                project_id=project_id,
+            )
+        world.save_binding(WorkWorldBinding.create(
+            id=new_id("binding"), project_id=project_id,
+            node_id=node_id, revision_id=revision_id,
+            time_span_ids=source.time_span_ids,
+            region_ids=source.region_ids,
+            culture_state_ids=source.culture_state_ids,
+            created_at=utc_now(),
+        ))
+
     def resume(
         self, project_id: str, provider: Provider, *, node_id: str | None = None,
     ) -> ProjectRunResult:
@@ -416,6 +728,7 @@ class ProjectRunner:
             attempt = self._attempt(
                 snapshot, continuation=self._continuation_for_snapshot(snapshot),
                 context_packet_override=recorded_context,
+                revise=self._revise_for_snapshot(project_id, snapshot),
             )
             return self._execute(
                 attempt, provider, configs, existing,
@@ -575,6 +888,7 @@ class ProjectRunner:
     def _attempt(
         self, snapshot: ProjectSnapshot, *, continuation: ContinuationContext | None = None,
         context_packet_override: tuple[bool, ContextPacket | None] | None = None,
+        revise: ReviseContext | None = None,
     ) -> _Attempt:
         packet = (
             build_context_packet(self.store, snapshot.project.id, snapshot.root_node.id)
@@ -587,6 +901,7 @@ class ProjectRunner:
             attempt_id=new_id("att"),
             continuation=continuation,
             context_packet=packet,
+            revise=revise,
         )
 
     def _continuation_for_snapshot(
@@ -594,6 +909,10 @@ class ProjectRunner:
     ) -> ContinuationContext | None:
         revision = snapshot.revision
         if revision.parent_revision_id is None:
+            return None
+        if revision.derived is not None:
+            # A derived revision already carries the source chapters; its
+            # regeneration selection lives in ``revise`` instead.
             return None
         missing = [stage for stage in DEFAULT_STAGES if stage not in revision.parent_runs]
         if missing:
@@ -686,9 +1005,14 @@ class ProjectRunner:
             source_run_id = old.run_id if stage == resume_stage else None
             resume_provider = None
             stage_provider = provider
+            suffixes = []
+            if attempt.revise is not None:
+                suffixes.append(attempt.revise.prompt_suffix)
             if attempt.context_packet is not None and stage != "plan":
+                suffixes.append(attempt.context_packet.prompt_suffix())
+            if suffixes and stage != "plan":
                 stage_provider = _ContextProvider(
-                    provider, attempt.context_packet.prompt_suffix(),
+                    provider, "\n\n".join(item.strip() for item in suffixes),
                 )
             if source_run_id is not None:
                 try:
@@ -710,9 +1034,16 @@ class ProjectRunner:
                     ) from exc
                 stage_provider = resume_provider
             input_artifacts = self._input_artifacts(stage, results)
-            if stage == "plan":
+            if stage == "plan" and attempt.revise is not None:
+                stage_provider = _CARRIED
+                operation = lambda ledger: self._carry_plan(attempt, ledger)
+            elif stage == "plan":
                 operation = lambda ledger: self._plan(
                     attempt, ledger, stage_provider, configs[stage].seed,
+                )
+            elif stage == "design" and attempt.revise is not None:
+                operation = lambda ledger: self._revise_design(
+                    attempt, ledger, results["plan"].value, stage_provider, configs[stage],
                 )
             elif stage == "design":
                 operation = lambda ledger: build_design(
@@ -870,13 +1201,165 @@ class ProjectRunner:
             initial_drafts=(
                 attempt.continuation.drafts if attempt.continuation else ()
             ),
+            preserve=(attempt.revise.drafts if attempt.revise else ()),
         )
         if len(draft.chapters) != attempt.pipeline.chapters:
             raise ValueError(
                 f"draft produced {len(draft.chapters)} chapters; "
                 f"WorkSpec requires {attempt.pipeline.chapters}"
             )
+        if attempt.revise is not None:
+            self._verify_carried_text(attempt.revise, ledger, draft)
+            ledger.write_json("revise.json", self._revise_record(
+                attempt, "draft",
+                copied=[f"text/{item}.md" for item in attempt.revise.carried_chapters],
+                regenerated=[f"text/{item}.md" for item in attempt.revise.chapters],
+            ))
         return draft
+
+    def _revise_for_snapshot(
+        self, project_id: str, snapshot: ProjectSnapshot,
+    ) -> ReviseContext | None:
+        """Rebuild the carry context of a derived revision for a resume."""
+        try:
+            return context_from_revision(
+                self.store, project_id, snapshot.root_node.id, snapshot.revision,
+            )
+        except ReviseError as exc:
+            raise ProjectRunError(str(exc), project_id=project_id) from exc
+
+    def _carry_plan(self, attempt: _Attempt, ledger: RunLedger) -> Canon:
+        """Copy the source canon into a new plan run without a provider call."""
+        context = attempt.revise
+        assert context is not None  # routed only for derived revisions
+        project_id = attempt.snapshot.project.id
+        source = (
+            self.store.project_dir(project_id) / "runs" / context.source_runs["plan"]
+        )
+        canon_source = source / "canon"
+        target = ledger.path / "canon"
+        target.mkdir(parents=True, exist_ok=True)
+        copied: list[str] = []
+        for path in sorted(canon_source.glob("*.json")):
+            destination = target / path.name
+            destination.write_bytes(path.read_bytes())
+            if _sha256(destination.read_bytes()) != _sha256(path.read_bytes()):
+                raise ProjectRunError(
+                    f"carried canon changed while copying: {path.name}",
+                    project_id=project_id,
+                )
+            copied.append(f"canon/{path.name}")
+        ledger.write_text("brief.md", _project_brief(attempt))
+        ledger.write_json("plan.json", {
+            "task": attempt.pipeline.task.as_dict(),
+            "attempts": 0,
+            "carried": {
+                "source_run_id": context.source_runs["plan"],
+                "source_revision_id": context.source_revision_id,
+                "regenerated": False,
+            },
+        })
+        ledger.track(copied)
+        ledger.write_json("revise.json", self._revise_record(
+            attempt, "plan", copied=copied, regenerated=[],
+        ))
+        ledger.finish("ok")
+        canon = load_canon(target)
+        if len(canon.chapters) != attempt.pipeline.chapters:
+            raise ProjectRunError(
+                "carried canon chapter count differs from the revision WorkSpec",
+                project_id=project_id,
+            )
+        return canon
+
+    def _revise_design(
+        self, attempt: _Attempt, ledger: RunLedger, canon: Canon,
+        provider: Provider, config: _StageConfig,
+    ) -> Design:
+        """Copy the unselected design documents, regenerate the selected ones."""
+        context = attempt.revise
+        assert context is not None
+        target = ledger.path / "design"
+        target.mkdir(parents=True, exist_ok=True)
+        try:
+            copied = copy_carried_files(context, ledger.path, prefix="design")
+        except ReviseError as exc:
+            raise ProjectRunError(str(exc), project_id=attempt.snapshot.project.id) from exc
+        copied_set = set(copied)
+        if context.design:
+            design = build_design(
+                attempt.pipeline.task, provider, ledger, canon,
+                temperature=config.temperature, seed=config.seed,
+                docs=context.design,
+            )
+        else:
+            carried_names = sorted(
+                name for name in context.carried_design
+                if f"design/{name}.json" in copied_set
+            )
+            ledger.write_json("design.json", {
+                "task": attempt.pipeline.task.id,
+                "carried": carried_names,
+                "docs": {
+                    name: {"status": "carried", "attempts": 0, "repairs": 0,
+                           "findings": 0}
+                    for name in carried_names
+                },
+                "unresolved": [],
+                "missing": [
+                    name for name in context.carried_design
+                    if f"design/{name}.json" not in copied_set
+                ],
+                "findings": 0,
+                "attempts": 0,
+                "repairs": 0,
+            })
+            design = Design(task_id=attempt.pipeline.task.id, docs=())
+            ledger.track(copied)
+            ledger.finish("ok")
+        ledger.write_json("revise.json", self._revise_record(
+            attempt, "design", copied=copied,
+            regenerated=[f"design/{name}.json" for name in context.design],
+        ))
+        return design
+
+    @staticmethod
+    def _verify_carried_text(
+        context: ReviseContext, ledger: RunLedger, draft: Draft,
+    ) -> None:
+        """Prove that a carried chapter's new artifact has the source bytes."""
+        for chapter in draft.chapters:
+            relative = f"text/{chapter.id}.md"
+            expected = context.source_sha256.get(relative)
+            if expected is None:
+                continue
+            path = ledger.path / relative
+            if not path.is_file():
+                raise ValueError(f"carried chapter text is missing: {relative}")
+            if _sha256(path.read_bytes()) != expected:
+                raise ValueError(f"carried chapter text changed: {relative}")
+
+    def _revise_record(
+        self, attempt: _Attempt, stage: str, *, copied: list[str],
+        regenerated: list[str],
+    ) -> dict[str, Any]:
+        context = attempt.revise
+        assert context is not None
+        return {
+            "schema": "project-revise-v1",
+            "kind": context.kind,
+            "stage": stage,
+            "source_node_id": context.source_node_id,
+            "source_revision_id": context.source_revision_id,
+            "source_runs": dict(sorted(context.source_runs.items())),
+            "copied": sorted(copied),
+            "regenerated": sorted(regenerated),
+            "source_sha256": {
+                name: digest for name, digest in sorted(context.source_sha256.items())
+                if name in set(copied)
+            },
+            "unchanged_bytes": True,
+        }
 
     def _run_stage(
         self, attempt: _Attempt, stage: str, provider: Provider, *,
@@ -907,7 +1390,8 @@ class ProjectRunner:
                 provider=provider.name,
                 temperature=config.temperature,
                 revision_id=(
-                    attempt.snapshot.revision.id if attempt.continuation else None
+                    attempt.snapshot.revision.id
+                    if attempt.continuation or attempt.revise else None
                 ),
             )
             ledger.write_json("project-input.json", {
@@ -1043,6 +1527,8 @@ class ProjectRunner:
             raise ValueError(f"unknown project stage: {stage}")
         if (ledger.path / "resume-audit.json").is_file():
             relatives.append("resume-audit.json")
+        if (ledger.path / "revise.json").is_file():
+            relatives.append("revise.json")
         return tuple(
             self.store.artifact_ref(
                 project_id, ledger.run_id, relative,

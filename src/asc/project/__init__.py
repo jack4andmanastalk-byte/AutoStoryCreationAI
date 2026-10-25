@@ -30,6 +30,7 @@ from .model import (
 )
 from .nested import CompositionResult, NestedError, ProjectComposer
 from .resume import ResumeError, ResumeProvider
+from .revise import ReviseContext, ReviseError
 from .runner import (
     ProjectDependencyError,
     ProjectRunError,
