@@ -1,7 +1,7 @@
 # 依拠した技法と、本実装で補った条件
 
-seed-04 が引く 15 件のうち、本実装が直接使う 12 件を記録する。
-実行可能度は `executable` 5 件、`partial` 7 件。
+seed-04 が引く 15 件のうち、この表には 12 件を記録する。
+実行可能度は `executable` 4 件、`partial` 8 件（`research/catalog/executability.jsonl`）。
 `T024`（サブテクスト）は `relationship-web` 側に、
 `C02`（理想像の合成）は類型論の参考に留めた。
 

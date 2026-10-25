@@ -13,7 +13,7 @@
 | `production/game_narrative_us:P33` | 本文から独立した安定した line ID | partial | 本文と ID を分ける原則 | マーカーは本文中に置くが、台帳は ID で参照する |
 | `production/game_narrative_us:P36` | 改稿の依存資産と再作業範囲 | partial | 変更の影響範囲を一覧化する | 違反レポートに `canon_ref` を付けて影響先を示す |
 | `production/game_narrative_us:P38` | 物語パッチを preview・正式版で扱う | partial | 改訂を段階的に扱う | `--fail-on high` の段階導入（まず high だけ止める） |
-| `narrative/japan_2026:T033` | 一対一の張りと回収 | executable | 初出と回収の位置を記録する | 「回収章 ≥ 設置章」を検査条件にした |
+| `narrative/japan_2026:T033` | 一対一の張りと回収 | partial | 初出と回収の位置を記録する | 「回収章 ≥ 設置章」を検査条件にした |
 | `narrative/japan_2026:T034` | 複数の張りを一つの回収へ集約 | executable | 複数の手掛かりを同じ真相へ | **未実装**（回収先の同一性は意味判定が要る） |
 | `narrative/japan_2026:T035` | 張り・回収を交互につなぐ | partial | 段階的な理解更新 | 未回収の検出のみ。交互配置の良し悪しは見ない |
 | `narrative/japan_2026:T036` | 回収を分岐させる | partial | 一つの提示が複数の回収に接続する | 未実装（構造が DAG になるため別検査） |
