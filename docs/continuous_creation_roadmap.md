@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜11を実装済み。次は編纂view/packetの`diff`と`status`/`doctor`の情報統合を候補とする**
+- 状態: **PR 1〜12を実装済み。次は`status`と`doctor`の情報統合を候補とする**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -443,9 +443,26 @@ byte-identicalであること、分岐がprovider呼び出し0回で作れるこ
 bytes不変、完了stageの再利用、draft/revise失敗からの再試行、未回答requestを持つstageの
 拒否、CLIの終了コードと表示を検査する。
 
+### PR 12: 編纂view・ContextPacketのrecord単位差分（実装済み）
+
+`diff` で、2つのContextPacketまたは同じprofileの2つの編纂viewをrecord単位で比較する。
+`--left` / `--right` は `current`、`stage:<stage>`、`run:<run_id>`、
+`compile:<profile_id>[@<content_version>]` を受け付ける。packet側は世界の選択資料
+（`record_type`・ID・`content_version`）と祖先compact canonの項目hash、編纂側は
+manifestの`source_references`を比較し、`added` / `removed` / `changed` / `unchanged`と、
+bindingや省略件数、祖先revisionの差を返す。read-onlyで、記録側のrunや編纂物は書き換えない。
+packetと編纂viewの混在比較は無意味なので拒否する。
+
+**完了条件**: 編纂versionが変わった理由を、どのrecordの追加・削除・版変更かで説明でき、
+比較が保存物を一切変更しない。
+
+確認: `tests/test_project_diff.py` が、同一revisionのstage比較が`identical`になること、
+明示canon採用・supersessionと祖先continuationが追加/削除recordとして現れること、
+編纂2版の差分、版未指定の拒否、種類混在の拒否、read-only性、CLIの終了コードを検査する。
+
 ### その後の候補
 
-- 編纂view・ContextPacketのrecord単位差分（`diff`）と、`status` / `doctor` の情報統合。
+- `status` と `doctor` の情報統合（重複する表示の整理。`doctor` はread-onlyのまま）。
 - 出来事中心の年代記と時代別の知識選択が必要になったら`WorldEvent` / `KnowledgeState` / `CharacterState`を追加する。
 - 多数作品・大規模世界で実測上の問題が出たら、ContextProfile、依存順queue、index、incremental検査を追加する。
 - 上記の実装・運用で繰り返し現れる共通形が見えた場合だけX-01へ進む。
@@ -510,4 +527,4 @@ bundle復元の回帰testを追加した。PR 8で `world_context.py` / `world_c
 編纂決定性の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、
 新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**PR 1〜11は実装済み。次は編纂view/packetのrecord単位`diff`と`status`/`doctor`の情報統合を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**
+**PR 1〜12は実装済み。次は`status`と`doctor`の情報統合を検討する。X-01のskill registryは、実運用で必要になった共通形だけを後置実装する。**

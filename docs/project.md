@@ -516,6 +516,39 @@ python3 scripts/story_project.py context show prj-seaside --node node-tide \
 - `--json` の `schema` は `asc-project-context-view-v1`、`read_only` は常に `true` です。
   未知のrun・stage、node不在はexit 2です。
 
+### record単位の差分: `diff`
+
+`context show` のdriftは「違う」ことと件数しか示さないため、どのrecordが追加・削除・
+版変更されたかは `diff` で確認します。read-onlyで、生成・再開・採用は行いません。
+
+```bash
+# 記録済みpacketと現在値
+python3 scripts/story_project.py diff prj-seaside --node node-tide \
+  --left stage:design --right current
+# 同じrevisionの別stage（同じpacketなら identical: yes）
+python3 scripts/story_project.py diff prj-seaside --node node-tide \
+  --left run:att-0123abcd-plan --right stage:draft
+# 編纂viewの2版
+python3 scripts/story_project.py diff prj-seaside \
+  --left compile:profile-chronicle@<content_version> \
+  --right compile:profile-chronicle@<content_version>
+```
+
+- `--left` / `--right` は `current`、`stage:<stage>`（現在revisionのcheckpoint）、
+  `run:<run_id>`、`compile:<profile_id>[@<content_version>]` を受け付けます。
+  編纂viewは同じprofileの版が複数ある場合だけ `@<content_version>` が必須で、
+  省略すると候補versionを添えてexit 2になります。
+- 比較単位はrecordです。packetでは世界の選択資料（`record_type`・ID・`content_version`）と、
+  各祖先のcompact canon項目（項目ごとのhash）を `scope` 付きで並べます。
+  編纂viewではmanifestの `source_references` を同じ形で並べます。
+- 出力は `added` / `removed` / `changed`（同一IDでversionが変わったもの）と `unchanged` 件数、
+  record以外の属性差（`binding_id`、`omitted_canon_count`、編纂の `content_version` など）、
+  祖先の `node_id → revision_id` の差です。`identical` はそれらが全て無い場合だけ `true` です。
+- packetと編纂viewを混ぜた比較は、全recordが追加と削除になるだけなのでexit 2で拒否します。
+- `--json` の `schema` は `asc-project-diff-v1`、`read_only` は常に `true` です。
+  未知のspec・stage・run、packetを持たないnodeはexit 2です。差分があってもexit 0です
+  （`diff` は検査の合否ではなく観測結果を返すため）。
+
 ### dogfoodで確認したこと
 
 小規模な実創作project（2時間軸・3地域・2文化・3文化状態、root→child→grandchild、
@@ -540,7 +573,7 @@ resumeが記録packetを固定していることを確認できました。復�
 - `doctor` の検出は保存済みrecordの参照・hashに限る。`content_version` を持たない
   世界record（例: regionの名称）の書き換えは検出できない。署名付きstorageではない。
 - 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
-  どのrecordの差で変わったかをCLIから一覧できない（`diff`候補）。
+  どのrecordの差で変わったかをCLIから一覧できない（PR 12の `diff` で解消）。
 
 ## 章単位の改訂とwhat-if分岐
 
@@ -674,11 +707,11 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 ## 次のincrement
 
 PR 9では運用可観測性（`doctor` / `context show`）を、PR 10では章単位の `revise` と
-what-if `branch` を、PR 11では失敗したstageの明示的な再試行（`resume --retry-failed`）を
-追加しました。創作projectの生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・
-bundle・検査が一通りCLIから操作できます。
-次に検討する候補は、編纂viewとpacketのrecord単位差分（`diff`）、`status` と `doctor` の
-情報統合です。詳細は
+what-if `branch` を、PR 11では失敗したstageの明示的な再試行（`resume --retry-failed`）を、
+PR 12ではContextPacketと編纂viewのrecord単位差分（`diff`）を追加しました。創作projectの
+生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・bundle・検査・差分確認が
+一通りCLIから操作できます。
+次に検討する候補は、`status` と `doctor` の情報統合です。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。

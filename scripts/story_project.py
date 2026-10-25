@@ -53,6 +53,7 @@ from asc.project import (  # noqa: E402
     WorldCompiler,
     WorldStore,
     build_context_view,
+    build_diff,
     inspect_project,
 )
 
@@ -345,6 +346,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     context_show.add_argument("--json", dest="json_output", action="store_true")
 
+    diff = subparsers.add_parser(
+        "diff",
+        help="compare two ContextPackets or two compilations record by record",
+    )
+    diff.add_argument("project_id")
+    diff.add_argument(
+        "--left", required=True,
+        help="current | stage:<stage> | run:<run_id> | "
+             "compile:<profile_id>[@<content_version>]",
+    )
+    diff.add_argument("--right", required=True, help="same forms as --left")
+    diff.add_argument("--node", dest="node_id", help="node for current/stage sides")
+    diff.add_argument("--json", dest="json_output", action="store_true")
+
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
@@ -572,6 +587,52 @@ def _print_context(view: dict) -> None:
         print("Recorded vs current: skipped (different revisions)")
     if view.get("external_out"):
         print(f"Packet written: {view['external_out']}")
+
+
+def _print_diff(report: dict) -> None:
+    def side(row: dict) -> str:
+        identity = row["identity"]
+        where = identity.get("run_id") or identity.get("stage")
+        if row["source"] == "compilation":
+            where = (
+                f"profile={identity.get('profile_id')} "
+                f"version={identity.get('content_version')}"
+            )
+        elif where is None:
+            where = identity.get("revision_id")
+        return (
+            f"{row['spec']} ({row['source']}; {where}; "
+            f"records={row['record_count']} sha256={row['document_sha256'][:16]})"
+        )
+
+    print(f"Project: {report['project_id']}")
+    print(f"Left:  {side(report['left'])}")
+    print(f"Right: {side(report['right'])}")
+    print("Identical: " + ("yes" if report["identical"] else "no"))
+    counts = report["counts"]
+    print(
+        f"Records: added={counts['added']} removed={counts['removed']} "
+        f"changed={counts['changed']} unchanged={counts['unchanged']}"
+    )
+    for row in report["records"]["added"]:
+        print(
+            f"  + {row['scope']} {row['record_type']} {row['id']} "
+            f"{row['content_version']}"
+        )
+    for row in report["records"]["removed"]:
+        print(
+            f"  - {row['scope']} {row['record_type']} {row['id']} "
+            f"{row['content_version']}"
+        )
+    for row in report["records"]["changed"]:
+        print(
+            f"  ~ {row['scope']} {row['record_type']} {row['id']} "
+            f"{row['left_content_version']} -> {row['right_content_version']}"
+        )
+    for key, change in sorted(report["attributes"].items()):
+        print(f"  ! {key}: {change['left']} -> {change['right']}")
+    for node, change in sorted(report["ancestors"].items()):
+        print(f"  ! ancestor {node}: {change['left'] or 'none'} -> {change['right'] or 'none'}")
 
 
 def _print_world(status: dict) -> None:
@@ -876,6 +937,16 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     if not regenerate:
                         print("Provider calls: none (the revision was copied in full)")
+            return 0
+
+        if args.command == "diff":
+            report = build_diff(
+                store, args.project_id, args.left, args.right, node_id=args.node_id,
+            ).to_dict()
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_diff(report)
             return 0
 
         if args.command == "doctor":
