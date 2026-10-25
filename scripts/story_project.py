@@ -15,6 +15,8 @@ revision for a completed work, and ``bundle export|verify|restore`` moves its
 replay materials to an external directory.  ``add-child`` creates an independent
 child below any node; ``run-tree`` uses parent-first dependency order;
 ``render`` and ``compose`` provide single-work and recursive pinned outputs.
+``world`` persists multiple timeframes, regions, culture states, revision-pinned
+work bindings, and explicitly adopted scoped canon.
 """
 from __future__ import annotations
 
@@ -30,6 +32,7 @@ from asc.pipeline import (  # noqa: E402
     CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
 )
 from asc.project import (  # noqa: E402
+    CanonScope,
     ProjectComposer,
     ProjectError,
     ReplayBundle,
@@ -39,6 +42,7 @@ from asc.project import (  # noqa: E402
     ProjectStore,
     ProjectValidationError,
     WorkSpec,
+    WorldStore,
 )
 
 
@@ -170,6 +174,47 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     bundle_restore.add_argument("bundle_dir")
     bundle_restore.add_argument("--json", dest="json_output", action="store_true")
 
+    world = subparsers.add_parser(
+        "world", help="persist time, space, culture, bindings, and explicit canon",
+    )
+    world_commands = world.add_subparsers(dest="world_command", required=True)
+    world_add = world_commands.add_parser("add", help="add one immutable world record")
+    world_add.add_argument("project_id")
+    world_add.add_argument("kind", choices=[
+        "timeframe", "time-span", "time-conversion", "region", "spatial-relation",
+        "culture", "culture-state", "culture-relation", "canon", "binding",
+    ])
+    world_add.add_argument("--file", required=True, help="UTF-8 JSON record; metadata is filled in")
+    world_add.add_argument("--json", dest="json_output", action="store_true")
+    world_status = world_commands.add_parser("status", help="inspect world records and stale canon")
+    world_status.add_argument("project_id")
+    world_status.add_argument("--node", dest="node_id", help="binding node (default: root)")
+    world_status.add_argument("--json", dest="json_output", action="store_true")
+    world_bind = world_commands.add_parser("bind", help="bind a node revision to explicit world IDs")
+    world_bind.add_argument("project_id")
+    world_bind.add_argument("--node", dest="node_id", help="node ID (default: root)")
+    world_bind.add_argument("--time-span", action="append", default=[], dest="time_span_ids")
+    world_bind.add_argument("--region", action="append", default=[], dest="region_ids")
+    world_bind.add_argument("--culture-state", action="append", default=[], dest="culture_state_ids")
+    world_bind.add_argument("--binding-id")
+    world_bind.add_argument("--json", dest="json_output", action="store_true")
+    world_adopt = world_commands.add_parser(
+        "adopt-canon", help="adopt a value from a completed node's pinned plan JSON",
+    )
+    world_adopt.add_argument("project_id")
+    world_adopt.add_argument("--node", dest="node_id", help="source node (default: root)")
+    world_adopt.add_argument("--artifact", required=True, help="project-relative pinned plan JSON path")
+    world_adopt.add_argument("--pointer", default="", help="RFC 6901 JSON pointer (default: whole document)")
+    world_adopt.add_argument("--scope", required=True, choices=[
+        "global", "timeframe", "region", "culture", "work", "node",
+    ])
+    world_adopt.add_argument("--scope-id", help="required except for global scope")
+    world_adopt.add_argument("--subject", required=True)
+    world_adopt.add_argument("--valid-span")
+    world_adopt.add_argument("--supersedes")
+    world_adopt.add_argument("--entry-id")
+    world_adopt.add_argument("--json", dest="json_output", action="store_true")
+
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
@@ -237,6 +282,19 @@ def _print_bundle(report: dict) -> None:
     if report.get("project_dir"):
         print(f"Restored: {report['project_dir']}")
     print("Verified: yes")
+
+
+def _print_world(status: dict) -> None:
+    print(f"Project: {status['project_id']}")
+    print(f"Selected node: {status['selected_node_id']}")
+    print(f"Selected revision: {status['selected_revision_id']}")
+    print("World records: " + ", ".join(
+        f"{kind}={count}" for kind, count in status["counts"].items()
+    ))
+    print(f"Current node binding: {'yes' if status['selected_binding'] else 'no'}")
+    current = [row for row in status["canon_entries"] if row["current"]]
+    stale = sum(1 for row in current if row["stale"])
+    print(f"Current canon: {len(current)}; stale: {stale}")
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -324,6 +382,57 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"SHA-256: {result.sha256}")
             else:
                 print(result.text, end="")
+            return 0
+
+        if args.command == "world":
+            world = WorldStore(store)
+            if args.world_command == "add":
+                payload = json.loads(Path(args.file).expanduser().read_text(encoding="utf-8"))
+                record = world.add_record(args.project_id, args.kind, payload)
+                report = {
+                    "project_id": args.project_id,
+                    "record": record.to_dict(),
+                    "counts": world.status(args.project_id)["counts"],
+                }
+            elif args.world_command == "bind":
+                root = store.load_project(args.project_id).root_node_id
+                record = world.bind_work(
+                    args.project_id, args.node_id or root,
+                    time_span_ids=tuple(args.time_span_ids),
+                    region_ids=tuple(args.region_ids),
+                    culture_state_ids=tuple(args.culture_state_ids),
+                    binding_id=args.binding_id,
+                )
+                report = {
+                    "project_id": args.project_id,
+                    "record": record.to_dict(),
+                    "counts": world.status(args.project_id)["counts"],
+                }
+            elif args.world_command == "adopt-canon":
+                root = store.load_project(args.project_id).root_node_id
+                record = world.adopt_world_canon(
+                    args.project_id, args.node_id or root,
+                    source_artifact_path=args.artifact, json_pointer=args.pointer,
+                    scope=CanonScope.from_dict({
+                        "kind": args.scope, "reference_id": args.scope_id,
+                    }),
+                    subject=args.subject, valid_span_id=args.valid_span,
+                    supersedes_id=args.supersedes, entry_id=args.entry_id,
+                )
+                report = {
+                    "project_id": args.project_id,
+                    "record": record.to_dict(),
+                    "counts": world.status(args.project_id)["counts"],
+                }
+            else:
+                report = world.status(args.project_id, args.node_id)
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            elif args.world_command == "status":
+                _print_world(report)
+            else:
+                print(f"World record: {report['record']['id']}")
+                print(f"Type: {report['record']['record_type']}")
             return 0
 
         if args.command == "run-tree":
