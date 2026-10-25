@@ -11,7 +11,8 @@
 
 | ドキュメント | 内容 |
 | --- | --- |
-| [`curation/materials_inventory_2026-10-25.md`](curation/materials_inventory_2026-10-25.md) | **現状の棚卸し**。採録資料→カタログ→13 スキル→実行工程の接続と、次に検証する技法。 |
+| [`curation/materials_inventory_2026-10-25.md`](curation/materials_inventory_2026-10-25.md) | **棚卸し**。採録資料→カタログ→13 スキル→実行工程の接続（2026-10-25 時点）。 |
+| [`curation/plot_to_draft_2026-10-25.md`](curation/plot_to_draft_2026-10-25.md) | **後続実装**。T004 の幕・転換点を章別 Draft メモへ渡す条件と、固定台本での L1 配線比較。 |
 | [`curation/selection_report.md`](curation/selection_report.md) | **採用判定の本体**。実用性の評価基準、34 成果物の採否、重複・権利・除外理由、次工程。 |
 | [`curation/gap_analysis_and_added_sources.md`](curation/gap_analysis_and_added_sources.md) | コーパスの空白を埋める追加調査（2026 年のベンチマーク、長編生成、Agent Skills、評価ハーネス、日本語研究）。 |
 | [`catalog/README.md`](catalog/README.md) | 統一カタログのスキーマと読み方、件数、限界。 |

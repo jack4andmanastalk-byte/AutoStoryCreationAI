@@ -98,6 +98,11 @@ def test_revise_regenerates_one_chapter_and_keeps_the_rest(tmp_path: Path):
     result = runner.revise("prj-revise", provider, chapters=("ch02",))
 
     assert [call.purpose for call in provider.calls] == ["draft:ch02"]
+    # The design run carries plot.json without its old report. The current
+    # canon is checked again before the inherited act/turn reaches the draft.
+    assert "幕 confrontation／問い: 記録と情のどちらを取るか" in provider.calls[0].prompt
+    assert "転換点 t2／選択: アリアは帳面の一頁を見て" in provider.calls[0].prompt
+    assert "幕 setup／問い" not in provider.calls[0].prompt
     status = result.status
     assert status["state"] == "complete"
     assert status["current_revision_id"] != old_revision
