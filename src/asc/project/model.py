@@ -344,6 +344,8 @@ class StageCheckpoint:
     seed: int | None = None
     temperature: float | None = None
     resume_of: str | None = None
+    #: Set when the stage was started again after a failed attempt.
+    retry_of: str | None = None
     pending: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -362,6 +364,7 @@ class StageCheckpoint:
             "seed": self.seed,
             "temperature": self.temperature,
             "resume_of": self.resume_of,
+            "retry_of": self.retry_of,
             "pending": self.pending,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -383,6 +386,7 @@ class StageCheckpoint:
             seed=data.get("seed"),
             temperature=data.get("temperature"),
             resume_of=data.get("resume_of"),
+            retry_of=data.get("retry_of"),
             pending=data.get("pending"),
             created_at=data["created_at"],
             updated_at=data["updated_at"],

@@ -194,6 +194,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     resume.add_argument("--script", help="scripted response JSON (with --provider scripted)")
     resume.add_argument("--command", dest="provider_command", help="external provider command")
     resume.add_argument("--model")
+    resume.add_argument(
+        "--retry-failed",
+        action="store_true",
+        help="start a failed stage again as a fresh run instead of refusing",
+    )
     resume.add_argument("--json", dest="json_output", action="store_true")
 
     child = subparsers.add_parser("add-child", help="add an independent child below any node")
@@ -398,6 +403,21 @@ def _print_human(status: dict, *, created: bool) -> None:
     )
     if status.get("attempt_id"):
         print(f"Attempt: {status['attempt_id']}")
+    failed = [
+        name for name, row in status.get("checkpoints", {}).items()
+        if row.get("status") == "failed"
+    ]
+    if failed:
+        print(
+            f"Failed stages: {', '.join(failed)} "
+            "(resume --retry-failed starts them again)"
+        )
+    retried = [
+        f"{name}<-{row['retry_of']}"
+        for name, row in status.get("checkpoints", {}).items() if row.get("retry_of")
+    ]
+    if retried:
+        print(f"Retried stages: {', '.join(retried)}")
     print(f"Pending responses: {len(status.get('pending', []))}")
     if status.get("links"):
         stale = sum(1 for link in status["links"] if link["stale"])
@@ -774,6 +794,7 @@ def main(argv: list[str] | None = None) -> int:
             elif args.command == "resume":
                 result = runner.resume(
                     args.project_id, provider, node_id=args.node_id,
+                    retry_failed=args.retry_failed,
                 )
             else:
                 result = runner.continue_project(
