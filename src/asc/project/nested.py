@@ -23,6 +23,13 @@ class NestedError(ProjectError):
     """A nested work cannot be rendered or compiled from its pinned inputs."""
 
 
+#: Why a link was left out of a partial composition.
+OMITTED_NO_PINNED_DRAFT = "no-pinned-draft"
+
+#: Visible in the composed markdown so an omission is never silent.
+OMITTED_NOTICE = "この作品は未収録（未完成）。"
+
+
 @dataclass(frozen=True)
 class CompositionResult:
     project_id: str
@@ -33,9 +40,10 @@ class CompositionResult:
     text: str
     path: Path | None = None
     links: tuple[dict[str, Any], ...] = ()
+    omitted: tuple[dict[str, Any], ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data = {
             "project_id": self.project_id,
             "node_id": self.node_id,
             "revision_id": self.revision_id,
@@ -44,6 +52,10 @@ class CompositionResult:
             "path": str(self.path) if self.path is not None else None,
             "links": list(self.links),
         }
+        # Additive: a complete composition keeps exactly the old shape.
+        if self.omitted:
+            data["omitted"] = list(self.omitted)
+        return data
 
 
 def _pinned_link_dict(link: WorkLink) -> dict[str, Any]:
@@ -175,7 +187,19 @@ class ProjectComposer:
             sha256=digest, text=text,
         )
 
-    def compose(self, project_id: str, node_id: str | None = None) -> CompositionResult:
+    def _current_title(self, project_id: str, node: WorkNode) -> str:
+        """Best-effort title of an unpinned child, for an omission placeholder."""
+        try:
+            revision = self.store.load_revision(
+                project_id, node.id, node.current_revision_id,
+            )
+        except (ProjectError, OSError, ValueError):
+            return node.id
+        return revision.spec.title or node.id
+
+    def compose(
+        self, project_id: str, node_id: str | None = None, *, partial: bool = False,
+    ) -> CompositionResult:
         """Compile one current draft and all pinned descendants recursively.
 
         The selected node is heading level one; each descendant adds one level.
@@ -183,6 +207,13 @@ class ProjectComposer:
         by its link.  A child's current revision therefore cannot silently change
         an ancestor's composition.  Nested link payloads are part of the content
         identity, while mutable link timestamps are excluded.
+
+        By default every link must be pinned.  ``partial=True`` keeps compiling
+        when a child has no pinned draft: the link keeps its position, but its
+        section becomes an explicit omission marker (a visible notice plus an
+        ``asc-omitted`` comment) and the link is listed in ``omitted``.  A partial
+        composition therefore has a different ``content_version`` than the full
+        one and never pretends the missing work was included.
         """
         snapshot = self.store.load_node_snapshot(project_id, node_id)
         parent_id = snapshot.root_node.id
@@ -193,20 +224,42 @@ class ProjectComposer:
             parent_body = self._chapters(project_id, parent_artifacts)
             sections = [*self._heading(parent, parent_revision), parent_body]
             visiting: set[str] = {parent_id}
+            omitted: list[dict[str, Any]] = []
 
             def append_children(node: WorkNode, level: int) -> list[dict[str, Any]]:
                 if node.id not in visiting:
                     raise NestedError(f"composition ancestry lost track of node {node.id}")
                 payloads: list[dict[str, Any]] = []
                 for link in self.store.list_links(project_id, node.id):
-                    if not link.artifacts:
-                        raise NestedError(
-                            f"link {link.id} has no pinned draft; "
-                            "run the child or adopt its completed revision"
-                        )
                     child = self.store.load_node(project_id, link.child_node_id)
                     if child.id in visiting:
                         raise NestedError(f"cycle detected while composing node {child.id}")
+                    if not link.artifacts:
+                        if not partial:
+                            raise NestedError(
+                                f"link {link.id} has no pinned draft; "
+                                "run the child or adopt its completed revision"
+                            )
+                        title = self._current_title(project_id, child)
+                        omitted.append({
+                            "link_id": link.id,
+                            "node_id": child.id,
+                            "order": link.order,
+                            "title": title,
+                            "reason": OMITTED_NO_PINNED_DRAFT,
+                        })
+                        sections.extend([
+                            "",
+                            f"{'#' * (level + 1)} {title}",
+                            "",
+                            (
+                                f"<!-- asc-omitted: link={link.id} node={child.id} "
+                                f"order={link.order} reason={OMITTED_NO_PINNED_DRAFT} -->"
+                            ),
+                            "",
+                            f"> {OMITTED_NOTICE}",
+                        ])
+                        continue
                     child_revision = self.store.load_revision(
                         project_id, child.id, link.child_revision_id,
                     )
@@ -236,7 +289,7 @@ class ProjectComposer:
             text = "\n".join(sections).rstrip() + "\n"
             text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
             parent_version = WorkLink.version_for(parent_revision, parent_artifacts)
-            content_version = hashlib.sha256(canonical_json({
+            identity: dict[str, Any] = {
                 "parent": {
                     "node_id": parent_id,
                     "revision_id": parent_revision.id,
@@ -244,7 +297,12 @@ class ProjectComposer:
                 },
                 "links": link_payloads,
                 "text_sha256": text_sha256,
-            }).encode("utf-8")).hexdigest()
+            }
+            if omitted:
+                identity["omitted"] = omitted
+            content_version = hashlib.sha256(
+                canonical_json(identity).encode("utf-8")
+            ).hexdigest()
             relative = f"artifacts/{parent_id}/combined-{content_version[:16]}.md"
             output_path = self.store.project_dir(project_id) / relative
             manifest_path = output_path.with_suffix(".json")
@@ -260,6 +318,8 @@ class ProjectComposer:
                 "parent_content_version": parent_version,
                 "links": link_payloads,
             }
+            if omitted:
+                manifest["omitted"] = omitted
             _write_once(output_path, text.encode("utf-8"))
             _write_once(
                 manifest_path,
@@ -270,5 +330,5 @@ class ProjectComposer:
         return CompositionResult(
             project_id=project_id, node_id=parent_id, revision_id=parent_revision.id,
             content_version=content_version, sha256=text_sha256, text=text,
-            path=output_path, links=tuple(link_payloads),
+            path=output_path, links=tuple(link_payloads), omitted=tuple(omitted),
         )
