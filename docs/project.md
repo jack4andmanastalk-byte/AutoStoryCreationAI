@@ -464,6 +464,33 @@ project/node/stage、request/response path、response fileの有無が集約さ�
 python3 scripts/story_project.py --root /path/to/projects status prj-seaside
 ```
 
+## 運用モード：人間が開始する
+
+この基盤は、**モデルをArena.aiのチャットに置き、生成の開始だけ人間が行う**運用を前提にします。
+APIキーはrepositoryに置かず、`scripts/chat_operator.py` が「モデル＝人間（またはチャット）」の
+providerになります。
+
+```bash
+# 1回の生成を人間が開始する（応答が無ければexit 3でその場に止まる）
+python3 scripts/story_project.py run prj-seaside \
+  --provider command --command "python3 scripts/chat_operator.py --dir runs/operator/pilot"
+
+# 何が足りないか / 次に何をするか / 続きから
+python3 scripts/chat_operator.py --dir runs/operator/pilot --status
+python3 scripts/story_project.py status prj-seaside     # Next: に次の1コマンド
+python3 scripts/story_project.py resume prj-seaside --provider command --command "…"
+```
+
+- **常駐ワーカー・スケジューラ・依存queueの自動消化・失敗時の自動リトライは持ちません。**
+  これらは非目標です。`run-tree` も人間が起動し、未完のnodeがあれば飛ばさずに停止します。
+  失敗したstageは `resume --retry-failed` で明示的に再試行します。
+- 停止点は必ずファイルに残ります（run manifest、未完runの応答prefix、`pending`）。
+  processをまたいでも、日をまたいでも状態は同じです。
+- 中断中にpromptが変わった場合（revisionや文脈の変更）は、`chat_operator.py` がexit 4で
+  古い応答の再利用を拒否します。別の応答で穴埋めはしません。
+- Arena.aiはunversionedなので、同じseed・同じ出力（G5）は満たせません。記録した数値は
+  再現可能な性能値ではなく参照値として扱います。
+
 ## 運用の可観測性（doctor / context show）
 
 `doctor` と `context show` は、dogfoodで実際に詰まった点（待機responseの解消先、staleの対象、
@@ -747,6 +774,9 @@ PR 12ではContextPacketと編纂viewのrecord単位差分（`diff`）を、PR 1
 `doctor` の情報統合（共通の `work` 要約と `next_actions`、`world.record_changed` 検査）を
 追加しました。創作projectの生成・再開・再試行・continuation・改訂・分岐・世界文脈・編纂・
 bundle・検査・差分確認が一通りCLIから操作できます。
+PR 14では、運用モード（モデルはArena.ai、生成の開始は人間、完全自動運用は非目標）と、
+後から足す場合の拡張点（`WorldEvent` / `KnowledgeState` / `CharacterState` とindex・
+incremental検査のID・scope・互換方針）を文書化しました（実装変更なし）。
 次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
