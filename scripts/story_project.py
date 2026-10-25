@@ -18,6 +18,10 @@ child below any node; ``run-tree`` uses parent-first dependency order;
 ``world`` persists multiple timeframes, regions, culture states, revision-pinned
 work bindings, and explicitly adopted scoped canon.  It also selects those
 records for generation and compiles chronicle/gazetteer/culture/collection views.
+``doctor`` inspects project, revision, world, and artifact integrity together
+with pending/stale references, and ``context show`` prints the current or a
+recorded ContextPacket.  Both are read-only: they never generate, resume, or
+adopt.
 """
 from __future__ import annotations
 
@@ -33,6 +37,7 @@ from asc.pipeline import (  # noqa: E402
     CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
 )
 from asc.project import (  # noqa: E402
+    DEFAULT_STAGES,
     CanonScope,
     ProjectComposer,
     ProjectError,
@@ -45,6 +50,8 @@ from asc.project import (  # noqa: E402
     WorkSpec,
     WorldCompiler,
     WorldStore,
+    build_context_view,
+    inspect_project,
 )
 
 
@@ -245,6 +252,34 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     world_compile.add_argument("--out", help="optional additional external UTF-8 markdown output")
     world_compile.add_argument("--json", dest="json_output", action="store_true")
 
+    doctor = subparsers.add_parser(
+        "doctor",
+        help="inspect project/world/artifact integrity plus pending and stale references",
+    )
+    doctor.add_argument("project_id")
+    doctor.add_argument("--json", dest="json_output", action="store_true")
+
+    context = subparsers.add_parser(
+        "context", help="inspect a node's ContextPacket without generating anything",
+    )
+    context_commands = context.add_subparsers(dest="context_command", required=True)
+    context_show = context_commands.add_parser(
+        "show", help="show the current or a recorded ContextPacket",
+    )
+    context_show.add_argument("project_id")
+    context_show.add_argument("--node", dest="node_id", help="node ID (default: root)")
+    context_show.add_argument(
+        "--run", dest="run_id", help="read the packet recorded in this run's project-input",
+    )
+    context_show.add_argument(
+        "--stage", choices=list(DEFAULT_STAGES),
+        help="read the packet recorded by this stage of the current revision",
+    )
+    context_show.add_argument(
+        "--out", help="optional external UTF-8 JSON file for the packet document",
+    )
+    context_show.add_argument("--json", dest="json_output", action="store_true")
+
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
     status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
@@ -318,6 +353,129 @@ def _print_bundle(report: dict) -> None:
     if report.get("project_dir"):
         print(f"Restored: {report['project_dir']}")
     print("Verified: yes")
+
+
+def _print_doctor(report: dict) -> None:
+    summary = report["summary"]
+    state = "ok" if report["ok"] else "errors found"
+    print(f"Project: {report['project_id']} ({state})")
+    print(
+        f"Nodes: {summary['nodes']}; findings: {summary['findings']} "
+        f"(errors={summary['errors']}, warnings={summary['warnings']}, "
+        f"info={summary['info']})"
+    )
+    checks = ", ".join(
+        f"{check['name']}={check['status']}" for check in report["checks"]
+    )
+    print(f"Checks: {checks}")
+    pending = report["pending"]
+    print(f"Pending responses: {len(pending)}")
+    for row in pending:
+        print(
+            f"  {row['node_id']} stage={row['stage']} ready={row['response_ready']} "
+            f"key={row['key']}"
+        )
+        if row.get("response_path"):
+            print(f"    response: {row['response_path']}")
+    stale = report["stale"]
+    print(
+        f"Stale: links={len(stale['links'])}, canon={len(stale['canon'])}, "
+        f"bindings={len(stale['bindings'])}"
+    )
+    for row in stale["links"]:
+        print(
+            f"  link {row['link_id']} ({row['child_node_id']}) pinned="
+            f"{row['pinned_revision_id']} current={row['current_child_revision_id']}"
+        )
+    for row in stale["canon"]:
+        print(
+            f"  canon {row['entry_id']} ({row['subject']}) source="
+            f"{row['source_revision_id']} current={row['current_source_revision_id']}"
+        )
+    for row in stale["bindings"]:
+        print(
+            f"  binding {row['binding_id']} ({row['node_id']}) revision="
+            f"{row['revision_id']} current={row['current_revision_id']}"
+        )
+    for finding in report["findings"]:
+        node = f" node={finding['node_id']}" if finding.get("node_id") else ""
+        path = f" path={finding['path']}" if finding.get("path") else ""
+        print(
+            f"  [{finding['severity']}] {finding['code']}{node}{path}: "
+            f"{finding['message']}"
+        )
+    print(f"Directory: {report['project_dir']}")
+
+
+def _print_context(view: dict) -> None:
+    summary = view["summary"]
+    print(f"Project: {view['project_id']}")
+    print(f"Node: {view['node_id']}")
+    print(f"Revision: {view['revision_id']}")
+    if not view.get("same_revision", True):
+        print(
+            f"Current revision: {view['current_revision_id']} "
+            "(the selected packet belongs to an older revision)"
+        )
+    print(f"Mode: {view['mode']}")
+    if view.get("run_id"):
+        print(f"Run: {view['run_id']} (stage={view.get('stage')})")
+    if summary.get("kind") is None:
+        print("Packet: none (no ancestors and no world binding)")
+    else:
+        print(
+            f"Packet: {summary['kind']}; {summary['packet_bytes']} bytes; "
+            f"sha256={summary['packet_sha256']}"
+        )
+        print(f"Ancestors: {len(summary['ancestors'])}")
+        for ancestor in summary["ancestors"]:
+            print(
+                f"  {ancestor['node_id']} rev={ancestor['revision_id']} "
+                f"state={ancestor['state']} canon_bytes={ancestor['canon_bytes']} "
+                f"chapters={ancestor['chapter_count']}"
+            )
+        world = summary.get("world")
+        if world is None:
+            print("World: none")
+        else:
+            print(
+                f"World: binding={world['binding_id']} "
+                f"revision={world['binding_revision_id']}"
+            )
+            print("  overlay: " + " -> ".join(world["overlay_order"]))
+            print(
+                f"  canon={world['canon_entries']} omitted="
+                f"{world['omitted_canon_count']} references={world['reference_count']}"
+            )
+            for reference in world["references"]:
+                print(
+                    f"  {reference['record_type']} {reference['id']} "
+                    f"{reference['content_version']}"
+                )
+        if summary.get("knowledge"):
+            print(f"Knowledge: {json.dumps(summary['knowledge'], ensure_ascii=False)}")
+    if view["recorded_packets"]:
+        print(
+            f"Recorded packets for revision {view['revision_id']}: "
+            f"{len(view['recorded_packets'])}"
+        )
+        for row in view["recorded_packets"]:
+            print(
+                f"  {row['run_id']} stage={row['stage']} "
+                f"sha256={row['packet_sha256']} bytes={row['packet_bytes']}"
+            )
+    drift = view.get("drift")
+    if drift is not None:
+        print(
+            "Recorded vs current: "
+            + ("differs" if drift["differs"] else "identical")
+        )
+        if drift["differs"]:
+            print("  " + json.dumps(drift["differences"], ensure_ascii=False))
+    elif view["mode"] == "recorded" and not view.get("same_revision", True):
+        print("Recorded vs current: skipped (different revisions)")
+    if view.get("external_out"):
+        print(f"Packet written: {view['external_out']}")
 
 
 def _print_world(status: dict) -> None:
@@ -556,6 +714,40 @@ def main(argv: list[str] | None = None) -> int:
                 print(json.dumps(status, ensure_ascii=False, sort_keys=True))
             else:
                 _print_human(status, created=False)
+            return 0
+
+        if args.command == "doctor":
+            report = inspect_project(store, args.project_id)
+            data = report.to_dict()
+            if args.json_output:
+                print(json.dumps(data, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_doctor(data)
+            return 0 if report.ok else 1
+
+        if args.command == "context":
+            view = build_context_view(
+                store, args.project_id, args.node_id,
+                run_id=args.run_id, stage=args.stage,
+            )
+            if args.out and view.packet is None:
+                raise ProjectError(
+                    "no ContextPacket to write: no ancestors and no world binding"
+                )
+            data = view.to_dict(include_packet=args.out is None)
+            if args.out:
+                output = Path(args.out).expanduser()
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_text(
+                    json.dumps(view.packet, ensure_ascii=False, sort_keys=True, indent=2)
+                    + "\n",
+                    encoding="utf-8",
+                )
+                data["external_out"] = str(output)
+            if args.json_output:
+                print(json.dumps(data, ensure_ascii=False, sort_keys=True))
+            else:
+                _print_context(data)
             return 0
 
         if args.command == "bundle":

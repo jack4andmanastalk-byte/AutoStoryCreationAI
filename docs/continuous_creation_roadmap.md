@@ -372,7 +372,22 @@ continuationは`--world-binding`を指定した場合だけ旧選択を新版へ
 **完了条件**: 同じ世界資料から、子作品別の文脈と複数の編纂出力を生成できる。
 全歴史をpromptへ渡さず、参照した資料のIDと版を記録できる。
 
-### PR 9: 運用dogfoodと可観測性（次の実装）
+### PR 9: 運用dogfoodと可観測性（実装済み）
+
+Arena operator（`scripts/chat_operator.py`）で小規模な実創作projectを最後まで操作し、観測した
+運用課題だけを`doctor`と`context show`として実装した。`doctor.py`はproject/node/revision/
+checkpoint/link/世界record/runの7検査をまとめ、pending responseの`response_ready`、staleな
+link・canon・bindingの対象ID、`failed`/`running` stageをfindingとして返す。`context_view.py`は
+現在のpacketとrunに記録済みのpacketを同じ形で表示し、参照recordのID・content version・overlay順・
+byte数・hashを出す。同じrevisionの記録packetに限り、現在値との差分（追加/削除/版変更）を表示する。
+どちらも読み取り専用で、生成・再開・採用・編纂・復元を起動しない。
+
+dogfoodは2時間軸・3地域・2文化・3文化状態、root→child→grandchild、43 operator応答、
+19 run directory（11 attempt）で、中断再開、continuation、人物別知識、明示canon採用と
+supersession、5編纂view、bundle export/restore、別rootへの復元を含む。復元先の`doctor`と
+`context show`は元projectと同じ結果になった。観測した未解決課題は、`failed` stageの再試行手段が
+CLIにないこと、`content_version`を持たない世界recordの改変を検出できないこと、
+編纂view/packetの差分をrecord単位で一覧できないこと（`diff`候補）である。
 
 - Arena operatorで、二つの時間軸・少数の時代/地域/文化・親子孫作品を使う小規模な実創作を行う。
 - 中断再開、continuation、世界binding、canon採用、stale/adopt、編纂、bundle復元を一通り操作する。
@@ -385,7 +400,7 @@ continuationは`--world-binding`を指定した場合だけ旧選択を新版へ
 ContextPacketと参照ID/content versionを確認できる。同じ小規模projectで運用手順を再現し、
 発見した問題を品質評価と混同せず次の実装対象へ分類できる。
 
-### PR 10: 章単位の改訂・分岐workflow（次の本体候補）
+### PR 10: 章単位の改訂・分岐workflow（次の本体候補・未実装）
 
 - 完成した任意revisionから`revise`で新版を作り、指定した章・設計だけを再生成する。
 - 変更しない章とartifactはbyte-identicalに引き継ぎ、旧run・旧版を上書きしない。

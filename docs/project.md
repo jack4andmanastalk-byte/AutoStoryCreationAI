@@ -426,6 +426,97 @@ project/node/stage、request/response path、response fileの有無が集約さ�
 python3 scripts/story_project.py --root /path/to/projects status prj-seaside
 ```
 
+## 運用の可観測性（doctor / context show）
+
+`doctor` と `context show` は、dogfoodで実際に詰まった点（待機responseの解消先、staleの対象、
+ContextPacketの大きさと参照資料）を、生成せずに確認するための読み取り専用コマンドです。
+どちらもproviderを呼ばず、resume・continuation・adopt・compose・compile・replayを実行せず、
+project配下のfileを一つも書き換えません。現在のrecordと、runに記録済みの版だけを読みます。
+
+### 全体の整合性: `doctor`
+
+```bash
+python3 scripts/story_project.py doctor prj-seaside
+python3 scripts/story_project.py doctor prj-seaside --json
+```
+
+project record、node木、revision、checkpoint、link、世界record、run manifestの順に検査し、
+`project`・`node_tree`・`revisions`・`checkpoints`・`links`・`world`・`runs` の7 checkごとに
+`pass` / `warn` / `failed` / `skipped` を返します。checkの状態はfindingの深刻度から決まり、
+`error` が1件でもあれば `failed`、`warning` だけなら `warn` です。
+
+- `error`: 読み込み・参照・hash検証が破綻している（project unreadable、orphan node、
+  artifact missing / hash_differs、run missing、`world.invalid` など）。
+- `warning`: 運用上の判断待ち。`checkpoint.failed` / `checkpoint.running` / `link.stale` /
+  `world.canon_stale` / `run.running`（終了記録のない中断process）/ `run.status_unknown`。
+- 同じ`artifact`でも、revision・checkpoint・link・runのどこから参照されているかで
+  複数checkに現れます。1つのfile欠落が `revisions` と `links` の両方に出るのは正常です。
+
+`pending` には待機中のstage、response key、request/response path、response fileの有無
+（`response_ready`）が入ります。`stale` には pinned link とchildのcurrent revisionの差、
+source改訂で古くなった世界canon、現在revision以外を指すworld bindingが入り、
+それぞれ「どのlink・binding・entryを、どの`adopt-child` / `world adopt-canon` / 再bindingで
+解消するか」までを対象IDとして示します。解消操作自体は行いません。
+
+`--json` の `schema` は `asc-project-doctor-v1`、`read_only` は常に `true` です。
+findingsが`error`を含めばexit 1、なければ0、projectが存在しなければ2です。
+待機responseやstaleだけの状態は「異常ではない」ため0を返し、整形した人間向け出力と
+`summary.pending` / `summary.stale` / `checks_warn` で判断します。
+
+### ContextPacketの確認: `context show`
+
+```bash
+python3 scripts/story_project.py context show prj-seaside
+python3 scripts/story_project.py context show prj-seaside --node node-tide
+python3 scripts/story_project.py context show prj-seaside --node node-tide --stage design
+python3 scripts/story_project.py context show prj-seaside --node node-tide \
+  --run att-0123abcd-design --json --out /external/packets/node-tide-design.json
+```
+
+- 引数なし（`mode=current`）は、そのnodeの現在revisionで生成した場合に使うpacketを組み立てます。
+  packetの種類、byte数、SHA-256、祖先のnode/revision/state/canonサイズ/章数、世界の
+  binding IDとbinding revision、overlay順（global → timeframe → region → culture → work → node）、
+  canon件数と省略件数、選択した資料の`record_type`・ID・`content_version`、人物知識の指定を表示します。
+- `--stage` は現在revisionのそのstageのrunが記録したpacket、`--run` は指定runの
+  `project-input.json` に記録されたpacketを読みます（`mode=recorded`）。生成当時の
+  選択資料と版をそのまま確認でき、現在値からの再構築ではありません。
+- 同じrevisionの記録packetであれば `drift` に記録時と現在の差（referenceの追加・削除・版変更、
+  binding、canon件数、祖先、packet種類）を出します。差分は表示だけで、再生成・再採用は行いません。
+- 古いrevisionのrunを指定した場合は `same_revision=false` となり、`drift` は行いません。
+  そのrevisionの記録packet一覧は表示しますが、現在revisionと比較した差分としては扱いません。
+- 祖先も世界bindingも持たないnodeは `Packet: none` になります。
+- `--out` はproject外へpacket JSONを書き出す任意指定です。指定しなければ何も書きません。
+  書き出した場合はstdout側にpacket本文を重複させず、`external_out` に出力pathを返します。
+  packetを持たないnode（祖先も世界bindingもない）に `--out` を指定するとexit 2になります。
+- `--json` の `schema` は `asc-project-context-view-v1`、`read_only` は常に `true` です。
+  未知のrun・stage、node不在はexit 2です。
+
+### dogfoodで確認したこと
+
+小規模な実創作project（2時間軸・3地域・2文化・3文化状態、root→child→grandchild、
+43 operator応答、19 run directory（11 attempt）、continuation、明示canon採用とsupersession、
+5編纂view、bundle export/restore）をArena operatorで操作しました。`doctor` により、待機responseの
+`response_ready` とresponse path、staleなlink/binding/canonの対象ID、`running`のまま
+終了記録のないrunを、run directoryを開かずに特定できました。`context show` により、
+選択資料のIDとcontent version、overlay順、packetの大きさが版とbindingで変わること
+（同じnode-lampでもworld1の6825 bytesとpre1の3070 bytes、node-tideは8092 bytes）、
+resumeが記録packetを固定していることを確認できました。復元bundleの `doctor` /
+`context show` は元projectと同じ結果を返しました。
+
+このdogfoodで見つかった未解決の運用課題（品質評価とは別）は次のとおりで、PR 10の本体とは
+分けて後続で扱います。
+
+- `failed` になったstageにはCLIからの再試行手段がない。`resume` は
+  `running` / `waiting_response` / `ready` / `pending` だけを受け付け、`run` は
+  「未開始のrevision」だけを受け付け、`continue` は「completeなrevision」だけを受け付けるため、
+  provider commandの誤記などで一度`failed`になると、そのrevisionはCLIでは前進できない。
+- providerへ渡すcommand文字列の誤りはstage単位の`failed`として記録される。`doctor` は
+  これをwarningとして対象stageとrunを示すが、修復方法は提示しない。
+- `doctor` の検出は保存済みrecordの参照・hashに限る。`content_version` を持たない
+  世界record（例: regionの名称）の書き換えは検出できない。署名付きstorageではない。
+- 編纂viewとContextPacketの比較は、編纂versionの不一致としてしか見えず、
+  どのrecordの差で変わったかをCLIから一覧できない（`diff`候補）。
+
 ## 保存形式
 
 ```text
@@ -495,6 +586,8 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
   使用したrecordのIDとcontent versionをpacketへ残し、resumeでは現在値からpacketを再構築しない。
 - 編纂versionはprofileと選択sourceの版から決定し、同じ入力で同じbytesを再現する。
   年代記を時間軸ごとに作り、無関係な追加で旧viewを上書きしない。
+- `doctor` と `context show` は読み取り専用で、生成・再開・採用・編纂・復元を起動しない。
+  検査のためのtemp fileやlockも作らず、同じ状態に対して同じ結果を返す。
 - 創作データはGitへ入れない。`runs/` は従来どおりGit管理外である。
 
 これは破損や意図しない不整合を検出する仕組みであり、悪意ある改ざんに対する
@@ -502,11 +595,11 @@ WorkSpecの一部だけを変更して古いhashを残したrecordは読み込�
 
 ## 次のincrement
 
-PR 8では、revision bindingから選ぶ世界ContextPacketと、年代記・地誌・文化圏・作品集の
-編纂profile / viewを追加しました。指定外・未来の資料を除外し、参照IDと版をprompt / runへ記録し、
-resumeでは記録packetを固定します。PR 1〜8の予定機能は実装済みです。
-次は小規模な実創作dogfoodと`doctor` / `context show`を中心とする運用可観測性を整え、その後に
-章単位の`revise`・`branch`を実装する方針です。詳細と完了条件は
-[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)のPR 9〜10を参照してください。
+PR 9では、Arena operatorによる小規模な実創作dogfoodと、そこで観測した運用課題に限定した
+`doctor` / `context show` を追加しました。PR 1〜9の予定機能は実装済みで、創作projectの
+生成・再開・continuation・世界文脈・編纂・bundle・検査が一通りCLIから操作できます。
+次は章単位の`revise`・`branch`（PR 10）です。dogfoodで見つかった `failed` stageの再試行手段、
+編纂viewとpacketの差分表示（`diff`候補）はPR 10の本体とは分けて後続で扱います。詳細と完了条件は
+[`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)のPR 10以降を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは
 共通形が必要になった時点だけを対象とします。品質評価やL2/L3の再開は行いません。

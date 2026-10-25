@@ -11,6 +11,13 @@ from .bundle import (
 )
 from .continuation import ContinuationContext
 from .context import AncestorContext, ContextPacket, build_context_packet
+from .context_view import (
+    CONTEXT_VIEW_SCHEMA,
+    ContextView,
+    ContextViewError,
+    build_context_view,
+)
+from .doctor import DOCTOR_SCHEMA, DoctorReport, Finding, ProjectDoctor, inspect_project
 from .model import (
     ArtifactRef,
     ProjectSnapshot,
@@ -59,6 +66,7 @@ from .world_compile import (
 )
 from .world_context import WORLD_CONTEXT_KIND, build_world_context
 from .store import (
+    DEFAULT_STAGES,
     MAX_NESTING_DEPTH,
     ProjectCorruptError,
     ProjectError,
@@ -74,7 +82,10 @@ __all__ = [
     "BUNDLE_TYPE",
     "BundleError",
     "ContinuationContext",
+    "CONTEXT_VIEW_SCHEMA",
     "ContextPacket",
+    "ContextView",
+    "ContextViewError",
     "CANON_SCOPE_KINDS",
     "CULTURE_RELATION_KINDS",
     "TIMESPAN_PRECISIONS",
@@ -89,6 +100,12 @@ __all__ = [
     "CompositionResult",
     "NestedError",
     "MAX_NESTING_DEPTH",
+    "DEFAULT_STAGES",
+    "DOCTOR_SCHEMA",
+    "DoctorReport",
+    "Finding",
+    "ProjectDoctor",
+    "inspect_project",
     "PROJECT_PROTOCOL",
     "PipelineInput",
     "ProjectComposer",
@@ -130,6 +147,7 @@ __all__ = [
     "WorldStore",
     "WORLD_CONTEXT_KIND",
     "build_context_packet",
+    "build_context_view",
     "build_world_context",
     "export_bundle",
     "restore_bundle",
