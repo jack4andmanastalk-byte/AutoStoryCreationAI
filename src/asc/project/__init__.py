@@ -17,6 +17,15 @@ from .context_view import (
     ContextViewError,
     build_context_view,
 )
+from .diff import (
+    DIFF_SCHEMA,
+    DiffError,
+    DiffSide,
+    ProjectDiff,
+    build_diff,
+    compare_sides,
+    load_diff_side,
+)
 from .doctor import DOCTOR_SCHEMA, DoctorReport, Finding, ProjectDoctor, inspect_project
 from .model import (
     ArtifactRef,
@@ -102,6 +111,10 @@ __all__ = [
     "NestedError",
     "MAX_NESTING_DEPTH",
     "DEFAULT_STAGES",
+    "DIFF_SCHEMA",
+    "DiffError",
+    "DiffSide",
+    "ProjectDiff",
     "DOCTOR_SCHEMA",
     "DoctorReport",
     "Finding",
@@ -149,6 +162,9 @@ __all__ = [
     "WORLD_CONTEXT_KIND",
     "build_context_packet",
     "build_context_view",
+    "build_diff",
+    "compare_sides",
+    "load_diff_side",
     "build_world_context",
     "export_bundle",
     "restore_bundle",
