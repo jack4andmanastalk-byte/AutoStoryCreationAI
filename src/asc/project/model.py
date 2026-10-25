@@ -7,6 +7,7 @@ outside Git under ``runs/projects/``.
 """
 from __future__ import annotations
 
+import hashlib
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -14,13 +15,16 @@ from typing import Any
 
 from .schema import (
     CHECKPOINT_RECORD,
+    LINK_RECORD,
     NODE_RECORD,
     PROJECT_RECORD,
     REVISION_RECORD,
     SCHEMA_VERSION,
+    canonical_json,
     spec_sha256 as hash_spec,
     validate_artifact,
     validate_checkpoint,
+    validate_link,
     validate_node,
     validate_project,
     validate_revision,
@@ -245,6 +249,71 @@ class WorkNodeRevision:
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
             parent_runs=dict(data.get("parent_runs") or {}),
             created_at=data["created_at"],
+        )
+
+
+@dataclass(frozen=True)
+class WorkLink:
+    """A parent's ordered, explicitly pinned reference to a child work.
+
+    The link stores references to the child's draft artifacts, never their
+    text.  ``content_version`` covers the pinned revision and artifact hashes;
+    a child's newer current revision does not mutate this record.
+    """
+
+    id: str
+    project_id: str
+    parent_node_id: str
+    child_node_id: str
+    child_revision_id: str
+    order: int
+    content_version: str
+    created_at: str
+    updated_at: str
+    artifacts: tuple[ArtifactRef, ...] = ()
+
+    @staticmethod
+    def version_for(
+        revision: "WorkNodeRevision", artifacts: tuple[ArtifactRef, ...],
+    ) -> str:
+        payload = {
+            "node_id": revision.node_id,
+            "revision_id": revision.id,
+            "spec_sha256": revision.spec_sha256,
+            "artifacts": [artifact.to_dict() for artifact in artifacts],
+        }
+        return hashlib.sha256(canonical_json(payload).encode("utf-8")).hexdigest()
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "record_type": LINK_RECORD,
+            "schema_version": SCHEMA_VERSION,
+            "id": self.id,
+            "project_id": self.project_id,
+            "parent_node_id": self.parent_node_id,
+            "child_node_id": self.child_node_id,
+            "child_revision_id": self.child_revision_id,
+            "order": self.order,
+            "content_version": self.content_version,
+            "artifacts": [artifact.to_dict() for artifact in self.artifacts],
+            "created_at": self.created_at,
+            "updated_at": self.updated_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "WorkLink":
+        validate_link(data)
+        return cls(
+            id=data["id"],
+            project_id=data["project_id"],
+            parent_node_id=data["parent_node_id"],
+            child_node_id=data["child_node_id"],
+            child_revision_id=data["child_revision_id"],
+            order=data["order"],
+            content_version=data["content_version"],
+            artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
+            created_at=data["created_at"],
+            updated_at=data["updated_at"],
         )
 
 

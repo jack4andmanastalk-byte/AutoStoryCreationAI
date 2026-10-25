@@ -14,6 +14,7 @@ import shutil
 import tempfile
 import uuid
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, Iterator, TypeVar
 
@@ -21,6 +22,7 @@ from .model import (
     ArtifactRef,
     ProjectSnapshot,
     StageCheckpoint,
+    WorkLink,
     WorkNode,
     WorkNodeRevision,
     WorkProject,
@@ -33,6 +35,7 @@ from .schema import (
     ProjectValidationError,
     validate_checkpoint,
     validate_id,
+    validate_link,
     validate_node,
     validate_project,
     validate_revision,
@@ -125,6 +128,13 @@ class ProjectStore:
             self.node_dir(project_id, node_id)
             / "checkpoints"
             / f"{validate_id(stage, 'stage')}.json"
+        )
+
+    def link_path(self, project_id: str, parent_node_id: str, link_id: str) -> Path:
+        return (
+            self.node_dir(project_id, parent_node_id)
+            / "links"
+            / f"{validate_id(link_id, 'link_id')}.json"
         )
 
     @staticmethod
@@ -283,13 +293,18 @@ class ProjectStore:
             raise ProjectCorruptError(f"{path}: revision identity does not match its path")
         return revision
 
-    def load_snapshot(self, project_id: str) -> ProjectSnapshot:
+    def load_node_snapshot(
+        self, project_id: str, node_id: str | None = None,
+    ) -> ProjectSnapshot:
         project = self.load_project(project_id)
-        node = self.load_node(project_id, project.root_node_id)
+        node = self.load_node(project_id, node_id or project.root_node_id)
         revision = self.load_revision(
             project_id, node.id, node.current_revision_id,
         )
         return ProjectSnapshot(project=project, root_node=node, revision=revision)
+
+    def load_snapshot(self, project_id: str) -> ProjectSnapshot:
+        return self.load_node_snapshot(project_id)
 
     def list_revisions(self, project_id: str, node_id: str) -> list[WorkNodeRevision]:
         """Read all immutable revisions for a node in creation order."""
@@ -306,6 +321,214 @@ class ProjectStore:
                 raise ProjectCorruptError(f"{path}: revision identity does not match its path")
             revisions.append(revision)
         return sorted(revisions, key=lambda item: (item.created_at, item.id))
+
+    def _validate_link_relationship(self, link: WorkLink) -> WorkNodeRevision:
+        validate_link(link.to_dict())
+        project = self.load_project(link.project_id)
+        parent = self.load_node(link.project_id, link.parent_node_id)
+        child = self.load_node(link.project_id, link.child_node_id)
+        if (
+            parent.id != project.root_node_id
+            or parent.parent_id is not None
+            or child.parent_id != parent.id
+            or child.kind != "embedded_work"
+        ):
+            raise ProjectValidationError(
+                "only depth-one embedded_work links below the root node are allowed"
+            )
+        revision = self.load_revision(
+            link.project_id, child.id, link.child_revision_id,
+        )
+        expected = WorkLink.version_for(revision, link.artifacts)
+        if expected != link.content_version:
+            raise ProjectValidationError(
+                f"link {link.id}: content_version does not match its pinned artifacts"
+            )
+        for artifact in link.artifacts:
+            run_id = artifact.producer_run_id
+            if not run_id or not artifact.path.startswith(f"runs/{run_id}/"):
+                raise ProjectValidationError(
+                    f"link {link.id}: artifact is not tied to its producer run"
+                )
+            run_dir = self.project_dir(link.project_id) / "runs" / run_id
+            manifest = self._read_json(run_dir / "manifest.json")
+            run_input = self._read_json(run_dir / "project-input.json")
+            if (
+                manifest.get("status") != "ok"
+                or manifest.get("task_id") != child.id
+                or run_input.get("node_id") != child.id
+                or run_input.get("revision_id") != revision.id
+                or run_input.get("stage") != "draft"
+            ):
+                raise ProjectValidationError(
+                    f"link {link.id}: artifact does not belong to the pinned child draft"
+                )
+        return revision
+
+    def load_link(self, project_id: str, parent_node_id: str, link_id: str) -> WorkLink:
+        path = self.link_path(project_id, parent_node_id, link_id)
+        link = self._parse(path, WorkLink.from_dict)
+        if (
+            link.id != link_id
+            or link.project_id != project_id
+            or link.parent_node_id != parent_node_id
+        ):
+            raise ProjectCorruptError(f"{path}: link identity does not match its path")
+        self._validate_link_relationship(link)
+        return link
+
+    def list_links(
+        self, project_id: str, parent_node_id: str | None = None,
+    ) -> list[WorkLink]:
+        project = self.load_project(project_id)
+        parent_id = parent_node_id or project.root_node_id
+        self.load_node(project_id, parent_id)
+        directory = self.node_dir(project_id, parent_id) / "links"
+        if not directory.is_dir():
+            return []
+        links = [
+            self.load_link(project_id, parent_id, path.stem)
+            for path in sorted(directory.glob("*.json"))
+        ]
+        return sorted(links, key=lambda item: (item.order, item.id))
+
+    def create_child(
+        self, project_id: str, spec: WorkSpec, *, parent_node_id: str | None = None,
+        order: int | None = None, child_node_id: str | None = None,
+        link_id: str | None = None,
+    ) -> WorkLink:
+        """Create one independent child node and an ordered root link."""
+        validate_spec(spec.to_dict())
+        project = self.load_project(project_id)
+        parent_id = parent_node_id or project.root_node_id
+        parent = self.load_node(project_id, parent_id)
+        if parent.id != project.root_node_id or parent.parent_id is not None:
+            raise ProjectValidationError("PR 5 allows children only directly below the root")
+        child_id = child_node_id or new_id("node")
+        validate_id(child_id, "child_node_id")
+        link_id = link_id or new_id("link")
+        validate_id(link_id, "link_id")
+        with self.writer_lock(project_id):
+            links = self.list_links(project_id, parent_id)
+            if order is None:
+                order = max((link.order for link in links), default=0) + 1
+            if isinstance(order, bool) or not isinstance(order, int) or order < 1:
+                raise ProjectValidationError("child order must be a positive integer")
+            if any(link.order == order for link in links):
+                raise ProjectValidationError(f"child order is already used: {order}")
+            if any(link.id == link_id for link in links):
+                raise ProjectExistsError(f"link already exists: {link_id}")
+            child_dir = self.node_dir(project_id, child_id)
+            if child_dir.exists():
+                raise ProjectExistsError(f"node already exists: {child_id}")
+            timestamp = utc_now()
+            revision = WorkNodeRevision.create(
+                revision_id=new_id("rev"), node_id=child_id, project_id=project_id,
+                spec=spec, created_at=timestamp,
+            )
+            child = WorkNode(
+                id=child_id, project_id=project_id, parent_id=parent_id,
+                kind="embedded_work", current_revision_id=revision.id,
+                created_at=timestamp, updated_at=timestamp,
+            )
+            link = WorkLink(
+                id=link_id, project_id=project_id, parent_node_id=parent_id,
+                child_node_id=child_id, child_revision_id=revision.id, order=order,
+                content_version=WorkLink.version_for(revision, ()),
+                created_at=timestamp, updated_at=timestamp,
+            )
+            nodes_dir = self.project_dir(project_id) / "nodes"
+            temporary = Path(tempfile.mkdtemp(prefix=f".{child_id}.tmp-", dir=nodes_dir))
+            moved = False
+            try:
+                (temporary / "revisions").mkdir()
+                (temporary / "checkpoints").mkdir()
+                _atomic_write_json(temporary / "current.json", child.to_dict())
+                _atomic_write_json(
+                    temporary / "revisions" / f"{revision.id}.json", revision.to_dict(),
+                )
+                os.replace(temporary, child_dir)
+                moved = True
+                self._validate_link_relationship(link)
+                _atomic_write_json(self.link_path(project_id, parent_id, link_id), link.to_dict())
+            except Exception:
+                shutil.rmtree(temporary, ignore_errors=True)
+                if moved:
+                    shutil.rmtree(child_dir, ignore_errors=True)
+                raise
+        return link
+
+    def save_link(self, link: WorkLink) -> None:
+        """Update only the pinned revision/artifact metadata of an existing link."""
+        with self.writer_lock(link.project_id):
+            self._validate_link_relationship(link)
+            path = self.link_path(link.project_id, link.parent_node_id, link.id)
+            if path.exists():
+                old = self._parse(path, WorkLink.from_dict)
+                immutable = (
+                    "id", "project_id", "parent_node_id", "child_node_id", "order", "created_at",
+                )
+                for field_name in immutable:
+                    if getattr(old, field_name) != getattr(link, field_name):
+                        raise ProjectValidationError("link identity and order are immutable")
+            _atomic_write_json(path, link.to_dict())
+
+    def sync_child_links(
+        self, project_id: str, child_node_id: str, revision_id: str,
+    ) -> list[WorkLink]:
+        """Fill artifact refs for links already pinned to this completed revision."""
+        child = self.load_node(project_id, child_node_id)
+        if child.current_revision_id != revision_id:
+            return []
+        revision = self.load_revision(project_id, child_node_id, revision_id)
+        checkpoint_path = self.checkpoint_path(project_id, child_node_id, "draft")
+        if not checkpoint_path.is_file():
+            return []
+        checkpoint = self._parse(checkpoint_path, StageCheckpoint.from_dict)
+        if checkpoint.status != "done" or checkpoint.revision_id != revision_id:
+            return []
+        self._verify_done_checkpoint(
+            self.project_dir(project_id), checkpoint, revision.spec_sha256,
+        )
+        updated = []
+        with self.writer_lock(project_id):
+            for link in self.list_links(project_id):
+                if link.child_node_id != child_node_id or link.child_revision_id != revision_id:
+                    continue
+                new_link = replace(
+                    link, artifacts=checkpoint.artifacts,
+                    content_version=WorkLink.version_for(revision, checkpoint.artifacts),
+                    updated_at=utc_now(),
+                )
+                _atomic_write_json(
+                    self.link_path(project_id, link.parent_node_id, link.id),
+                    new_link.to_dict(),
+                )
+                updated.append(new_link)
+        return updated
+
+    def adopt_child(self, project_id: str, link_id: str) -> WorkLink:
+        """Explicitly pin a link to the child's current completed revision."""
+        with self.execution_lock(project_id):
+            project = self.load_project(project_id)
+            link = self.load_link(project_id, project.root_node_id, link_id)
+            child = self.load_node(project_id, link.child_node_id)
+            status = self.status(project_id, child.id)
+            if status["state"] != "complete":
+                raise ProjectValidationError(
+                    f"child {child.id} must be complete before its revision can be adopted"
+                )
+            revision = self.load_revision(project_id, child.id, child.current_revision_id)
+            artifacts = tuple(
+                ArtifactRef.from_dict(row)
+                for row in status["checkpoints"]["draft"]["artifacts"]
+            )
+            updated = replace(
+                link, child_revision_id=revision.id, artifacts=artifacts,
+                content_version=WorkLink.version_for(revision, artifacts), updated_at=utc_now(),
+            )
+            self.save_link(updated)
+            return updated
 
     def save_revision(self, revision: WorkNodeRevision) -> None:
         """Append an immutable revision and validate its optional parent runs."""
@@ -359,6 +582,14 @@ class ProjectStore:
             existing = self.load_node(node.project_id, node.id)
             if existing.created_at != node.created_at:
                 raise ProjectValidationError("node.created_at cannot be changed")
+            if existing.parent_id != node.parent_id or existing.kind != node.kind:
+                raise ProjectValidationError("node.parent_id and node.kind are immutable")
+            if node.parent_id is not None:
+                project = self.load_project(node.project_id)
+                if node.id == project.root_node_id or node.parent_id != project.root_node_id:
+                    raise ProjectValidationError(
+                        "PR 5 allows only non-root children directly below the root"
+                    )
             self.load_revision(node.project_id, node.id, node.current_revision_id)
             _atomic_write_json(
                 self.node_dir(node.project_id, node.id) / "current.json", node.to_dict(),
@@ -424,6 +655,15 @@ class ProjectStore:
             producer_run_id=run_id,
         )
 
+    def read_artifact(self, project_id: str, artifact: ArtifactRef) -> bytes:
+        """Read a pinned artifact only after checking its path and content hash."""
+        target = self._project_file(self.project_dir(project_id), artifact.path)
+        if not target.is_file():
+            raise ProjectNotFoundError(f"artifact is missing: {target}")
+        if self._sha256_file(target) != artifact.sha256:
+            raise ProjectCorruptError(f"artifact hash differs: {target}")
+        return target.read_bytes()
+
     def _verify_done_checkpoint(
         self, directory: Path, checkpoint: StageCheckpoint, expected_spec_sha256: str,
     ) -> None:
@@ -466,9 +706,38 @@ class ProjectStore:
             if self._sha256_file(target) != artifact.sha256:
                 raise ProjectCorruptError(f"checkpoint artifact hash differs: {target}")
 
-    def status(self, project_id: str) -> dict[str, Any]:
-        """Return a machine-readable summary derived from persisted records."""
-        snapshot = self.load_snapshot(project_id)
+    def _run_ids_for_node(self, directory: Path, node_id: str) -> list[str]:
+        runs_dir = directory / "runs"
+        if not runs_dir.is_dir():
+            return []
+        runs = []
+        for path in sorted(runs_dir.iterdir()):
+            if not path.is_dir():
+                continue
+            owner = None
+            input_path = path / "project-input.json"
+            if input_path.is_file():
+                owner = self._read_json(input_path).get("node_id")
+            if owner is None:
+                manifest_path = path / "manifest.json"
+                if manifest_path.is_file():
+                    owner = self._read_json(manifest_path).get("task_id")
+            if owner == node_id:
+                runs.append(path.name)
+        return runs
+
+    def _link_ready(self, project_id: str, link: WorkLink) -> bool:
+        if not link.artifacts:
+            return False
+        for artifact in link.artifacts:
+            self.read_artifact(project_id, artifact)
+        return True
+
+    def status(
+        self, project_id: str, node_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Return a machine-readable summary for the root or one child node."""
+        snapshot = self.load_node_snapshot(project_id, node_id)
         project = snapshot.project
         node = snapshot.root_node
         revision = snapshot.revision
@@ -491,13 +760,16 @@ class ProjectStore:
                     self._verify_done_checkpoint(directory, checkpoint, revision.spec_sha256)
                 checkpoints[checkpoint.stage] = checkpoint
                 stages[checkpoint.stage] = checkpoint.status
-        artifacts = sorted(
+        all_artifacts = sorted(
             str(path.relative_to(directory).as_posix())
             for path in (directory / "artifacts").rglob("*")
             if path.is_file()
         )
-        runs_dir = directory / "runs"
-        runs = sorted(path.name for path in runs_dir.iterdir() if path.is_dir())
+        artifacts = all_artifacts
+        if node.id != project.root_node_id:
+            prefix = f"artifacts/{node.id}/"
+            artifacts = [path for path in all_artifacts if path.startswith(prefix)]
+        runs = self._run_ids_for_node(directory, node.id)
         stage_order = list(DEFAULT_STAGES) + sorted(set(checkpoints) - set(DEFAULT_STAGES))
         artifact_refs = [
             artifact.to_dict()
@@ -543,14 +815,52 @@ class ProjectStore:
             max(checkpoints.values(), key=lambda item: item.updated_at).attempt_id
             if checkpoints else None
         )
+
+        links: list[dict[str, Any]] = []
+        children: list[dict[str, Any]] = []
+        link_times: list[str] = []
+        if node.id == project.root_node_id:
+            for link in self.list_links(project_id, node.id):
+                child = self.load_node(project_id, link.child_node_id)
+                child_status = self.status(project_id, child.id)
+                ready = self._link_ready(project_id, link)
+                stale = child.current_revision_id != link.child_revision_id
+                link_data = link.to_dict()
+                link_data.update({
+                    "stale": stale,
+                    "ready": ready,
+                    "state": "stale" if stale else "ready" if ready else "pending",
+                    "current_child_revision_id": child.current_revision_id,
+                    "child_state": child_status["state"],
+                })
+                links.append(link_data)
+                children.append({
+                    "node_id": child.id,
+                    "parent_node_id": node.id,
+                    "kind": child.kind,
+                    "title": child_status["title"],
+                    "state": child_status["state"],
+                    "current_revision_id": child.current_revision_id,
+                    "revision_ids": child_status["revision_ids"],
+                    "link_id": link.id,
+                    "order": link.order,
+                    "stale": stale,
+                })
+                pending.extend(child_status["pending"])
+                link_times.append(link.updated_at)
+
+        title = project.title if node.id == project.root_node_id else revision.spec.title
         return {
             "schema_version": SCHEMA_VERSION,
             "project_id": project.id,
-            "title": project.title,
+            "node_id": node.id,
+            "parent_node_id": node.parent_id,
+            "kind": node.kind,
+            "title": title,
             "state": state,
             "attempt_id": latest_attempt,
             "attempt_ids": attempt_ids,
-            "root_node_id": node.id,
+            "root_node_id": project.root_node_id,
             "current_revision_id": revision.id,
             "parent_revision_id": revision.parent_revision_id,
             "parent_runs": dict(sorted(revision.parent_runs.items())),
@@ -568,7 +878,9 @@ class ProjectStore:
             "spec_sha256": revision.spec_sha256,
             "spec": revision.spec.to_dict(),
             "created_at": project.created_at,
-            "updated_at": max([project.updated_at, node.updated_at, *checkpoint_times]),
+            "updated_at": max([
+                project.updated_at, node.updated_at, *checkpoint_times, *link_times,
+            ]),
             "stages": stages,
             "checkpoints": {
                 stage: checkpoints[stage].to_dict()
@@ -579,5 +891,7 @@ class ProjectStore:
             "artifact_refs": artifact_refs,
             "pending": pending,
             "runs": runs,
+            "links": links,
+            "children": children,
             "project_dir": str(directory),
         }

@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜4を実装済み。次はPR 5（深さ1の入れ子作品）**
+- 状態: **PR 1〜5を実装済み。次はPR 6（多段入れ子と依存順序）**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -314,6 +314,10 @@ revision-scoped request keyを使い、revisionを持たない旧request keyは�
 
 ### PR 5: 深さ1の入れ子作品（N-01〜04のうち深さ1）
 
+実装: root直下の独立した子node、順序・pinned revision・ArtifactRef・content_versionを持つ
+`WorkLink`、node別のrun/resume/continuation、stale表示、明示的なadopt、単一/結合出力を追加。
+結合versionには時刻を含めず、子の新版で旧結合が変わらないことをoffline testで確認する。
+
 - 親作品へ子作品を追加するCLIと、子作品の独立したrunnerを実装する。
 - 版付きlinkとstale、単一作品/結合出力を実装する。
 - canon共有は最小限にし、子作品の独立を既定にする。
@@ -395,7 +399,8 @@ tests/test_project_store.py
 PR 2で `runner.py` と既存pipelineへのadapterを追加し、PR 3で `resume.py`、
 `story_project resume/pending`、stage別の再開testを追加した。PR 4で `continuation.py` /
 `bundle.py`、project `continue` / `bundle export|verify|restore`、版履歴と追加章生成を追加した。
-既存の `run_pipeline.py` / `run_experiment.py` / protocol-v1は、新しい創作基盤の後方互換性を
-確認しながら残し、無理に統合しない。
+PR 5で `nested.py`、`WorkLink`、node別runner、`add-child` / `adopt-child` / `render` /
+`compose`、pinned結合の回帰testを追加した。既存の `run_pipeline.py` / `run_experiment.py` /
+protocol-v1は、新しい創作基盤の後方互換性を確認しながら残し、無理に統合しない。
 
-**したがって、次の実装はPR 5の深さ1の入れ子作品から開始する。**
+**したがって、次の実装はPR 6の多段入れ子と依存順序から開始する。**

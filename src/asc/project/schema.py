@@ -20,6 +20,7 @@ SCHEMA_VERSION = 1
 PROJECT_RECORD = "work_project"
 NODE_RECORD = "work_node"
 REVISION_RECORD = "work_node_revision"
+LINK_RECORD = "work_link"
 CHECKPOINT_RECORD = "stage_checkpoint"
 STAGE_STATUSES = {
     "pending", "ready", "running", "waiting_response", "done", "failed",
@@ -192,6 +193,37 @@ def validate_revision(data: Any) -> None:
             raise ProjectValidationError(f"duplicate artifact path: {path}")
         artifact_ids.add(artifact_id)
         artifact_paths.add(path)
+
+
+def validate_link(data: Any) -> None:
+    data = _mapping(data, "link")
+    _header(data, LINK_RECORD)
+    validate_id(data.get("id"), "link.id")
+    validate_id(data.get("project_id"), "link.project_id")
+    parent_id = validate_id(data.get("parent_node_id"), "link.parent_node_id")
+    child_id = validate_id(data.get("child_node_id"), "link.child_node_id")
+    if parent_id == child_id:
+        raise ProjectValidationError("link parent and child must differ")
+    validate_id(data.get("child_revision_id"), "link.child_revision_id")
+    _positive_int(data.get("order"), "link.order")
+    content_version = data.get("content_version")
+    if not isinstance(content_version, str) or not _SHA256_RE.fullmatch(content_version):
+        raise ProjectValidationError("link.content_version must be 64 lowercase hex characters")
+    artifacts = data.get("artifacts")
+    if not isinstance(artifacts, list):
+        raise ProjectValidationError("link.artifacts must be a list")
+    artifact_ids: set[str] = set()
+    artifact_paths: set[str] = set()
+    for index, artifact in enumerate(artifacts):
+        validate_artifact(artifact, f"link.artifacts[{index}]")
+        if artifact["artifact_id"] in artifact_ids:
+            raise ProjectValidationError(f"duplicate artifact_id: {artifact['artifact_id']}")
+        if artifact["path"] in artifact_paths:
+            raise ProjectValidationError(f"duplicate artifact path: {artifact['path']}")
+        artifact_ids.add(artifact["artifact_id"])
+        artifact_paths.add(artifact["path"])
+    _timestamp(data.get("created_at"), "link.created_at")
+    _timestamp(data.get("updated_at"), "link.updated_at")
 
 
 def validate_checkpoint(data: Any) -> None:

@@ -120,12 +120,12 @@ class ProjectRunner:
 
     def run(
         self, project_id: str, provider: Provider, *, seed: int = 0,
-        temperature: float | None = None,
+        temperature: float | None = None, node_id: str | None = None,
     ) -> ProjectRunResult:
         """Run plan -> design -> draft once for a not-started current revision."""
         with self.store.execution_lock(project_id):
-            snapshot = self.store.load_snapshot(project_id)
-            state = self.store.status(project_id)["state"]
+            snapshot = self.store.load_node_snapshot(project_id, node_id)
+            state = self.store.status(project_id, node_id)["state"]
             if state != "not_started":
                 raise ProjectRunError(
                     f"project {project_id} is {state}; run requires a not-started revision "
@@ -158,11 +158,12 @@ class ProjectRunner:
         additional_chapters: int | None = None, total_chapters: int | None = None,
         seed: int = 0, temperature: float | None = None,
         title: str | None = None, premise: str | None = None,
+        node_id: str | None = None,
     ) -> ProjectRunResult:
         """Append a new revision while retaining the parent runs and chapter text."""
         with self.store.execution_lock(project_id):
-            snapshot = self.store.load_snapshot(project_id)
-            status = self.store.status(project_id)
+            snapshot = self.store.load_node_snapshot(project_id, node_id)
+            status = self.store.status(project_id, node_id)
             if status["state"] != "complete":
                 raise ProjectRunError(
                     f"project {project_id} is {status['state']}; "
@@ -221,7 +222,9 @@ class ProjectRunner:
                 current_revision_id=new_revision.id,
                 updated_at=utc_now(),
             ))
-            continued = self.store.load_snapshot(project_id)
+            continued = self.store.load_node_snapshot(
+                project_id, snapshot.root_node.id,
+            )
             attempt = self._attempt(
                 continued, continuation=self._continuation_for_snapshot(continued),
             )
@@ -243,11 +246,13 @@ class ProjectRunner:
     # Readable alias for callers that use the roadmap's noun for this operation.
     continuation = continue_project
 
-    def resume(self, project_id: str, provider: Provider) -> ProjectRunResult:
+    def resume(
+        self, project_id: str, provider: Provider, *, node_id: str | None = None,
+    ) -> ProjectRunResult:
         """Resume the first unfinished stage without regenerating completed work."""
         with self.store.execution_lock(project_id):
-            snapshot = self.store.load_snapshot(project_id)
-            status = self.store.status(project_id)
+            snapshot = self.store.load_node_snapshot(project_id, node_id)
+            status = self.store.status(project_id, node_id)
             state = status["state"]
             if state == "complete":
                 raise ProjectRunError(
@@ -374,6 +379,7 @@ class ProjectRunner:
             run_input = self._read_run_json(run_dir / "project-input.json")
             if (
                 run_input.get("revision_id") != parent.id
+                or run_input.get("node_id") != snapshot.root_node.id
                 or run_input.get("stage") != stage
             ):
                 raise ProjectRunError(
@@ -492,7 +498,9 @@ class ProjectRunner:
                 resume_provider=resume_provider,
             )
 
-        current = self.store.load_snapshot(project_id)
+        current = self.store.load_node_snapshot(
+            project_id, attempt.snapshot.root_node.id,
+        )
         if current.root_node.current_revision_id != attempt.snapshot.revision.id:
             raise ProjectRunError(
                 "current revision changed during the attempt", project_id=project_id,
@@ -500,10 +508,13 @@ class ProjectRunner:
         now = utc_now()
         self.store.save_node(replace(current.root_node, updated_at=now))
         self.store.save_project(replace(current.project, updated_at=now))
+        self.store.sync_child_links(
+            project_id, current.root_node.id, current.root_node.current_revision_id,
+        )
         return ProjectRunResult(
             attempt_id=attempt.attempt_id,
             stage_runs={stage: results[stage].run_id for stage in DEFAULT_STAGES},
-            status=self.store.status(project_id),
+            status=self.store.status(project_id, current.root_node.id),
         )
 
     @staticmethod
@@ -745,7 +756,7 @@ class ProjectRunner:
             f"{stage} is waiting for operator response {exc.key}",
             project_id=project_id, stage=stage, run_id=run_id,
             run_dir=ledger.path, pending=pending,
-            status=self.store.status(project_id),
+            status=self.store.status(project_id, attempt.snapshot.root_node.id),
         )
 
     @staticmethod
