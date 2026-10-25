@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -20,6 +21,26 @@ def test_good_history_has_no_findings():
     report = check_history(load_history(DEMO / "history.yaml"), load_canon(CANON))
     assert report["findings"] == []
     assert all(c["status"] == "pass" for c in report["checks"])
+
+
+def test_apocryphal_claim_matches_event_text_and_detailed_origin(tmp_path):
+    history_path = tmp_path / "history.json"
+    history_path.write_text(json.dumps({
+        "events": [{
+            "id": "E-01", "year": 1,
+            "title": "異説・嵐の夜に灯りを消した者は翌朝には帰らぬ者となる",
+            "effect": "この語りが港町に広まった。",
+            "trace": "子守唄と船頭の口伝に残る。",
+        }],
+        "sources": [{
+            "id": "S-01", "holder": "港町の年寄り",
+            "origin": "invented: 港町の口伝",
+        }],
+        "apocrypha": ["嵐の夜に灯りを消した者は、翌朝には帰らぬ者となる。"],
+    }, ensure_ascii=False), encoding="utf-8")
+
+    report = check_history(load_history(history_path))
+    assert report["findings"] == []
 
 
 def test_bad_history_fails_every_check():

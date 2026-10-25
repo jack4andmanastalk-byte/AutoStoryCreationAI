@@ -91,19 +91,32 @@ def check_history(history: History, canon=None) -> dict:
                 f"events:{event.id}"))
 
     # -- canon_separated -----------------------------------------------------------------
+    # ``apocrypha`` stores sayings, not event IDs. Match each saying against
+    # the event's human-readable fields after removing punctuation/spacing;
+    # accept an event ID as well for older data that used that convention.
+    def normalise_claim(value: str) -> str:
+        return re.sub(r"[^\w]+", "", value, flags=re.UNICODE)
+
     for apocryphal in history.apocrypha:
-        if apocryphal not in by_id:
+        claim = normalise_claim(apocryphal)
+        represented = apocryphal in by_id or any(
+            claim and claim in normalise_claim(" ".join(
+                (event.title, event.effect, event.trace)))
+            for event in history.events)
+        if not represented:
             findings.append(_finding(
                 "canon_separated", "medium",
-                f"異説「{apocryphal}」が年表にない。", f"apocrypha:{apocryphal}"))
+                f"異説「{apocryphal}」が年表にない。",
+                f"apocrypha:{apocryphal}"))
     for source in history.sources:
         ref = f"sources:{source.id}"
-        if source.origin not in SOURCE_ORIGINS:
+        origin_kind = source.origin.split(":", 1)[0].strip()
+        if origin_kind not in SOURCE_ORIGINS:
             findings.append(_finding(
                 "canon_separated", "medium",
                 f"由来 '{source.origin}' は invented / adapted / cited のいずれかにする。",
                 ref))
-        if source.origin == "cited" and not source.citation.strip():
+        if origin_kind == "cited" and not source.citation.strip():
             findings.append(_finding(
                 "canon_separated", "medium",
                 "実在史料の引用には citation（書誌情報）が要る。創作なら adapted にする。",
