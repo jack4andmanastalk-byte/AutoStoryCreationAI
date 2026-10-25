@@ -1,7 +1,7 @@
 # 継続創作基盤：タスク分解・設計・実装順序
 
 - 日付: 2026-10-25
-- 状態: **PR 1〜15を実装済み（PR 14・15はドキュメントのみ）。中規模dogfoodの実測により、index・queue・incremental検査は現時点では不要と判断**
+- 状態: **PR 1〜16を実装済み。中規模dogfoodの実測によりindex・queue・incremental検査は不要と判断し、未完成の子を含む部分編纂（`compose --partial`）を追加**
 - 対象: AIによる創作を中断・再開し、続編・入れ子作品・世界スケールの作品群へ拡張する基盤
 - 前提: PR #18 マージ後の既存 pipeline / skills / replay / Arena operator を利用する
 
@@ -552,6 +552,33 @@ JSON読み込み）が約120–130 msで、規模に比例する部分は `docto
 
 **完了条件**: 上記の計測値と判断、再検討の引き金、見つかった候補が文書化され、実装・JSON・CLIの
 変更が無い。
+
+### PR 16: 未完成の子を含む部分編纂 `compose --partial`（実装済み）
+
+PR 15のdogfoodで、子1作品が未開始のまま `compose` が exit 2 になり、完成済みの作品集すら
+読めないことを確認した。`world compile` のcollection、`render` は影響を受けないが、
+「複数作品を回している間は常に誰かが未完成」という通常の運用状態で親の結合出力が取れないのは
+実害があるため、最小の範囲で塞いだ。
+
+- `ProjectComposer.compose(..., partial=True)`：pinned draftを持たないlinkを、順序位置を保ったまま
+  `asc-omitted` コメントと可視の1行に置き換え、`omitted`（link/node/order/title/reason）に記録する。
+  黙って飛ばさない。`partial=False`（既定）は従来どおり即エラー。
+- `content_version` の identity に `omitted` を含める。部分編纂と完全編纂は別artifactになり、
+  write-onceのまま共存する。`--partial`無しのmanifestとJSONは`omitted`キーを持たず、形が変わらない。
+- CLI: `compose --partial`、`--out`時は `Omitted: <link> (<node>) <reason>` を表示。
+  `--json`は`omitted`を追加（空なら従来の形）。
+
+確認: `tests/test_project_compose_partial.py`（3件）が、既定のエラー、未収録の位置・見出し・
+notice・marker・`omitted`の内容、決定的な再現、完全編纂との別versionとwrite-once、
+孫階層での省略、CLIの`--partial`（exit 2 → 0）、`--out`のOmitted表示を検査する。
+既存の `tests/test_project_nested.py` は変更なしで通る（既定動作が同一）。
+
+dogfood（`prj-partial`：root + 子3、子1つ未開始）: 既定の`compose`は exit 2、
+`--partial`は exit 0で `omitted: [link-c3]`・可視notice・`content_version 90ade9c1…`。
+子3を完了後の完全編纂は `b60a9e7a…` で、部分編纂のartifactは残った。
+
+残した候補: `world compile` のcollection profileも同じ`--partial`を持つかは、部分編纂を
+編纂viewとして使う運用が実際に起きたときに判断する（今は`compose --partial`のみ）。
 
 ### その後の候補
 

@@ -232,6 +232,30 @@ versionは選択nodeのrevisionと全階層のpinned link/artifactから決ま�
 変わりません。したがって、descendantがstaleになった後もadopt前の`compose`は同じbytesを再現します。
 adopt後の`compose`だけが新しいversionを追加し、旧い結合artifactも残ります。
 
+### 未完成の子を含む部分編纂（`--partial`）
+
+既定の`compose`は、全linkがpinnedであることを要求します。作業中の子が1つあるだけで
+作品集全体が出せないため、`--partial`を付けると**その子だけを明示的に未収録として残し**、
+残りを編纂します。
+
+```bash
+# 1作品が未完成のまま、完成済みの作品集を読む
+python3 scripts/story_project.py compose prj-seaside --partial --out /external/partial.md
+```
+
+- 未収録のlinkは元の順序位置に残り、見出し（子の現在のtitle）と
+  `<!-- asc-omitted: link=… node=… order=… reason=no-pinned-draft -->`、可視の1行
+  「この作品は未収録（未完成）。」に置き換わります。**黙って飛ばしません**。
+- `--json`の`omitted`に`link_id` / `node_id` / `order` / `title` / `reason`が入り、
+  manifest JSONにも同じ`omitted`が入ります（`--partial`無しの出力は`omitted`キー自体を持たず、
+  従来と同じ形）。
+- `content_version`は`omitted`を含めて決まるため、部分編纂と完成後の完全編纂は別のartifactに
+  なります。部分編纂のartifactを後から上書きしません（write-once）。
+- 未収録のtitleはlinkがpinしていない現在のrevisionから読む参考情報です。本文・canon・
+  pinned本文の同一性には関与しません。pinned側の本文は1 byteも変わりません。
+- `world compile`の`collection` profileは従来どおり全link pinnedを要求します（部分編纂は
+  `compose --partial`のみ）。
+
 ### 祖先と世界の選択文脈（ContextPacket）
 
 多段nodeの生成では、祖先の全本文をpromptへ投入しません。`context.py`がrootから直近の親までを
@@ -783,6 +807,8 @@ PR 15では、9作品（root 1 + 子8、各12章、1作品のみ+2章のcontinua
 この傾きでは50作品でも `doctor` 1.7 s 程度に収まるため、index・依存queue・incremental検査は
 現時点では実装しないと判断しました。詳細と再検討の引き金は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「PR 15」を参照してください。
+PR 16では、そのdogfoodで確認した「子1作品が未完成だと作品集が出せない」を、
+`compose --partial`（未収録を明示して残りを編纂）で塞ぎました（前述「未完成の子を含む部分編纂」）。
 次の候補は、より大きなdogfood（複数作品・長期の中断再開）で必要性を測ってから決めます。詳細は
 [`continuous_creation_roadmap.md`](continuous_creation_roadmap.md)の「その後の候補」を参照してください。
 WorldEvent・KnowledgeStateや大規模運用の最適化は必要性を確認してから検討し、X-01のskill registryは

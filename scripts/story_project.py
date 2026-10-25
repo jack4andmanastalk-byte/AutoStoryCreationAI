@@ -241,6 +241,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     compose.add_argument("project_id")
     compose.add_argument("--node", dest="node_id", help="subtree root (default: project root)")
     compose.add_argument("--out", help="optional additional external UTF-8 markdown output")
+    compose.add_argument(
+        "--partial", action="store_true",
+        help="keep compiling when a child has no pinned draft (omitted explicitly)",
+    )
     compose.add_argument("--json", dest="json_output", action="store_true")
 
     pending = subparsers.add_parser("pending", help="list operator responses still needed")
@@ -759,7 +763,10 @@ def main(argv: list[str] | None = None) -> int:
             result = (
                 composer.render(args.project_id, args.node_id)
                 if args.command == "render"
-                else composer.compose(args.project_id, args.node_id)
+                else composer.compose(
+                    args.project_id, args.node_id,
+                    partial=getattr(args, "partial", False),
+                )
             )
             if args.out:
                 output = Path(args.out).expanduser()
@@ -772,6 +779,8 @@ def main(argv: list[str] | None = None) -> int:
             elif args.out:
                 print(f"Output: {Path(args.out).expanduser()}")
                 print(f"SHA-256: {result.sha256}")
+                for row in result.omitted:
+                    print(f"Omitted: {row['link_id']} ({row['node_id']}) {row['reason']}")
             else:
                 print(result.text, end="")
             return 0
