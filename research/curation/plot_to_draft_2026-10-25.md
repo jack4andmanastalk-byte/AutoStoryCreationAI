@@ -64,30 +64,18 @@ PROVIDER='.venv/bin/python scripts/model_adapter.py --model MODEL --model-versio
 
 SHARED_CANON=runs/plot-ablation/shared-plan/canon
 SHARED_DESIGN=runs/plot-ablation/shared-design/design
-.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage draft \\
-  --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.8 \\
+.venv/bin/python scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
   --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
-  --out runs/plot-ablation/no-plot --run-id t01-s1-s0-no-plot \\
-  --no-plot-memos --report-only --quiet
-.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage draft \\
   --provider command --command "$PROVIDER" --model MODEL --seed 0 --temperature 0.8 \\
-  --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
-  --out runs/plot-ablation/with-plot --run-id t01-s1-s0-with-plot \\
-  --report-only --quiet
+  --out experiments/2026-10-plot-ablation-t01
 ```
 
-`MODEL`・`VERSION` は指定する同じ固定版の値に置き換える。応答本文・`responses.jsonl`・manifest・summary は両 run ごとに保持する。比較前に prompt の差が章ごとの幕／転換点行だけであること、`draft_condition` の canon/design hash、モデル/版・temperature・seed が一致することを確認する。失敗応答や修復が起きた場合も除外せず記録する。
+`MODEL`・`VERSION` は指定する同じ固定版の値に置き換える。runner は条件別のDraft runとL1評価を行い、`experiments/<id>/results.json` / `note.md` / `l1/` を出力する。生の応答と本文はGit管理外の `runs/plot-ablation/<id>/` に保持する。canon/design 全ファイルのハッシュ、モデル・版、seed、温度を確認し、**ch01のプロンプト差が幕／転換点行だけ**であることを検査する。後続章は前章本文の違いが伝播しうるので、その差を独立した章ごとの直接効果と解釈しない。固定版がなくても探索 run は可能だが、`version_pinned=false` と G5 未達を記録する。scripted fixture は回帰テスト専用で、実モデル実験と混同しない。
 
-L1 は各 run の `run-summary.json`（文字数、必須語、監査違反/coverage/CED）と、以下のように `run_evaluation.py` で同一 `harness/patterns.yaml` を使った禁止パターンを別々に記録する。評価レポートを品質点へまとめない。
-
-```sh
-.venv/bin/python scripts/run_evaluation.py --candidate runs/plot-ablation/with-plot/<run-id>/text \\
-  --canon runs/plot-ablation/with-plot/<run-id>/canon --patterns harness/patterns.yaml \\
-  --out runs/plot-ablation/l1-with-plot --report-only
-```
+runner のL1出力では、必須語、タスク固有の禁止語、共通の禁止パターン、継続性監査（違反・高 severity・未実行検査・CED）、文字数・記述統計を個別に記録する。L1レポートを総合点や品質判定にまとめず、L2/L3は実行しない。
 
 ### 2026-10-25 の実施状態
 
-本セッションでは**実モデル比較を実施していない**。`OPENAI_API_KEY` と `MODEL_BASE_URL` は環境に無く、利用可能な接続先もこの環境のネットワーク許可対象外である。実応答・L1効果は記録していない。提示した固定台本は配線検査であり、実モデル応答として扱わない。再現性は新しい `tests/test_pipeline_design.py` のペア条件回帰（Plot 行以外の完全一致、同一共有入力ハッシュ）で検査しただけである。
+本セッションでは**実モデル比較を実施していない**。`OPENAI_API_KEY` と `MODEL_BASE_URL` は環境に無く、利用可能な接続先もこの環境のネットワーク許可対象外である。実応答・L1効果は記録していない。`scripts/run_plot_ablation.py` は追加したが、その統合テストは `plan-demo.json` の scripted fixture のみである。固定台本やそのテスト結果を実モデル応答／SKILLの有効性として扱わない。回帰テストはPlot行以外のプロンプト一致、共有入力ハッシュ、L1出力の構造を確認するだけである。
 
 未検証: 実モデルの出力差と L1 指標差、モデル版をまたぐ一般化、Plot メモが物語の質や面白さに与える影響。L1 はその質の証拠ではない。L2/L3 は引き続き凍結。
