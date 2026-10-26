@@ -156,7 +156,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 スキルの追加・改良、プロンプトの改善、モデルの更新は**版を上げない**（それが測る対象）。
 ただしモデルを変えた比較は、同一モデル内の比較と分けて報告する。
 
-## 10. 現状（2026-10-24）
+## 10. 現状（2026-10-26 時点）
 
 **運用範囲**: 利用者の決定により、Arena.ai × L1 を継続対象とし、L2/L3 の実証・較正・
 追加開発を凍結した（[`evaluation_scope.md`](evaluation_scope.md)）。これは §0–9 の
@@ -174,6 +174,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | スキル（13 種） | seed-01〜13 すべて実装済み（構造検査のみ）。意味の判定は L2/L3 凍結のため評価しない |
 | L3 較正の道具 | 実装済み（`scripts/judge_pairs.py`、`scripts/calibrate_judge.py`、κ の fixture 検証）。固定デモの再生のみ。新規評定・較正は凍結 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
+| 二段階方式（Stage A → B） | **Phase 1–2 実装済み**（`src/asc/gamelog/`、`scripts/check_gamelog.py`、`scripts/run_twostage.py`、`docs/two_stage_slice.md`）。`game_log.json` スキーマと 8 種の決定論的検査、確定マーカー導出、Stage B の 4 検査、fail-closed 配線。**固定台本（`scripted`）での配線・回帰確認のみ。実モデル応答・L1 ペア比較（Phase 3）は未実施**。protocol-v1 の系・指標・閾値は変更しない |
 | 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
 | 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。固定デモの再生のみ。**実モデルでの較正・追加開発は凍結** |

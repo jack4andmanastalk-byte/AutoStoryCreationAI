@@ -131,3 +131,27 @@
 - L1 は構造・衛生チェックであり物語の質や面白さの証拠とは扱わず、L2/L3 は `frozen_not_measured` のまま維持してください。
 - 作業ブランチはセッションで用意されたものを使用し、PR を作成した場合は私が指示するまでマージしないでください。
 ```
+
+---
+
+## 5. 実装状況（2026-10-26 追記）
+
+§3 の Phase 1–2 を作業ブランチ上で実装した。仕様・限界・実行手順は
+[`docs/two_stage_slice.md`](../../docs/two_stage_slice.md)、結果は
+[`experiments/2026-10-trpg-slice-t01/note.md`](../../experiments/2026-10-trpg-slice-t01/note.md)
+に記録した。本節は方向づけの記録を書き換えず、到達点だけを残す。
+
+- **Phase 1**: `game_log.json` の厳密スキーマ（`src/asc/gamelog/schema.py`）、
+  `canon` / `plot.json` / `scene.json` に対する 8 検査（`check.py`）、
+  `state_delta` からの確定マーカー導出（`markers.py`）。死者は
+  `record_reference` / `memory_mention` の `subject` + `medium` としてのみ許容し、
+  `action` / `dialogue` / `present_characters` の現在時行動は `high` で禁止する。
+- **Phase 2**: `scripts/run_twostage.py` が Stage A → 検査 → 修復 →
+  **検証済みログのみ** Stage B → 検査 → 修復、を接続。Stage B は 4 検査
+  （マーカー列・人物境界・事実/知識境界・文体）で逸脱を検出する。
+- **検証**: 固定台本（`scripted`）による決定論的回帰テスト 51 件を追加。
+  2 回実行のバイト一致、Stage A/B の修復ラウンド、Stage A 不合格時の
+  fail-closed、`--resume`、回答待ちの `PROMPTS.md` 出力、`build/` / `runs/` 拒否を含む。
+- **未実施**: 実モデル（Arena リレー）応答の収集、S1 直接生成との L1 ペア比較
+  （Phase 3）。実モデル応答・効果は捏造していない。L1 は構造・衛生のみ、
+  L2/L3 は `frozen_not_measured` のまま。
