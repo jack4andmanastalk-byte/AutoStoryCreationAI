@@ -70,15 +70,38 @@ A/B runner は初回起動時に canon/design を `out/inputs/` へ固定コピ�
 
 runner のL1出力では、必須語、タスク固有の禁止語、共通の禁止パターン、継続性監査（違反・高 severity・未実行検査・CED）、文字数・記述統計を個別に記録する。L1レポートを総合点や品質判定にまとめず、L2/L3は実行しない。
 
-### 2026-10-25以降の実施状態と再発防止
+### 2026-10-26 実施結果（Arena × L1 探索的ペア比較 `t01-s1-seed0`）
 
-前回のマルチターン実験（PR #43）では、Arenaの実回答を使って共有準備（`1AD3`〜`F050`）と paired draft の ch01（`8181` / `CCBC`）・ch02（`C3A0` / `4DEF`）まで進行したが、以下の複合要因により ch02 後の workspace reset で中断した。
+前回のマルチターン実験（PR #43）では、共有準備や試行 run・relay の初期状態が Git 管理外の `runs/` に置かれていたこと、共有準備が別コマンドに分かれていたこと、2 arm 一括 ingest 時に他方 arm のタグが `unknown tag` になること、`state.json` が絶対パス文字列を比較していたことにより、ch02 後の workspace reset で中断した。
 
-1. 当初の実行では共有 canon/design、試行 run、relay の唯一のコピーを Git 管理外の `runs/` に置いていたため、reset 時に `runs/` ごと消失した。
-2. PR #43 途中の修正（`ce2e2f6`）で `<out>/inputs/`・`<out>/attempts/`・`<out>/relay/` への保存が追加された後も、(a) 共有準備が `run_pipeline.py`（既定 `--stage all`）の別コマンドに分かれていたこと、(b) `no_plot` / `with_plot` 2 arm の回答を 1 ファイルにまとめて `relay_prompts.py ingest` に渡すと他方 arm のタグが `unknown tag` で拒否されること、(c) `state.json` が絶対パス文字列の一致を要求していたこと、が残っていた。
+今回の再試行では `scripts/run_plot_ablation.py` に `--prepare-shared`、マルチ arm / マルチステップ `--ingest`、統合 `<out>/PROMPTS.md`、パス非依存の再開検査、`build/` 拒否を実装した上で、`experiments/2026-10-plot-ablation-t01/paired/` 内で共有準備（`1AD3`〜`F050`）と両 arm の全 3 章（`no_plot`: `8181` / `C3A0` / `EFA7`、`with_plot`: `CCBC` / `4DEF` / `D342`）を完走させた。成果物一式は [`experiments/2026-10-plot-ablation-t01/paired/results.json`](../../experiments/2026-10-plot-ablation-t01/paired/results.json) と [`note.md`](../../experiments/2026-10-plot-ablation-t01/paired/note.md) に保存している。
 
-これに対し、今回の再試行では runner に `--prepare-shared`、マルチ arm / マルチステップ対応の `--ingest`、統合 `<out>/PROMPTS.md` 出力、パス非依存の再開検証、`build/` 指定拒否を実装し、さらに PR #43 で `research/curation/plot-ablation-*-prompt.md` にコミットされて残っていた Step 0（`1AD3` `plan`）〜 Step 8（`9B86` `design:scene`）の 9 応答を厳密に復元・検証した（リプレイされた `1AD3`〜`F050` の全 10 個のプロンプトがコミット済み `.md` とバイト単位で完全一致することを確認）。復元した共有入力（`inputs/canon/` 全 6 ファイル、`inputs/design/` の `brief`〜`scene` 7 設計書と `status: clean` の検査レポート）および `relay/t01-s1-seed0/shared_prep/` の 9 応答は `experiments/2026-10-plot-ablation-t01/paired/` に保存し、Git 管理下に置いた。
+- **条件統制の確認**:
+  - 共有 `canon`（6 ファイル）と `design`（8 設計書すべて `status: clean`）の SHA-256 は両 arm で完全一致。
+  - `prompt_control.ch01_diff_only_plot_memo_lines = true`（ch01 の `no_plot` `09143bfcbad0a32d` と `with_plot` `f7b63c15aa0622d7` のプロンプト差は章別 Plot メモの 2 行のみ）。
+  - ch02・ch03 のプロンプトは各 arm の前章本文（「前章の末尾」）を含むため、下流の媒介効果を含む。
 
-一方、Step 9 の `F050`（`design:voice`）の生 JSON 応答と、paired draft の ch01（`8181` / `CCBC`）・ch02（`C3A0` / `4DEF`）の本文応答は Git にコミットされていなかった（`plot-ablation-*-ch01-prompt.md` には `voice.json` のうち `viewpoint` の `{"person": "third", "character": "ミーナ・アール"}` のみが埋め込まれており、`narrator` / `sample` / `banned` フィールドおよび章本文は残っていない）。モデル応答の捏造や推測復元は行わず、`experiments/2026-10-plot-ablation-t01/paired/` は **`F050`（`design:voice`）の回答待ち状態**として正確に記録している（なお、`voice.json` の `viewpoint` が上記と同一であれば、続く ch01 の `no_plot` タグ `8181` / `with_plot` タグ `CCBC` のプロンプト本文は `research/curation/plot-ablation-{no,with}-plot-ch01-prompt.md` とバイト単位で一致するため、`F050` と `8181` / `CCBC` を 1 回の `--ingest` でまとめて進めることもできる）。
+| L1 観測項目（`t01` / S1 / seed 0 / temp 0.8 / Arena） | `no_plot`（Plot メモなし） | `with_plot`（Plot メモあり） | 差（`with - without`） |
+| --- | ---: | ---: | ---: |
+| ゲート判定（`run-summary.json` `status`） | `pass` | `pass` | — |
+| 本文字数（マーカー除外、規定 3,000〜4,200 字） | 3,343（1028 / 1206 / 1109） | 3,374（964 / 1202 / 1208） | +31 |
+| 章単体の長さ警告（目安 1,000〜1,400 字） | 0 件 | 1 件（ch01: 964 字） | +1 |
+| 必須語の出現率（`灯台`・`鍵`・`嵐`） | 1.0（3/3） | 1.0（3/3） | 0.0 |
+| タスク禁止語（`選ばれし者`・`古代の予言`） | 0 件 | 0 件 | 0 |
+| 共通禁止表現（`forbidden_hits` / 1万字あたり） | 0 件 / 0.0 | 0 件 / 0.0 | 0 / 0.0 |
+| 継続性監査: 未実行検査（`checks_skipped` / 全6検査） | 0 件 | 0 件 | 0 |
+| 継続性監査: 高 severity 違反（`high`） | 0 件 | 0 件 | 0 |
+| 継続性監査: 違反合計（すべて `medium`） | 8 件 | 5 件 | -3 |
+| — 内訳 `unresolved_foreshadow` | 1 件（`fs-004` payoff マーカー欠落） | 0 件（全 6 伏線回収） | -1 |
+| — 内訳 `dead_character_reappears`（`name_mention`） | 7 件 | 5 件 | -2 |
+| 継続性誤り密度 CED（1万字あたり） | 20.207 | 12.447 | -7.76 |
+| 記述統計: 段落数 / 平均段落字数 / 会話比率 | 24 / 165.0 / 0.223 | 26 / 154.5 / 0.228 | +2 / -10.5 / +0.005 |
+| 記述統計: 文数 / 平均文長 / 文長 CV | 168 / 19.9 / 0.529 | 175 / 19.3 / 0.515 | +7 / -0.6 / -0.014 |
 
-未検証: 実モデルの出力差と L1 指標差、モデル版をまたぐ一般化、Plot メモが物語の質や面白さに与える影響。L1 はその質の証拠ではない。L2/L3 は引き続き凍結。
+#### 結果の読み方と限界
+
+- **単一ペア・Arena 経路の制約**: Arena 経路はモデル版が固定されないため（`model_version: unversioned`, `version_pinned: false`）、G5（再現性）は成立せず、本結果は **Arena × L1 の探索的参考値（1 ペアのみ）** に留まる。
+- **継続性違反（`medium`）の内訳**:
+  - `unresolved_foreshadow` は `no_plot` の ch02 で `{{foreshadow: fs-004 payoff}}` マーカーが出力されなかったことによる 1 件（`with_plot` は 0 件）。ただし ch02 は前章本文を介した下流段階であり、また 1 ペアの観測であるため、Plot メモの一般効果とは結論づけない。
+  - `dead_character_reappears`（`no_plot` 7 件、`with_plot` 5 件）はいずれも物語開始前に死亡している `johan`（ヨハン・アール／「兄」）の名前・別名が記録引用や会話中に出現したことに対する `name_mention` ベースの `medium` 報告であり（監査器の仕様上、回想・記録・言及と区別できないため `medium` として計上）、死者本人が現在時に行為・発話した `high` 違反は両 arm とも 0 件である。
+- **未検証事項**: 複数タスク・複数シード・固定モデル版での効果の再現性（G5）、および章別 Plot メモが物語の質・面白さ・読者選好に与える影響。**L1 指標は構造・衛生チェックであり、物語の質や面白さの証拠ではない。** L2/L3 は引き続き `frozen_not_measured`。

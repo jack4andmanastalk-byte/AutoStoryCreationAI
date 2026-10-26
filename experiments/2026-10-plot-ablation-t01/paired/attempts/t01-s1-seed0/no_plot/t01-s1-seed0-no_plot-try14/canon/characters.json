@@ -1,0 +1,102 @@
+{
+  "characters": [
+    {
+      "id": "mina",
+      "name": "ミーナ・アール",
+      "aliases": [
+        "ミーナ",
+        "灯守の娘",
+        "アールの娘"
+      ],
+      "status": "alive",
+      "location": "灯台",
+      "age_at_start": 19,
+      "knows": [
+        "F-01",
+        "F-02",
+        "F-06",
+        "F-10",
+        "F-11"
+      ]
+    },
+    {
+      "id": "roderick",
+      "name": "ロデリク・アール",
+      "aliases": [
+        "灯台守",
+        "親方",
+        "アール"
+      ],
+      "status": "alive",
+      "location": "灯台",
+      "age_at_start": 52,
+      "knows": [
+        "F-01",
+        "F-02",
+        "F-03",
+        "F-04",
+        "F-05",
+        "F-06",
+        "F-08",
+        "F-10",
+        "F-11"
+      ]
+    },
+    {
+      "id": "seth",
+      "name": "セス・ヴァル",
+      "aliases": [
+        "潮札の使い",
+        "使いの男"
+      ],
+      "status": "alive",
+      "location": "灯台",
+      "age_at_start": 26,
+      "knows": [
+        "F-01",
+        "F-05",
+        "F-10",
+        "F-11"
+      ]
+    },
+    {
+      "id": "johan",
+      "name": "ヨハン・アール",
+      "aliases": [
+        "兄",
+        "三年前の灯守見習い",
+        "帰らぬ者の棚の手形"
+      ],
+      "status": "dead",
+      "location": "王都",
+      "age_at_start": null,
+      "knows": [
+        "F-07",
+        "F-08",
+        "F-09",
+        "F-11"
+      ]
+    },
+    {
+      "id": "hilda",
+      "name": "ヒルダ・ネーリ",
+      "aliases": [
+        "灯寮の書記",
+        "ネーリ"
+      ],
+      "status": "alive",
+      "location": "王都",
+      "age_at_start": 34,
+      "knows": [
+        "F-03",
+        "F-04",
+        "F-06",
+        "F-07",
+        "F-08",
+        "F-09",
+        "F-10",
+        "F-11"
+      ]
+    }
+  ]
+}

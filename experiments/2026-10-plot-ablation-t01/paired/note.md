@@ -1,24 +1,24 @@
-# Plot memo ablation: t01-s1-seed0 — Arena responses pending
+# Plot memo ablation: t01-s1-seed0
 
-No experiment result has been produced yet. Each arm has its own operator directory; keep its tagged answers with the matching arm.
-Combined pending prompt bundle: `/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/PROMPTS.md`.
+- Scope: **Arena × L1 exploratory reference only**.
+- Target: Plot-SKILL-derived memo handoff only; not overall SKILL efficacy.
+- Task/system/seed: t01 / S1 / 0
+- Model/version: arena-agent-mode / unversioned
+- Draft temperature: 0.8
+- Shared canon/design hashes: see `results.json`.
+- L2/L3: `frozen_not_measured`; G5/reproducibility: not established by one pair.
 
-### no_plot arm
+| Arm | Chars (markers excluded) | Must-include rate | Task-avoid hits | Forbidden hits | Forbidden / 10k chars | CED / 10k chars |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| no_plot | 3343 | 1.0 | 0 | 0 | 0.0 | 20.207 |
+| with_plot | 3374 | 1.0 | 0 | 0 | 0.0 | 12.447 |
 
-Pending requests: 1. Copy `/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/relay/PROMPTS.md` to the Arena chat. Save its tagged answers and ingest them with:
+## Limits
 
-`/home/user/AutoStoryCreationAI/.venv/bin/python scripts/relay_prompts.py ingest --dir /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot --file answers.txt --model arena-agent-mode --model-version unversioned`
-
-### with_plot arm
-
-Pending requests: 1. Copy `/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/relay/PROMPTS.md` to the Arena chat. Save its tagged answers and ingest them with:
-
-`/home/user/AutoStoryCreationAI/.venv/bin/python scripts/relay_prompts.py ingest --dir /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot --file answers.txt --model arena-agent-mode --model-version unversioned`
-
-After ingesting the answers, rerun the same command to continue (or pass `--ingest answers.txt --resume` to ingest across arms/stages and advance in one command):
-
-```sh
-/home/user/AutoStoryCreationAI/.venv/bin/python scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 --canon /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon --design-dir /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design --prepare-shared --provider arena --seed 0 --temperature 0.8 --out /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired --runs-root /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts --operator-root /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay --resume
-# or in one step:
-/home/user/AutoStoryCreationAI/.venv/bin/python scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 --canon /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon --design-dir /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design --prepare-shared --provider arena --seed 0 --temperature 0.8 --out /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired --runs-root /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts --operator-root /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay --resume --ingest answers.txt
-```
+The intervention is the inclusion of chapter-local Plot memo lines. The first
+chapter's prompts are checked for equality after removing those lines. Later
+chapters may receive different prior-chapter text because prior outputs are
+part of the pipeline; that is a downstream mediated effect, not an independently
+controlled chapter-level effect. L1 indicators are reported separately and do
+not measure interest, originality, or reader preference. This one paired run
+cannot establish a general effect. No L2/L3 judgments were made.

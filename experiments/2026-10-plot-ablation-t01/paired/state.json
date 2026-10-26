@@ -49,7 +49,7 @@
     "prepare_shared": true,
     "shared_prep_complete": true
   },
-  "attempts": 13,
+  "attempts": 14,
   "attempt_history": [
     {
       "attempt": 1,
@@ -195,7 +195,21 @@
           "detail": "error: ch03: NEED RESPONSE key=s1-t01-plot-with_plot-s3-draft-ch03-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/responses/s1-t01-plot-with_plot-s3-draft-ch03-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try13"
         }
       }
+    },
+    {
+      "attempt": 14,
+      "arms": {
+        "no_plot": {
+          "status": "complete",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14"
+        },
+        "with_plot": {
+          "status": "complete",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try14"
+        }
+      }
     }
   ],
-  "completed": false
+  "completed": true,
+  "completed_attempt": 14
 }
