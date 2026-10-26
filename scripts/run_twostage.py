@@ -69,8 +69,8 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.evaluation.scope import EvaluationScopeError, load_evaluation_scope  # noqa: E402
 from asc.gamelog import (  # noqa: E402
-    GameLog, GameLogError, check_rewrite, check_game_log,
-    gamelog_needs_repair, parse_game_log, rewrite_needs_repair,
+    GameLog, GameLogError, check_rewrite, check_game_log, gamelog_needs_repair,
+    missing_must_include, parse_game_log, rewrite_needs_repair,
 )
 from asc.gamelog.markers import chapter_markers  # noqa: E402
 from asc.pipeline import (  # noqa: E402
@@ -479,7 +479,8 @@ def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
 def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                         ledger: RunLedger, log: GameLog, canon: Canon,
                         voice: Voice, scenes: SceneDoc, prompts: dict, *,
-                        temperature: float, seed: int, max_attempts: int) -> dict:
+                        temperature: float, seed: int, max_attempts: int,
+                        min_chars: int = MIN_REWRITE_CHARS) -> dict:
     findings: list[dict] = []
     report: dict | None = None
     text = ""
@@ -517,7 +518,7 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
         ledger.write_text(f"stage_b/{chapter_id}-attempt-{attempt}.txt", result.text)
         text = clean_text(result.text)
         report = check_rewrite(text, chapter_id, log, canon, voice, scenes,
-                               avoid=task.avoid, min_chars=MIN_REWRITE_CHARS)
+                               avoid=task.avoid, min_chars=min_chars)
         findings = report["findings"]
         if not rewrite_needs_repair(findings):
             break
@@ -562,6 +563,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--max-attempts", type=int, default=2)
+    parser.add_argument("--min-chars", type=int, default=MIN_REWRITE_CHARS,
+                        help="per-chapter length gate in characters (the prompt "
+                             "target is 1,000-1,400; the default is informational)")
     parser.add_argument("--results", default=None,
                         help="write a compact, deterministic bundle summary here")
     parser.add_argument("--quiet", action="store_true")
@@ -610,6 +614,8 @@ def _resume_command(args: argparse.Namespace, run_id: str) -> str:
               "--max-attempts", str(args.max_attempts)]
     if args.game_log:
         parts += ["--game-log", args.game_log]
+    if args.min_chars != MIN_REWRITE_CHARS:
+        parts += ["--min-chars", str(args.min_chars)]
     if args.allow_unverified_log:
         parts.append("--allow-unverified-log")
     if args.allow_temp_out:
@@ -953,7 +959,8 @@ def main(argv=None) -> int:
                     result = run_stage_b_chapter(
                         task, chapter.id, index, provider, ledger, log, canon,
                         voice, scenes, prompts, temperature=args.temperature,
-                        seed=args.seed, max_attempts=args.max_attempts)
+                        seed=args.seed, max_attempts=args.max_attempts,
+                        min_chars=args.min_chars)
                     stage_b_reports[chapter.id] = result["report"]
                     if result["report"]["summary"]["status"] != "clean":
                         status = "unresolved"
@@ -973,19 +980,33 @@ def main(argv=None) -> int:
                 ledger.fail(error)
                 return 2
             all_chapters = bool(log.chapters) and len(stage_b_reports) == len(log.chapters)
+            # A required word that never appears in the whole work is a Stage B
+            # failure even when every chapter's own checks passed (B-06).
+            joined = "\n\n".join(
+                path.read_text(encoding="utf-8") for path in
+                sorted((ledger.path / "text").glob("*.md")))
+            missing_words = missing_must_include(joined, task.must_include)
             stage_b_status = (
                 "pending" if pending else
                 "clean" if all_chapters and all(
                     r["summary"]["status"] == "clean"
                     for r in stage_b_reports.values()) else "unresolved")
+            if missing_words and not pending:
+                # Every chapter may pass while the work still misses a required
+                # word; that is a Stage B failure, not a chapter-level one.
+                stage_b_status = "unresolved"
             ledger.write_json("rewrite.report.json", {
                 "status": stage_b_status, "chapters": stage_b_reports,
+                "missing_must_include": missing_words,
             })
             if summary["stage_a"].get("unverified"):
                 # Stage B ran from a log that did not pass: never report clean.
                 status = "unresolved"
+            if stage_b_status == "unresolved":
+                status = "unresolved"
             summary["stage_b"] = {
                 "status": stage_b_status,
+                "missing_must_include": missing_words,
                 "chapters": [{
                     "id": cid, "status": report["summary"]["status"],
                     "attempts": report["attempts"], "repairs": report["repairs"],
@@ -998,7 +1019,7 @@ def main(argv=None) -> int:
             }
 
     if status != "pending":
-        summary["l1_hygiene"] = _l1_hygiene(ledger, task)
+        summary["l1_hygiene"] = _l1_hygiene(ledger, task, args.min_chars)
     summary["provider"]["observed"] = _observed_models(ledger)
     if isinstance(provider, BundleProvider):
         summary["replay"] = provider.report()
@@ -1039,7 +1060,25 @@ def _write_prompts(ledger: RunLedger, pending: dict, prompts: dict) -> None:
         "プロンプトが変わった回答は stale として拒否される。",
         "",
     ]
-    for path in sorted(ledger.path.rglob("*.prompt.txt")):
+    files = sorted(ledger.path.rglob("*.prompt.txt"))
+    answered = 0
+    shown: list[Path] = []
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        # Only the request that has no answer yet. A prompt whose digest is not
+        # the pending one was already served; listing it invites the operator to
+        # answer the wrong question (R-08).
+        text_hash = hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
+        if pending.get("prompt_hash") and text_hash == pending["prompt_hash"]:
+            shown.append(path)
+        else:
+            answered += 1
+    if not shown:
+        shown = files  # hash mismatch everywhere: show all rather than nothing
+        answered = 0
+    if answered:
+        lines += [f"回答済みのプロンプト {answered} 件は省略した。", ""]
+    for path in shown:
         relative = path.relative_to(ledger.path).as_posix()
         lines += ["## " + relative, "", "```text",
                   path.read_text(encoding="utf-8").rstrip(), "```", ""]
@@ -1048,7 +1087,8 @@ def _write_prompts(ledger: RunLedger, pending: dict, prompts: dict) -> None:
     ledger.write_text("PROMPTS.md", "\n".join(lines))
 
 
-def _l1_hygiene(ledger: RunLedger, task: Task) -> dict:
+def _l1_hygiene(ledger: RunLedger, task: Task,
+                min_chars: int = MIN_REWRITE_CHARS) -> dict:
     """Deterministic L1 bookkeeping (no quality judgement)."""
     text_dir = ledger.path / "text"
     bodies = [path.read_text(encoding="utf-8")
@@ -1066,6 +1106,12 @@ def _l1_hygiene(ledger: RunLedger, task: Task) -> dict:
         "must_include": {"hits": hits,
                          "rate": round(sum(hits.values()) / len(hits), 3) if hits else 1.0},
         "task_avoid_hits": {term: joined.count(term) for term in task.avoid},
+        "length_gate": {
+            "min_chars": min_chars,
+            "target_ja": "1 章 1,000〜1,400 字（プロンプトの目安）",
+            "gate_note": ("既定の 200 字は空文の検出用。目標長は合否に使っておらず、"
+                          "下回っても clean になりうる（P1-8）。"),
+        },
         "continuity": (None if audit is None else {
             "violations": audit["summary"]["violations"],
             "by_type": audit["summary"]["by_type"],

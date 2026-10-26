@@ -88,16 +88,16 @@ Stage A と Stage B は **別の provider リクエスト**（`stage_a`、`stage
 
 | 検査 | 合格条件 | 主な根拠 |
 | --- | --- | --- |
-| `schema_shape` | 状況・目的・対立・変化・選択・結果・緊張が空でなく行為が 1 件以上 | `japan_trpg` B5 / `scene-information` |
+| `schema_shape` | 状況・目的・対立・変化・選択・結果・緊張が空でなく行為が 1 件以上。章 ID の重複と canon と違う章順は `high`。未知キーは `low` で報告 | `japan_trpg` B5 / `scene-information` |
 | `canon_refs` | 章・人物・事実・場所・伏線が canon（または設計の planted）に存在し全章を覆う | `canon.py` |
 | `design_alignment` | `scene_ref` / `act_ref` / `turn_ref` が該当章を指す。学習事実が `disclosed` / `gained` にあり `withheld` でない。設計の `paid` がその場面で回収される | `plot.json` / `scene.json` |
-| `timeline_travel` | 章の `day` / `location` が年表と一致。章間と `location_moves` の経過が `travel_days` 以上 | `canon.py: travel_days()` |
-| `presence_death` | 死者が `present_characters` / `action` / `dialogue` の actor に現れない。死者の言及は `record_reference` / `memory_mention` で `subject` + `medium` を宣言 | `characters.status / status_since` |
-| `knowledge_boundary` | `use` は `knows` か過去の `learn` の後。`learn` は一度きり、canon の `setup` 章より前ではない | `canon.py: knows / facts.setup` |
+| `timeline_travel` | 章の `day` / `location` が年表と一致。章間と `location_moves` の経過が `travel_days` 以上。移動の起点が当人の直前の現在地と繋がり、登場人物が章の場所にいる | `canon.py: travel_days()` / `characters.location` |
+| `presence_death` | 死者が `present_characters` / `action` / `dialogue` の actor **と `subject`** に現れない。死者の言及は `record_reference` / `memory_mention` で `subject` + `medium` を宣言 | `characters.status / status_since` |
+| `knowledge_boundary` | `use` は `knows` か `learn` の後（同一場面の `learn` → `use` は `low` で許容）。`learn` は一度きり、canon の `setup` 章より前ではない。死者の `use` は `high` | `canon.py: knows / facts.setup` |
 | `foreshadow_order` | 回収は設置より後。canon の `setup` / `payoff` 章どおり。宣言された payoff はすべて回収 | `canon.py: foreshadowing` |
 | `emitted_markers` | 宣言列 == 導出列（順序まで）。対応する marker 種別のみ | `markers.derive_markers` |
 
-`high` / `medium` の所見は修復対象、`low` は情報提供。`plot.json` / `scene.json` が無い場合は `design_alignment` だけを `skipped` として報告する（既存の各検査器と同じ規約）。移動日数が未定義の組は判定せず `state.travel_pairs_skipped` に件数を残す。
+`high` / `medium` の所見は修復対象、`low` は情報提供。**未知キーは黙って捨てず `low` で報告する**（綴り誤りで検査が弱まるのを防ぐため。値は読み飛ばすので修復ループは止まらない）。`plot.json` / `scene.json` が無い場合は `design_alignment` だけを `skipped` として報告する（既存の各検査器と同じ規約）。移動日数が未定義の組は判定せず `state.travel_pairs_skipped` に件数を残す。
 
 CLI 単体でも実行できる。
 
@@ -117,10 +117,13 @@ CLI 単体でも実行できる。
 | `character_boundary` | 本文に出る人物が `present_characters` か、**媒体を伴う**死者言及だけ。死者は、名前を含む**文**に宣言済みの媒体語（記録・遺物・回想）か参照の語彙（筆跡・手形・思い出 など）がある場合だけ許容 | 未宣言の死者・媒体のない言及 `high` / 未登場の生存者 `medium` |
 | `fact_boundary` | 未開示事実の `terms`、この章で `withheld` の事実の語彙、死者の現在時状態マーカーがない | 語彙 `medium` / 死者マーカー `high` |
 | `voice_contract` | `voice.json` の `banned`（正規表現）と題材の禁止語が出ず、本文が最低長以上 | `medium`（不正な正規表現は `low`） |
+| `missing_must_include`（作品単位） | 題材の必須語が**作品全体**に現れる。章ごとの検査が通っても、欠ければ Stage B 全体を `unresolved` にする | `medium`（run の状態） |
 
 知識境界の語彙検査は**手掛かり**であって断定ではない（既存の `knowledge_violation` と同じく `medium`）。死者の現在時状態マーカー（`{{state: johan ...}}` 等）は文字列として厳密に検出できるため `high` にする。
 
 死者の言及は**章スコープではなく文スコープ**で判定する。章に `record_reference` が 1 件あるだけでは、同じ章の「ヨハンが戸口から入ってきた」を通さない。逆に「ヨハンの筆跡が…」「ヨハンの手形だった」のように、名前を含む文に媒体語か参照の語彙があれば通す（媒体は `石膏手形` と `石膏の右手…手形` のように分かれて書かれうるため、2 文字の部分語も媒体語として扱う）。この規則は**語彙による近似**であり、「ヨハンが潮札を革袋に入れた」（媒体語と同じ文で死者が行為する）ような形は依然として通る。死者の現在時行動の完全な検出を主張しない。
+
+題材の必須語（`must_include`）は protocol-v1 の L1 指標であり、章ではなく**作品**に対する条件なので、`run_twostage.py` が全章を書き終えた後に `missing_must_include` で 1 回だけ判定する（章単位にすると、その語を別章で使う設計を誤って落とす）。長さの下限は既定 200 字で、これは空文の検出用であり、プロンプトの目標 1,000〜1,400 字は合否に使っていない（`results.json` の `l1_hygiene.length_gate` に明記）。
 
 Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json` を渡し、前章本文は渡さない。設計書の結末・他章の幕・未開示の事実をプロンプトに含めないことで開示順序の先取りを抑える（[`plot_to_draft_2026-10-25.md`](../research/curation/plot_to_draft_2026-10-25.md) の知見）。
 
@@ -181,7 +184,7 @@ Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json
 
 ## 11. 第1段階の点検（2026-10-26）で判明した契約と実装の差
 
-本仕様の §5・§6 の表は「検査が何を問うか」を書いているが、コードが保証する範囲はそれより狭い箇所がある。詳細と再現は [`research/curation/two_stage_stage1_audit_2026-10-26.md`](../research/curation/two_stage_stage1_audit_2026-10-26.md) §4 に置いた。要点だけをここに残す。**実装は変更していない**（試走前の修正候補は同文書 §5）。
+本仕様の §5・§6 の表は「検査が何を問うか」を書いているが、**点検した時点**のコードが保証する範囲はそれより狭い箇所があった。詳細と再現は [`research/curation/two_stage_stage1_audit_2026-10-26.md`](../research/curation/two_stage_stage1_audit_2026-10-26.md) §4 に置いた。以下は**点検時の記録**であり、P0 は §11.1、P1 は §11.2 で修正済み。修正後も残る穴（意味的整合性・自由記述・語彙の近似）はそのまま有効である。
 
 - **現在地の連続性**: `canon` の `Character.location` はどの検査からも参照されない。`location_moves` は `travel_days` との日数と章 day の前後だけを見る。移動の起点・連結・その人物が実際にその章にいるかは未検査。
 - **死者の現在時行動**: 現在時型（`action` / `dialogue`）の `subject`、`summary` / `text` の自由記述、`target` の部分一致は走査しない。Stage B 側の許容判定は**章スコープ**で、その章に 1 件でも記録言及があれば同じ死者の現在時行動も通る。短い別名（2 文字未満）は人物境界の走査対象外。
@@ -209,8 +212,24 @@ Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json
 台本経路の結果は変わらない: Stage A `clean`（8 検査・0 所見）、Stage B 3 章 `clean`、確定マーカー 19 件。
 `results.json` は `inputs` に `game_log_sha256: null` が加わったため再生成した（他は不変）。
 
-未着手（P1）: 同一場面 `learn`→`use` の偽陽性、未知キーの報告、現在時 `subject` の検査、死者の `used_facts`、
-章順・章 ID 重複、現在地の連続性、`must_include` のゲート、`MIN_REWRITE_CHARS`、`PROMPTS.md` の未回答 1 件化。
+P1（全工程試走の前）: P0 の直後に §11.2 で実施した。
+
+### 11.2 全工程試走前 P1 の修正（同日、P0 の後）
+
+| 項目 | 変更 | 確認 |
+| --- | --- | --- |
+| P1-1 | 同一場面の `learn` → `use` を許容（場面内では `learned_facts` を先に反映。許容した場合は `low`） | `test_same_scene_learn_then_use_is_allowed`、プローブ A5 |
+| P1-2 | 未知キーを拒否せず `low` で報告（読み飛ばしは維持） | `test_unknown_keys_are_reported_not_dropped`、`test_unknown_keys_are_kept_for_reporting`、プローブ A8 |
+| P1-3 | 現在時型（`action` / `dialogue`）の `subject` を検査（死者 `high` / 生存者 `low` の型混同） | `test_present_tense_subject_is_checked`、プローブ A3 |
+| P1-4 | 死者の `used_facts` を `high` | `test_a_dead_characters_knowledge_use_is_high`、プローブ A4 |
+| P1-5 | 章 ID の重複を `high`（名指し）、canon と違う章順を `high`（重複があるときは順序の所見を出さない） | `test_chapter_ids_and_order_are_named`、プローブ A9・A10 |
+| P1-6 | 現在地の連続性: 移動の起点が直前の現在地と繋がるか（`high`）、登場人物が章の場所にいるか（`medium`）、登場しない人物の移動（`medium`） | `test_current_location_and_movement_chain_are_checked`、プローブ A7 |
+| P1-7 | 題材の必須語を**作品単位**でゲート（`missing_must_include`）。章ごとの検査が通っても欠ければ Stage B は `unresolved` | `test_a_missing_required_word_fails_the_work_not_the_chapter`、プローブ B7 |
+| P1-8 | `--min-chars` を追加（既定 200 は空文検出用）。目標長 1,000〜1,400 字は合否に使わないことを `l1_hygiene.length_gate` に明記 | `test_committed_bundle_summary_is_reproducible`（値を固定） |
+| P1-9 | `PROMPTS.md` は未回答の 1 件だけを載せ、回答済みは件数だけを書く | `test_prompts_md_lists_only_the_unanswered_request` |
+
+`--min-chars` の値を上げれば長さをゲートできるが、固定台本は約 300 字で書かれており、
+既定を上げると台本経路の記録が変わる。試走条件として別途決める。
 
 §8 の「Stage B 3 章すべて `clean`」「既存監査の違反 3 件は既知の誤検出類型」という記述は**そのまま有効**だが、それは**検査が期待どおり動いたこと**の確認であり、意味的整合性の証明ではない。上記の穴は `make probe-gamelog`（`scripts/probe_gamelog_contracts.py`）で再現できる。
 

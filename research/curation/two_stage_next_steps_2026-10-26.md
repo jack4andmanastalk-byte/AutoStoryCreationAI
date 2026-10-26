@@ -13,6 +13,8 @@ Phase 1–2 の実装は PR #46（https://github.com/jack4andmanastalk-byte/Auto
 > **2026-10-26 追記**: 第1段階（候補調査と実装点検）を実施し、結果を [`two_stage_stage1_audit_2026-10-26.md`](two_stage_stage1_audit_2026-10-26.md) に保存した。外部候補は比較のみで導入せず、実装は変更していない。試走前の修正候補（P0）は同文書 §5.1。
 >
 > **2026-10-26 追記（同日、続き）**: P0 を実装（同文書 §9）し、固定台本の配線確認を通した。続いて §2 の 2 番目、**Stage B 単独の実応答試走を 1 件実施**し、[`experiments/2026-10-stageb-solo-t01/`](../../experiments/2026-10-stageb-solo-t01/note.md) に保存した。3 章 `clean`・修復 1 回・文字数 3,181。検査器は ch03 で正当な記録言及を 1 件誤検出し、逆に日数・推論・数え方の誤り 3 件は通した。**次は §2 の 3 番目（全工程試走、まず Stage A の実応答 1 件）**。
+>
+> **2026-10-26 追記（続き）**: §5.2 の P1 九件を最小修正で実装（`check.py` の同一場面 learn→use・未知キー報告・現在時 `subject`・死者の `used_facts`・章 ID と章順・現在地の連続性、`rewrite.missing_must_include` による必須語ゲート、`--min-chars`、`PROMPTS.md` の未回答 1 件化）。テストは 634 passed。詳細は点検文書 §11。意味的整合性の保証は変わらない。
 
 ## 2. 次工程の順序
 

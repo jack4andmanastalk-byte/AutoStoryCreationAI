@@ -57,6 +57,11 @@
       "note": "name_mention による dead_character_reappears (medium) は既存監査器の既知の限界。Stage B では宣言済みのrecord_reference / memory_mention として許容している。",
       "violations": 3
     },
+    "length_gate": {
+      "gate_note": "既定の 200 字は空文の検出用。目標長は合否に使っておらず、下回っても clean になりうる（P1-8）。",
+      "min_chars": 200,
+      "target_ja": "1 章 1,000〜1,400 字（プロンプトの目安）"
+    },
     "must_include": {
       "hits": {
         "嵐": true,
@@ -262,6 +267,7 @@
         "status": "clean"
       }
     ],
+    "missing_must_include": [],
     "status": "clean"
   },
   "status": "clean"

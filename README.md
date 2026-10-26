@@ -333,6 +333,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
 * Stage B 単独の実応答試走は [`experiments/2026-10-stageb-solo-t01/`](experiments/2026-10-stageb-solo-t01/note.md)
   （3 章 `clean`・修復 1 回。ただし `clean` は事実の整合を意味しません）。
+* Stage A の検査は、未知キーの報告、同一場面の `learn`→`use`、現在時 `subject`、死者の `used_facts`、章 ID の重複と章順、人物の現在地の連続性まで見ます。Stage B は題材の必須語を**作品単位**でゲートします。
 * **Stage B だけを試す**ときは `--stage b --game-log <verified game_log.json>` を使います。Stage A は
   実行せず、与えたログをその場で再検査し、`clean` のときだけ本文化します（不合格は fail-closed。
   `--allow-unverified-log` を明示した場合だけ続行し、`unverified: true` を残します）。

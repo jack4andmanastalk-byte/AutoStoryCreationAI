@@ -642,3 +642,48 @@ def test_results_claim_matches_the_provider(tmp_path):
     assert "not a model response" not in relay
     assert "not a reproducible model" in relay
     assert "supplied input" in relay
+
+
+def test_a_missing_required_word_fails_the_work_not_the_chapter(tmp_path):
+    """The required word is a work-level L1 metric (B-06)."""
+    out = tmp_path / "bundle"
+    provider = _stub_provider(tmp_path, "nokey.py", STAGE_B_ONLY.replace(
+        ".read()", ".read().replace('鍵', '錠')"))
+
+    completed = run_cli(out, "--stage", "b", "--game-log",
+                        str(INPUTS / "game_log.json"), "--command", provider,
+                        provider="command", run_id="no-key")
+    assert completed.returncode == 1
+    summary = read_json(out / "no-key" / "run-summary.json")
+    assert summary["stage_b"]["status"] == "unresolved"
+    assert summary["stage_b"]["missing_must_include"] == ["鍵"]
+    # Every chapter's own checks still pass: only the work-level gate failed.
+    assert all(chapter["status"] == "clean"
+               for chapter in summary["stage_b"]["chapters"])
+
+
+def test_prompts_md_lists_only_the_unanswered_request(tmp_path):
+    """Answered prompts are collapsed so the operator answers the open one (R-08)."""
+    relay = tmp_path / "relay"
+    command = f"{sys.executable} {REPO_ROOT / 'scripts' / 'chat_operator.py'} --dir {relay}"
+    out = tmp_path / "bundle"
+
+    first = run_cli(out, "--command", command, provider="command", run_id="pending")
+    assert first.returncode == 3, first.stderr
+    request_path = next((relay / "requests").glob("*.json"))
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    (relay / "responses").mkdir(parents=True, exist_ok=True)
+    (relay / "responses" / request_path.name).write_text(json.dumps({
+        "text": (INPUTS / "game_log.json").read_text(encoding="utf-8"),
+        "prompt_hash": request["prompt_hash"],
+        "model": "test-stub", "provenance": {"origin": "fresh"},
+    }, ensure_ascii=False), encoding="utf-8")
+
+    second = run_cli(out, "--resume", "--command", command, provider="command",
+                     run_id="pending")
+    assert second.returncode == 3, second.stderr
+    prompts = (out / "pending" / "PROMPTS.md").read_text(encoding="utf-8")
+    assert prompts.count("```text") == 1
+    assert "stage_b/ch01" in prompts
+    assert "stage_b/ch02" not in prompts
+    assert "回答済みのプロンプト" in prompts

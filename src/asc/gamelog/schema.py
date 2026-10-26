@@ -31,6 +31,23 @@ from typing import Any
 
 SCHEMA_VERSION = "1.0"
 
+#: Keys the schema reads at each level. Anything else is reported, not dropped
+#: silently (see :func:`_note_unknown`).
+KEYS_ROOT = frozenset({"schema_version", "task", "notes", "chapters"})
+KEYS_CHAPTER = frozenset({"id", "day", "location", "emitted_markers", "scenes"})
+KEYS_SCENE = frozenset({
+    "id", "scene_ref", "act_ref", "turn_ref", "situation", "purpose", "conflict",
+    "change", "tension", "choice", "outcome", "present_characters", "actions",
+    "state_delta", "day", "location", "emitted_markers"})
+KEYS_ACTION = frozenset({"id", "type", "actor", "summary", "target", "subject",
+                         "medium", "text"})
+KEYS_STATE_DELTA = frozenset({"learned_facts", "used_facts", "foreshadow_events",
+                              "location_moves"})
+KEYS_FACT_USE = frozenset({"character", "fact"})
+KEYS_FORESHADOW = frozenset({"id", "event"})
+KEYS_MOVE = frozenset({"character", "origin", "destination", "depart_day",
+                       "arrival_day"})
+
 #: Present-time events: the actor must be alive and on stage.
 PRESENT_TENSE_TYPES = frozenset({"action", "dialogue"})
 #: References to someone/something absent: the dead person is the subject.
@@ -75,6 +92,21 @@ def _strings(value: Any, where: str) -> tuple[str, ...]:
     if not isinstance(value, list) or any(not isinstance(v, str) for v in value):
         raise GameLogError(f"{where}: must be a list of strings")
     return tuple(v.strip() for v in value if v.strip())
+
+
+def _note_unknown(row: dict, allowed: set[str], where: str,
+                  unknown: list[dict] | None) -> None:
+    """Record keys the schema does not read (A-03).
+
+    Unknown keys are still accepted — a repair round should not fail on a
+    cosmetic typo — but they are reported so a misspelt ``learned_facts`` does
+    not silently weaken the checks.
+    """
+    if unknown is None:
+        return
+    for key in row:
+        if key not in allowed:
+            unknown.append({"where": where, "key": key})
 
 
 def _number(row: dict, key: str, where: str) -> float:
@@ -215,6 +247,8 @@ class GameLog:
     task: str
     chapters: tuple[Chapter, ...]
     notes: str = ""
+    #: ``{"where": ..., "key": ...}`` for keys the schema ignored (A-03).
+    unknown_keys: tuple[dict, ...] = ()
 
     def as_dict(self) -> dict:
         """Canonical form, used for the persisted log and Stage B prompts."""
@@ -233,7 +267,8 @@ class GameLog:
 
 
 # -- parsing ----------------------------------------------------------------
-def _parse_action(row: dict, where: str) -> Action:
+def _parse_action(row: dict, where: str, unknown: list[dict] | None = None) -> Action:
+    _note_unknown(row, KEYS_ACTION, where, unknown)
     action_type = _text(row, "type", where)
     if action_type not in ACTION_TYPES:
         raise GameLogError(
@@ -247,17 +282,22 @@ def _parse_action(row: dict, where: str) -> Action:
         text=_text(row, "text", where, required=False))
 
 
-def _parse_fact_use(row: dict, where: str) -> FactUse:
+def _parse_fact_use(row: dict, where: str,
+                    unknown: list[dict] | None = None) -> FactUse:
+    _note_unknown(row, KEYS_FACT_USE, where, unknown)
     return FactUse(character=_text(row, "character", where),
                    fact=_text(row, "fact", where))
 
 
-def _parse_state_delta(row: dict, where: str) -> StateDelta:
+def _parse_state_delta(row: dict, where: str,
+                       unknown: list[dict] | None = None) -> StateDelta:
     raw = _mapping(row.get("state_delta") or {}, f"{where}.state_delta")
+    _note_unknown(raw, KEYS_STATE_DELTA, f"{where}.state_delta", unknown)
     events = []
     for index, item in enumerate(_rows(raw.get("foreshadow_events"),
                                        f"{where}.state_delta.foreshadow_events")):
         at = f"{where}.state_delta.foreshadow_events[{index}]"
+        _note_unknown(item, KEYS_FORESHADOW, at, unknown)
         event = _text(item, "event", at)
         if event not in FORESHADOW_EVENTS:
             raise GameLogError(
@@ -267,6 +307,7 @@ def _parse_state_delta(row: dict, where: str) -> StateDelta:
     for index, item in enumerate(_rows(raw.get("location_moves"),
                                        f"{where}.state_delta.location_moves")):
         at = f"{where}.state_delta.location_moves[{index}]"
+        _note_unknown(item, KEYS_MOVE, at, unknown)
         moves.append(LocationMove(
             character=_text(item, "character", at),
             origin=_text(item, "origin", at),
@@ -274,18 +315,22 @@ def _parse_state_delta(row: dict, where: str) -> StateDelta:
             depart_day=_number(item, "depart_day", at),
             arrival_day=_number(item, "arrival_day", at)))
     return StateDelta(
-        learned_facts=tuple(_parse_fact_use(item, f"{where}.state_delta.learned_facts[{i}]")
+        learned_facts=tuple(_parse_fact_use(item, f"{where}.state_delta.learned_facts[{i}]",
+                                            unknown)
                             for i, item in enumerate(_rows(
                                 raw.get("learned_facts"),
                                 f"{where}.state_delta.learned_facts"))),
-        used_facts=tuple(_parse_fact_use(item, f"{where}.state_delta.used_facts[{i}]")
+        used_facts=tuple(_parse_fact_use(item, f"{where}.state_delta.used_facts[{i}]",
+                                         unknown)
                          for i, item in enumerate(_rows(
                              raw.get("used_facts"),
                              f"{where}.state_delta.used_facts"))),
         foreshadow_events=tuple(events), location_moves=tuple(moves))
 
 
-def _parse_scene(row: dict, chapter_id: str, where: str) -> Scene:
+def _parse_scene(row: dict, chapter_id: str, where: str,
+                 unknown: list[dict] | None = None) -> Scene:
+    _note_unknown(row, KEYS_SCENE, where, unknown)
     day = row.get("day")
     if day is not None:
         if isinstance(day, bool) or not isinstance(day, (int, float)):
@@ -305,10 +350,10 @@ def _parse_scene(row: dict, chapter_id: str, where: str) -> Scene:
         outcome=_text(row, "outcome", where),
         present_characters=_strings(row.get("present_characters"),
                                     f"{where}.present_characters"),
-        actions=tuple(_parse_action(item, f"{where}.actions[{i}]")
+        actions=tuple(_parse_action(item, f"{where}.actions[{i}]", unknown)
                       for i, item in enumerate(_rows(row.get("actions"),
                                                      f"{where}.actions"))),
-        state_delta=_parse_state_delta(row, where),
+        state_delta=_parse_state_delta(row, where, unknown),
         day=day,
         location=_text(row, "location", where, required=False),
         emitted_markers=_strings(row.get("emitted_markers"),
@@ -318,6 +363,8 @@ def _parse_scene(row: dict, chapter_id: str, where: str) -> Scene:
 def parse_game_log(data: Any, path: str | Path = "<memory>") -> GameLog:
     """Parse a mapping into a :class:`GameLog` (no canon/design checks here)."""
     root = _mapping(data, "game_log")
+    unknown: list[dict] = []
+    _note_unknown(root, KEYS_ROOT, "game_log", unknown)
     version = _text(root, "schema_version", "game_log")
     if version != SCHEMA_VERSION:
         raise GameLogError(
@@ -328,6 +375,7 @@ def parse_game_log(data: Any, path: str | Path = "<memory>") -> GameLog:
     chapters: list[Chapter] = []
     for index, row in enumerate(chapter_rows):
         where = f"game_log.chapters[{index}]"
+        _note_unknown(row, KEYS_CHAPTER, where, unknown)
         chapter_id = _text(row, "id", where)
         scene_rows = _rows(row.get("scenes"), f"{where}.scenes")
         if not scene_rows:
@@ -338,12 +386,13 @@ def parse_game_log(data: Any, path: str | Path = "<memory>") -> GameLog:
             emitted_markers=_strings(row.get("emitted_markers"),
                                      f"{where}.emitted_markers"),
             scenes=tuple(_parse_scene(item, chapter_id,
-                                      f"{where}.scenes[{i}]")
+                                      f"{where}.scenes[{i}]", unknown)
                          for i, item in enumerate(scene_rows))))
     return GameLog(path=Path(path), schema_version=version,
                    task=_text(root, "task", "game_log"),
                    chapters=tuple(chapters),
-                   notes=_text(root, "notes", "game_log", required=False))
+                   notes=_text(root, "notes", "game_log", required=False),
+                   unknown_keys=tuple(unknown))
 
 
 def load_game_log(path: str | Path) -> GameLog:
@@ -366,5 +415,7 @@ __all__ = [
     "SCHEMA_VERSION", "ACTION_TYPES", "PRESENT_TENSE_TYPES", "REFERENCE_TYPES",
     "FORESHADOW_EVENTS", "TENSION_DEVICES", "GameLogError", "Action", "FactUse",
     "ForeshadowEvent", "LocationMove", "StateDelta", "Scene", "Chapter",
-    "GameLog", "parse_game_log", "load_game_log",
+    "GameLog", "parse_game_log", "load_game_log", "KEYS_ROOT", "KEYS_CHAPTER",
+    "KEYS_SCENE", "KEYS_ACTION", "KEYS_STATE_DELTA", "KEYS_FACT_USE",
+    "KEYS_FORESHADOW", "KEYS_MOVE",
 ]

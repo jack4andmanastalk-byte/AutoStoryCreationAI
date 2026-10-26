@@ -128,7 +128,7 @@
 
 ### 4.2 一覧表
 
-件数は **27 件**（Stage A 10・Stage B 9・再開と記録保全 8）。
+件数は **27 件**（Stage A 10・Stage B 9・再開と記録保全 8）。**この表は点検時点の記録**であり、P0 は §9、P1 は §11 で修正済み。以下の「コードの実際」は修正前の挙動を指す。
 
 #### Stage A（`check_game_log`）
 
@@ -416,3 +416,28 @@ experiments/2026-11-stageb-t01/          ← 新規。自己完結バンドル
 
 **結論は §4 と同じ**: 決定論的検査は `clean` を返しても、事実・日数・推論の整合は保証しない。
 次の全工程試走では、`clean` の章に対して §6.1 の人手照合を必ず行う。
+
+## 11. P1 修正の実施記録（2026-10-26、Stage B 単独試走の後）
+
+全工程試走の前に必要な 9 件（§5.2）を実装した。**大規模改修ではなく、各検査の判定範囲を狭める/広げる最小変更**である。
+テストは 9 件追加し **634 passed**。`make probe-gamelog` の A3・A4・A5・A7・A8・A9・A10・B7 の結果が変わった。
+
+| # | 変更（コード） | 修正後の挙動（プローブ） | テスト |
+| --- | --- | --- | --- |
+| P1-1 | `check._check_knowledge_boundary`: 場面ごとに `learned_facts` を先に反映し、`used_facts` を判定。同一場面の learn→use は `low` | A5（F-05 を同一場面で learn→use）→ `clean` / `low` 1 件 | `test_same_scene_learn_then_use_is_allowed` |
+| P1-2 | `schema`: 各階層の既知キー集合を定義し、未知キーを `GameLog.unknown_keys` に収集（`as_dict` には出さない）。`check._check_schema_shape` が `low` で報告 | A8 → `clean` / `low` 2 件（キー名がそのまま出る） | `test_unknown_keys_are_reported_not_dropped` / `test_unknown_keys_are_kept_for_reporting` |
+| P1-3 | `check._check_presence_death`: 現在時型の `subject` を検査（死者 `high`、生存者は型混同として `low`） | A3 → `unresolved` / `high` 1 件 | `test_present_tense_subject_is_checked` |
+| P1-4 | `check._check_knowledge_boundary`: 死者の `used_facts` を `high` | A4 → `high`「死者 johan が ch02 で F-04 を現在時に使っている」 | `test_a_dead_characters_knowledge_use_is_high` |
+| P1-5 | `check._check_schema_shape`: 章 ID の重複を `high`（名指し）、canon と違う章順を `high`（重複があるときは順序の所見を抑制） | A9 → `high`「章の並び順が canon…」、A10 → `high`「章 ID ch01 が重複」 | `test_chapter_ids_and_order_are_named` |
+| P1-6 | `check._check_timeline_travel`: canon の初期位置＋宣言された移動から現在地を導出。起点の不連結 `high`、章の場所と現在地の不一致 `medium`、登場しない人物の移動 `medium` | A7 → `high`（aria の起点）＋`medium` 2 件（celia の移動・aria の現在地） | `test_current_location_and_movement_chain_are_checked` |
+| P1-7 | `rewrite.missing_must_include` を追加し、`run_twostage` が全章を書き終えた後に作品単位でゲート | B7（全章から「鍵」を除く）→ 章ごとは `clean`、作品単位で `unresolved` | `test_a_missing_required_word_fails_the_work_not_the_chapter` |
+| P1-8 | `--min-chars` を追加（既定 200）。`l1_hygiene.length_gate` に「目標長は合否に使わない」と記録 | 固定台本は 200 字ゲートで `clean` のまま | `test_committed_bundle_summary_is_reproducible` |
+| P1-9 | `run_twostage._write_prompts`: 未回答の 1 件だけを載せ、回答済みは件数のみ | 2 件回答済み → `PROMPTS.md` に `stage_b/ch01` だけ | `test_prompts_md_lists_only_the_unanswered_request` |
+
+### 11.1 修正後も残る穴（変わらないこと）
+
+- 意味的整合性（A-08、B-03〜B-05、B-09）。語彙・ID・順序の検査であり、本文が事実を否定・省略しても通る。
+  実際、Stage B 単独試走の実応答は `clean` のまま「四日ぶりの灯台」（正しくは六日）などを通した（§10）。
+- 1 文字の別名（B-02）、章内複数場面の人物境界（B-08）、場面 `day` / `location`（A-02）、`status_since` の二重解釈（A-10）。
+- `must_include` は作品単位でしか見ないため、「1 章だけ落とした」場合は通る。
+- 現在地の連続性は「宣言された移動」と「章の場所」の整合だけを見る。移動日数の内訳や、移動中の場面は扱わない。

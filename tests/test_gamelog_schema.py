@@ -124,3 +124,19 @@ def test_script_bundle_resolves_file_references_without_duplication(tmp_path):
         ensure_ascii=False), encoding="utf-8")
     assert run_twostage.load_script_bundle(plain) == {
         "stage_a:t01": "{}", "stage_b:ch01:t01": "{{time: day=1}}"}
+
+
+def test_unknown_keys_are_kept_for_reporting():
+    """A misspelt key is not fatal, but it must not vanish silently (A-03)."""
+    payload = json.loads(GAME_LOG.read_text(encoding="utf-8"))
+    scene = payload["chapters"][0]["scenes"][0]
+    scene["present_character"] = ["boris"]
+    scene["state_delta"]["learn"] = [{"character": "aria", "fact": "F-09"}]
+    payload["chapters"][0]["nope"] = True
+    log = parse_game_log(payload, GAME_LOG)
+    found = {(item["where"], item["key"]) for item in log.unknown_keys}
+    assert ("game_log.chapters[0]", "nope") in found
+    assert ("game_log.chapters[0].scenes[0]", "present_character") in found
+    assert ("game_log.chapters[0].scenes[0].state_delta", "learn") in found
+    # The canonical form does not carry them: the log itself is unchanged.
+    assert "nope" not in log.as_dict()["chapters"][0]

@@ -56,8 +56,10 @@ CHECKS: tuple[Check, ...] = (
           "比喩・一般名詞・回想の言い回しとの混同は起こりうる。"),
     Check("fact_boundary", "未開示の事実の語彙や、死者の現在時状態マーカーが現れない。",
           "語彙一致は手掛かりであり断定ではない（medium）。死者マーカーは厳密。"),
-    Check("voice_contract", "voice.json の禁止表現が出ず、章本文が空でない。",
-          "正規表現の一致のみ。文体の質は判定しない。"),
+    Check("voice_contract",
+          "voice.json の禁止表現と題材の禁止語が出ず、章本文が空でない。",
+          "正規表現と文字列の一致のみ。文体の質は判定しない。"
+          "題材の必須語は作品全体で `missing_must_include` が判定する。"),
 )
 
 
@@ -360,6 +362,16 @@ def _spec(check_id: str) -> dict:
             return {"id": check.id, "acceptance_ja": check.acceptance_ja,
                     "limits_ja": check.limits_ja}
     raise KeyError(check_id)
+
+
+def missing_must_include(joined: str, terms: tuple[str, ...] | list[str]) -> list[str]:
+    """Required words that never appear in the whole work (B-06).
+
+    ``must_include`` is a protocol-v1 L1 metric over the *work*, not over each
+    chapter, so it is checked once after every chapter is written. Chapter-level
+    gating would reject a chapter that is simply allowed to omit the word.
+    """
+    return [term for term in terms if term and term not in joined]
 
 
 def _result(check_id: str, evaluated: int, findings: int) -> dict:

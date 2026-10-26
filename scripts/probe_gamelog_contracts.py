@@ -35,7 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.gamelog.check import check_game_log  # noqa: E402
-from asc.gamelog.rewrite import check_rewrite  # noqa: E402
+from asc.gamelog.rewrite import check_rewrite, missing_must_include  # noqa: E402
 from asc.gamelog.schema import load_game_log, parse_game_log  # noqa: E402
 from asc.plot.schema import load_plot  # noqa: E402
 from asc.scene.schema import load_scenes  # noqa: E402
@@ -54,8 +54,8 @@ STAGE_A = (
      "PRESENT_TENSE_TYPES の subject は検査されるか。"),
     ("A4", "死者を used_facts の主体にする",
      "死者の現在時の知識使用は high になるか。"),
-    ("A5", "同一場面で同じ事実を learn してから use する",
-     "learn → use の順序を場面内で許容するか。"),
+    ("A5", "同一場面で F-05 を learn してから use する",
+     "learn → use の順序を場面内で許容するか（canon の開示章も ch01）。"),
     ("A6", "場面の purpose/conflict/change を設計と無関係な文にする",
      "設計書の目的/対立/変化と本文相当の欄を照合するか。"),
     ("A7", "登場しない人物の移動だけを宣言する",
@@ -89,9 +89,9 @@ def _mutations():
 
     def a5(d):
         scene = d["chapters"][0]["scenes"][0]
-        scene["state_delta"]["learned_facts"] = [{"character": "aria", "fact": "F-02"}]
-        scene["state_delta"]["used_facts"] = [{"character": "aria", "fact": "F-02"}]
-        scene["emitted_markers"] = ["{{learn: aria fact=F-02}}", "{{use: aria fact=F-02}}",
+        scene["state_delta"]["learned_facts"] = [{"character": "aria", "fact": "F-05"}]
+        scene["state_delta"]["used_facts"] = [{"character": "aria", "fact": "F-05"}]
+        scene["emitted_markers"] = ["{{learn: aria fact=F-05}}", "{{use: aria fact=F-05}}",
                                     "{{foreshadow: fs-001 setup}}",
                                     "{{foreshadow: fs-002 setup}}"]
 
@@ -141,8 +141,8 @@ STAGE_B = (
      "本文中の新しい場所・移動は検出できるか。"),
     ("B6", "死者の短い別名（兄）だけを現在時の行動主にする",
      "短い別名の言及は人物境界に出るか。"),
-    ("B7", "タスクの必須語（灯り）を落とす",
-     "must_include は Stage B でゲートされるか。"),
+    ("B7", "タスクの必須語（鍵）を全章から落とす",
+     "must_include は作品全体でゲートされるか。"),
 )
 
 
@@ -160,8 +160,7 @@ def _text_mutations(base: str):
                            "風はまだ強かった。アリアは港の桟橋まで歩き、船で対岸へ渡った。"),
         "B6": base.replace("潮札を裏返した。",
                            "潮札を裏返した。兄が戸口に立って、アリアを見ていた。"),
-        "B7": base.replace("灯りを絶やすな", "明かりを消すな").replace(
-            "灯りは揺れなかった", "明かりは揺れなかった"),
+        "B7": base.replace("鍵", "錠"),
     }
 
 
@@ -202,14 +201,32 @@ def run_stage_b(bundle: Path) -> int:
     voice = load_voice(bundle / "inputs" / "design" / "voice.json")
     base = (bundle / "inputs" / "rewrite" / "ch01.md").read_text(encoding="utf-8")
     bodies = _text_mutations(base)
+    chapters = {path.stem: path.read_text(encoding="utf-8")
+                for path in sorted((bundle / "inputs" / "rewrite").glob("*.md"))}
     print("\n## Stage B — check_rewrite（ch01、変異コピー）")
     for probe_id, title, question in STAGE_B:
         print(f"\n{probe_id}: {title}")
         print(f"    契約の問い: {question}")
+        if probe_id == "B7":
+            # The required word is a property of the whole work, so the
+            # mutation is applied to every chapter (B-06).
+            mutated = {cid: text.replace("鍵", "錠") for cid, text in chapters.items()}
+            joined = "\n\n".join(mutated[cid] for cid in sorted(mutated))
+            per_chapter = [check_rewrite(text, cid, log, canon, voice, scenes,
+                                         avoid=("古代の予言", "選ばれし者"),
+                                         min_chars=200)["summary"]["status"]
+                           for cid, text in sorted(mutated.items())]
+            missing = missing_must_include(joined, ("灯台", "鍵", "嵐"))
+            print(f"    章ごとの check_rewrite: {per_chapter}")
+            print(f"    missing_must_include={missing} → 作品単位では "
+                  f"{'unresolved' if missing else 'clean'}")
+            continue
         report = check_rewrite(bodies[probe_id], "ch01", log, canon, voice, scenes,
                               avoid=("古代の予言", "選ばれし者"), min_chars=200)
         _print_findings(report)
-    print("\n    （B6 は canon の別名「兄」（1 文字）を現在時の行動主にしたもの。"
+    print("\n    （B7 は章ごとの検査が clean のままでも、作品全体で必須語が"
+          "欠けると runner が unresolved にする、という差の確認。）")
+    print("    （B6 は canon の別名「兄」（1 文字）を現在時の行動主にしたもの。"
           "character_boundary は 2 文字未満の名前を走査しない。）")
     return 0
 
