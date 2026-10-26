@@ -183,3 +183,105 @@ def test_arena_run_archives_inputs_and_resumes_without_source_or_runs_cache(tmp_
         index = json.loads((relay_root / arm / "relay" / "index.json").read_text(
             encoding="utf-8"))
         assert index["pending"][0]["purpose"] == "draft:ch02"
+
+
+def test_prepare_shared_and_multistep_ingest_and_relocated_bundle(tmp_path):
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))["responses"]
+    out = tmp_path / "bundle-a" / "experiment"
+    first = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "full-pair", "--task", "t01",
+            "--prepare-shared", "--provider", "arena", "--out", str(out),
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert first.returncode == 3, first.stderr
+    progress = json.loads((out / "progress.json").read_text(encoding="utf-8"))
+    assert progress["stage"] == "shared_prep:plan"
+    assert (out / "PROMPTS.md").is_file()
+
+    # Relocate the bundle to a different directory path to simulate cloning or
+    # restoring in a new workspace location.
+    relocated = tmp_path / "bundle-b" / "experiment"
+    shutil.move(str(out), str(relocated))
+
+    # Build a single multi-step answer file containing plan + all 8 design docs.
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    import relay_prompts
+
+    plan_tag = relay_prompts.tag_for("s1-t01-s0-plan-a1")
+    design_tags = {
+        doc: relay_prompts.tag_for(f"s1-t01-s0-design-{doc}-a1")
+        for doc in ("brief", "world", "history", "character",
+                    "relation", "plot", "scene", "voice")
+    }
+    blocks = [f"<<<ANSWER {plan_tag}>>>\n{fixture['plan:t01']}\n<<<END {plan_tag}>>>"]
+    for doc, tag in design_tags.items():
+        blocks.append(
+            f"<<<ANSWER {tag}>>>\n{fixture[f'design:{doc}:t01']}\n<<<END {tag}>>>")
+
+    # Also include all 3 chapters for both arms in the same batch file!
+    body = "灯台と鍵の行方を思う嵐の夜だった。" * 30
+    for arm in ("no_plot", "with_plot"):
+        for idx in (1, 2, 3):
+            key = f"s1-t01-plot-{arm}-s{idx}-draft-ch0{idx}-a1"
+            tag = relay_prompts.tag_for(key)
+            blocks.append(f"<<<ANSWER {tag}>>>\n{body}\n<<<END {tag}>>>")
+
+    batch_answers = tmp_path / "all_answers.txt"
+    batch_answers.write_text("\n\n".join(blocks), encoding="utf-8")
+
+    completed = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "full-pair", "--task", "t01",
+            "--provider", "arena", "--out", str(relocated),
+            "--ingest", str(batch_answers), "--resume",
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    result = json.loads((relocated / "results.json").read_text(encoding="utf-8"))
+    assert result["scope"] == "Arena × L1 exploratory reference only"
+    assert (relocated / "inputs" / "canon" / "characters.json").is_file()
+    assert (relocated / "inputs" / "design" / "voice.json").is_file()
+
+
+def test_rejects_build_dir_and_unknown_ingest_tags(tmp_path):
+    bad_out = REPO_ROOT / "build" / "bad-ablation"
+    res = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "bad", "--task", "t01", "--prepare-shared",
+            "--provider", "arena", "--out", str(bad_out),
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert res.returncode == 2
+    assert "must not be under build/" in res.stderr
+
+    out = tmp_path / "exp"
+    first = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "unknown-tag-test", "--task", "t01",
+            "--prepare-shared", "--provider", "arena", "--out", str(out),
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert first.returncode == 3
+    bad_answers = tmp_path / "bad_answers.txt"
+    bad_answers.write_text("<<<ANSWER ZZZZ>>>\nbody\n<<<END ZZZZ>>>\n", encoding="utf-8")
+    res_unknown = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "unknown-tag-test", "--task", "t01",
+            "--provider", "arena", "--out", str(out),
+            "--ingest", str(bad_answers), "--resume",
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert res_unknown.returncode == 1
+    assert "unknown tag" in res_unknown.stderr
+

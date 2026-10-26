@@ -1,0 +1,84 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "history",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:嵐の夜に灯りを消した者は、翌朝には帰らぬ者となる。",
+        "message_ja": "異説「嵐の夜に灯りを消した者は、翌朝には帰らぬ者となる。」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:鍵は三度鳴る。消灯、全灯、そして名を呼ばれぬ刻み。",
+        "message_ja": "異説「鍵は三度鳴る。消灯、全灯、そして名を呼ばれぬ刻み。」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:半灯を合わせた守人は、灯寮の帳面から名を消される。",
+        "message_ja": "異説「半灯を合わせた守人は、灯寮の帳面から名を消される。」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:灯台の鍵を握ったまま死んだ者は、潮が引くまで手を開かぬ。",
+        "message_ja": "異説「灯台の鍵を握ったまま死んだ者は、潮が引くまで手を開かぬ。」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-1",
+        "message_ja": "由来 '王都本部の記録庫『潮暦正史』第一巻' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-2",
+        "message_ja": "由来 '守人登録簿（王都本部）' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-3",
+        "message_ja": "由来 '灯寮規則集 第三項' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-4",
+        "message_ja": "由来 '潮鏡台帳（王都親盤の記録）' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-5",
+        "message_ja": "由来 '帰らぬ者の棚に残されていた削除前の草稿' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-6",
+        "message_ja": "由来 '潮暦百十四年、嵐の後の浜で拾った潮札' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-7",
+        "message_ja": "由来 'アール家の血潮を落として読んだ潮札の追記' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

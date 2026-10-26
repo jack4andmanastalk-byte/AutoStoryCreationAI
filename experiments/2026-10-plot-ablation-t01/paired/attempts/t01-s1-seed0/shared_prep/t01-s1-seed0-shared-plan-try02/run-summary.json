@@ -1,0 +1,21 @@
+{
+  "canon": {
+    "chapters": 3,
+    "characters": 5,
+    "checks_covered": "6/6",
+    "checks_missing": [],
+    "facts": 11,
+    "foreshadowing": 6,
+    "locations": 3
+  },
+  "gates": {},
+  "plan": {
+    "attempts": 1
+  },
+  "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/shared_prep/t01-s1-seed0-shared-plan-try02",
+  "run_id": "t01-s1-seed0-shared-plan-try02",
+  "stage": "plan",
+  "status": "pass",
+  "system": "s1",
+  "task": "t01"
+}
