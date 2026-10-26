@@ -19,9 +19,12 @@ chat) never has to see a run key.
 
     # 4. run the pipeline again; repeat until nothing is pending
 
-Keep ``--dir`` outside ``build/``: ``build/`` is not kept across sessions, and a
-lost ``responses/`` directory means asking the chat for the same answers again.
-``runs/operator/<name>`` is git-ignored and survives.
+Keep ``--dir`` outside ``build/``: ``build/`` is scratch. A path under
+``runs/`` is git-ignored and may be lost when a workspace is reset. If the
+responses are needed across Arena/GitHub sessions, put the operator directory
+inside a versionable experiment bundle (for example,
+``experiments/<experiment-id>/relay``) and commit it deliberately, or maintain
+another backup. Do not treat an ignored cache as the only copy.
 
 The tag is derived from the request key, so the same request keeps the same tag
 across exports. ``ingest`` pins each answer to the prompt hash it answers, so the
