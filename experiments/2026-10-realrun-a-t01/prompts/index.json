@@ -1,0 +1,32 @@
+{
+  "schema": "stageb-prompts-v1",
+  "task": "t01",
+  "template": "036a5ee4c553004a",
+  "source": "run_twostage.stage_b_rewrite_prompt",
+  "prompts": {
+    "ch01": {
+      "file": "ch01.prompt.md",
+      "chars": 4640,
+      "sha256": "ab8be3c448d7e96df13378588be3578bb363b6e1ad8d82210f7209b6027a8c6c",
+      "prompt_hash": "ab8be3c448d7e96d",
+      "purpose": "stage_b:ch01"
+    },
+    "ch02": {
+      "file": "ch02.prompt.md",
+      "chars": 4880,
+      "sha256": "0c696a8d1ee1589682426936d1951bd8cfaf3735cd60d489188f05c74dc7627b",
+      "prompt_hash": "0c696a8d1ee15896",
+      "purpose": "stage_b:ch02"
+    },
+    "ch03": {
+      "file": "ch03.prompt.md",
+      "chars": 4164,
+      "sha256": "22a69dfb5ba350d010f86f8aa9e9b5ddc6f1a72704afce1378352a6fb0595eef",
+      "prompt_hash": "22a69dfb5ba350d0",
+      "purpose": "stage_b:ch03"
+    }
+  },
+  "template_version": "1.1",
+  "archived": true,
+  "note": "バッチ A が実際に答えたプロンプト（テンプレート v1.1）。テンプレートは v1.2 になり、現在の描画とは一致しない。この 3 ファイルは走行の記録として凍結する。"
+}

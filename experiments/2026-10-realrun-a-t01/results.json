@@ -1,0 +1,231 @@
+{
+  "schema": "realrun-a-v1",
+  "experiment": "2026-10-realrun-a-t01",
+  "preregistration": {
+    "path": "experiments/2026-10-realrun-a-t01/preregistration.json",
+    "sha256": "7ada90998a359266052d8df633425788ba8754d06dd09833f40b6065405da63b"
+  },
+  "samples": {
+    "sample-1": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-1/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1096,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 842,
+          "in_length_band": false,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 873,
+          "in_length_band": false,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 1,
+      "chapters_total": 3,
+      "chars_total": 2811,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 2
+    },
+    "sample-2": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1181,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 1062,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 1188,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 3,
+      "chapters_total": 3,
+      "chars_total": 3431,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 1
+    },
+    "sample-3": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-3/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1316,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 1102,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 1264,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 3,
+      "chapters_total": 3,
+      "chars_total": 3682,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 1
+    }
+  },
+  "verdicts": {
+    "samples_present": 3,
+    "samples_planned": 3,
+    "enough_samples": true,
+    "R1_place_branch": {
+      "verdict": "no_examples",
+      "off_log": 0,
+      "undeclared": 0,
+      "samples_missing_observations": [],
+      "adoption": "このバッチでは採否を決めない。blocking 化の判断は別途、より大きな標本で行う。"
+    },
+    "R2_length": {
+      "verdict": "mixed",
+      "chapters_in_band": {
+        "sample-1": 1,
+        "sample-2": 3,
+        "sample-3": 3
+      },
+      "needed_per_sample": 2
+    },
+    "R3_recurring_failure": {
+      "verdict": "no_recurring_failure",
+      "recurring_checks": [],
+      "by_check": {}
+    }
+  },
+  "not_claimed": [
+    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
+    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
+    "面白さ・読みやすさの比較はしない",
+    "観測は率ではなく事例。偽陽性率は、このバッチでは主張しない",
+    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）"
+  ],
+  "limits": [
+    "Observations are examples, not a rate: no false-positive rate is claimed from this batch.",
+    "The operator cannot be seeded, so the text is not reproducible (G5 stays unmet); provenance is recorded per response, not assumed fresh.",
+    "Length and marker counts are L1 quantities; they say nothing about whether the chapters are any good."
+  ]
+}

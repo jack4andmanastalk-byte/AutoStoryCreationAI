@@ -1,0 +1,322 @@
+{
+  "claim": "relay run: the prose was written by an external operator, so it is not a reproducible model and G5 is not claimed; L1 structure and hygiene only, not evidence of story quality; the game log is a supplied input, not this run's model output",
+  "evaluation_scope": {
+    "active_layers": [
+      "L1"
+    ],
+    "claims": {
+      "l1_results": "exploratory_reference_only",
+      "protocol_v1_functioning": "not_claimed",
+      "semantic_quality_or_human_preference": "not_evaluated"
+    },
+    "frozen_layers": [
+      "L2",
+      "L3"
+    ],
+    "gate_status": {
+      "G1": "reference_only",
+      "G2": "reference_only",
+      "G3": "frozen_not_measured",
+      "G4": "frozen_not_measured",
+      "G5": "unmet_with_unversioned_arena"
+    },
+    "mode": "l1-only"
+  },
+  "inputs": {
+    "canon_files_sha256": {
+      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
+      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
+      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
+      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
+    },
+    "design_files_sha256": {
+      "plot.json": "8f763507ded9e0c72b234cf4eb04648993199ac43e3f85f191f27e7ae523f7ec",
+      "plot.report.json": "1ae2d9468c83e1e531bfc6cee516b28eb7d5b4f5b81d7460710c83b1d2ae3563",
+      "scene.json": "894156a181008ee50d4f1af67c34aebf2f337066ab8e2b86481071bc3c49c3ba",
+      "scene.report.json": "b0eed1ac49417f47a2fff3ff1fcdbf63eeae488461d4e8f27a62a579e81a5ee1",
+      "voice.json": "efb945cfc9d7dc90808b137fa82616c602d24f2338c7aad7ef4b3f59ea554ea6",
+      "voice.report.json": "d4c089ef40d098a729ee9aa17cae08e7396fbbdb93655a81d240f562ca99bbc5"
+    },
+    "game_log_sha256": "28d2423c214644ab741243cfdb08e135d4ab0612dd18163a4d12489b97a418c6",
+    "script_sha256": null
+  },
+  "l1_hygiene": {
+    "chapters": 3,
+    "chars": 3682,
+    "continuity": {
+      "by_severity": {
+        "medium": 2
+      },
+      "by_type": {
+        "dead_character_reappears": 2
+      },
+      "ced_per_10k_chars": 4.897,
+      "checks_skipped": 0,
+      "note": "name_mention による dead_character_reappears (medium) は既存監査器の既知の限界。Stage B では宣言済みのrecord_reference / memory_mention として許容している。",
+      "violations": 2
+    },
+    "length_gate": {
+      "gate_note": "既定の 200 字は空文の検出用。目標長は合否に使っておらず、下回っても clean になりうる（P1-8）。",
+      "min_chars": 200,
+      "target_ja": "1 章 1,000〜1,400 字（プロンプトの目安）"
+    },
+    "must_include": {
+      "hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "rate": 1.0
+    },
+    "task_avoid_hits": {
+      "古代の予言": 0,
+      "選ばれし者": 0
+    }
+  },
+  "limits": [
+    "L1 は構造・衛生の検査であり、物語の質・面白さ・読者選好の証拠ではない。",
+    "L2/L3 は frozen_not_measured。G3/G4 は未達とも合格とも記録しない。",
+    "Arena など版を固定できない経路では G5 を主張しない。",
+    "scripted の実行は配線確認であり、実モデルの応答・効果の観測ではない。",
+    "Stage B 単独実行の入力ログは与えられたファイルであり、この run のモデル応答ではない。",
+    "時間の厳密判定はログ側だけ。本文は明示された日数だけを導出表と照合し、抽象表現（しばらく・明け方）と書かれていない誤りは対象外。（既定: 不一致は警告で修復しない）"
+  ],
+  "prompt_hashes": {
+    "stage-a-gamelog": "c051eacd8b244187",
+    "stage-a-repair": "2177a6fbddf7e1de",
+    "stage-b-repair": "e8bf637756ab4724",
+    "stage-b-rewrite": "036a5ee4c553004a"
+  },
+  "provider": {
+    "model": "external",
+    "model_version": null,
+    "name": "command",
+    "observed": [
+      {
+        "model": "arena-agent-mode",
+        "model_version": "unversioned-2026-10-26"
+      }
+    ]
+  },
+  "schema": "trpg-slice-wiring-v1",
+  "scope": "Arena.ai x L1; L2/L3 frozen_not_measured",
+  "stage_a": {
+    "attempts": 0,
+    "checks": [
+      {
+        "findings": 0,
+        "id": "schema_shape",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "canon_refs",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "design_alignment",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "timeline_travel",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "presence_death",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "knowledge_boundary",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "foreshadow_order",
+        "status": "pass"
+      },
+      {
+        "findings": 0,
+        "id": "emitted_markers",
+        "status": "pass"
+      }
+    ],
+    "findings": 0,
+    "first_attempt_findings": 0,
+    "marker_counts": {
+      "foreshadow": 6,
+      "learn": 4,
+      "location": 3,
+      "time": 3,
+      "use": 3
+    },
+    "markers": 19,
+    "repairs": 0,
+    "status": "clean"
+  },
+  "stage_a_allowed_dead_references": [
+    {
+      "action": "a2",
+      "actor": "aria",
+      "chapter": "ch01",
+      "event_type": "record_reference",
+      "medium": "潮札",
+      "scene": "g01",
+      "subject": "johan"
+    },
+    {
+      "action": "a3",
+      "actor": "aria",
+      "chapter": "ch01",
+      "event_type": "memory_mention",
+      "medium": "回想",
+      "scene": "g01",
+      "subject": "johan"
+    },
+    {
+      "action": "a3",
+      "actor": "aria",
+      "chapter": "ch02",
+      "event_type": "record_reference",
+      "medium": "石膏手形",
+      "scene": "g02",
+      "subject": "johan"
+    },
+    {
+      "action": "a2",
+      "actor": "aria",
+      "chapter": "ch03",
+      "event_type": "record_reference",
+      "medium": "潮札",
+      "scene": "g03",
+      "subject": "johan"
+    }
+  ],
+  "stage_b": {
+    "chapters": [
+      {
+        "allowed_dead_references": [
+          {
+            "action": "a2",
+            "chapter": "ch01",
+            "event_type": "record_reference",
+            "medium": "潮札",
+            "scene": "g01",
+            "subject": "johan"
+          },
+          {
+            "action": "a3",
+            "chapter": "ch01",
+            "event_type": "memory_mention",
+            "medium": "回想",
+            "scene": "g01",
+            "subject": "johan"
+          }
+        ],
+        "attempts": 1,
+        "chars": 1316,
+        "expected_markers": 6,
+        "findings": 0,
+        "found_markers": 6,
+        "id": "ch01",
+        "repairs": 0,
+        "status": "clean"
+      },
+      {
+        "allowed_dead_references": [
+          {
+            "action": "a3",
+            "chapter": "ch02",
+            "event_type": "record_reference",
+            "medium": "石膏手形",
+            "scene": "g02",
+            "subject": "johan"
+          }
+        ],
+        "attempts": 2,
+        "chars": 1102,
+        "expected_markers": 7,
+        "findings": 0,
+        "found_markers": 7,
+        "id": "ch02",
+        "repairs": 1,
+        "status": "clean"
+      },
+      {
+        "allowed_dead_references": [
+          {
+            "action": "a2",
+            "chapter": "ch03",
+            "event_type": "record_reference",
+            "medium": "潮札",
+            "scene": "g03",
+            "subject": "johan"
+          }
+        ],
+        "attempts": 1,
+        "chars": 1264,
+        "expected_markers": 6,
+        "findings": 0,
+        "found_markers": 6,
+        "id": "ch03",
+        "repairs": 0,
+        "status": "clean"
+      }
+    ],
+    "missing_must_include": [],
+    "status": "clean"
+  },
+  "status": "clean",
+  "timeline": {
+    "chapters": [
+      {
+        "day": 1.0,
+        "days": {
+          "aria": {
+            "arriving": null,
+            "leaving": 0.0
+          }
+        },
+        "elapsed_since_previous": null,
+        "id": "ch01",
+        "location": "灯台"
+      },
+      {
+        "day": 4.0,
+        "days": {
+          "aria": {
+            "arriving": 0.0,
+            "leaving": 0.0
+          },
+          "boris": {
+            "arriving": null,
+            "leaving": null
+          }
+        },
+        "elapsed_since_previous": 3.0,
+        "id": "ch02",
+        "location": "王都"
+      },
+      {
+        "day": 7.0,
+        "days": {
+          "aria": {
+            "arriving": 0.0,
+            "leaving": 6.0
+          }
+        },
+        "elapsed_since_previous": 3.0,
+        "id": "ch03",
+        "location": "灯台"
+      }
+    ],
+    "schema": "trpg-timeline-v1",
+    "sha256": "438a244c9222fad51675be12170e07d09f02fae8b42ce5fb37bf956bf852999e",
+    "strict": false
+  }
+}

@@ -73,6 +73,7 @@ from asc.gamelog import (  # noqa: E402
     missing_must_include, parse_game_log, rewrite_needs_repair,
 )
 from asc.gamelog.markers import chapter_markers  # noqa: E402
+from asc.gamelog.rewrite import forbidden_terms  # noqa: E402
 from asc.gamelog.world import (  # noqa: E402
     build_world, derive_timeline, render_chapter_timeline,
 )
@@ -479,6 +480,46 @@ def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
     return {"log": log, "report": report}
 
 
+def withheld_text(canon: Canon, scenes: SceneDoc, chapter_id: str) -> str:
+    """The words this chapter must not use, grouped by the fact they would leak.
+
+    Derived from ``asc.gamelog.rewrite.forbidden_terms`` — the same data the
+    ``fact_boundary`` check uses — so the prompt states the rule that is enforced
+    rather than leaving the writer to infer it.
+    """
+    grouped: dict[str, dict] = {}
+    for item in forbidden_terms(canon, scenes, chapter_id):
+        row = grouped.setdefault(item["fact"], {"terms": [], "reason": item["reason"]})
+        row["terms"].append(item["term"])
+    if not grouped:
+        return "なし（この章で伏せる語はない）。"
+    lines = []
+    for fact_id, row in grouped.items():
+        terms = "・".join(f"「{term}」" for term in row["terms"])
+        lines.append(f"- {terms} — {fact_id}: {row['reason']}")
+    return "\n".join(lines)
+
+
+def stage_b_rewrite_prompt(prompts: dict, chapter_id: str, task: Task,
+                           voice: Voice, scenes: SceneDoc, log: GameLog,
+                           timeline: dict | None, canon: Canon) -> str:
+    """The Stage B rewrite prompt for one chapter.
+
+    Extracted so that the exact prompt can be exported for an operator before a
+    run exists (``scripts/export_stageb_prompts.py``) without a second copy of
+    the template call drifting from this one.
+    """
+    return prompts["stage-b-rewrite"].render({
+        "chapter_id": chapter_id, "task": _task_text(task),
+        "voice": _voice_slice(voice), "scene": _scene_notes(scenes, log, chapter_id),
+        "game_log": _chapter_slice(log, chapter_id),
+        "markers": _markers_text(log, chapter_id),
+        "withheld": withheld_text(canon, scenes, chapter_id),
+        "timeline": render_chapter_timeline(timeline or {}, chapter_id, canon),
+        "target": "1 章あたり 1,000〜1,400 字を目安に書く（マーカーは字数に含めない）。",
+    })
+
+
 def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                         ledger: RunLedger, log: GameLog, canon: Canon,
                         voice: Voice, scenes: SceneDoc, prompts: dict, *,
@@ -494,15 +535,8 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
     for attempt in range(1, max_attempts + 1):
         attempts = attempt
         if attempt == 1:
-            template = prompts["stage-b-rewrite"]
-            prompt = template.render({
-                "chapter_id": chapter_id, "task": _task_text(task),
-                "voice": _voice_slice(voice), "scene": _scene_notes(scenes, log, chapter_id),
-                "game_log": _chapter_slice(log, chapter_id),
-                "markers": _markers_text(log, chapter_id),
-                "timeline": render_chapter_timeline(timeline or {}, chapter_id, canon),
-                "target": "1 章あたり 1,000〜1,400 字を目安に書く（マーカーは字数に含めない）。",
-            })
+            prompt = stage_b_rewrite_prompt(prompts, chapter_id, task, voice,
+                                            scenes, log, timeline, canon)
             purpose = f"stage_b:{chapter_id}"
         else:
             template = prompts["stage-b-repair"]

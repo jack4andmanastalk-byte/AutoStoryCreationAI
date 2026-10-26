@@ -1,0 +1,33 @@
+{
+  "counts": {
+    "missing": 1,
+    "replayed": 4
+  },
+  "duplicate_record_keys": [],
+  "events": [
+    {
+      "outcome": "replayed",
+      "request": "stage_b:ch01/attempt=1/chapter=ch01/seed=1",
+      "response_sha256": "e2870a5d9859bd05e5f834cc7c3b4c67b5eaa8a8560477f8984f91c79cd05c23"
+    },
+    {
+      "outcome": "replayed",
+      "request": "stage_b:ch02/attempt=1/chapter=ch02/seed=2",
+      "response_sha256": "cce08802ec697010d3d09403068a0af8a573b9ebfd4607e6ef34e25f2af88b76"
+    },
+    {
+      "outcome": "replayed",
+      "request": "stage_b:ch02:repair/attempt=2/chapter=ch02/seed=2",
+      "response_sha256": "5994ac366d71ff873ece003cdb14e915654930ea63a5ed43a47e33d5ae6f0bb1"
+    },
+    {
+      "outcome": "replayed",
+      "request": "stage_b:ch03/attempt=1/chapter=ch03/seed=3",
+      "response_sha256": "798bfe62aa6d80a61a26db7e62c2637ee3b0ae823b979c56ea9b3ae2d2fc9530"
+    },
+    {
+      "outcome": "missing",
+      "request": "stage_b:ch03:repair/attempt=2/chapter=ch03/seed=3"
+    }
+  ]
+}

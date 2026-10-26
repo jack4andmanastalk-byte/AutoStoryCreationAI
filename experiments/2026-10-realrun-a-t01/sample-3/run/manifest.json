@@ -1,0 +1,51 @@
+{
+  "artifacts": [
+    "audit.json",
+    "design.report.json",
+    "game_log.json",
+    "game_log.report.json",
+    "replay.report.json",
+    "responses.jsonl",
+    "rewrite.report.json",
+    "run-summary.json",
+    "stage_b/ch01-attempt-1.prompt.txt",
+    "stage_b/ch01-attempt-1.txt",
+    "stage_b/ch02-attempt-1.prompt.txt",
+    "stage_b/ch02-attempt-1.txt",
+    "stage_b/ch02-attempt-2.prompt.txt",
+    "stage_b/ch02-attempt-2.txt",
+    "stage_b/ch03-attempt-1.prompt.txt",
+    "stage_b/ch03-attempt-1.txt",
+    "state.json",
+    "text/ch01.md",
+    "text/ch02.md",
+    "text/ch03.md",
+    "timeline.json"
+  ],
+  "error": null,
+  "finished_at": "2026-10-26T15:24:52Z",
+  "git_commit": "c8408699afc6dab58a9475de9f1fbce5cbcc748c",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-26",
+  "prompt_hashes": {
+    "stage-a-gamelog": "c051eacd8b244187",
+    "stage-a-repair": "2177a6fbddf7e1de",
+    "stage-b-repair": "e8bf637756ab4724",
+    "stage-b-rewrite": "036a5ee4c553004a",
+    "stage_b:ch03": "22a69dfb5ba350d0"
+  },
+  "protocol_version": "protocol-v1",
+  "provider": "command",
+  "response_count": 4,
+  "responses_sha256": "9e0c523d006cdc901525f738fb773ccdada93daad6fe3b797a6473a815205eff",
+  "run_id": "run",
+  "seed": 0,
+  "started_at": "2026-10-26T15:24:52Z",
+  "status": "ok",
+  "system": "two-stage",
+  "task_id": "t01",
+  "temperature": 0.8,
+  "usage": {
+    "operator": 1
+  }
+}

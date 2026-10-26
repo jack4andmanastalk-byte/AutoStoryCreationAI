@@ -579,3 +579,43 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
 - **穴を 1 つ塞いだ**: `place_findings` は `advisory: True` だけで `blocks_repair` を持たず、
   `findings` に混ぜれば medium として**修復が走る**状態だった。各項目に `blocks_repair: False` を明記。
 - 限界: scripted 本文での配線確認であり、実モデルの文章ではない。観測は事例収集であり率の測定ではない。
+
+## 20. 実モデル 3 標本の準備（2026-10-26）
+
+[`experiments/2026-10-realrun-a-t01/`](../../experiments/2026-10-realrun-a-t01/note.md)
+（`docs/two_stage_slice.md` §21）。§18〜§19 の根拠は 3 走り・9 章しかないため、検査を増やすより先に
+実本文を増やす段取りにした。
+
+- 自己完結バンドル: `inputs/`（canon・design・`check_gamelog.py` で clean を再確認したログ）、
+  事前登録（`preregistration.json` / `.md`）、実行手順（`runbook.md`）。
+- 判定は 3 つ: R1 地名の枝（`off_log` / `undeclared`。**採否は決めない**）、R2 長さ（
+  1,000〜1,400 字が 3 章中 2 章以上）、R3 2 標本以上で落ちた検査。
+- `scripts/measure_realrun_a.py` は登録ファイルの `sha256` と閾値を読み、verdict を機械的に出す
+  （`schema: realrun-a-v1`）。現在 `results.json` は標本 0 で `not_run`。
+- 生成は `chat_operator.py` のリレー。初回は `--resume` を付けない（exit 2）、標本ごとにリレー
+  ディレクトリを分ける、過去回答の再利用は `provenance.origin` に記録し標本として扱わない。
+
+## 22. プロンプト v1.2: 規則を検査から生成して明示（2026-10-26）
+
+`docs/two_stage_slice.md` §22。バッチ A で見つかった 2 つの「隠れた規則」への対処。
+
+- `withheld_facts` / `forbidden_terms` を `asc.gamelog.rewrite` に追加し、`fact_boundary` もこれを使う。
+  保留（design）と未開示（`setup` が後）を 1 か所にまとめたので、規則文と検査が同じデータを読む。
+- `prompts/stage-b-rewrite.md` v1.2 に「この章で書いてはいけない語」節と、契約 2・3 の文言を追加。
+- 判定・閾値・重大度は不変。v1.1 のプロンプトはバンドル内に凍結（`archived: true`）。
+- 効果は未測定。次回の走りで修復回数と `fact_boundary`／`character_boundary` の発火を見る。
+
+## 21. バッチ A の実走り（2026-10-26、3 標本）
+
+[`experiments/2026-10-realrun-a-t01/note.md`](../../experiments/2026-10-realrun-a-t01/note.md)
+（`docs/two_stage_slice.md` §21.1）。9 章すべて `clean`、修復 4 回。
+
+- 地名観測は 9 章で 0 件。**発火機会が 0** なので、地名検査の精度・採否の材料にはならない。
+- 目安を割ったのは sample-1 の修復後 2 章（842・873 字）。修復前は 1,025・1,009 字で目安内だった。
+- 修復前に出た所見は `fact_boundary`（「三年前」・3/3 の ch02）と `character_boundary`（2/3）。
+  前者は**ログの前提文**が「三年前に死んだ人物」と書いていることとのねじれで、検査の誤りではない。
+  後者は「死者の名を含む文ごとに媒体が要る」という規則が**プロンプトに書かれていない**ため。
+- 時系列は ch02・ch03 で照合され一致（「三日歩いた末」「七日目」「六日ぶり」）。ch01 の「往復六日」と
+  ch02 の「道のりは三日」は語形が `DAY_PATTERNS` の外で、**値は正しいが照合されていない**。
+- 事前登録の R3 は「修復で消えた所見を数えるか」を決めていなかった。**登録の不備**として記録し、
+  両方の読みを残す（結果を見てから解釈を選ばない）。

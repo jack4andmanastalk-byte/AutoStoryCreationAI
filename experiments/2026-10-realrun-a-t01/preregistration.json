@@ -1,0 +1,74 @@
+{
+  "schema": "realrun-preregistration-v1",
+  "experiment": "2026-10-realrun-a-t01",
+  "batch": "A",
+  "registered_on": "2026-10-26",
+  "registered_before_any_sample": true,
+  "question": "実モデルの本文で、地名の観測はどの枝に出るか。章の長さは目安に入るか。落ちる検査は毎回同じか。",
+  "condition": {
+    "stage": "b",
+    "prompt": "stage-b-rewrite v1.1",
+    "inputs": "inputs/canon, inputs/design, inputs/game_log.json（v1.1 と同一。ログは clean を再確認済み）",
+    "provider": "command -> scripts/chat_operator.py",
+    "observe_surface": true,
+    "temperature": 0.8,
+    "max_attempts": 2
+  },
+  "samples_planned": 3,
+  "sample_ids": ["sample-1", "sample-2", "sample-3"],
+  "sample_rule": "3 標本で打ち切る。結果を見てから足す場合は、走らせる前に別バッチ（A2）として登録する。",
+  "length_band": [1000, 1400],
+  "rules": {
+    "R1_place_branch": {
+      "question": "観測された目的地は、どの枝に出るか",
+      "branch_definitions": {
+        "off_log": "目的地が canon の locations に無い（ログにも無い）",
+        "undeclared": "目的地は canon にあるが、その章の移動として宣言されていない"
+      },
+      "verdicts": {
+        "no_examples": "off_log = undeclared = 0",
+        "drop_undeclared_branch": "off_log = 0 かつ undeclared > 0",
+        "narrow_branch_only": "off_log > 0 かつ undeclared = 0",
+        "inspect_both": "off_log > 0 かつ undeclared > 0"
+      },
+      "adoption": "このバッチでは採否を決めない。blocking 化の判断は別途、より大きな標本で行う。"
+    },
+    "R2_length": {
+      "question": "章の長さは目安 1,000〜1,400 字に入るか",
+      "min_chapters_in_band": 2,
+      "chapters_per_sample": 3,
+      "verdicts": {
+        "length_ok": "すべての標本で 2/3 以上が目安内",
+        "fix_prompt_target": "どの標本でも 2/3 に届かない（目標値ではなくプロンプト側を直す）",
+        "mixed": "標本によって違う（この場合も目標値は動かさず、A2 で再測する）"
+      }
+    },
+    "R3_recurring_failure": {
+      "question": "同じ検査が繰り返し落ちるか",
+      "min_samples": 2,
+      "verdicts": {
+        "recurring": "2 標本以上で所見を出した検査がある（それを次の修正対象にする）",
+        "no_recurring_failure": "どの検査も 2 標本以上では落ちない"
+      }
+    }
+  },
+  "primary_quantities": [
+    "章ごとの chars",
+    "expected_markers と found_markers",
+    "status と blocking_findings",
+    "attempts（修復回数）",
+    "observations の目的地と枝",
+    "所見の check 別・severity 別"
+  ],
+  "secondary_quantities": [
+    "CED（scripts/compare_l1_arms.py で別途。この事前登録の判定には使わない）"
+  ],
+  "not_claimed": [
+    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
+    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
+    "面白さ・読みやすさの比較はしない",
+    "観測は率ではなく事例。偽陽性率は、このバッチでは主張しない",
+    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）"
+  ],
+  "stop_rule": "3 標本が揃うか、修復上限に達して停止した時点で測る。途中で結果を見て条件を変えない。"
+}

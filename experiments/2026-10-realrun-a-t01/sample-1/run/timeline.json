@@ -1,0 +1,103 @@
+{
+  "chapters": [
+    {
+      "characters": [
+        {
+          "days_since_arriving_here": null,
+          "days_since_leaving_here": 0.0,
+          "id": "aria",
+          "location_at_entry": "灯台",
+          "location_at_exit": "王都"
+        }
+      ],
+      "day": 1.0,
+      "days_until_next": 3.0,
+      "elapsed_since_previous": null,
+      "id": "ch01",
+      "location": "灯台",
+      "moves": [
+        {
+          "arrival_day": 4.0,
+          "character": "aria",
+          "days": 3.0,
+          "depart_day": 1.0,
+          "destination": "王都",
+          "origin": "灯台",
+          "required_days": 3.0
+        }
+      ],
+      "present": [
+        "aria"
+      ]
+    },
+    {
+      "characters": [
+        {
+          "days_since_arriving_here": 0.0,
+          "days_since_leaving_here": 0.0,
+          "id": "aria",
+          "location_at_entry": "王都",
+          "location_at_exit": "灯台"
+        },
+        {
+          "days_since_arriving_here": null,
+          "days_since_leaving_here": null,
+          "id": "boris",
+          "location_at_entry": "王都",
+          "location_at_exit": "王都"
+        }
+      ],
+      "day": 4.0,
+      "days_until_next": 3.0,
+      "elapsed_since_previous": 3.0,
+      "id": "ch02",
+      "location": "王都",
+      "moves": [
+        {
+          "arrival_day": 7.0,
+          "character": "aria",
+          "days": 3.0,
+          "depart_day": 4.0,
+          "destination": "灯台",
+          "origin": "王都",
+          "required_days": 3.0
+        }
+      ],
+      "present": [
+        "aria",
+        "boris"
+      ]
+    },
+    {
+      "characters": [
+        {
+          "days_since_arriving_here": 0.0,
+          "days_since_leaving_here": 6.0,
+          "id": "aria",
+          "location_at_entry": "灯台",
+          "location_at_exit": "灯台"
+        }
+      ],
+      "day": 7.0,
+      "days_until_next": null,
+      "elapsed_since_previous": 3.0,
+      "id": "ch03",
+      "location": "灯台",
+      "moves": [],
+      "present": [
+        "aria"
+      ]
+    }
+  ],
+  "mode": "deterministic",
+  "note": "この表はゲームログと canon から導出した確定値。本文ではこの数字だけを使い、計算し直さない。数字を書かない（抽象化する）のは自由。",
+  "schema": "trpg-timeline-v1",
+  "travel_days": {
+    "港->灯台": 1.0,
+    "港->王都": 2.0,
+    "灯台->港": 1.0,
+    "灯台->王都": 3.0,
+    "王都->港": 2.0,
+    "王都->灯台": 3.0
+  }
+}

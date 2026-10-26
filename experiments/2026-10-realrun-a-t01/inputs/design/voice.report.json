@@ -1,0 +1,11 @@
+{
+  "doc": "voice",
+  "status": "clean",
+  "source": "voice.json",
+  "note": "設計時点の文体検査（視点・サンプル・禁止表現の宣言）。本文の検査は Stage B で行う。",
+  "viewpoint_declared": true,
+  "sample_declared": true,
+  "banned_with_reason": true,
+  "findings": [],
+  "checks_failed": 0
+}
