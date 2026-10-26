@@ -25,5 +25,8 @@
       "prompt_hash": "22a69dfb5ba350d0",
       "purpose": "stage_b:ch03"
     }
-  }
+  },
+  "template_version": "1.1",
+  "archived": true,
+  "note": "バッチ A が実際に答えたプロンプト（テンプレート v1.1）。テンプレートは v1.2 になり、現在の描画とは一致しない。この 3 ファイルは走行の記録として凍結する。"
 }

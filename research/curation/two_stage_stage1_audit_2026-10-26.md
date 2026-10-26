@@ -595,6 +595,16 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
 - 生成は `chat_operator.py` のリレー。初回は `--resume` を付けない（exit 2）、標本ごとにリレー
   ディレクトリを分ける、過去回答の再利用は `provenance.origin` に記録し標本として扱わない。
 
+## 22. プロンプト v1.2: 規則を検査から生成して明示（2026-10-26）
+
+`docs/two_stage_slice.md` §22。バッチ A で見つかった 2 つの「隠れた規則」への対処。
+
+- `withheld_facts` / `forbidden_terms` を `asc.gamelog.rewrite` に追加し、`fact_boundary` もこれを使う。
+  保留（design）と未開示（`setup` が後）を 1 か所にまとめたので、規則文と検査が同じデータを読む。
+- `prompts/stage-b-rewrite.md` v1.2 に「この章で書いてはいけない語」節と、契約 2・3 の文言を追加。
+- 判定・閾値・重大度は不変。v1.1 のプロンプトはバンドル内に凍結（`archived: true`）。
+- 効果は未測定。次回の走りで修復回数と `fact_boundary`／`character_boundary` の発火を見る。
+
 ## 21. バッチ A の実走り（2026-10-26、3 標本）
 
 [`experiments/2026-10-realrun-a-t01/note.md`](../../experiments/2026-10-realrun-a-t01/note.md)

@@ -88,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         json.dumps({"schema": "stageb-prompts-v1",
                     "task": args.task,
                     "template": prompts["stage-b-rewrite"].digest,
+                    "template_version": prompts["stage-b-rewrite"].version,
                     "source": "run_twostage.stage_b_rewrite_prompt",
                     "prompts": index},
                    ensure_ascii=False, indent=2) + "\n", encoding="utf-8")

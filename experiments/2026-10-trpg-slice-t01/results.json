@@ -86,7 +86,7 @@
     "stage-a-gamelog": "c051eacd8b244187",
     "stage-a-repair": "2177a6fbddf7e1de",
     "stage-b-repair": "e8bf637756ab4724",
-    "stage-b-rewrite": "036a5ee4c553004a"
+    "stage-b-rewrite": "b6dab12394b7085c"
   },
   "provider": {
     "model": "scripted-fixture",

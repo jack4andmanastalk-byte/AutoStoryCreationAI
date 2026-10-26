@@ -24,21 +24,29 @@ BUNDLE = REPO_ROOT / "experiments" / "2026-10-realrun-a-t01"
 PROMPTS = BUNDLE / "prompts"
 
 
-def test_the_committed_prompts_match_a_fresh_render(tmp_path):
+def test_the_committed_prompts_are_what_batch_a_answered(tmp_path):
+    """The bundle's prompts are an archive: batch A answered them verbatim.
+
+    They were rendered from template v1.1. The template has since moved on, so a
+    fresh render must *not* match — the archive stays frozen and says so.
+    """
     assert export_stageb_prompts.main([
         "--bundle", str(BUNDLE), "--out", str(tmp_path)]) == 0
     index = json.loads((PROMPTS / "index.json").read_text(encoding="utf-8"))
+    assert index["archived"] is True
+    assert index["template_version"] == "1.1"
+    fresh_index = json.loads((tmp_path / "index.json").read_text(encoding="utf-8"))
     for chapter, row in index["prompts"].items():
-        fresh = (tmp_path / row["file"]).read_text(encoding="utf-8")
         committed = (PROMPTS / row["file"]).read_text(encoding="utf-8")
-        assert fresh == committed, chapter
-        assert hashlib.sha256(fresh.encode("utf-8")).hexdigest()[:16] == \
+        assert hashlib.sha256(committed.encode("utf-8")).hexdigest()[:16] == \
             row["prompt_hash"]
+        assert fresh_index["prompts"][chapter]["prompt_hash"] != row["prompt_hash"], \
+            f"{chapter}: the archive should lag the current template"
 
 
 def test_ch01_keeps_the_hash_the_v11_run_recorded():
     index = json.loads((PROMPTS / "index.json").read_text(encoding="utf-8"))
-    # 2026-10-stageb-v11-t01 asked with this prompt; the template must not drift.
+    # 2026-10-stageb-v11-t01 and batch A asked with this prompt.
     assert index["prompts"]["ch01"]["prompt_hash"] == "ab8be3c448d7e96d"
 
 

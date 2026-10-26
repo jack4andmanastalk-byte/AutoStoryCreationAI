@@ -413,29 +413,20 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
                 f"死者 {subject} に現在時の状態変化マーカー"
                 f"「{record['raw']}」が付いている。", record["line"],
                 marker=record["raw"], character=subject))
-    withheld: dict[str, str] = {}
-    if scenes:
-        refs = {scene.scene_ref for scene in chapter.scenes}
-        for design in scenes.scenes:
-            if design.id in refs:
-                for item in design.withheld:
-                    withheld[item.fact] = item.reason
-    position = _chapter_position(canon, chapter_id)
-    for fact in canon.facts.values():
-        premature = bool(fact.setup and _chapter_position(canon, fact.setup) > position)
-        held = fact.id in withheld
-        if not premature and not held:
+    design_withheld = _design_withheld(canon, scenes, chapter_id)
+    for item in forbidden_terms(canon, scenes, chapter_id):
+        term = item["term"]
+        if term not in body:
             continue
-        for term in fact.terms:
-            if len(term) < 2 or term not in body:
-                continue
-            reason = (f"{fact.id} はこの章で保留と宣言（{withheld[fact.id]}）。"
-                      if held else
-                      f"{fact.id} の開示章は {fact.setup} でこの章より後。")
-            findings.append(_finding(
-                "fact_boundary", "medium",
-                f"未開示の事実 {fact.id} の語「{term}」が本文にある。{reason}",
-                term=term, fact=fact.id))
+        fact = canon.facts[item["fact"]]
+        reason = (f"{item['fact']} はこの章で保留と宣言"
+                  f"（{design_withheld[item['fact']]}）。"
+                  if item["fact"] in design_withheld else
+                  f"{item['fact']} の開示章は {fact.setup} でこの章より後。")
+        findings.append(_finding(
+            "fact_boundary", "medium",
+            f"未開示の事実 {item['fact']} の語「{term}」が本文にある。{reason}",
+            term=term, fact=item["fact"]))
     checks.append(_result("fact_boundary", len(canon.facts), len(findings) - before))
 
     # -- voice_contract ------------------------------------------------------
@@ -540,6 +531,53 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
     }
 
 
+def _design_withheld(canon: Canon, scenes: SceneDoc | None,
+                     chapter_id: str) -> dict[str, str]:
+    """Facts the design marked withheld for this chapter (``fact -> reason``)."""
+    withheld: dict[str, str] = {}
+    if not scenes:
+        return withheld
+    for design in scenes.scenes:
+        if design.chapter != chapter_id:
+            continue
+        for item in design.withheld:
+            withheld[item.fact] = item.reason
+    return withheld
+
+
+def withheld_facts(canon: Canon, scenes: SceneDoc | None,
+                   chapter_id: str) -> dict[str, str]:
+    """Every fact this chapter must not disclose, with a reason.
+
+    Two ways a fact is withheld: the design marked it withheld for this chapter,
+    or its canon ``setup`` chapter comes later.
+    """
+    withheld = dict(_design_withheld(canon, scenes, chapter_id))
+    position = _chapter_position(canon, chapter_id)
+    for fact in canon.facts.values():
+        if fact.setup and _chapter_position(canon, fact.setup) > position:
+            withheld.setdefault(fact.id, f"開示章は {fact.setup} でこの章より後。")
+    return withheld
+
+
+def forbidden_terms(canon: Canon, scenes: SceneDoc | None,
+                    chapter_id: str) -> list[dict]:
+    """``{fact, term, reason}`` for every word this chapter must not use.
+
+    Derived from the same data :func:`check_rewrite` uses, so a prompt can state
+    the rule the checker enforces instead of leaving it to guesswork.
+    """
+    out: list[dict] = []
+    for fact_id, reason in sorted(withheld_facts(canon, scenes, chapter_id).items()):
+        fact = canon.facts.get(fact_id)
+        if fact is None:
+            continue
+        for term in fact.terms:
+            if len(term) >= 2:
+                out.append({"fact": fact_id, "term": term, "reason": reason})
+    return out
+
+
 def _chapter_position(canon: Canon, chapter_id: str) -> int:
     order = canon.chapter_order()
     from ..story.canon import chapter_key
@@ -614,5 +652,5 @@ def render_markdown(report: dict) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["CHECKS", "REPAIR_SEVERITIES", "check_rewrite", "needs_repair",
-           "render_markdown"]
+__all__ = ["CHECKS", "REPAIR_SEVERITIES", "check_rewrite", "forbidden_terms",
+           "needs_repair", "render_markdown", "withheld_facts"]
