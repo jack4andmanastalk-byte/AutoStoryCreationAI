@@ -344,4 +344,57 @@ experiments/2026-11-stageb-t01/          ← 新規。自己完結バンドル
 | `Makefile` | `make probe-gamelog` を追加（プローブの再実行のみ。CI の内容は変えない） |
 | `research/curation/two_stage_next_steps_2026-10-26.md` | §1 に本稿への追記（方針文書は変更しない） |
 
-**実装（`src/asc/gamelog/`、`scripts/run_twostage.py`）は変更していない。** P0/P1 の修正は次の作業単位とする。
+**第1段階の調査時点では実装（`src/asc/gamelog/`、`scripts/run_twostage.py`）を変更していない。** P0 の修正は §9 のスプリントで実施し、P1 は次の作業単位とする。
+
+---
+
+## 9. P0 修正スプリントの実施記録（2026-10-26、同日）
+
+利用者の承認後に P0-1〜P0-7 を実装した。**P1 は未着手**。実モデルは呼び出していない。
+
+### 9.1 何を変えたか
+
+| # | 変更 | コード |
+| --- | --- | --- |
+| P0-1 | `resume_command` に `--script` / `--command` / `--stage` / `--game-log` / `--seed` / `--temperature` / `--max-attempts` / `--results` を含め、`sys.executable` で起動する。`state.json` に `argv` と `resume_count` を追加 | `scripts/run_twostage.py: _resume_command` |
+| P0-2 | provider 失敗・入力不合格でも `state.json` を書く（`status: failed` / `unresolved`、`error` つき） | `_write_state` |
+| P0-3 | `--resume` は `responses.jsonl` を空にしない。既存の行を一時ファイルへ書き、`os.replace` で置き換えてから追記する | `main` の resume ブロック |
+| P0-4 | `CONFIG_COMPARE`（task / system / stage / seed / temperature / max_attempts / provider / protocol_version）と `INPUT_COMPARE`（canon・design・script・game-log・プロンプトのハッシュ）を比較し、不一致は `exit 2`。`--allow-config-change` で続行し、差分を `config_changes` に残す | `_config_mismatches` |
+| P0-5 | `BundleProvider` が `response_sha256` を照合。不一致は `ReplayError` で停止。再生した応答は `responses.jsonl` に二重追記しない。`replay.report.json` に `replayed` / `stale` / `missing` と重複キーを残す | `BundleProvider` / `_record_once` |
+| P0-6 | 死者言及を**文スコープ**で判定。名前を含む文に、宣言済み媒体の語（完全一致＋2 文字の部分語）か参照の語彙（`REFERENCE_CUES`）がある場合だけ許容する。無ければ `high` | `src/asc/gamelog/rewrite.py: _mentions_without_medium` |
+| P0-7 | `--stage both|a|b` と `--game-log` を追加。`--stage b` は Stage A を実行せず、与えたログを `check_game_log` で再検査し、`clean` のときだけ Stage B へ渡す。不合格は `exit 2`（`--allow-unverified-log` で続行可、`unverified: true` を残す）。入力ログは `inputs/game_log.input.json` に固定コピー | `main` / `_write_state` |
+
+`results.json` は `inputs` に `game_log_sha256` が加わったため再生成した（他は不変、`test_committed_bundle_summary_is_reproducible` が固定）。
+
+### 9.2 確認したこと（テスト 9 件を追加、計 624 passed）
+
+| 契約 | テスト | プローブ |
+| --- | --- | --- |
+| `resume_command` がそのまま実行できる | `test_resume_command_is_complete_and_executable` | R1 → rc=0, `resume_count=1` |
+| provider 失敗後も再開できる | `test_a_provider_failure_still_writes_resumable_state` | R4 → `state.json` あり, 記録 2 行保持 |
+| 再開で記録が消えない・二重にならない | `test_resume_keeps_the_record_and_replays_without_duplicating` | — |
+| 条件を変えた再開は拒否、明示時のみ続行 | `test_resume_with_a_different_seed_is_refused_and_can_be_allowed` | R3 → rc=2 / `--allow-config-change` で rc=0 |
+| 改変された記録は再生しない | `test_a_modified_recorded_response_is_refused` | R2 → rc=2（`response_sha256` 不一致） |
+| Stage B 単独が Stage A を呼ばない | `test_stage_b_only_rewrites_a_verified_log_without_calling_stage_a` | — |
+| 不合格ログは fail-closed、明示時のみ続行 | `test_stage_b_only_refuses_a_log_that_fails_its_checks` | — |
+| 引数の矛盾を拒否、`--stage a` は B を skip | `test_stage_selection_rejects_contradictory_arguments` | — |
+| 死者の現在時行動は媒体語のない文で `high` | `test_dead_mention_needs_its_medium_in_the_same_sentence` | B1 → `high` |
+
+固定台本（`scripted`）の結果は不変: Stage A `clean`（3 章 3 場面・8 検査 0 所見・マーカー 19 件）、Stage B 3 章 `clean`、既存監査の違反 3 件（`medium`）。
+
+### 9.3 P0-6 の残る限界（重要）
+
+文スコープの判定は**語彙による近似**であり、次の形は通る。
+
+- 「ヨハンが潮札を革袋に入れた」— 媒体語と同じ文で死者が行為する。
+- 「ヨハンが入ってきた」+ 同じ文に「思い出」等の語彙がある場合。
+- 1 文字の別名（`兄`）だけの言及（B-02、変更なし）。
+
+したがって「死者の現在時行動を検出できる」とは主張しない。**この検査は、章に 1 件の宣言があるだけで現在時行動が通った従来の穴（B-01）を塞ぐもので、残余の検出漏れは §6.1 の人手照合で記録する。**
+
+### 9.4 変わっていないこと
+
+- 意味的整合性の保証（B-03〜B-05、A-08、B-09）。マーカー一致は本文の事実保持を意味しない。
+- 実モデル応答・Arena リレー・L1 ペア比較は未実施。L1 は構造・衛生のみ、**L2/L3 と G3/G4 は `frozen_not_measured`**、G5 は主張しない。
+- protocol-v1 の系・指標・閾値は変更していない。
+- P1（§5.2）は未着手: A-07（同一場面 learn→use の偽陽性）は全工程試走の前に必要。

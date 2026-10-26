@@ -6,7 +6,10 @@ mechanical questions are asked of it:
 * ``marker_sequence`` — does the prose contain exactly the derived marker
   sequence (``time`` / ``location`` / ``learn`` / ``fore shadow``), in order?
 * ``character_boundary`` — does the prose mention only characters the log put
-  on stage or explicitly allowed as a record/relic/recollection reference?
+  on stage, or a dead person *through* a declared medium (or a reference cue) in
+the same sentence?
+  A chapter-level declaration is not enough: naming the dead in a sentence
+  without its record/relic/recollection wording could be a present-time act.
 * ``fact_boundary`` — does the prose leak a fact before its canon ``setup``
   chapter or a fact the design withheld for this chapter? Does it introduce a
   marker that gives a dead person a present-time state change?
@@ -46,8 +49,11 @@ class Check:
 CHECKS: tuple[Check, ...] = (
     Check("marker_sequence", "本文のマーカー列がゲームログの導出列と完全一致する。",
           "マーカーの文字列と順序だけを見る。散文の内容は見ない。"),
-    Check("character_boundary", "本文に出る人物がログの登場人物か許容された死者言及だけである。",
-          "名前・別名の文字列一致。比喩や一般名詞との混同は起こりうる。"),
+    Check("character_boundary",
+          "本文に出る人物がログの登場人物か、媒体を伴う死者への言及だけである。",
+          "名前・別名の 2 文字以上の文字列一致。死者は、名前を含む文に宣言済みの"
+          "媒体語か参照の語彙（筆跡・手形・思い出 など）がある場合だけ許容する。"
+          "比喩・一般名詞・回想の言い回しとの混同は起こりうる。"),
     Check("fact_boundary", "未開示の事実の語彙や、死者の現在時状態マーカーが現れない。",
           "語彙一致は手掛かりであり断定ではない（medium）。死者マーカーは厳密。"),
     Check("voice_contract", "voice.json の禁止表現が出ず、章本文が空でない。",
@@ -64,6 +70,75 @@ def _finding(check: str, severity: str, message_ja: str,
 def _dead_at(canon: Canon, character_id: str) -> bool:
     char = canon.characters.get(character_id)
     return bool(char and char.status == "dead")
+
+
+#: Words that mark a *reference* to someone rather than a present-time act.
+#: ``memory_mention`` / ``record_reference`` are allowed when the sentence that
+#: names the dead person carries the declared medium or one of these cues.
+#: The list is deliberately small and documented as a heuristic: it cannot tell
+#: "said with affection" from "stood in the doorway".
+REFERENCE_CUES = (
+    # records and relics
+    "筆跡", "手形", "文字", "記録", "帳面", "頁", "札", "書き", "印",
+    "遺した", "残した", "預けた", "手紙", "日記", "写真", "墓", "遺体",
+    # recollection and past narration
+    "思い出", "思い返", "記憶", "覚えて", "覚えてい", "回想", "面影",
+    "昔", "あの頃", "なつかし", "かつて", "生前", "三年前", "あの夜",
+    "あの嵐", "あの日", "その夜", "横顔", "名を", "声を聞",
+)
+
+
+def _medium_terms(medium: str) -> set[str]:
+    """Words that count as "the declared medium" inside one sentence.
+
+    The declared medium is often a compound ("石膏手形") while the prose splits
+    it ("石膏の右手 … 手形"). Matching the full string alone would flag the
+    committed ch02 text, so two-character shingles are accepted as well.
+    """
+    text = medium.strip()
+    if len(text) <= 2:
+        return {text} if text else set()
+    terms = {text}
+    terms.update(text[i:i + 2] for i in range(len(text) - 1))
+    return terms
+
+
+def _sentences(text: str) -> list[tuple[int, str]]:
+    """``(line_number, sentence)`` pairs; markers are removed first."""
+    pairs: list[tuple[int, str]] = []
+    for number, line in enumerate(text.splitlines(), start=1):
+        plain = re.sub(r"\{\{[^{}]*\}\}", "", line).strip()
+        if not plain:
+            continue
+        for sentence in re.split(r"(?<=[。！？])", plain):
+            sentence = sentence.strip()
+            if sentence:
+                pairs.append((number, sentence))
+    return pairs
+
+
+def _mentions_without_medium(text: str, names: tuple[str, ...],
+                             references: list[dict]) -> list[dict]:
+    """Sentences that name a dead person without saying how they appear.
+
+    A chapter-level ``record_reference`` only licenses a mention *through* its
+    medium. The check is per sentence, so "ヨハンの筆跡が…" passes while
+    "ヨハンが戸口から入ってきて…" fails even in the same chapter.
+    """
+    terms: set[str] = set(REFERENCE_CUES)
+    for reference in references:
+        terms |= _medium_terms(reference["medium"])
+    media = "／".join(sorted({reference["medium"] for reference in references}))
+    bare: list[dict] = []
+    for line, sentence in _sentences(text):
+        match = next((name for name in names if len(name) >= 2 and name in sentence), None)
+        if match is None:
+            continue
+        if any(term and term in sentence for term in terms):
+            continue
+        bare.append({"line": line, "match": match, "media": media,
+                     "sentence": sentence[:80]})
+    return bare
 
 
 def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
@@ -139,8 +214,23 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
         if char.id in present:
             continue
         if _dead_at(canon, char.id):
-            if char.id in allowed_subjects:
-                continue  # declared record/relic/recollection reference
+            references = allowed_subjects.get(char.id)
+            if references:
+                # A declared reference covers the mention, not the whole chapter:
+                # a paragraph that names the dead person must also carry the
+                # medium it was declared through (record, relic, recollection).
+                bare = _mentions_without_medium(body, char.all_names, references)
+                if not bare:
+                    continue
+                findings.append(_finding(
+                    "character_boundary", "high",
+                    f"死者 {char.name}（{bare[0]['match']}）の言及に、宣言された媒体"
+                    f"（{bare[0]['media']}）も参照の語彙も同じ文にない。現在時の行動として"
+                    "読めるため不合格。記録・遺物・回想として書くか、"
+                    "ゲームログに宣言を足す。",
+                    character=char.id, line=bare[0]["line"],
+                    match=bare[0]["match"], sentences=len(bare)))
+                continue
             findings.append(_finding(
                 "character_boundary", "high",
                 f"死者 {char.name}（{hits[0]}）が本文に出るが、ゲームログに"

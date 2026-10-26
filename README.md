@@ -331,6 +331,13 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * 固定台本バンドルは [`experiments/2026-10-trpg-slice-t01/`](experiments/2026-10-trpg-slice-t01/note.md)。
   `--out` は `experiments/<id>/` 配下のみ（`build/` / `runs/` は拒否）。回答待ちの Arena リレーは
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
+* **Stage B だけを試す**ときは `--stage b --game-log <verified game_log.json>` を使います。Stage A は
+  実行せず、与えたログをその場で再検査し、`clean` のときだけ本文化します（不合格は fail-closed。
+  `--allow-unverified-log` を明示した場合だけ続行し、`unverified: true` を残します）。
+* **再開の契約**: `state.json` の `resume_command` はそのまま実行でき、失敗時も `state.json` を書きます。
+  `--resume` は記録を切り詰めず、条件（seed・温度・試行回数・provider・プロンプト・入力ハッシュ）が
+  変わっていれば拒否します（意図的な変更は `--allow-config-change`、差分は `config_changes` に記録）。
+  改変された記録（`response_sha256` 不一致）は再生しません。
 * **これは配線確認であり、実モデルの応答でも効果の観測でもありません。** L1 は構造・衛生の検査で
   あり、質・面白さ・選好の証拠にはなりません。L2/L3 は `frozen_not_measured` のままです。
   S1 直接生成との L1 ペア比較は Phase 3 の未実施課題です。

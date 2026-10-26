@@ -114,11 +114,13 @@ CLI 単体でも実行できる。
 | 検査 | 合格条件 | 重要度 |
 | --- | --- | --- |
 | `marker_sequence` | 本文のマーカー列が導出列と完全一致。未知・余分な `{{...}}` なし | `high` |
-| `character_boundary` | 本文に出る人物が `present_characters` か、宣言済みの死者言及だけ | 未宣言の死者 `high` / 未登場の生存者 `medium` |
+| `character_boundary` | 本文に出る人物が `present_characters` か、**媒体を伴う**死者言及だけ。死者は、名前を含む**文**に宣言済みの媒体語（記録・遺物・回想）か参照の語彙（筆跡・手形・思い出 など）がある場合だけ許容 | 未宣言の死者・媒体のない言及 `high` / 未登場の生存者 `medium` |
 | `fact_boundary` | 未開示事実の `terms`、この章で `withheld` の事実の語彙、死者の現在時状態マーカーがない | 語彙 `medium` / 死者マーカー `high` |
 | `voice_contract` | `voice.json` の `banned`（正規表現）と題材の禁止語が出ず、本文が最低長以上 | `medium`（不正な正規表現は `low`） |
 
 知識境界の語彙検査は**手掛かり**であって断定ではない（既存の `knowledge_violation` と同じく `medium`）。死者の現在時状態マーカー（`{{state: johan ...}}` 等）は文字列として厳密に検出できるため `high` にする。
+
+死者の言及は**章スコープではなく文スコープ**で判定する。章に `record_reference` が 1 件あるだけでは、同じ章の「ヨハンが戸口から入ってきた」を通さない。逆に「ヨハンの筆跡が…」「ヨハンの手形だった」のように、名前を含む文に媒体語か参照の語彙があれば通す（媒体は `石膏手形` と `石膏の右手…手形` のように分かれて書かれうるため、2 文字の部分語も媒体語として扱う）。この規則は**語彙による近似**であり、「ヨハンが潮札を革袋に入れた」（媒体語と同じ文で死者が行為する）ような形は依然として通る。死者の現在時行動の完全な検出を主張しない。
 
 Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json` を渡し、前章本文は渡さない。設計書の結末・他章の幕・未開示の事実をプロンプトに含めないことで開示順序の先取りを抑える（[`plot_to_draft_2026-10-25.md`](../research/curation/plot_to_draft_2026-10-25.md) の知見）。
 
@@ -138,7 +140,16 @@ Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json
 - `--out` は **`experiments/<id>/` 配下のみ**。`build/` と `runs/` は拒否する（セッション境界で消えるため）。
 - 実行ごとに `<out>/<run-id>/` へ `inputs/`（canon・design・台本の固定コピー）、`responses.jsonl`、全プロンプト（`*.prompt.txt`）、`game_log.json`、`game_log.report.json`、`text/*.md`、`rewrite.report.json`、`audit.json`、`state.json`、`run-summary.json` を書く。入力は SHA-256 で固定し、`state.json` に記録する。
 - Stage A が `clean` にならない場合、Stage B は**実行しない**（`stage_b.status: skipped`）。未検証のログを小説化しないための fail-closed ゲート。
-- `--provider command` で Arena/chat operator を繋ぐ場合、回答待ちでは exit 3 で止まり、同じバンドルへ `PROMPTS.md` と `state.json` を書く。回答を `responses/<key>.json` に置いた後 `--resume --run-id <id>` で、記録済み応答を再生しつつ残りのリクエストだけを delegate する。プロンプトが変わった記録は再生せず stale として拒否する。
+- `--provider command` で Arena/chat operator を繋ぐ場合、回答待ちでは exit 3 で止まり、同じバンドルへ `PROMPTS.md` と `state.json` を書く。回答を `responses/<key>.json` に置いた後 `--resume --run-id <id>` で、記録済み応答を再生しつつ残りのリクエストだけを delegate する。プロンプトが変わった記録は再生せず stale として扱い（`replay.report.json` に件数を残す）、`response_sha256` が一致しない記録は再生せず停止する。
+- **再開の契約**（P0 修正済み）:
+  - `state.json` の `resume_command` は、実行に必要な全引数（`--script` / `--command` / `--stage` / `--game-log` / `--seed` / `--temperature` / `--max-attempts` / `--results`）を含む。そのまま実行できることをテストで確認している。
+  - provider の失敗・入力の不合格でも `state.json` を書く（`status: failed` / `unresolved` と `error`）。部分的な `responses.jsonl` が再開不能な形で残らない。
+  - `--resume` は `responses.jsonl` を切り詰めない（同じ内容を原子的に書き直してから追記する）。再開が途中で失敗しても既存の記録は残る。
+  - `--resume` は `task` / `system` / `stage` / `seed` / `temperature` / `max_attempts` / `provider` / `protocol_version` と、入力ハッシュ（canon・design・script・game-log・プロンプト）を比較し、不一致は `exit 2` で拒否する。意図的な変更は `--allow-config-change` で続行でき、差分は `state.json` の `config_changes` に残る。
+  - 再生された応答は `responses.jsonl` に二重追記しない（`replay.report.json` に `replayed` / `stale` / `missing` の件数を残す）。
+- **Stage の選択**（P0 修正済み）: `--stage both|a|b` と `--game-log <path>`。
+  - `--stage b --game-log <path>` は Stage A を**実行しない**。与えたログをこの場で `check_game_log` にかけ、`clean` のときだけ Stage B に渡す（不合格なら `exit 2` で fail-closed。`--allow-unverified-log` を明示した場合だけ続行し、`game_log.report.json` と `run-summary.json` に `unverified: true` を残す）。入力ログは `inputs/game_log.input.json` に固定コピーし、SHA-256 を `state.json` に記録する。
+  - `--stage a` は Stage A だけを実行し、`stage_b.status: skipped` を残す。
 - `--results` はタイムスタンプと実行パスを含まない**決定論的な要約**で、コミット用。`run-summary.json` と `state.json` は run 固有の情報を含む。
 
 固定台本の `scripted.json` は `$file` 参照で `inputs/game_log.json` と `inputs/rewrite/*.md` を指す。応答本文を二重に持たず、1 つの読みやすい入力をそのまま配線に使う。**この台本は実モデル応答ではない**（`_note` に明記）。
@@ -179,5 +190,26 @@ Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json
 - **マーカーと本文の事実**: `marker_sequence` は文字列と順序だけを見る。本文が事実を否定・省略・言い換えていても、マーカーが残っていれば `clean`。`fact_boundary` は `canon.facts[].terms` の部分文字列一致で、言い換え・含意による漏洩は捕まらない（変異プローブでは、事実を否定・省略した本文も `clean` になる）。
 - **厳密ローダー**: 型の誤りは拒否するが、**未知キーは黙って捨てる**。綴り誤りは検査を弱める方向に働く。
 - **再開と記録保全**: `state.json` の `resume_command` に `--script` / `--seed` などが入らず、そのままでは失敗する。provider 失敗時は `state.json` を書かないため `--resume` できない。`--resume` は冒頭で `responses.jsonl` を空にする。`config` の比較は入力ハッシュ 3 種のみで、`seed` を変えた再開は記録済み応答を捨てて再要求する。
+
+
+### 11.1 第1段階 P0 の修正（同日、実装済み）
+
+点検で挙げた P0 のうち、次を実装した。**意味的整合性の保証は変わっていない**（B-03〜B-05・A-08 などの仕様上の制限は残る）。
+
+| 項目 | 変更 | 確認 |
+| --- | --- | --- |
+| P0-1 | `resume_command` に全引数を入れ、`state.json` に `argv` を残す | `test_resume_command_is_complete_and_executable`、プローブ R1（rc=0） |
+| P0-2 | 失敗・不合格でも `state.json` を書く（`status: failed` / `unresolved`） | `test_a_provider_failure_still_writes_resumable_state`、プローブ R4 |
+| P0-3 | `--resume` で `responses.jsonl` を切り詰めない（原子的に書き直して追記） | 同テスト（中断後も 2 行が残る） |
+| P0-4 | `config` 全項目と入力ハッシュを比較し、不一致は `exit 2`。`--allow-config-change` で続行＋記録 | `test_resume_with_a_different_seed_is_refused_and_can_be_allowed`、プローブ R3 |
+| P0-5 | `BundleProvider` が `response_sha256` を照合。不一致は停止。再生は二重追記しない | `test_a_modified_recorded_response_is_refused`、プローブ R2 |
+| P0-6 | 死者言及を**文スコープ**で判定（媒体語か参照の語彙を要求） | `test_dead_mention_needs_its_medium_in_the_same_sentence`、プローブ B1 |
+| P0-7 | `--stage b --game-log` を追加。Stage A を実行せず、与えたログを再検査してから Stage B へ | `test_stage_b_only_rewrites_a_verified_log_without_calling_stage_a` ほか |
+
+台本経路の結果は変わらない: Stage A `clean`（8 検査・0 所見）、Stage B 3 章 `clean`、確定マーカー 19 件。
+`results.json` は `inputs` に `game_log_sha256: null` が加わったため再生成した（他は不変）。
+
+未着手（P1）: 同一場面 `learn`→`use` の偽陽性、未知キーの報告、現在時 `subject` の検査、死者の `used_facts`、
+章順・章 ID 重複、現在地の連続性、`must_include` のゲート、`MIN_REWRITE_CHARS`、`PROMPTS.md` の未回答 1 件化。
 
 §8 の「Stage B 3 章すべて `clean`」「既存監査の違反 3 件は既知の誤検出類型」という記述は**そのまま有効**だが、それは**検査が期待どおり動いたこと**の確認であり、意味的整合性の証明ではない。上記の穴は `make probe-gamelog`（`scripts/probe_gamelog_contracts.py`）で再現できる。

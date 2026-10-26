@@ -39,6 +39,7 @@
       "voice.json": "efb945cfc9d7dc90808b137fa82616c602d24f2338c7aad7ef4b3f59ea554ea6",
       "voice.report.json": "d4c089ef40d098a729ee9aa17cae08e7396fbbdb93655a81d240f562ca99bbc5"
     },
+    "game_log_sha256": null,
     "script_sha256": "8a4715a3e4989503040865134afb7d898c0497675aa9793f04f06fa090b789e8"
   },
   "l1_hygiene": {

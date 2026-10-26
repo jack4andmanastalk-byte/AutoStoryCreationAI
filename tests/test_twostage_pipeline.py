@@ -389,3 +389,225 @@ def test_rewrite_check_flags_banned_voice_and_premature_fact_terms():
     assert "fact_boundary" in checks
     assert any("F-04" in item["message_ja"] or "F-03" in item["message_ja"]
                for item in report["findings"])
+
+
+# -- P0: resume, record integrity, Stage B only, dead mentions ---------------
+def _stub_provider(tmp_path: Path, name: str, body: str) -> str:
+    """A command provider whose behaviour is written in its own source."""
+    path = tmp_path / name
+    path.write_text(body, encoding="utf-8")
+    return f"{sys.executable} {path}"
+
+
+FAIL_AT_CH02 = """
+import json, sys
+req = json.load(sys.stdin)
+if req["purpose"].startswith("stage_b:ch02"):
+    sys.stderr.write("boom\\n")
+    sys.exit(1)
+base = "%s/"
+name = "game_log.json" if not req["purpose"].startswith("stage_b") else \\
+    "rewrite/" + req["purpose"].split(":")[1] + ".md"
+print(json.dumps({"text": open(base + name, encoding="utf-8").read()}))
+""" % (INPUTS,)
+
+STAGE_B_ONLY = """
+import json, sys
+req = json.load(sys.stdin)
+if not req["purpose"].startswith("stage_b"):
+    sys.stderr.write("stage A must not be requested in --stage b\\n")
+    sys.exit(9)
+print(json.dumps({"text": open("%s/rewrite/" + req["purpose"].split(":")[1]
+                               + ".md", encoding="utf-8").read()}))
+""" % (INPUTS,)
+
+
+def test_resume_command_is_complete_and_executable(tmp_path):
+    import shlex
+
+    out = tmp_path / "bundle"
+    assert run_cli(out, "--seed", "3", run_id="cmd").returncode == 0
+    state = read_json(out / "cmd" / "state.json")
+    command = state["resume_command"]
+    for flag in ("--script", "--seed 3", "--allow-temp-out", "--resume", "--task t01"):
+        assert flag in command, (flag, command)
+    assert state["argv"] and state["resume_count"] == 0
+    completed = subprocess.run(shlex.split(command), cwd=REPO_ROOT,
+                               capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+    assert read_json(out / "cmd" / "state.json")["resume_count"] == 1
+
+
+def test_resume_keeps_the_record_and_replays_without_duplicating(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="replay").returncode == 0
+    path = out / "replay" / "responses.jsonl"
+    before = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+              if line.strip()]
+    assert len(before) == 4
+    completed = run_cli(out, "--resume", run_id="replay")
+    assert completed.returncode == 0, completed.stderr
+    after = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+             if line.strip()]
+    assert len(after) == 4, "a replayed answer must not be appended twice"
+    assert [row["ts"] for row in after] == [row["ts"] for row in before], \
+        "resume must not rewrite the recorded timestamps"
+    replay = read_json(out / "replay" / "replay.report.json")
+    assert replay["counts"] == {"replayed": 4}
+    assert replay["duplicate_record_keys"] == []
+
+
+def test_resume_with_a_different_seed_is_refused_and_can_be_allowed(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="seeded").returncode == 0
+    refused = run_cli(out, "--resume", "--seed", "7", run_id="seeded")
+    assert refused.returncode == 2
+    assert "config mismatch on resume: seed" in refused.stderr
+    assert read_json(out / "seeded" / "state.json")["config"]["seed"] == 0
+    allowed = run_cli(out, "--resume", "--seed", "7", "--allow-config-change",
+                      run_id="seeded")
+    assert allowed.returncode == 0, allowed.stderr
+    state = read_json(out / "seeded" / "state.json")
+    assert state["config"]["seed"] == 7
+    assert "seed" in state["config_changes"]
+    replay = read_json(out / "seeded" / "replay.report.json")
+    assert replay["counts"].get("missing") == 4  # no answer matches this seed
+
+
+def test_a_provider_failure_still_writes_resumable_state(tmp_path):
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "fail.py", FAIL_AT_CH02)
+    failed = run_cli(out, "--command", command, provider="command", run_id="half")
+    assert failed.returncode == 2
+    run = out / "half"
+    state = read_json(run / "state.json")
+    assert state["status"] == "failed"
+    assert "boom" in state["error"]
+    assert "--resume" in state["resume_command"]
+    entries = [json.loads(line) for line in
+               (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    assert [row["purpose"] for row in entries] == ["stage_a", "stage_b:ch01"]
+
+    # The same failing provider is usable again: the record is kept and replayed.
+    again = run_cli(out, "--resume", "--command", command, provider="command",
+                    run_id="half")
+    assert again.returncode == 2
+    entries = [json.loads(line) for line in
+               (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    assert [row["purpose"] for row in entries] == ["stage_a", "stage_b:ch01"], \
+        "an interrupted resume must not drop the earlier records"
+    assert read_json(run / "state.json")["resume_count"] == 1
+
+
+def test_a_modified_recorded_response_is_refused(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="tamper").returncode == 0
+    path = out / "tamper" / "responses.jsonl"
+    entries = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    entries[0]["response"]["text"] = entries[0]["response"]["text"].replace("嵐", "霧")
+    path.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+                    encoding="utf-8")
+    completed = run_cli(out, "--resume", run_id="tamper")
+    assert completed.returncode == 2
+    assert "response_sha256" in completed.stderr
+    assert read_json(out / "tamper" / "state.json")["status"] == "failed"
+
+
+def test_stage_b_only_rewrites_a_verified_log_without_calling_stage_a(tmp_path):
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "stageb.py", STAGE_B_ONLY)
+    completed = run_cli(out, "--stage", "b", "--game-log",
+                        str(INPUTS / "game_log.json"), "--command", command,
+                        provider="command", run_id="b-only")
+    assert completed.returncode == 0, completed.stderr
+    run = out / "b-only"
+    summary = read_json(run / "run-summary.json")
+    assert summary["stage"] == "b"
+    assert summary["stage_a"]["source"] == "provided"
+    assert summary["stage_a"]["attempts"] == 0
+    assert summary["stage_b"]["status"] == "clean"
+    purposes = [json.loads(line)["purpose"] for line in
+                (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()]
+    assert purposes == ["stage_b:ch01", "stage_b:ch02", "stage_b:ch03"]
+    assert (run / "inputs" / "game_log.input.json").is_file()
+    assert any("入力ログ" in limit for limit in summary["limits"])
+
+
+def test_stage_b_only_refuses_a_log_that_fails_its_checks(tmp_path):
+    raw = json.loads((INPUTS / "game_log.json").read_text(encoding="utf-8"))
+    raw["chapters"][0]["scenes"][0]["present_characters"].append("johan")
+    broken = tmp_path / "broken.json"
+    broken.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "stageb2.py", STAGE_B_ONLY)
+    refused = run_cli(out, "--stage", "b", "--game-log", str(broken),
+                      "--command", command, provider="command", run_id="b-broken")
+    assert refused.returncode == 2
+    assert "fail-closed" in refused.stderr
+    state = read_json(out / "b-broken" / "state.json")
+    assert state["status"] == "unresolved"
+    assert "fail-closed" in state["error"]
+
+    # The refused run left a resumable state; the override continues it.
+    allowed = run_cli(out, "--stage", "b", "--game-log", str(broken),
+                      "--allow-unverified-log", "--command", command, "--resume",
+                      "--report-only", provider="command", run_id="b-broken")
+    assert allowed.returncode == 0, allowed.stderr
+    summary = read_json(out / "b-broken" / "run-summary.json")
+    assert summary["stage_a"]["unverified"] is True
+    # Stage B was attempted from the overriding log, so text exists even if the
+    # rewrite checks are not clean.
+    assert (out / "b-broken" / "text" / "ch01.md").is_file()
+
+
+def test_stage_selection_rejects_contradictory_arguments(tmp_path):
+    out = tmp_path / "bundle"
+    missing = run_cli(out, "--stage", "b", run_id="x")
+    assert missing.returncode == 2 and "--game-log" in missing.stderr
+    extra = run_cli(out, "--game-log", str(INPUTS / "game_log.json"), run_id="x")
+    assert extra.returncode == 2 and "--stage b" in extra.stderr
+    stage_a = run_cli(out, "--stage", "a", run_id="a-only")
+    assert stage_a.returncode == 0, stage_a.stderr
+    summary = read_json(out / "a-only" / "run-summary.json")
+    assert summary["stage_a"]["status"] == "clean"
+    assert summary["stage_b"]["status"] == "skipped"
+    assert not (out / "a-only" / "text").exists()
+
+
+def test_dead_mention_needs_its_medium_in_the_same_sentence():
+    """A chapter-level record reference does not cover a present-time act."""
+    log = load_game_log(INPUTS / "game_log.json")
+    canon = load_canon(INPUTS / "canon")
+    voice = load_voice(INPUTS / "design" / "voice.json")
+    scenes = load_scenes(INPUTS / "design" / "scene.json")
+    text = (INPUTS / "rewrite" / "ch01.md").read_text(encoding="utf-8")
+
+    def check(body: str) -> dict:
+        return check_rewrite(body, "ch01", log, canon, voice, scenes,
+                             avoid=(), min_chars=200)
+
+    declared = check(text)
+    assert declared["summary"]["status"] == "clean"
+    assert declared["summary"]["allowed_dead_references"] == 2
+
+    acts = check(text.replace(
+        "潮札を革袋に入れ、",
+        "ヨハンが戸口から入ってきてアリアの肩を叩いた。潮札を革袋に入れ、"))
+    assert acts["summary"]["status"] == "unresolved"
+    hit = [f for f in acts["findings"] if f["check"] == "character_boundary"]
+    assert hit and hit[0]["severity"] == "high"
+    assert "同じ文にない" in hit[0]["message_ja"]
+
+    speaks = check(text.replace(
+        "潮札を革袋に入れ、", "「まだ灯りは消すな」とヨハンが言った。潮札を革袋に入れ、"))
+    assert speaks["summary"]["status"] == "unresolved"
+
+    # Legitimate recollection still passes: the cue is in the naming sentence.
+    recalled = check(text.replace(
+        "兄の名を父が口にしなかった理由を、アリアは聞いたことがなかった。",
+        "あの嵐の夜、ヨハンは港町を守ろうとしていた。"))
+    assert recalled["summary"]["status"] == "clean"

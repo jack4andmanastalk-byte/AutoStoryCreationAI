@@ -221,7 +221,8 @@ def run_resume(bundle: Path) -> int:
 
     def command(out: Path, *, resume: bool = False, seed: str = "0",
                 scripted: bool = True, run_id: str = "probe",
-                provider_script: Path | None = None) -> list[str]:
+                provider_script: Path | None = None,
+                allow_config_change: bool = False) -> list[str]:
         args = [python, str(REPO_ROOT / "scripts" / "run_twostage.py"),
                 "--task", "t01",
                 "--canon", str(bundle / "inputs" / "canon"),
@@ -234,6 +235,8 @@ def run_resume(bundle: Path) -> int:
         else:
             args += ["--provider", "command",
                      "--command", f"{python} {provider_script}"]
+        if allow_config_change:
+            args.append("--allow-config-change")
         if resume:
             args.append("--resume")
         return args
@@ -244,7 +247,7 @@ def run_resume(bundle: Path) -> int:
 
     try:
         print("\n## 再開・記録保全 — run_twostage.py --resume")
-        # R1: the documented resume_command omits --script/--seed/--temperature.
+        # R1: the documented resume_command must run as printed.
         call(scratch)
         state = json.loads((scratch / "probe" / "state.json").read_text(encoding="utf-8"))
         print("\nR1: state.json の resume_command をそのまま実行する")
@@ -252,8 +255,11 @@ def run_resume(bundle: Path) -> int:
         printed = state["resume_command"].replace("python3", python).split()
         done = subprocess.run(printed, capture_output=True, text=True)
         print(f"    rc={done.returncode} stderr={done.stderr.strip()[:160]}")
+        resumed_state = json.loads(
+            (scratch / "probe" / "state.json").read_text(encoding="utf-8"))
+        print(f"    resume_count={resumed_state['resume_count']}")
 
-        # R2: a recorded response can be edited without an integrity failure.
+        # R2: an edited recorded response must be refused.
         path = scratch / "probe" / "responses.jsonl"
         entries = [json.loads(line) for line in
                    path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -262,20 +268,22 @@ def run_resume(bundle: Path) -> int:
                         encoding="utf-8")
         done = call(scratch, resume=True)
         print("\nR2: 記録済み応答の本文を書き換えてから --resume")
-        print(f"    rc={done.returncode} stderr={done.stderr.strip()[:160]}"
-              "（response_sha256 は照合されない）")
+        print(f"    rc={done.returncode} stderr={done.stderr.strip()[:200]}")
+        print("    期待: rc=2（response_sha256 の不一致を拒否する）")
 
         # R3: a different --seed is accepted and silently replaces the record.
         done = call(scratch, resume=True, seed="7")
-        entries = [json.loads(line) for line in
-                   path.read_text(encoding="utf-8").splitlines() if line.strip()]
-        usages = [entry.get("response", {}).get("usage") for entry in entries]
         seed = json.loads((scratch / "probe" / "state.json").read_text(
             encoding="utf-8"))["config"]["seed"]
+        allowed = call(scratch, resume=True, seed="7", allow_config_change=True)
+        state = json.loads((scratch / "probe" / "state.json").read_text(
+            encoding="utf-8"))
         print("\nR3: --resume --seed 7（保存済み config の seed は 0）")
-        print(f"    rc={done.returncode} | state.config.seed={seed} | "
-              f"bundle_resume された応答={sum(1 for u in usages if u and 'bundle_resume' in u)}"
-              f"/{len(usages)}")
+        print(f"    素の --resume: rc={done.returncode} "
+              f"stderr={done.stderr.strip().splitlines()[:1]}")
+        print(f"    --allow-config-change: rc={allowed.returncode} | "
+              f"state.config.seed={state['config']['seed']} | "
+              f"config_changes={sorted(state.get('config_changes', {}))}")
 
         # R4: a provider error leaves no state.json, so --resume refuses.
         failing = scratch.parent / f"_probe-fail-{os.getpid()}.py"
@@ -293,10 +301,17 @@ def run_resume(bundle: Path) -> int:
         call(scratch, scripted=False, provider_script=failing)
         run_dir = scratch / "probe"
         print("\nR4: Stage B の途中で provider が失敗した run")
-        print(f"    state.json={ (run_dir / 'state.json').exists() } "
-              f"responses.jsonl={len((run_dir / 'responses.jsonl').read_text(encoding='utf-8').strip().splitlines())} 行")
-        done = call(scratch, resume=True)
-        print(f"    --resume rc={done.returncode} stderr={done.stderr.strip()[:160]}")
+        state = json.loads((run_dir / "state.json").read_text(encoding="utf-8"))
+        print(f"    state.json=True status={state['status']} "
+              f"error={str(state.get('error'))[:60]!r}")
+        print(f"    responses.jsonl="
+              f"{len((run_dir / 'responses.jsonl').read_text(encoding='utf-8').strip().splitlines())} 行")
+        done = call(scratch, resume=True, scripted=False, provider_script=failing)
+        kept = len((run_dir / "responses.jsonl").read_text(
+            encoding="utf-8").strip().splitlines())
+        print(f"    --resume rc={done.returncode}（同じ失敗を再現）| "
+              f"記録は保持: {kept} 行 | resume_count="
+              f"{json.loads((run_dir / 'state.json').read_text(encoding='utf-8'))['resume_count']}")
         failing.unlink(missing_ok=True)
         return 0
     finally:
