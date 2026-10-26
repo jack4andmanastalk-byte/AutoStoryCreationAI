@@ -1,0 +1,12 @@
+{
+  "note": "check_plot / check_scenes を現行 canon に対して再実行した結果。",
+  "plot": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "scene": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "status": "clean"
+}
