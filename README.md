@@ -341,6 +341,10 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   既知の誤りを 5 種注入すると、日数・死者の現在時行動・保留事実の語彙は両腕で発火し、
   ログにない場所・移動と宣言のない数量は**どちらでも検出できません**（`scripts/probe_detection_power.py`）。
   ログを見ずに書いた本文は、ログ契約を当てると既に 3 件の `medium` 所見を持ちます。
+* その穴への候補検査が [`experiments/2026-10-surface-checks-t01/`](experiments/2026-10-surface-checks-t01/note.md)。
+  地名は「場所＋へ／に＋移動動詞」に絞れば clean 6 章で偽陽性 0・注入 1 件を検出しました（`advisory`、
+  契約には未接続）。数量は**検査にできません** — 数詞は単独で指示対象を持たず、clean な本文でも
+  1 章 2〜4 個が「ログに無い表記」として並ぶため、報告一覧に留めています（`src/asc/gamelog/surface.py`）。
 * `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
   「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は

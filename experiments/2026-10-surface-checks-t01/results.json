@@ -1,0 +1,123 @@
+{
+  "schema": "surface-checks-v1",
+  "scope": "candidate checks measured outside the contract. Places are reported as findings; numbers are a report, not a verdict.",
+  "game_log": "experiments/2026-10-stageb-v11-t01/inputs/game_log.json",
+  "canon": "experiments/2026-10-stageb-v11-t01/inputs/canon",
+  "arms": {
+    "log-backed": {
+      "source": "experiments/2026-10-stageb-v11-t01/relay/responses",
+      "chapters": {
+        "ch01": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 11,
+            "unmatched": [
+              "一度",
+              "一晩",
+              "一本",
+              "二度"
+            ]
+          }
+        },
+        "ch02": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 10,
+            "unmatched": [
+              "一本",
+              "四つ"
+            ]
+          }
+        },
+        "ch03": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 7,
+            "unmatched": [
+              "一本",
+              "二人"
+            ]
+          }
+        }
+      }
+    },
+    "direct": {
+      "source": "experiments/2026-10-l1-pair-t01/relay/responses",
+      "chapters": {
+        "ch01": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 8,
+            "unmatched": [
+              "一本",
+              "一枚"
+            ]
+          }
+        },
+        "ch02": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 10,
+            "unmatched": [
+              "一本",
+              "一枚"
+            ]
+          }
+        },
+        "ch03": {
+          "place_findings": [],
+          "numbers": {
+            "tokens": 6,
+            "unmatched": [
+              "一本"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "injections": {
+    "offlog_place": {
+      "log-backed": {
+        "chapter": "ch01",
+        "applied": true,
+        "new_places": [
+          "対岸の島"
+        ],
+        "new_numbers": []
+      },
+      "direct": {
+        "chapter": "ch01",
+        "applied": true,
+        "new_places": [
+          "対岸の島"
+        ],
+        "new_numbers": []
+      }
+    },
+    "unquantified_number": {
+      "log-backed": {
+        "chapter": "ch02",
+        "applied": true,
+        "new_places": [],
+        "new_numbers": [
+          "半日"
+        ]
+      },
+      "direct": {
+        "chapter": "ch02",
+        "applied": true,
+        "new_places": [],
+        "new_numbers": [
+          "半日"
+        ]
+      }
+    }
+  },
+  "limits": [
+    "The place check is a pattern match on a travel verb plus a place-shaped word; it fires only on assertions of travel.",
+    "Numbers are not checked. A numeral has no reference of its own, so the report lists unmatched tokens for a human to read.",
+    "One text per arm: 0 findings on clean text is weak precision evidence, not a false-positive rate.",
+    "Nothing here is wired into check_rewrite; a decision to adopt would need a larger sample of prose."
+  ]
+}
