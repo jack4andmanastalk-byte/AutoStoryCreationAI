@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate gamelog-check two-stage skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate gamelog-check two-stage probe-gamelog skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -212,6 +212,9 @@ two-stage: ## run Stage A -> Stage B with the fixed scripted bundle
 		--out experiments/2026-10-trpg-slice-t01/bundle \
 		--results experiments/2026-10-trpg-slice-t01/results.json \
 		--report-only --quiet
+
+probe-gamelog: ## re-run the read-only contract probes on the t01 bundle (see the audit doc)
+	$(RUN) scripts/probe_gamelog_contracts.py
 
 protocol-check: ## verify the frozen evaluation protocol and its task set
 	$(RUN) -m pytest tests/test_protocol.py -q

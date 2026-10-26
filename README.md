@@ -334,6 +334,10 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * **これは配線確認であり、実モデルの応答でも効果の観測でもありません。** L1 は構造・衛生の検査で
   あり、質・面白さ・選好の証拠にはなりません。L2/L3 は `frozen_not_measured` のままです。
   S1 直接生成との L1 ペア比較は Phase 3 の未実施課題です。
+* 契約文と実装の差（現在地の連続性、死者言及の章スコープ、マーカーと本文事実の乖離、`--resume` の記録保全）は
+  [`research/curation/two_stage_stage1_audit_2026-10-26.md`](research/curation/two_stage_stage1_audit_2026-10-26.md) に
+  再現例つきでまとめています。**検査が `clean` を返すことは意味的整合性の保証ではありません。**
+  `make probe-gamelog` で同じ変異を再実行できます。
 
 ## 5.  品質保証
 
