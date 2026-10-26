@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate skills-check protocol-check ci clean distclean
+.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate gamelog-check two-stage skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -194,6 +194,24 @@ ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
 		--baseline harness/cases/demo-baseline/text --canon harness/cases/demo/canon \
 		--rubric harness/rubrics/story-quality-v0.yaml --patterns harness/patterns.yaml \
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
+
+gamelog-check: ## check the scripted Stage A game log against canon/plot/scenes
+	$(RUN) scripts/check_gamelog.py \
+		--game-log experiments/2026-10-trpg-slice-t01/inputs/game_log.json \
+		--canon experiments/2026-10-trpg-slice-t01/inputs/canon \
+		--design-dir experiments/2026-10-trpg-slice-t01/inputs/design \
+		--require-design --fail-on high --quiet \
+		--out build/twostage/game_log.json --markdown build/twostage/game_log.md
+
+two-stage: ## run Stage A -> Stage B with the fixed scripted bundle
+	$(RUN) scripts/run_twostage.py --task t01 \
+		--canon experiments/2026-10-trpg-slice-t01/inputs/canon \
+		--design-dir experiments/2026-10-trpg-slice-t01/inputs/design \
+		--provider scripted \
+		--script experiments/2026-10-trpg-slice-t01/scripted.json \
+		--out experiments/2026-10-trpg-slice-t01/bundle \
+		--results experiments/2026-10-trpg-slice-t01/results.json \
+		--report-only --quiet
 
 protocol-check: ## verify the frozen evaluation protocol and its task set
 	$(RUN) -m pytest tests/test_protocol.py -q

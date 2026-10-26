@@ -311,6 +311,30 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
   **文字数・会話率・段落長は良し悪しとして扱わない**、**監査カバレッジが違う CED は比較しない**
 * 仕様変更の記録: [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md)
 
+### 4.4 二段階方式の最初の縦割り（Stage A → Stage B）
+
+**構造化ゲームログを先に確定し、検証済みのログだけを小説化する**経路です。
+[`docs/two_stage_slice.md`](docs/two_stage_slice.md) がスキーマ・検査器・限界の仕様です。
+
+```bash
+make gamelog-check   # Stage A の game_log.json を canon/plot/scene に対して検査
+make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity 監査までを配線確認
+```
+
+* Stage A は `game_log.json`（章・場面・`situation → actions → outcome`・`state_delta`）を生成し、
+  `src/asc/gamelog/check.py` が **8 検査**を機械的にかけます（生死・現在地・`knows`・
+  `travel_days`・伏線順序・`plot.json` の幕/転換点・`scene.json` の目的/対立/変化/開示・マーカー列）。
+  死者は `record_reference` / `memory_mention` の `subject` + `medium` としてのみ現れます。
+* 確定マーカー（`{{time:}}` / `{{location:}}` / `{{learn:}}` / `{{use:}}` / `{{foreshadow:}}`）は
+  **`state_delta` から導出**され、Stage B 本文はその列を順序まで保持しなければなりません。
+  Stage A が `clean` にならない場合、Stage B は実行しません（fail-closed）。
+* 固定台本バンドルは [`experiments/2026-10-trpg-slice-t01/`](experiments/2026-10-trpg-slice-t01/note.md)。
+  `--out` は `experiments/<id>/` 配下のみ（`build/` / `runs/` は拒否）。回答待ちの Arena リレーは
+  同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
+* **これは配線確認であり、実モデルの応答でも効果の観測でもありません。** L1 は構造・衛生の検査で
+  あり、質・面白さ・選好の証拠にはなりません。L2/L3 は `frozen_not_measured` のままです。
+  S1 直接生成との L1 ペア比較は Phase 3 の未実施課題です。
+
 ## 5.  品質保証
 
 * `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、PDF 描画、
@@ -318,6 +342,9 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 * `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
 * `make skills-check` — `SKILL.md` の frontmatter・リンク・500 行制限、継続性監査の期待値、
   評価ハーネスのゲート（根拠必須・回帰判定・カバレッジ警告）を検査
+* `make gamelog-check` / `make two-stage` — 二段階方式の Stage A ログ検査と Stage A→B の
+  固定台本配線。決定論的な回帰テスト（`tests/test_gamelog_*.py`、
+  `tests/test_twostage_pipeline.py`）が `make ci` で毎回走ります
 * CI: `.github/workflows/research-check.yml` が**全 push / 全 PR** でカタログ整合・全テスト・
   デモの監査と評価を実行します（ローカル 30〜60 秒）。実行枠の設計は
   [`docs/ci.md`](docs/ci.md) を参照してください
@@ -332,6 +359,9 @@ OPENAI_API_KEY=... python3 scripts/run_pipeline.py --task t01 --provider command
 決めるもので、G3/G4 の再開や人間による品質評定ではありません。
 
 * Arena の chat operator / relay による S0〜S3 の L1 パイロット（まず t01、その後 10 題×3 seed）。版を固定できないため、結果は探索的な参考値として記録する
+* 二段階方式の Phase 3: 共有 `canon` / `design`（`t01-s1-seed0`）の上で、直接生成 S1 と
+  Stage A→B の **L1 のみ**をペア比較する。自己完結バンドルと入力差（前章本文の有無）の明示が必要。
+  [`docs/two_stage_slice.md`](docs/two_stage_slice.md) §10 を参照
 * L1 の失敗類型を根拠に、スキル／プロンプト／パイプラインを一つずつ変更し、同じ条件で再測定する
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
