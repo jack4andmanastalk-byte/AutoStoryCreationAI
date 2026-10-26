@@ -105,3 +105,4 @@ runner のL1出力では、必須語、タスク固有の禁止語、共通の�
   - `unresolved_foreshadow` は `no_plot` の ch02 で `{{foreshadow: fs-004 payoff}}` マーカーが出力されなかったことによる 1 件（`with_plot` は 0 件）。ただし ch02 は前章本文を介した下流段階であり、また 1 ペアの観測であるため、Plot メモの一般効果とは結論づけない。
   - `dead_character_reappears`（`no_plot` 7 件、`with_plot` 5 件）はいずれも物語開始前に死亡している `johan`（ヨハン・アール／「兄」）の名前・別名が記録引用や会話中に出現したことに対する `name_mention` ベースの `medium` 報告であり（監査器の仕様上、回想・記録・言及と区別できないため `medium` として計上）、死者本人が現在時に行為・発話した `high` 違反は両 arm とも 0 件である。
 - **未検証事項**: 複数タスク・複数シード・固定モデル版での効果の再現性（G5）、および章別 Plot メモが物語の質・面白さ・読者選好に与える影響。**L1 指標は構造・衛生チェックであり、物語の質や面白さの証拠ではない。** L2/L3 は引き続き `frozen_not_measured`。
+- **次期方針**: 本実験の結果を踏まえた今後の設計思想と「擬似 TRPG ログ → 小説化リライト」二段階方式の方針は [`two_stage_trpg_rewrite_direction_2026-10-26.md`](two_stage_trpg_rewrite_direction_2026-10-26.md) に整理した。
