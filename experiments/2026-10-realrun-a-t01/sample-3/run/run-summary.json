@@ -65,7 +65,29 @@
       }
     ]
   },
-  "resume_count": 0,
+  "replay": {
+    "counts": {
+      "missing": 2,
+      "replayed": 1
+    },
+    "duplicate_record_keys": [],
+    "events": [
+      {
+        "outcome": "replayed",
+        "request": "stage_b:ch01/attempt=1/chapter=ch01/seed=1",
+        "response_sha256": "635145e2239c09f40f62047897fe8ce7825d0b1af8bb52190a3070ff71896569"
+      },
+      {
+        "outcome": "missing",
+        "request": "stage_b:ch02/attempt=1/chapter=ch02/seed=2"
+      },
+      {
+        "outcome": "missing",
+        "request": "stage_b:ch02:repair/attempt=2/chapter=ch02/seed=2"
+      }
+    ]
+  },
+  "resume_count": 1,
   "run_id": "run",
   "stage": "b",
   "stage_a": {
