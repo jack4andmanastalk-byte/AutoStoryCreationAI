@@ -60,10 +60,21 @@ def test_the_bundle_holds_all_three_chapters():
         assert row["prompt_hash"] in combined
 
 
-def test_no_answers_are_committed_yet():
-    # The bundle must not carry invented model text: no run, no responses.
-    assert not list(PROMPTS.parent.glob("sample-*"))
-    assert not list((PROMPTS.parent / "relay").glob("*/responses/*.json"))
-    results = json.loads((BUNDLE / "results.json").read_text(encoding="utf-8"))
-    assert results["samples"] == {}
-    assert results["verdicts"]["R1_place_branch"]["verdict"] == "not_run"
+def test_every_committed_answer_declares_where_it_came_from():
+    """No invented model text: each answer carries provenance, and the count is
+    the one the registration planned."""
+    responses = sorted((BUNDLE / "relay").glob("*/responses/*.json"))
+    assert responses, "the run recorded no answers"
+    for path in responses:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        assert payload["text"].strip(), path
+        assert payload["provenance"]["origin"] in {"fresh", "reused"}, path
+        assert payload["model"], path
+    registered = json.loads(
+        (BUNDLE / "preregistration.json").read_text(encoding="utf-8"))
+    samples = {path.parent.name for path in (BUNDLE / "relay").glob("*/responses")}
+    assert len(samples) == registered["samples_planned"]
+    for name in samples:
+        keys = [path.stem for path in (BUNDLE / "relay" / name / "responses").glob("*.json")]
+        for chapter in ("ch01", "ch02", "ch03"):
+            assert any(chapter in key for key in keys), (name, chapter)

@@ -127,29 +127,91 @@
       },
       "findings_by_check": {},
       "repairs_total": 1
+    },
+    "sample-3": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-3/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1316,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 1102,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 1264,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 3,
+      "chapters_total": 3,
+      "chars_total": 3682,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 1
     }
   },
   "verdicts": {
-    "samples_present": 2,
+    "samples_present": 3,
     "samples_planned": 3,
-    "enough_samples": false,
+    "enough_samples": true,
     "R1_place_branch": {
-      "verdict": "not_enough_data",
+      "verdict": "no_examples",
       "off_log": 0,
       "undeclared": 0,
       "samples_missing_observations": [],
       "adoption": "このバッチでは採否を決めない。blocking 化の判断は別途、より大きな標本で行う。"
     },
     "R2_length": {
-      "verdict": "not_enough_data",
+      "verdict": "mixed",
       "chapters_in_band": {
         "sample-1": 1,
-        "sample-2": 3
+        "sample-2": 3,
+        "sample-3": 3
       },
       "needed_per_sample": 2
     },
     "R3_recurring_failure": {
-      "verdict": "not_enough_data",
+      "verdict": "no_recurring_failure",
       "recurring_checks": [],
       "by_check": {}
     }

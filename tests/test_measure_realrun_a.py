@@ -46,7 +46,17 @@ def test_the_registration_is_fixed_and_hashed(tmp_path):
 
 
 def test_an_empty_batch_says_not_run(tmp_path):
-    result = run(tmp_path)
+    """A bundle with the registration but no samples must never invent a verdict."""
+    empty = tmp_path / "empty-bundle"
+    empty.mkdir()
+    (empty / "preregistration.json").write_text(
+        (BUNDLE / "preregistration.json").read_text(encoding="utf-8"),
+        encoding="utf-8")
+    out = tmp_path / "empty.json"
+    assert measure_realrun_a.main([
+        "--bundle", str(empty), "--canon", str(SLICE_CANON),
+        "--out", str(out)]) == 0
+    result = json.loads(out.read_text(encoding="utf-8"))
     assert result["schema"] == "realrun-a-v1"
     assert result["samples"] == {}
     assert result["verdicts"]["R1_place_branch"]["verdict"] == "not_run"
