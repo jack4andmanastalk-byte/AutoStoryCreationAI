@@ -2,14 +2,18 @@
 """Run a paired L1-only ablation of chapter-local Plot memos.
 
 A canon and clean design directory must already exist and are held fixed for
-both arms. The script drafts once with Plot memos omitted and once with them
-included, then runs only the deterministic L1 evaluation. It does not assess
-creative quality and never invokes L2/L3.
+both arms. At the first invocation, immutable copies are archived under the
+experiment output directory; by default, run logs and Arena relay requests and
+responses also live there. This makes a pending experiment resumable after an
+ignored ``runs/`` cache is cleared. The script drafts once with Plot memos
+omitted and once with them included, then runs only the deterministic L1
+evaluation. It does not assess creative quality and never invokes L2/L3.
 
 Example (active repository scope: Arena relay only):
     python3 scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
-        --canon runs/shared-plan/canon --design-dir runs/shared-design/design \\
-        --provider arena --out experiments/plot-ablation-t01
+        --canon experiments/plot-ablation-prep/canon \\
+        --design-dir experiments/plot-ablation-prep/design \\
+        --provider arena --out experiments/plot-ablation-t01/paired
 
 If Arena responses are pending, the script exports tagged prompts and exits 3.
 Ingest those answers with ``relay_prompts.py`` and rerun with ``--resume``.
@@ -24,6 +28,7 @@ import hashlib
 import json
 import re
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -212,17 +217,18 @@ def _pending_note(args, operator_root: Path, pending: dict[str, dict]) -> str:
             f"### {arm} arm\n\n"
             f"Pending requests: {item['pending']}. Copy `{operator_dir / 'relay' / 'PROMPTS.md'}` "
             "to the Arena chat. Save its tagged answers and ingest them with:\n\n"
-            f"`python3 scripts/relay_prompts.py ingest --dir {shlex.quote(str(operator_dir))} "
+            f"`{shlex.quote(sys.executable)} scripts/relay_prompts.py ingest "
+            f"--dir {shlex.quote(str(operator_dir))} "
             "--file answers.txt --model arena-agent-mode --model-version unversioned`\n")
     resume = " ".join([
-        "python3 scripts/run_plot_ablation.py",
+        f"{shlex.quote(sys.executable)} scripts/run_plot_ablation.py",
         f"--id {shlex.quote(args.id)} --task {shlex.quote(args.task)}",
         f"--canon {shlex.quote(str(Path(args.canon).resolve()))}",
         f"--design-dir {shlex.quote(str(Path(args.design_dir).resolve()))}",
         f"--provider arena --seed {args.seed} --temperature {args.temperature}",
         f"--out {shlex.quote(str(Path(args.out).resolve()))}",
         f"--runs-root {shlex.quote(str(Path(args.runs_root).resolve()))}",
-        f"--operator-root {shlex.quote(str(operator_root))} --resume",
+        f"--operator-root {shlex.quote(str(Path(args.operator_root).resolve()))} --resume",
     ])
     return (
         f"# Plot memo ablation: {args.id} — Arena responses pending\n\n"
@@ -254,17 +260,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--id", required=True, help="safe experiment id used in run ids")
     parser.add_argument("--task", default="t01")
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
-    parser.add_argument("--canon", required=True, help="shared, validated canon directory")
-    parser.add_argument("--design-dir", required=True,
-                        help="shared design directory with clean plot, scene and voice")
+    parser.add_argument("--canon", help="shared canon directory (required for a new run)")
+    parser.add_argument("--design-dir",
+                        help="shared design directory with clean plot, scene and voice "
+                             "(required for a new run)")
     parser.add_argument("--provider", required=True, choices=["arena", "scripted"])
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT),
                         help="fixture path for scripted wiring tests only")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--out", required=True, help="new experiment output directory")
-    parser.add_argument("--runs-root", default=str(REPO_ROOT / "runs" / "plot-ablation"))
-    parser.add_argument("--operator-root", default=str(REPO_ROOT / "runs" / "operator" / "plot-ablation"))
+    parser.add_argument("--runs-root", default=None,
+                        help="attempt-output root (default: <out>/attempts; persistent)")
+    parser.add_argument("--operator-root", default=None,
+                        help="Arena relay root (default: <out>/relay; persistent)")
     parser.add_argument("--resume", action="store_true",
                         help="resume a pending Arena relay using its existing operator responses")
     args = parser.parse_args(argv)
@@ -287,16 +296,86 @@ def main(argv: list[str] | None = None) -> int:
         print("error: evaluation scope no longer permits the Arena-only runner", file=sys.stderr)
         return 2
 
-    canon_dir = Path(args.canon).resolve()
-    design_dir = Path(args.design_dir).resolve()
     out_dir = Path(args.out).resolve()
-    runs_root = Path(args.runs_root).resolve()
-    operator_root = Path(args.operator_root).resolve() / args.id
-    run_root = runs_root / args.id
+    state_path = out_dir / "state.json"
+    archived_inputs = out_dir / "inputs"
+    archived_canon = archived_inputs / "canon"
+    archived_design = archived_inputs / "design"
+
+    if args.resume:
+        if not state_path.is_file():
+            print("error: --resume requires a saved pending experiment state", file=sys.stderr)
+            return 2
+        # New runs are self-contained. For a legacy run without an archived
+        # input bundle, require the original source paths and retain its old
+        # behavior rather than silently rebuilding or substituting any input.
+        if archived_canon.is_dir() and archived_design.is_dir():
+            for supplied, archived, label in (
+                    (args.canon, archived_canon, "canon"),
+                    (args.design_dir, archived_design, "design")):
+                if supplied:
+                    supplied_path = Path(supplied).resolve()
+                    if supplied_path.is_dir() and _sha256_tree(supplied_path) != _sha256_tree(archived):
+                        print(f"error: supplied {label} differs from the archived experiment input",
+                              file=sys.stderr)
+                        return 2
+            canon_dir, design_dir = archived_canon, archived_design
+        else:
+            if not args.canon or not args.design_dir:
+                print("error: this legacy run has no archived inputs; restore its original "
+                      "--canon and --design-dir directories", file=sys.stderr)
+                return 2
+            canon_dir = Path(args.canon).resolve()
+            design_dir = Path(args.design_dir).resolve()
+    else:
+        if not args.canon or not args.design_dir:
+            print("error: --canon and --design-dir are required for a new experiment",
+                  file=sys.stderr)
+            return 2
+        canon_source = Path(args.canon).resolve()
+        design_source = Path(args.design_dir).resolve()
+        for directory, label in ((canon_source, "canon"), (design_source, "design")):
+            if not directory.is_dir():
+                print(f"error: {label} directory does not exist: {directory}", file=sys.stderr)
+                return 2
+        if out_dir.exists():
+            print("error: output exists; choose a new experiment output directory", file=sys.stderr)
+            return 2
+        prospective_runs_root = (Path(args.runs_root).resolve() if args.runs_root
+                                 else out_dir / "attempts")
+        prospective_operator_base = (Path(args.operator_root).resolve()
+                                     if args.operator_root else out_dir / "relay")
+        if (prospective_runs_root / args.id).exists():
+            print(f"error: runs directory already exists: {prospective_runs_root / args.id}",
+                  file=sys.stderr)
+            return 2
+        if args.provider == "arena" and (prospective_operator_base / args.id).exists():
+            print("error: Arena operator directory already exists: "
+                  f"{prospective_operator_base / args.id}", file=sys.stderr)
+            return 2
+        out_dir.mkdir(parents=True)
+        archived_inputs.mkdir(parents=True)
+        shutil.copytree(canon_source, archived_canon)
+        shutil.copytree(design_source, archived_design)
+        canon_dir, design_dir = archived_canon, archived_design
+
     for directory, label in ((canon_dir, "canon"), (design_dir, "design")):
         if not directory.is_dir():
             print(f"error: {label} directory does not exist: {directory}", file=sys.stderr)
             return 2
+
+    # Defaults place every artifact needed for a resume inside the experiment
+    # bundle. Explicit roots remain available for tests and advanced workflows.
+    runs_root = (Path(args.runs_root).resolve() if args.runs_root
+                 else out_dir / "attempts")
+    operator_base = (Path(args.operator_root).resolve() if args.operator_root
+                     else out_dir / "relay")
+    operator_root = operator_base / args.id
+    run_root = runs_root / args.id
+    args.canon = str(canon_dir)
+    args.design_dir = str(design_dir)
+    args.runs_root = str(runs_root)
+    args.operator_root = str(operator_base)
 
     config = {
         "id": args.id, "task": args.task, "provider": args.provider,
@@ -306,28 +385,20 @@ def main(argv: list[str] | None = None) -> int:
         "design_files_sha256": _sha256_tree(design_dir),
         "runs_root": str(runs_root), "operator_root": str(operator_root),
     }
-    state_path = out_dir / "state.json"
-    if out_dir.exists():
-        if not args.resume or not state_path.is_file():
-            print("error: output exists; pass --resume only for a saved pending Arena run",
-                  file=sys.stderr)
-            return 2
+    if args.resume:
         try:
             state = json.loads(state_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             print(f"error: cannot read resume state: {exc}", file=sys.stderr)
             return 2
         if state.get("config") != config:
-            print("error: resume settings or shared canon/design inputs changed", file=sys.stderr)
+            print("error: resume settings or archived canon/design inputs changed",
+                  file=sys.stderr)
             return 2
         if state.get("completed") or (out_dir / "results.json").exists():
             print("error: this ablation is already complete", file=sys.stderr)
             return 2
     else:
-        if args.resume:
-            print("error: --resume requires an existing pending experiment directory",
-                  file=sys.stderr)
-            return 2
         if run_root.exists():
             print(f"error: runs directory already exists: {run_root}", file=sys.stderr)
             return 2
@@ -335,7 +406,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error: Arena operator directory already exists: {operator_root}",
                   file=sys.stderr)
             return 2
-        out_dir.mkdir(parents=True)
         state = {"config": config, "attempts": 0, "attempt_history": [], "completed": False}
         _save_json(state_path, state)
 

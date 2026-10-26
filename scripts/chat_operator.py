@@ -25,9 +25,12 @@ Request keys retain their original format unless ``context.revision_id`` is
 present. Continuation requests insert that revision ID after the task ID, so a
 response from an earlier work revision cannot be mistaken for the new prompt.
 
-The ``--dir`` must not live under ``build/``: ``build/`` is scratch and is not
-kept across sessions, and losing ``responses/`` means paying for the same text
-twice. ``runs/operator/<name>`` is git-ignored and survives.
+The ``--dir`` must not live under ``build/``: ``build/`` is scratch. A path under
+``runs/`` is git-ignored and is not guaranteed to survive a workspace reset. For
+work that must resume across Arena/GitHub sessions, put the operator directory
+inside a versionable experiment bundle (for example,
+``experiments/<experiment-id>/relay``) and commit it deliberately, or keep a
+separate backup. Do not rely on an ignored cache as the sole copy of responses.
 
     # one call, as the pipeline makes it
     python3 scripts/chat_operator.py --dir runs/operator/pilot < request.json

@@ -10,9 +10,12 @@
     python3 scripts/run_pipeline.py --task t01 --system s0 --provider scripted \\
         --script benchmarks/protocol-v1/fixtures/draft-baseline-demo.json --out runs
 
-Every run writes ``runs/<run_id>/`` with the manifest (model, prompt hashes, git
-commit, protocol version), the prompt/response pairs, and the artifacts. ``runs/``
-is git-ignored; what gets committed is an experiment note that points at it.
+Every run writes a directory with the manifest (model, prompt hashes, git
+commit, protocol version), prompt/response pairs, and artifacts. The examples
+use ``runs/``, which is git-ignored scratch and may be lost on workspace reset.
+For a result that must be resumable or auditable from GitHub, choose a durable
+path under ``experiments/<experiment-id>/`` and commit the relevant artifacts;
+an experiment note pointing to an ignored cache is not sufficient provenance.
 
 Exit codes: 0 ok, 1 artifacts produced but the protocol gates are not met,
 2 bad input or provider failure.

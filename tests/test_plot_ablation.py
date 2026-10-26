@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -101,6 +102,8 @@ def test_arena_relay_resumes_both_arms_with_separate_namespaces(tmp_path):
         (tmp_path / "experiment" / "progress.json").read_text(encoding="utf-8"))
     assert first_progress["status"] == "waiting_for_arena_responses"
     assert set(first_progress["relay"]) == {"no_plot", "with_plot"}
+    resume_note = (tmp_path / "experiment" / "note.md").read_text(encoding="utf-8")
+    assert f"--operator-root {tmp_path / 'operator'}" in resume_note
 
     # Each arm has a separate request namespace/tag set; the same response is
     # not accidentally attached to both prompts.
@@ -136,3 +139,47 @@ def test_arena_relay_resumes_both_arms_with_separate_namespaces(tmp_path):
     assert result["model"]["version_pinned"] is False
     assert result["evaluation_scope"]["provider_constraint"] == "arena-only"
     assert result["g5"] == "not_established_by_single_pair"
+
+
+def test_arena_run_archives_inputs_and_resumes_without_source_or_runs_cache(tmp_path):
+    shared_run = _prepare_shared_design(tmp_path)
+    out = tmp_path / "persistent-experiment"
+    first = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "persistent-pair", "--task", "t01",
+            "--canon", str(shared_run / "canon"),
+            "--design-dir", str(shared_run / "design"),
+            "--provider", "arena", "--out", str(out),
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert first.returncode == 3, first.stderr
+    assert (out / "inputs" / "canon" / "characters.json").is_file()
+    assert (out / "inputs" / "design" / "plot.json").is_file()
+    assert (out / "state.json").is_file()
+    assert (out / "attempts" / "persistent-pair" / "no_plot" /
+            "persistent-pair-no_plot-try01").is_dir()
+    relay_root = out / "relay" / "persistent-pair"
+    assert (relay_root / "no_plot" / "requests").is_dir()
+    assert (relay_root / "with_plot" / "requests").is_dir()
+
+    # Simulate an environment reset that removes ignored source/run directories.
+    # The experiment-local inputs, run outputs and relay cache must be sufficient.
+    shutil.rmtree(shared_run)
+    _ingest_all_pending(relay_root, ("no_plot", "with_plot"))
+    resumed = subprocess.run(
+        [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_plot_ablation.py"),
+            "--id", "persistent-pair", "--task", "t01",
+            "--provider", "arena", "--out", str(out), "--resume",
+        ],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    )
+    assert resumed.returncode == 3, resumed.stderr
+    progress = json.loads((out / "progress.json").read_text(encoding="utf-8"))
+    assert progress["status"] == "waiting_for_arena_responses"
+    for arm in ("no_plot", "with_plot"):
+        index = json.loads((relay_root / arm / "relay" / "index.json").read_text(
+            encoding="utf-8"))
+        assert index["pending"][0]["purpose"] == "draft:ch02"

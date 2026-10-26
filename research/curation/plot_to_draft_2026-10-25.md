@@ -54,33 +54,33 @@
 現行スコープは `configs/evaluation_scope.yaml` のとおり **Arena.ai のみ**であり、外部APIモデルを比較に使わない。まずArena relayで canon と設計書を一度だけ作り、その同じ成果物を両条件で共有する。準備用の下記 `stage all` は共有canon/designに加えて初稿も作るが、その初稿は ablation の比較結果には含めない。回答待ちで停止したら relay に回答を入れ、同じコマンドを新しいrunとして再実行する。
 
 ```sh
-PREP_OP=runs/operator/plot-ablation/shared-prep
-PREP_CMD="python3 scripts/chat_operator.py --dir $PREP_OP"
-python3 scripts/run_pipeline.py --task t01 --system s1 --provider command \\
-  --command "$PREP_CMD" --model arena-agent-mode --seed 0 \\
-  --out runs/plot-ablation/shared-prep --report-only
-# exit 2 / NEED RESPONSE のとき: export → Arenaで回答 → ingest → 同じコマンドを再実行
-python3 scripts/relay_prompts.py export --dir "$PREP_OP"
-# Arena の回答を answers.txt に保存後:
-python3 scripts/relay_prompts.py ingest --dir "$PREP_OP" --file answers.txt \\
+# `runs/` は消えてもよい scratch。共有準備も実験パッケージ内に置く。
+EXP=experiments/2026-10-plot-ablation-t01
+PREP_ROOT="$EXP/shared-prep"
+PREP_OP="$EXP/relay/shared-prep"
+PREP_CMD=".venv/bin/python scripts/chat_operator.py --dir $PREP_OP"
+.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --provider command \
+  --command "$PREP_CMD" --model arena-agent-mode --seed 0 \
+  --out "$PREP_ROOT" --report-only
+# NEED RESPONSE のとき: export → Arenaで回答 → ingest → 同じコマンドを再実行
+.venv/bin/python scripts/relay_prompts.py export --dir "$PREP_OP"
+.venv/bin/python scripts/relay_prompts.py ingest --dir "$PREP_OP" --file answers.txt \
   --model arena-agent-mode --model-version unversioned
 
-# Replace PASTE_SUCCESSFUL_RUN_ID with the run id printed after stage all completes.
-PREP_RUN=runs/plot-ablation/shared-prep/PASTE_SUCCESSFUL_RUN_ID
-SHARED_CANON="$PREP_RUN/canon"
-SHARED_DESIGN="$PREP_RUN/design"
-python3 scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
-  --canon "$SHARED_CANON" --design-dir "$SHARED_DESIGN" \\
-  --provider arena --seed 0 --temperature 0.8 \\
-  --out experiments/2026-10-plot-ablation-t01
+# Replace PASTE_SUCCESSFUL_RUN_ID with the successful run id printed by the prep run.
+PREP_RUN="$PREP_ROOT/PASTE_SUCCESSFUL_RUN_ID"
+.venv/bin/python scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \
+  --canon "$PREP_RUN/canon" --design-dir "$PREP_RUN/design" \
+  --provider arena --seed 0 --temperature 0.8 --out "$EXP/paired"
 ```
 
-A/B runner は、回答が未着なら exit 3 で止まり、arm別の `PROMPTS.md` と `note.md` を出す。各armの `relay_prompts.py ingest` で回答を取り込み、同じ runner コマンドに `--resume` を付けて再実行する。別々のrequest namespaceを用いてarm間の応答取り違えを防ぐ。完了すると `experiments/<id>/results.json` / `note.md` / `l1/` を出力し、生の応答と本文はGit管理外の `runs/` に残す。canon/designの全ファイルhash、条件、モデル来歴を記録し、**ch01のプロンプト差が幕／転換点行だけ**であることを検査する。Arenaのモデル版は固定されないため `version_pinned=false`、G5未達、L1は探索的参考値となる。後続章は前章本文の違いが伝播する媒介効果を含む。scripted fixtureは統合テスト専用で実験結果として扱わない。
+A/B runner は初回起動時に canon/design を `out/inputs/` へ固定コピーし、既定では試行runを `out/attempts/`、Arena request/response とrelayを `out/relay/` に保存する。回答が未着なら exit 3 で止まり、arm別の `PROMPTS.md` と再開コマンドを出す。回答を ingest した後、同じ設定に `--resume` を付ければ、元の `runs/` が消えていても実験パッケージ内のコピーで再開できる。`runs/` は scratch として扱い、再開に必要な唯一の保存場所にはしない。実験をGitHubで共有・復元する場合は、レビュー後に `experiments/<id>/` の必要な入力・relay・結果をブランチへcommit/pushする（自動commitはしない）。別々のrequest namespaceでarm間の応答取り違えを防ぐ。完了時は `results.json` / `note.md` / `l1/` に加え、共有入力hash、条件、モデル来歴を記録し、**ch01のプロンプト差が幕／転換点行だけ**であることを検査する。Arenaのモデル版は固定されないため `version_pinned=false`、G5未達、L1は探索的参考値となる。後続章は前章本文の違いが伝播する媒介効果を含む。
 
 runner のL1出力では、必須語、タスク固有の禁止語、共通の禁止パターン、継続性監査（違反・高 severity・未実行検査・CED）、文字数・記述統計を個別に記録する。L1レポートを総合点や品質判定にまとめず、L2/L3は実行しない。
 
-### 2026-10-25 の実施状態
+### 2026-10-25以降の実施状態
 
-本セッションでは**実モデル比較を実施していない**。Arena relayに投入した回答もまだない。`scripts/run_plot_ablation.py` の統合テストは、`plan-demo.json` とテスト用の固定回答だけを使った配線／resume検査である。これらのテスト値を実モデル応答やSKILLの有効性として扱わない。テストが確認するのは、arm分離、prompt差分、共有入力hash、L1-only出力構造までであり、実応答・L1効果は未測定である。
+Arenaの実回答を使ったペア実験はch01・ch02まで進み、両armのch02回答はrelayへ取り込み済み。ただし、旧runnerは再開に必要なcanon/design、run、relayの唯一のコピーをGit管理外の `runs/` に置いていた。workspace reset後にそれらが失われ、保存済みhashだけでは元のL1評価入力を復元できないため、**L1比較結果は未作成**。回答を捏造・再生成したり、部分的なprompt表示からcanonを推測して評価したりはしない。ch02回答はローカル作業環境に保全しているが、この修正のPRには未完了実験の生回答を含めない。
 
+この障害を受け、runnerは新規実験の開始時にcanon/designを `out/inputs/` に複製し、既定のrun・relay cacheも `out/` 以下に置くよう変更した。これにより、今後は `experiments/<id>/` をGitHubへチェックポイントすれば、`runs/` が消えても同じ実験を再開できる。旧実験の不足した入力をこの変更で遡及復元できるわけではない。
 未検証: 実モデルの出力差と L1 指標差、モデル版をまたぐ一般化、Plot メモが物語の質や面白さに与える影響。L1 はその質の証拠ではない。L2/L3 は引き続き凍結。
