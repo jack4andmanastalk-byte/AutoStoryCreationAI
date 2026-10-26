@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-10-26T04:41:39Z",
+  "generated_at": "2026-10-26T04:58:15Z",
   "pending": [
     {
-      "tag": "CCBC",
-      "key": "s1-t01-plot-with_plot-s1-draft-ch01-a1",
-      "purpose": "draft:ch01",
-      "prompt_hash": "f7b63c15aa0622d7"
+      "tag": "4DEF",
+      "key": "s1-t01-plot-with_plot-s2-draft-ch02-a1",
+      "purpose": "draft:ch02",
+      "prompt_hash": "b36c556de8013ebe"
     }
   ]
 }
