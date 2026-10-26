@@ -22,7 +22,8 @@
     "--run-id",
     "run",
     "--results",
-    "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2/results.json"
+    "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2/results.json",
+    "--resume"
   ],
   "config": {
     "canon_files_sha256": {
@@ -62,13 +63,13 @@
   },
   "game_log_source": "provided",
   "pending": {
-    "key": "two-stage-t01-s2-stage_b-ch02-a1",
-    "prompt_hash": "0c696a8d1ee15896",
-    "purpose": "stage_b:ch02",
-    "response_path": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/relay/sample-2/responses/two-stage-t01-s2-stage_b-ch02-a1.json"
+    "key": "two-stage-t01-s2-stage_b-ch02-repair-a2",
+    "prompt_hash": "db1517992cd8d6e8",
+    "purpose": "stage_b:ch02:repair",
+    "response_path": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/relay/sample-2/responses/two-stage-t01-s2-stage_b-ch02-repair-a2.json"
   },
   "resume_command": "/home/user/AutoStoryCreationAI/.venv/bin/python scripts/run_twostage.py --task t01 --canon /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/canon --design-dir /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/design --provider command --command '/home/user/AutoStoryCreationAI/.venv/bin/python scripts/chat_operator.py --dir /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/relay/sample-2' --stage b --out /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2 --run-id run --seed 0 --temperature 0.8 --max-attempts 2 --game-log /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/game_log.json --observe-surface --results /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2/results.json --resume",
-  "resume_count": 0,
+  "resume_count": 1,
   "run_id": "run",
   "schema": "trpg-slice-state-v1",
   "stage": "b",
