@@ -333,6 +333,10 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
 * 全工程の実応答試走は [`experiments/2026-10-full-t01/`](experiments/2026-10-full-t01/note.md)
   （Stage A 1 回で clean・Stage B 3 章 clean・計 3,047 字。人手照合で検出漏れ 4 件、`clean` は事実の整合を意味しません）。
+* 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は
+  [`experiments/2026-10-l1-pair-t01/`](experiments/2026-10-l1-pair-t01/note.md)。必須語 1.0・禁止 0 は
+  両方で同じで、**L1 のパターン集合は 2 条件を識別しません**。差は指標ではなく「ログという照合先が
+  あるか」にあります（`make` の対象外、`scripts/compare_l1_arms.py` で再計算できます）。
 * Stage B 単独の実応答試走は [`experiments/2026-10-stageb-solo-t01/`](experiments/2026-10-stageb-solo-t01/note.md)
   （3 章 `clean`・修復 1 回。ただし `clean` は事実の整合を意味しません）。
 * Stage A の検査は、未知キーの報告、同一場面の `learn`→`use`、現在時 `subject`、死者の `used_facts`、章 ID の重複と章順、人物の現在地の連続性まで見ます。Stage B は題材の必須語を**作品単位**でゲートします。
