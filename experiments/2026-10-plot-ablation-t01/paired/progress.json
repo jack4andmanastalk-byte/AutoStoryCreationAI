@@ -1,21 +1,30 @@
 {
   "status": "waiting_for_arena_responses",
-  "stage": "shared_prep:design",
   "experiment_id": "t01-s1-seed0",
-  "attempt": 10,
-  "shared_prep": {
-    "status": "pending",
-    "stage": "design",
-    "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/shared_prep/t01-s1-seed0-shared-design-try10",
-    "detail": "error: NEED RESPONSE key=s1-t01-s0-design-voice-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/shared_prep/responses/s1-t01-s0-design-voice-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/shared_prep/t01-s1-seed0-shared-design-try10"
+  "attempt": 11,
+  "arms": {
+    "no_plot": {
+      "status": "pending",
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try11",
+      "detail": "error: ch01: NEED RESPONSE key=s1-t01-plot-no_plot-s1-draft-ch01-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/responses/s1-t01-plot-no_plot-s1-draft-ch01-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try11"
+    },
+    "with_plot": {
+      "status": "pending",
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try11",
+      "detail": "error: ch01: NEED RESPONSE key=s1-t01-plot-with_plot-s1-draft-ch01-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/responses/s1-t01-plot-with_plot-s1-draft-ch01-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try11"
+    }
   },
-  "arms": {},
   "prompts_markdown": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/PROMPTS.md",
   "relay": {
-    "shared_prep": {
+    "no_plot": {
       "pending": 1,
-      "prompts": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/shared_prep/relay/PROMPTS.md",
-      "operator_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/shared_prep"
+      "prompts": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/relay/PROMPTS.md",
+      "operator_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot"
+    },
+    "with_plot": {
+      "pending": 1,
+      "prompts": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/relay/PROMPTS.md",
+      "operator_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot"
     }
   }
 }

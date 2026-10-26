@@ -24,11 +24,13 @@
       "attempts/plot-attempt-1.txt": "70bcde28823126639d3ff2762157aa7737ac92172598b292b6929ba15d8b397d",
       "attempts/relation-attempt-1.txt": "d41f2ef6d051628cc6cf00c23527811de774f5e6f1bcb16e23b11475ac6e0855",
       "attempts/scene-attempt-1.txt": "1c02d76d42a7c7239fe55b9b51c5520febdf80e298db5f809f9e4e967cba49ab",
+      "attempts/voice-attempt-1.txt": "0573b9aac1d131b68026f72ceb3cc5c1c6368beea215f78a54aed09b78a582e0",
       "attempts/world-attempt-1.txt": "cb04737125551926397b7ce7575c0f2fd40c1b1631ec487866c7744f8b235f21",
       "brief.json": "dc26506a7ddf561e4b7ff508059e0720619b868290e6caa76e27c9cd7e910276",
       "brief.report.json": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c",
       "character.json": "819e7378394bdc34e65bf39021d1328341db38e5e0b56e401613a4fa902bfb64",
       "character.report.json": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac",
+      "design.json": "78cb80bd1d571554d17f72c836ae06aacf706b63b6e18ac4c20c32588b218d5d",
       "history.json": "dd941ec746334338b014e9a8c6fe3285a0d149210e7c37fc70b4450ea1dada8f",
       "history.report.json": "c92de6571c5a8ae2f438ab978fc8743b6df79fdf0ffc5ce39a0d2b8a370fe43e",
       "plot.json": "aee37510cedb0d883b356299a7dd4c5324cbd2142202ab01c612d510274bfebe",
@@ -37,15 +39,17 @@
       "relation.report.json": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f",
       "scene.json": "f132ee164bffbf7697acee7ab7c61ad78770055854013a4cc67223a8120eb8b1",
       "scene.report.json": "66707f993822c9041eb4d326b86ad8d87355e51ad52b8452ca337d288b1c253e",
+      "voice.json": "7700044d90bc3ac8d66faf350c244f3d032d2e26891790d46524748250f593dd",
+      "voice.report.json": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f",
       "world.json": "ccdb703e753a8c2be84d3ff159ce4f8a72a8ef4fe2fa90938fbf9f1027ec4963",
       "world.report.json": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
     },
     "runs_root": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts",
     "operator_root": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0",
     "prepare_shared": true,
-    "shared_prep_complete": false
+    "shared_prep_complete": true
   },
-  "attempts": 10,
+  "attempts": 11,
   "attempt_history": [
     {
       "attempt": 1,
@@ -146,6 +150,21 @@
         "detail": "error: NEED RESPONSE key=s1-t01-s0-design-voice-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/shared_prep/responses/s1-t01-s0-design-voice-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/shared_prep/t01-s1-seed0-shared-design-try10"
       },
       "arms": {}
+    },
+    {
+      "attempt": 11,
+      "arms": {
+        "no_plot": {
+          "status": "pending",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try11",
+          "detail": "error: ch01: NEED RESPONSE key=s1-t01-plot-no_plot-s1-draft-ch01-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/responses/s1-t01-plot-no_plot-s1-draft-ch01-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try11"
+        },
+        "with_plot": {
+          "status": "pending",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try11",
+          "detail": "error: ch01: NEED RESPONSE key=s1-t01-plot-with_plot-s1-draft-ch01-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/responses/s1-t01-plot-with_plot-s1-draft-ch01-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try11"
+        }
+      }
     }
   ],
   "completed": false

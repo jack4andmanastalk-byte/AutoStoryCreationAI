@@ -35,3 +35,12 @@
 {"key": "s1-t01-s0-design-relation-a1", "prompt_hash": "2d5ff4901f98de7b", "served_at": "2026-10-26T04:29:51Z"}
 {"key": "s1-t01-s0-design-plot-a1", "prompt_hash": "ab75fbcbbcde36ac", "served_at": "2026-10-26T04:29:51Z"}
 {"key": "s1-t01-s0-design-scene-a1", "prompt_hash": "eda36e12842493a4", "served_at": "2026-10-26T04:29:51Z"}
+{"key": "s1-t01-s0-design-brief-a1", "prompt_hash": "c45eefc75ee4f18e", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-world-a1", "prompt_hash": "87ae97f1907e7125", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-history-a1", "prompt_hash": "f737274bd6338ab5", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-history-repair-a2", "prompt_hash": "2a4ae71df176609d", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-character-a1", "prompt_hash": "14046554c92f2d87", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-relation-a1", "prompt_hash": "2d5ff4901f98de7b", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-plot-a1", "prompt_hash": "ab75fbcbbcde36ac", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-scene-a1", "prompt_hash": "eda36e12842493a4", "served_at": "2026-10-26T04:41:38Z"}
+{"key": "s1-t01-s0-design-voice-a1", "prompt_hash": "5503f1e43ca2c9a6", "served_at": "2026-10-26T04:41:38Z"}
