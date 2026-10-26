@@ -66,10 +66,71 @@
       },
       "findings_by_check": {},
       "repairs_total": 2
+    },
+    "sample-2": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-2/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1181,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 1062,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 1188,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 3,
+      "chapters_total": 3,
+      "chars_total": 3431,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 1
     }
   },
   "verdicts": {
-    "samples_present": 1,
+    "samples_present": 2,
     "samples_planned": 3,
     "enough_samples": false,
     "R1_place_branch": {
@@ -82,7 +143,8 @@
     "R2_length": {
       "verdict": "not_enough_data",
       "chapters_in_band": {
-        "sample-1": 1
+        "sample-1": 1,
+        "sample-2": 3
       },
       "needed_per_sample": 2
     },

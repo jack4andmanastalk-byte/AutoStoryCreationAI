@@ -23,7 +23,7 @@
   },
   "gates": {
     "stage_a_clean": true,
-    "stage_b_clean": false
+    "stage_b_clean": true
   },
   "inputs": {
     "canon_files_sha256": {
@@ -44,6 +44,39 @@
     },
     "game_log_sha256": "28d2423c214644ab741243cfdb08e135d4ab0612dd18163a4d12489b97a418c6",
     "script_sha256": null
+  },
+  "l1_hygiene": {
+    "chapters": 3,
+    "chars": 3431,
+    "continuity": {
+      "by_severity": {
+        "medium": 5
+      },
+      "by_type": {
+        "dead_character_reappears": 5
+      },
+      "ced_per_10k_chars": 13.045,
+      "checks_skipped": 0,
+      "note": "name_mention による dead_character_reappears (medium) は既存監査器の既知の限界。Stage B では宣言済みのrecord_reference / memory_mention として許容している。",
+      "violations": 5
+    },
+    "length_gate": {
+      "gate_note": "既定の 200 字は空文の検出用。目標長は合否に使っておらず、下回っても clean になりうる（P1-8）。",
+      "min_chars": 200,
+      "target_ja": "1 章 1,000〜1,400 字（プロンプトの目安）"
+    },
+    "must_include": {
+      "hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "rate": 1.0
+    },
+    "task_avoid_hits": {
+      "古代の予言": 0,
+      "選ばれし者": 0
+    }
   },
   "limits": [
     "L1 は構造・衛生の検査であり、物語の質・面白さ・読者選好の証拠ではない。",
@@ -67,8 +100,8 @@
   },
   "replay": {
     "counts": {
-      "missing": 2,
-      "replayed": 2
+      "missing": 1,
+      "replayed": 3
     },
     "duplicate_record_keys": [],
     "events": [
@@ -83,8 +116,9 @@
         "response_sha256": "8b1646847611a05a5213e33de92377b716c358dfdd78d89717c6acc57b55996c"
       },
       {
-        "outcome": "missing",
-        "request": "stage_b:ch02:repair/attempt=2/chapter=ch02/seed=2"
+        "outcome": "replayed",
+        "request": "stage_b:ch02:repair/attempt=2/chapter=ch02/seed=2",
+        "response_sha256": "d4ef287702853e8119e8b7763126486ffa8413f797a6762df426c59243a206ea"
       },
       {
         "outcome": "missing",
@@ -92,7 +126,7 @@
       }
     ]
   },
-  "resume_count": 2,
+  "resume_count": 3,
   "run_id": "run",
   "stage": "b",
   "stage_a": {
@@ -240,12 +274,32 @@
         "id": "ch02",
         "repairs": 1,
         "status": "clean"
+      },
+      {
+        "allowed_dead_references": [
+          {
+            "action": "a2",
+            "chapter": "ch03",
+            "event_type": "record_reference",
+            "medium": "潮札",
+            "scene": "g03",
+            "subject": "johan"
+          }
+        ],
+        "attempts": 1,
+        "chars": 1188,
+        "expected_markers": 6,
+        "findings": 0,
+        "found_markers": 6,
+        "id": "ch03",
+        "repairs": 0,
+        "status": "clean"
       }
     ],
     "missing_must_include": [],
-    "status": "pending"
+    "status": "clean"
   },
-  "status": "pending",
+  "status": "clean",
   "system": "two-stage",
   "task": "t01",
   "timeline": {
