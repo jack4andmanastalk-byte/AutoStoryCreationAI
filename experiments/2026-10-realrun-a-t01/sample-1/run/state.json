@@ -62,16 +62,11 @@
     "temperature": 0.8
   },
   "game_log_source": "provided",
-  "pending": {
-    "key": "two-stage-t01-s3-stage_b-ch03-repair-a2",
-    "prompt_hash": "0a662fdb00df6ae5",
-    "purpose": "stage_b:ch03:repair",
-    "response_path": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/relay/sample-1/responses/two-stage-t01-s3-stage_b-ch03-repair-a2.json"
-  },
+  "pending": null,
   "resume_command": "/home/user/AutoStoryCreationAI/.venv/bin/python scripts/run_twostage.py --task t01 --canon /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/canon --design-dir /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/design --provider command --command '/home/user/AutoStoryCreationAI/.venv/bin/python scripts/chat_operator.py --dir /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/relay/sample-1' --stage b --out /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-1 --run-id run --seed 0 --temperature 0.8 --max-attempts 2 --game-log /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/inputs/game_log.json --observe-surface --results /home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-1/results.json --resume",
-  "resume_count": 3,
+  "resume_count": 4,
   "run_id": "run",
   "schema": "trpg-slice-state-v1",
   "stage": "b",
-  "status": "pending"
+  "status": "clean"
 }

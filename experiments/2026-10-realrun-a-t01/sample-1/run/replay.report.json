@@ -1,7 +1,7 @@
 {
   "counts": {
-    "missing": 2,
-    "replayed": 3
+    "missing": 1,
+    "replayed": 4
   },
   "duplicate_record_keys": [],
   "events": [
@@ -21,8 +21,9 @@
       "response_sha256": "5994ac366d71ff873ece003cdb14e915654930ea63a5ed43a47e33d5ae6f0bb1"
     },
     {
-      "outcome": "missing",
-      "request": "stage_b:ch03/attempt=1/chapter=ch03/seed=3"
+      "outcome": "replayed",
+      "request": "stage_b:ch03/attempt=1/chapter=ch03/seed=3",
+      "response_sha256": "798bfe62aa6d80a61a26db7e62c2637ee3b0ae823b979c56ea9b3ae2d2fc9530"
     },
     {
       "outcome": "missing",

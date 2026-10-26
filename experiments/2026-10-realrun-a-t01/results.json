@@ -5,13 +5,75 @@
     "path": "experiments/2026-10-realrun-a-t01/preregistration.json",
     "sha256": "7ada90998a359266052d8df633425788ba8754d06dd09833f40b6065405da63b"
   },
-  "samples": {},
+  "samples": {
+    "sample-1": {
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-a-t01/sample-1/run",
+      "status": "clean",
+      "chapters": {
+        "ch01": {
+          "chars": 1096,
+          "in_length_band": true,
+          "status": "clean",
+          "attempts": 1,
+          "repairs": 0,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch02": {
+          "chars": 842,
+          "in_length_band": false,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 7,
+          "found_markers": 7,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        },
+        "ch03": {
+          "chars": 873,
+          "in_length_band": false,
+          "status": "clean",
+          "attempts": 2,
+          "repairs": 1,
+          "blocking_findings": 0,
+          "warning_findings": 0,
+          "findings": [],
+          "expected_markers": 6,
+          "found_markers": 6,
+          "markers_missing": 0,
+          "observations_present": true,
+          "observations": []
+        }
+      },
+      "chapters_in_length_band": 1,
+      "chapters_total": 3,
+      "chars_total": 2811,
+      "observations_present": true,
+      "observation_branches": {
+        "off_log": 0,
+        "undeclared": 0
+      },
+      "findings_by_check": {},
+      "repairs_total": 2
+    }
+  },
   "verdicts": {
-    "samples_present": 0,
+    "samples_present": 1,
     "samples_planned": 3,
     "enough_samples": false,
     "R1_place_branch": {
-      "verdict": "not_run",
+      "verdict": "not_enough_data",
       "off_log": 0,
       "undeclared": 0,
       "samples_missing_observations": [],
@@ -19,7 +81,9 @@
     },
     "R2_length": {
       "verdict": "not_enough_data",
-      "chapters_in_band": {},
+      "chapters_in_band": {
+        "sample-1": 1
+      },
       "needed_per_sample": 2
     },
     "R3_recurring_failure": {
