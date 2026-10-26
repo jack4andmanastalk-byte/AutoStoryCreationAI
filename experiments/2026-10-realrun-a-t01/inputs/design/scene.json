@@ -1,0 +1,67 @@
+{
+  "scenes": [
+    {
+      "id": "s01",
+      "chapter": "ch01",
+      "purpose": "帳面の欠落と潮札を置き、王都へ行く動機を作る。",
+      "conflict": "父の言いつけを守りたい気持ちと、記録の欠落を確かめたい気持ちがぶつかる。",
+      "change": "アリアは潮札を革袋に入れ、王都へ発つと決める。",
+      "tension": "curiosity",
+      "knowledge": [
+        {"character": "aria", "entry": ["F-01"], "gained": ["F-05"]}
+      ],
+      "disclosure": {
+        "disclosed": ["F-01", "F-05"],
+        "withheld": [
+          {"fact": "F-03", "reason": "王都の帳面の写しを見るまで記録の改竄を匂わせない。"}
+        ]
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": []
+      }
+    },
+    {
+      "id": "s02",
+      "chapter": "ch02",
+      "purpose": "鍵屋の写しと石膏手形から、記録が書き換えられた証拠を得る。",
+      "conflict": "ボリスは預かり物として鍵だけを渡したい。アリアは欠けた頁の写しを求める。",
+      "change": "アリアは写しを受け取り、潮札の刻みが記録と食い違うと気づく。",
+      "tension": "irony",
+      "knowledge": [
+        {"character": "aria", "entry": ["F-01", "F-05"], "gained": ["F-02", "F-03"]},
+        {"character": "boris", "entry": ["F-02", "F-03"], "gained": []}
+      ],
+      "disclosure": {
+        "disclosed": ["F-02", "F-03"],
+        "withheld": [
+          {"fact": "F-04", "reason": "兄が灯りを落とした理由は、灯台で潮札を読む終章まで伏せる。"}
+        ]
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": ["fs-002"]
+      }
+    },
+    {
+      "id": "s03",
+      "chapter": "ch03",
+      "purpose": "潮札の刻みどおりに灯りを合わせ、兄の選択を自分の務めとして引き受ける。",
+      "conflict": "予備の鍵に頼りたい気持ちと、目の前の灯りを自分の手で支える責任が対立する。",
+      "change": "アリアは半灯の刻みを選び、灯りを消さずに嵐の夜を越える。",
+      "tension": "deadline",
+      "knowledge": [
+        {"character": "aria", "entry": ["F-01", "F-02", "F-03", "F-05"], "gained": ["F-04"]}
+      ],
+      "disclosure": {
+        "disclosed": ["F-04"],
+        "withheld": []
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": ["fs-001", "fs-003"]
+      }
+    }
+  ],
+  "notes": "1 章 1 場面の最小縦割り。全設計場面をゲームログが素材化する。"
+}

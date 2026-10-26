@@ -199,3 +199,16 @@ B-03〜B-05（意味照合 = L2 相当、依然として未実装）である。
   medium として修復が走る状態だった。`blocks_repair: False` を明記した。
 - 残り: 実走りで観測を集めて「未宣言の canon 地名」の事例を読む、t02 の事例表へ反映、
   S1 全体（plan → 8 設計 → draft）との比較。
+
+## 追記（2026-10-26）: 実モデル 3 標本のバッチ A（事前登録）
+
+- **用意したもの**: [`experiments/2026-10-realrun-a-t01/`](../../experiments/2026-10-realrun-a-t01/note.md)
+  （仕様は `docs/two_stage_slice.md` §21）。自己完結バンドル（`inputs/` に canon・design・検証済みログ）、
+  走らせる前の判定規則（`preregistration.json` / `.md`）、実行手順（`runbook.md`）、
+  計測スクリプト（`scripts/measure_realrun_a.py`、`schema: realrun-a-v1`）。
+- **判定は 3 つに絞った**: R1 地名の枝（採否は決めない）、R2 章の長さ（1,000〜1,400 字が 2/3 以上か）、
+  R3 2 標本以上で落ちる検査。登録ファイルの `sha256` を結果に記録し、閾値も登録から読む。
+- **状態**: 未走行（`results.json` は `not_run`）。生成は `chat_operator.py` のリレーで、実モデルの
+  応答をこちらで作らない。初回は `--resume` を付けない（exit 2）。
+- 残り: 3 標本の実行 → `results.json` の verdict を note に引用 → 判定に従って次の一手
+  （枝の削除／プロンプト修正／A2 の登録）。S1 全体（plan → 8 設計 → draft）は別バッチ。

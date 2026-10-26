@@ -1,0 +1,43 @@
+{
+  "schema": "realrun-a-v1",
+  "experiment": "2026-10-realrun-a-t01",
+  "preregistration": {
+    "path": "experiments/2026-10-realrun-a-t01/preregistration.json",
+    "sha256": "7ada90998a359266052d8df633425788ba8754d06dd09833f40b6065405da63b"
+  },
+  "samples": {},
+  "verdicts": {
+    "samples_present": 0,
+    "samples_planned": 3,
+    "enough_samples": false,
+    "R1_place_branch": {
+      "verdict": "not_run",
+      "off_log": 0,
+      "undeclared": 0,
+      "samples_missing_observations": [],
+      "adoption": "このバッチでは採否を決めない。blocking 化の判断は別途、より大きな標本で行う。"
+    },
+    "R2_length": {
+      "verdict": "not_enough_data",
+      "chapters_in_band": {},
+      "needed_per_sample": 2
+    },
+    "R3_recurring_failure": {
+      "verdict": "not_enough_data",
+      "recurring_checks": [],
+      "by_check": {}
+    }
+  },
+  "not_claimed": [
+    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
+    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
+    "面白さ・読みやすさの比較はしない",
+    "観測は率ではなく事例。偽陽性率は、このバッチでは主張しない",
+    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）"
+  ],
+  "limits": [
+    "Observations are examples, not a rate: no false-positive rate is claimed from this batch.",
+    "The operator cannot be seeded, so the text is not reproducible (G5 stays unmet); provenance is recorded per response, not assumed fresh.",
+    "Length and marker counts are L1 quantities; they say nothing about whether the chapters are any good."
+  ]
+}

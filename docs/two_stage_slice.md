@@ -600,3 +600,24 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定�
   修復が走っていた。各項目に `blocks_repair: False` を明記して塞いだ。
 * **限界**: 測ったのは scripted の本文で、実モデルの文章ではない。観測は事例を集めるだけで率を測らない。
   L2/L3 は `frozen_not_measured`、G5 は未達、protocol-v1 は不変。
+
+## 21. バッチ A: 実モデル 3 標本の事前登録（2026-10-26）
+
+§18〜§20 で検査の側は「実本文が足りない」ところまで来た。地名観測の枝も、二段構成の価値も、
+長さの目安割れも、根拠は 3 走り・9 章（同一 canon）しかない。そこで**コードを足す前に**、
+小さな実走りを 1 巡することにし、走らせる前に判定規則を固定した:
+[`experiments/2026-10-realrun-a-t01/`](../experiments/2026-10-realrun-a-t01/note.md)。
+
+* 条件: Stage B のみ・プロンプト v1.1・`--observe-surface`・canon/design/log は同バンドルの `inputs/`
+  （ログは走行前に `check_gamelog.py` で clean を再確認）。3 標本（`sample-1`〜`3`）。
+* **事前登録**: [`preregistration.json`](../experiments/2026-10-realrun-a-t01/preregistration.json)。
+  判定は 3 つだけ。R1 地名の枝（`no_examples` / `drop_undeclared_branch` / `narrow_branch_only` /
+  `inspect_both`。**blocking 化は決めない**）、R2 長さ（1,000〜1,400 字が 3 章中 2 章以上か）、
+  R3 繰り返す失敗（2 標本以上で落ちた検査）。
+* **計測**: `scripts/measure_realrun_a.py` が登録ファイルの `sha256` を結果に記録し、閾値もそこから読む
+  （結果を見て規則を書き換えたかどうかが残る）。`results.json` は現在 `not_run`（標本 0）。
+* **手順**: [`runbook.md`](../experiments/2026-10-realrun-a-t01/runbook.md)。生成は
+  `scripts/chat_operator.py` のリレー（記録された実テキスト）。初回は `--resume` を付けない
+  （付けると exit 2）。リレー送信ディレクトリは標本ごとに分ける。
+* **主張しないこと**: L2/L3 は `frozen_not_measured`、G5 は operator 方式では到達しない、
+  面白さは測らない、観測は事例であって率ではない、応答の独立性は保証されない。

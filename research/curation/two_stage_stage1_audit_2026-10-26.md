@@ -579,3 +579,18 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
 - **穴を 1 つ塞いだ**: `place_findings` は `advisory: True` だけで `blocks_repair` を持たず、
   `findings` に混ぜれば medium として**修復が走る**状態だった。各項目に `blocks_repair: False` を明記。
 - 限界: scripted 本文での配線確認であり、実モデルの文章ではない。観測は事例収集であり率の測定ではない。
+
+## 20. 実モデル 3 標本の準備（2026-10-26）
+
+[`experiments/2026-10-realrun-a-t01/`](../../experiments/2026-10-realrun-a-t01/note.md)
+（`docs/two_stage_slice.md` §21）。§18〜§19 の根拠は 3 走り・9 章しかないため、検査を増やすより先に
+実本文を増やす段取りにした。
+
+- 自己完結バンドル: `inputs/`（canon・design・`check_gamelog.py` で clean を再確認したログ）、
+  事前登録（`preregistration.json` / `.md`）、実行手順（`runbook.md`）。
+- 判定は 3 つ: R1 地名の枝（`off_log` / `undeclared`。**採否は決めない**）、R2 長さ（
+  1,000〜1,400 字が 3 章中 2 章以上）、R3 2 標本以上で落ちた検査。
+- `scripts/measure_realrun_a.py` は登録ファイルの `sha256` と閾値を読み、verdict を機械的に出す
+  （`schema: realrun-a-v1`）。現在 `results.json` は標本 0 で `not_run`。
+- 生成は `chat_operator.py` のリレー。初回は `--resume` を付けない（exit 2）、標本ごとにリレー
+  ディレクトリを分ける、過去回答の再利用は `provenance.origin` に記録し標本として扱わない。

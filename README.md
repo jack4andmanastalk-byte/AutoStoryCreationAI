@@ -352,6 +352,10 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   事例を集めるため、`run_twostage.py --observe-surface` で結果を `observations` として走りに
   残せるようにしました（既定は無効。所見にも状態にも影響せず、修復は起きません —
   [`2026-10-surface-observe-t01`](experiments/2026-10-surface-observe-t01/note.md)）。
+* 次の一手は**実モデル 3 標本**で、走らせる前に判定規則を固定しています:
+  [`experiments/2026-10-realrun-a-t01/`](experiments/2026-10-realrun-a-t01/note.md)
+  （`preregistration.json`・`runbook.md`・`scripts/measure_realrun_a.py`）。現在は未走行で、
+  判定は地名の枝・章の長さ・繰り返す失敗の 3 つだけ。採否（blocking 化）はこのバッチでは決めません。
 * `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
   「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は
