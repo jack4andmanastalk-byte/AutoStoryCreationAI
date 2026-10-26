@@ -1,0 +1,61 @@
+{
+  "schema": "surface-observe-v1",
+  "scope": "the candidate place check attached as observations. It is not a finding and cannot trigger a repair.",
+  "baseline_run": "experiments/2026-10-surface-observe-t01/observe-off/run",
+  "observe_run": "experiments/2026-10-surface-observe-t01/observe-on/run",
+  "chapters": {
+    "ch01": {
+      "contract_identical": true,
+      "status": "clean",
+      "findings": 0,
+      "observations_baseline": "absent",
+      "observations_observe": 0
+    },
+    "ch02": {
+      "contract_identical": true,
+      "status": "clean",
+      "findings": 0,
+      "observations_baseline": "absent",
+      "observations_observe": 0
+    },
+    "ch03": {
+      "contract_identical": true,
+      "status": "clean",
+      "findings": 0,
+      "observations_baseline": "absent",
+      "observations_observe": 0
+    }
+  },
+  "injection": {
+    "sentence": "アリアは船で対岸の島へ渡り、知らない港町を歩いた。",
+    "results": {
+      "baseline": {
+        "status": "clean",
+        "findings": 0,
+        "blocking_findings": 0,
+        "observations_baseline": "absent",
+        "observation_destinations": []
+      },
+      "observe": {
+        "status": "clean",
+        "findings": 0,
+        "blocking_findings": 0,
+        "observations_baseline": 1,
+        "observation_destinations": [
+          "対岸の島"
+        ]
+      }
+    }
+  },
+  "findings": {
+    "contract_identical": true,
+    "observations_only_with_flag": true,
+    "injection_status_unchanged": true,
+    "injection_observed": true
+  },
+  "limits": [
+    "The text is the scripted bundle's, not model output: this shows the wiring and the non-interference, not what real prose will collect.",
+    "Observation mode collects examples; it does not measure a rate. A sample of real runs still has to be read by a human.",
+    "The place check remains outside the contract: no severity, no blocking, no repair prompt."
+  ]
+}

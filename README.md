@@ -331,9 +331,55 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * 固定台本バンドルは [`experiments/2026-10-trpg-slice-t01/`](experiments/2026-10-trpg-slice-t01/note.md)。
   `--out` は `experiments/<id>/` 配下のみ（`build/` / `runs/` は拒否）。回答待ちの Arena リレーは
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
+* 全工程の実応答試走は [`experiments/2026-10-full-t01/`](experiments/2026-10-full-t01/note.md)
+  （Stage A 1 回で clean・Stage B 3 章 clean・計 3,047 字。人手照合で検出漏れ 4 件、`clean` は事実の整合を意味しません）。
+* 日数の確定表（`$timeline`）を入れた Stage B v1.1 での再生成は
+  [`experiments/2026-10-stageb-v11-t01/`](experiments/2026-10-stageb-v11-t01/note.md)。同じ検証済みログから
+  3 章を作り直して `clean`（修復 1 回）。誤っていた「四日ぶり」は「六日ぶり」になり、時系列検査が
+  照合して不一致 0 でした。ただし `clean` は目標長の達成も意味的整合も意味しません。
+* **検査の検出力**は [`experiments/2026-10-detect-power-t01/`](experiments/2026-10-detect-power-t01/note.md)。
+  既知の誤りを 5 種注入すると、日数・死者の現在時行動・保留事実の語彙は両腕で発火し、
+  ログにない場所・移動と宣言のない数量は**どちらでも検出できません**（`scripts/probe_detection_power.py`）。
+  ログを見ずに書いた本文は、ログ契約を当てると既に 3 件の `medium` 所見を持ちます。
+* その穴への候補検査が [`experiments/2026-10-surface-checks-t01/`](experiments/2026-10-surface-checks-t01/note.md)
+  と [`2026-10-surface-checks-t02`](experiments/2026-10-surface-checks-t02/note.md)。
+  地名は「場所＋へ／に＋移動動詞」に絞れば clean 6 章で偽陽性 0・注入 1 件を検出しました（`advisory`、
+  契約には未接続）。数量は**検査にできません** — 数詞は単独で指示対象を持たず、clean な本文でも
+  1 章 2〜4 個が「ログに無い表記」として並ぶため、報告一覧に留めています（`src/asc/gamelog/surface.py`）。
+  言い換え耐性の測定（clean 9 章で所見 0・言い換え 6/6・紛らわしい文 12/12）の途中で、実本文の
+  「三日かけて王都へ着いた」から目的地の抽出欠陥が見つかり、修正しました。ただし「canon にあるが
+  この章で宣言されていない」枝は章の外の移動を偽陽性にするため、契約には入れていません。
+  事例を集めるため、`run_twostage.py --observe-surface` で結果を `observations` として走りに
+  残せるようにしました（既定は無効。所見にも状態にも影響せず、修復は起きません —
+  [`2026-10-surface-observe-t01`](experiments/2026-10-surface-observe-t01/note.md)）。
+* `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
+  「四日ぶり」→ 修復 1 回を確認）。
+* 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は
+  [`experiments/2026-10-l1-pair-t01/`](experiments/2026-10-l1-pair-t01/note.md)。必須語 1.0・禁止 0 は
+  両方で同じで、**L1 のパターン集合は 2 条件を識別しません**。差は指標ではなく「ログという照合先が
+  あるか」にあります（`make` の対象外、`scripts/compare_l1_arms.py` で再計算できます）。
+* Stage B 単独の実応答試走は [`experiments/2026-10-stageb-solo-t01/`](experiments/2026-10-stageb-solo-t01/note.md)
+  （3 章 `clean`・修復 1 回。ただし `clean` は事実の整合を意味しません）。
+* Stage A の検査は、未知キーの報告、同一場面の `learn`→`use`、現在時 `subject`、死者の `used_facts`、章 ID の重複と章順、人物の現在地の連続性まで見ます。Stage B は題材の必須語を**作品単位**でゲートします。
+* **日数・場所・時系列は決定論側が決めます**（`src/asc/gamelog/world.py`）。canon の `travel_days` を
+  無向グラフとして最短経路を解き、ログを畳んで `timeline.json`（`trpg-timeline-v1`、派生成果物）を
+  作って Stage B のプロンプトへ渡します。モデルには計算させません。本文側は、**明示された日数だけ**を
+  表と照合し（`timeline_consistency`）、既定は警告・`--strict-timeline` で修復対象です。
+  抽象表現（しばらく・明け方）と、書かれていない誤りは対象外です。
+* **Stage B だけを試す**ときは `--stage b --game-log <verified game_log.json>` を使います。Stage A は
+  実行せず、与えたログをその場で再検査し、`clean` のときだけ本文化します（不合格は fail-closed。
+  `--allow-unverified-log` を明示した場合だけ続行し、`unverified: true` を残します）。
+* **再開の契約**: `state.json` の `resume_command` はそのまま実行でき、失敗時も `state.json` を書きます。
+  `--resume` は記録を切り詰めず、条件（seed・温度・試行回数・provider・プロンプト・入力ハッシュ）が
+  変わっていれば拒否します（意図的な変更は `--allow-config-change`、差分は `config_changes` に記録）。
+  改変された記録（`response_sha256` 不一致）は再生しません。
 * **これは配線確認であり、実モデルの応答でも効果の観測でもありません。** L1 は構造・衛生の検査で
   あり、質・面白さ・選好の証拠にはなりません。L2/L3 は `frozen_not_measured` のままです。
   S1 直接生成との L1 ペア比較は Phase 3 の未実施課題です。
+* 契約文と実装の差（現在地の連続性、死者言及の章スコープ、マーカーと本文事実の乖離、`--resume` の記録保全）は
+  [`research/curation/two_stage_stage1_audit_2026-10-26.md`](research/curation/two_stage_stage1_audit_2026-10-26.md) に
+  再現例つきでまとめています。**検査が `clean` を返すことは意味的整合性の保証ではありません。**
+  `make probe-gamelog` で同じ変異を再実行できます。
 
 ## 5.  品質保証
 

@@ -59,9 +59,11 @@ CHECKS: tuple[Check, ...] = (
     Check("design_alignment", "設計書の幕・転換点・場面・情報開示と一致するか。",
           "scene_ref / act_ref / turn_ref が設計書の該当章を指し、学習事実が開示・保留の宣言と矛盾しないこと。",
           "設計書が無い場合は検査をスキップする。設計の質は判定しない。"),
-    Check("timeline_travel", "章の日付・場所と移動日数が canon と整合するか。",
-          "章の day / location が年表と一致し、章間および location_moves の経過日数が travel_days 以上であること。",
-          "移動日数が未定義の組は判定せず、件数を報告する。"),
+    Check("timeline_travel",
+          "章の日付・場所、移動日数、人物の現在地の連続性が canon と整合するか。",
+          "章の day / location が年表と一致し、章間および location_moves の経過日数が travel_days 以上で、"
+          "移動の起点がその人物の直前の現在地と繋がり、登場人物が章の場所にいること。",
+          "移動日数が未定義の組は判定せず、件数を報告する。canon に location のない人物は現在地を判定しない。"),
     Check("presence_death", "死者が現在時に行動していないか。記録・遺物・回想の言及は区別されているか。",
           "dead の人物が present_characters または action/dialogue の actor に現れないこと。記録・回想での言及は subject + medium を宣言すること。",
           "死者の名前が散文に現れること自体は違反ではない（Stage B の宣言照合で扱う）。"),
@@ -133,6 +135,33 @@ def _dead_in_text(canon: Canon, text: str) -> list[str]:
 # -- individual checks ------------------------------------------------------
 def _check_schema_shape(log: GameLog, ctx: _Context) -> int:
     evaluated = 0
+    seen_chapters: set[str] = set()
+    for chapter in log.chapters:
+        cid = chapter_key(chapter.id)
+        if cid in seen_chapters:
+            ctx.add(_finding(
+                "schema_shape", "high",
+                f"章 ID {chapter.id} が重複している。以降の所見が同じ章で二重に出る"
+                "ため、まず章を 1 つに戻す。", f"chapters:{chapter.id}",
+                chapter=chapter.id))
+        seen_chapters.add(cid)
+    if ctx.canon.chapters and len(seen_chapters) == len(log.chapters):
+        # An order finding is noise while a chapter is duplicated: the sequence
+        # is already wrong for that reason, which the finding above states.
+        order = ctx.canon.chapter_order()
+        logged = [chapter_key(chapter.id) for chapter in log.chapters]
+        if set(logged) == set(order) and logged != order:
+            ctx.add(_finding(
+                "schema_shape", "high",
+                f"章の並び順が canon（{' → '.join(order)}）と違う"
+                f"（{' → '.join(logged)}）。", "chapters",
+                expected=order, found=logged))
+    for item in log.unknown_keys:
+        ctx.add(_finding(
+            "schema_shape", "low",
+            f"未知のキー「{item['key']}」がある（読み飛ばされた）。"
+            "綴り誤りなら、その項目は検査にもマーカーにも現れない。",
+            item["where"], key=item["key"]))
     seen_scenes: set[str] = set()
     for chapter in log.chapters:
         cref = f"chapters:{chapter.id}"
@@ -414,6 +443,53 @@ def _check_timeline_travel(log: GameLog, ctx: _Context) -> int:
                         "timeline_travel", "medium",
                         f"{move.character} の到着日 {move.arrival_day:g} が次の章 "
                         f"{next_chapter.id}（{next_chapter.day:g} 日）より後。", sref))
+    # -- current location and movement chain (P1-6) --------------------------
+    # canon only says where everyone starts. A declared move must start where
+    # the character actually is, and someone on stage must be where the chapter
+    # says they are; otherwise "who can be here" is never checked at all.
+    here = {cid: char.location for cid, char in canon.characters.items()
+            if char.location}
+    by_chapter: dict[str, list[Any]] = {}
+    for chapter in log.chapters:
+        by_chapter.setdefault(chapter_key(chapter.id), []).append(chapter)
+    for chapter_id in canon.chapter_order():
+        for chapter in by_chapter.get(chapter_id, []):
+            cref = f"chapters:{chapter.id}"
+            present = {name for scene in chapter.scenes
+                       for name in scene.present_characters}
+            for scene in chapter.scenes:
+                sref = f"chapters:{chapter.id}.scenes:{scene.id}"
+                for name in scene.present_characters:
+                    char = canon.characters.get(name)
+                    if char is None or char.status == "dead":
+                        continue
+                    expected = here.get(name)
+                    if expected and chapter.location and expected != chapter.location:
+                        evaluated += 1
+                        ctx.add(_finding(
+                            "timeline_travel", "medium",
+                            f"{name} は {expected} にいるはずだが、{chapter.id}"
+                            f"（{chapter.location}）に登場している。移動を宣言するか、"
+                            "章の場所を見直す。", sref, character=name,
+                            expected_location=expected,
+                            chapter_location=chapter.location))
+                for move in scene.state_delta.location_moves:
+                    evaluated += 1
+                    known_location = here.get(move.character)
+                    if known_location and move.origin != known_location:
+                        ctx.add(_finding(
+                            "timeline_travel", "high",
+                            f"{move.character} の移動の起点（{move.origin}）が、"
+                            f"宣言済みの現在地（{known_location}）と繋がっていない。",
+                            sref, character=move.character,
+                            expected_location=known_location, origin=move.origin))
+                    if move.character not in present:
+                        ctx.add(_finding(
+                            "timeline_travel", "medium",
+                            f"{move.character} は {chapter.id} の present_characters に"
+                            "いないのに移動している。登場しない人物の移動は物語の事実に"
+                            "ならない。", sref, character=move.character))
+                    here[move.character] = move.destination
     return evaluated
 
 
@@ -450,6 +526,22 @@ def _check_presence_death(log: GameLog, ctx: _Context) -> int:
                             "presence_death", "high",
                             f"行為 {action.id} の対象が死者 {dead} の現在時行動を指している。",
                             aref, character=dead))
+                    if action.subject:
+                        subject_dead = _dead_at(canon, action.subject, chapter.id,
+                                                ctx.positions)
+                        if subject_dead:
+                            ctx.add(_finding(
+                                "presence_death", "high",
+                                f"{action.type} の subject が死者 {action.subject}。"
+                                "現在時の行為に死者を結び付けている。", aref,
+                                character=action.subject, event_type=action.type))
+                        else:
+                            ctx.add(_finding(
+                                "presence_death", "low",
+                                f"{action.type}（現在時）に subject「{action.subject}」が"
+                                "ある。死者の記録・回想は record_reference / "
+                                "memory_mention で書く型なので、型の混同の可能性。",
+                                aref, character=action.subject))
                 elif action.type in REFERENCE_TYPES:
                     if actor_dead:
                         ctx.add(_finding(
@@ -491,19 +583,9 @@ def _check_knowledge_boundary(log: GameLog, ctx: _Context) -> int:
         for scene in chapter.scenes:
             sref = f"chapters:{chapter.id}.scenes:{scene.id}"
             present = set(scene.present_characters)
-            for item in scene.state_delta.used_facts:
-                evaluated += 1
-                if item.fact not in known.get(item.character, set()):
-                    ctx.add(_finding(
-                        "knowledge_boundary", "high",
-                        f"{item.character} は {item.fact} をまだ知らないのに "
-                        f"{chapter.id} で使っている。", sref,
-                        character=item.character, fact=item.fact))
-                if item.character not in present:
-                    ctx.add(_finding(
-                        "knowledge_boundary", "medium",
-                        f"{item.character} は {chapter.id} の場面にいないのに "
-                        f"{item.fact} を使っている。", sref))
+            learned_here: set[tuple[str, str]] = set()
+            # Learns are applied first: a fact gained and used inside the same
+            # scene is the normal TRPG loop, not a knowledge violation (P1-1).
             for item in scene.state_delta.learned_facts:
                 evaluated += 1
                 if item.character not in present:
@@ -530,6 +612,32 @@ def _check_knowledge_boundary(log: GameLog, ctx: _Context) -> int:
                             f"{chapter.id} で学習している（開示順序の先行）。", sref,
                             fact=item.fact))
                 known.setdefault(item.character, set()).add(item.fact)
+                learned_here.add((item.character, item.fact))
+            for item in scene.state_delta.used_facts:
+                evaluated += 1
+                if item.fact not in known.get(item.character, set()):
+                    ctx.add(_finding(
+                        "knowledge_boundary", "high",
+                        f"{item.character} は {item.fact} をまだ知らないのに "
+                        f"{chapter.id} で使っている。", sref,
+                        character=item.character, fact=item.fact))
+                elif (item.character, item.fact) in learned_here:
+                    ctx.add(_finding(
+                        "knowledge_boundary", "low",
+                        f"{item.character} は同じ場面で {item.fact} を学んでから"
+                        "使っている（許容。順序の情報として報告）。", sref,
+                        character=item.character, fact=item.fact))
+                if _dead_at(canon, item.character, chapter.id, ctx.positions):
+                    ctx.add(_finding(
+                        "knowledge_boundary", "high",
+                        f"死者 {item.character} が {chapter.id} で {item.fact} を"
+                        "現在時に使っている。", sref,
+                        character=item.character, fact=item.fact))
+                if item.character not in present:
+                    ctx.add(_finding(
+                        "knowledge_boundary", "medium",
+                        f"{item.character} は {chapter.id} の場面にいないのに "
+                        f"{item.fact} を使っている。", sref))
     ctx.known_at_end = {cid: sorted(facts) for cid, facts in sorted(known.items())}
     return evaluated
 

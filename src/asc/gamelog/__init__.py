@@ -12,7 +12,7 @@ from .check import (
 )
 from .markers import derive_markers, chapter_markers, owner_markers
 from .rewrite import (
-    CHECKS as REWRITE_CHECKS, check_rewrite,
+    CHECKS as REWRITE_CHECKS, check_rewrite, missing_must_include,
     needs_repair as rewrite_needs_repair,
     render_markdown as render_rewrite_markdown,
 )
@@ -29,6 +29,7 @@ __all__ = [
     "derive_markers", "chapter_markers", "owner_markers",
     "GAMELOG_CHECKS", "check_game_log", "check_game_log_files",
     "gamelog_needs_repair", "render_gamelog_markdown",
-    "REWRITE_CHECKS", "check_rewrite", "rewrite_needs_repair",
+    "REWRITE_CHECKS", "check_rewrite", "missing_must_include",
+    "rewrite_needs_repair",
     "render_rewrite_markdown",
 ]

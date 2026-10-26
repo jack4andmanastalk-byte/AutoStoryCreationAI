@@ -1,0 +1,235 @@
+{
+  "schema": "l1-arm-comparison-v1",
+  "scope": "L1 only: structure and hygiene. Descriptive reference values, not protocol-v1 pass, quality or preference.",
+  "evaluation_scope": {
+    "schema": "evaluation-scope-v1",
+    "protocol": "protocol-v1",
+    "decided_on": "2026-10-24",
+    "mode": "l1-only",
+    "provider_constraint": "arena-only",
+    "active_layers": [
+      "L1"
+    ],
+    "frozen_layers": {
+      "L2": "独立したモデル判定と較正の条件を満たせないため、実証・較正・追加開発を凍結する。",
+      "L3": "人間の評定者を用意できないため、評定・較正・追加開発を凍結する。"
+    },
+    "gate_status": {
+      "G1": "reference_only",
+      "G2": "reference_only",
+      "G3": "frozen_not_measured",
+      "G4": "frozen_not_measured",
+      "G5": "unmet_with_unversioned_arena"
+    },
+    "claims": {
+      "l1_results": "exploratory_reference_only",
+      "protocol_v1_functioning": "not_claimed",
+      "semantic_quality_or_human_preference": "not_evaluated"
+    },
+    "resume": {
+      "requires_explicit_user_decision": true,
+      "note": "利用者が凍結解除を明示し、L2/L3それぞれの評定・較正条件を整えた場合にだけ再開する。"
+    }
+  },
+  "provider": {
+    "model": "arena-agent-mode",
+    "model_version": "unversioned-2026-10-26",
+    "note": "Both arms were written by the same operator, which is not a versioned model. G5 is not claimed and the numbers are reference values."
+  },
+  "task": "t01",
+  "canon": "experiments/2026-10-stageb-v11-t01/inputs/canon",
+  "canon_sha256": {
+    "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
+    "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
+    "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
+    "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
+    "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+    "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
+  },
+  "patterns": {
+    "path": "harness/patterns.yaml",
+    "count": 4,
+    "sha256": "96e5352332fa434564c49b7194b0ab9242d10c119e6df71e830587c28a77ab2e"
+  },
+  "arms": {
+    "v1.0": {
+      "source": "relay_responses",
+      "path": "experiments/2026-10-full-t01/relay-r2/responses",
+      "text_sha256": {
+        "ch01": "4b017256726509dc077e6710215c4ed093cb8f4eca427e89ab3745847137b68e",
+        "ch02": "31537dcc5fd2800778800e182fcf7149d0197c35ee214715a77d7c667e0e520f",
+        "ch03": "66d251f7294b784e2193fe9cf9de1b7e363bbca622bc2c691546cf1cc451d941"
+      },
+      "documents": 3,
+      "chars": 3047,
+      "chars_with_markers": 3449,
+      "per_chapter_chars": {
+        "ch01": 1032,
+        "ch02": 1007,
+        "ch03": 1008
+      },
+      "markers": {
+        "total": 19,
+        "by_kind": {
+          "time": 3,
+          "location": 3,
+          "learn": 4,
+          "use": 3,
+          "foreshadow": 6
+        }
+      },
+      "must_include": {
+        "hits": {
+          "灯台": true,
+          "鍵": true,
+          "嵐": true
+        },
+        "rate": 1.0
+      },
+      "task_avoid_hits": {
+        "選ばれし者": 0,
+        "古代の予言": 0
+      },
+      "forbidden": {
+        "hits": 0,
+        "per_10k_chars": 0.0,
+        "evidence": []
+      },
+      "audit": {
+        "violations": 2,
+        "by_severity": {
+          "medium": 2
+        },
+        "by_type": {
+          "dead_character_reappears": 2
+        },
+        "checks_skipped": 0,
+        "ced_per_10k_chars": 5.799
+      },
+      "style": {
+        "dialogue_ratio": 0.007,
+        "paragraphs": 19,
+        "mean_paragraph_chars": 181.5,
+        "sentence_length_cv": 0.425,
+        "sentence_count": 161
+      }
+    },
+    "v1.1": {
+      "source": "relay_responses",
+      "path": "experiments/2026-10-stageb-v11-t01/relay/responses",
+      "text_sha256": {
+        "ch01": "694a4e1c32af73ec19ff1016d3be13ab76fc68d96981feec31e5bdc5d1d2a2b1",
+        "ch02": "65802e82b5b02da1693d7b46ee9c99e57caba9a187af2da8dfb50536e58bcd3e",
+        "ch03": "26442798950410431604fd6231a71337e73f4853411dc594014306dc1c60f786"
+      },
+      "documents": 3,
+      "chars": 2867,
+      "chars_with_markers": 3269,
+      "per_chapter_chars": {
+        "ch01": 1043,
+        "ch02": 989,
+        "ch03": 835
+      },
+      "markers": {
+        "total": 19,
+        "by_kind": {
+          "time": 3,
+          "location": 3,
+          "learn": 4,
+          "use": 3,
+          "foreshadow": 6
+        }
+      },
+      "must_include": {
+        "hits": {
+          "灯台": true,
+          "鍵": true,
+          "嵐": true
+        },
+        "rate": 1.0
+      },
+      "task_avoid_hits": {
+        "選ばれし者": 0,
+        "古代の予言": 0
+      },
+      "forbidden": {
+        "hits": 0,
+        "per_10k_chars": 0.0,
+        "evidence": []
+      },
+      "audit": {
+        "violations": 1,
+        "by_severity": {
+          "medium": 1
+        },
+        "by_type": {
+          "dead_character_reappears": 1
+        },
+        "checks_skipped": 0,
+        "ced_per_10k_chars": 3.059
+      },
+      "style": {
+        "dialogue_ratio": 0.017,
+        "paragraphs": 28,
+        "mean_paragraph_chars": 116.8,
+        "sentence_length_cv": 0.476,
+        "sentence_count": 151
+      }
+    }
+  },
+  "delta": {
+    "schema": "second minus first",
+    "labels": {
+      "v1.0": "first",
+      "v1.1": "second"
+    },
+    "v1.0": {
+      "chars": {
+        "first": 3047,
+        "second": 2867,
+        "difference": -180
+      },
+      "dialogue_ratio": {
+        "first": 0.007,
+        "second": 0.017,
+        "difference": 0.01
+      },
+      "sentence_length_cv": {
+        "first": 0.425,
+        "second": 0.476,
+        "difference": 0.051
+      },
+      "mean_paragraph_chars": {
+        "first": 181.5,
+        "second": 116.8,
+        "difference": -64.7
+      },
+      "must_include_rate": {
+        "first": 1.0,
+        "second": 1.0,
+        "difference": 0.0
+      },
+      "forbidden_per_10k_chars": {
+        "first": 0.0,
+        "second": 0.0,
+        "difference": 0.0
+      },
+      "violations": {
+        "first": 2,
+        "second": 1,
+        "difference": -1
+      },
+      "ced_per_10k_chars": {
+        "first": 5.799,
+        "second": 3.059,
+        "difference": -2.74
+      }
+    }
+  },
+  "limits": [
+    "N=1 per arm, one task, one operator: the two arms are not independent samples and no interval is meaningful.",
+    "The same agent wrote both arms and has read the checker code; the operator is not a fixed model version (G5 unmet).",
+    "The arms are given different inputs (a verified game log vs the design documents alone), so a difference is a difference between conditions, not an effect of a controllable variable.",
+    "Characters, dialogue ratio and sentence length are descriptive; do not read them as quality."
+  ]
+}

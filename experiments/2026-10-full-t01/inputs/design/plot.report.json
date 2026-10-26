@@ -1,0 +1,61 @@
+{
+  "doc": "plot",
+  "status": "clean",
+  "source": "plot.json",
+  "note": "実検査器 check_plot/check_scenes の出力を設計書バンドル用に要約したもの。固定台本の入力であり、実モデルの生成物ではない。",
+  "checks": [
+    {
+      "id": "acts_cover",
+      "acceptance_ja": "幕が章を過不足なく覆い、各幕に問いがある。",
+      "technique_ids": [
+        "narrative/japan_2026:T009",
+        "narrative/us_2026:T004",
+        "narrative/japan_2026:T010"
+      ],
+      "status": "pass",
+      "findings": 0
+    },
+    {
+      "id": "turns_placed",
+      "acceptance_ja": "転換点が 3～5 件あり、主人公の選択に結び付く。",
+      "technique_ids": [
+        "narrative/us_2026:T002",
+        "narrative/japan_2026:T011"
+      ],
+      "status": "pass",
+      "findings": 0
+    },
+    {
+      "id": "subplots_allocated",
+      "acceptance_ja": "副筋に節目と本筋への合流がある。",
+      "technique_ids": [
+        "narrative/us_2026:T007",
+        "narrative/japan_2026:T018"
+      ],
+      "status": "pass",
+      "findings": 0
+    },
+    {
+      "id": "ending_designed",
+      "acceptance_ja": "結末の型・要約・余韻がある。",
+      "technique_ids": [
+        "narrative/us_2026:T008",
+        "narrative/japan_2026:T013"
+      ],
+      "status": "pass",
+      "findings": 0
+    },
+    {
+      "id": "debts_listed",
+      "acceptance_ja": "未回収が棚卸しされ、伏線か意図に結び付く。",
+      "technique_ids": [
+        "narrative/japan_2026:T015"
+      ],
+      "status": "pass",
+      "findings": 0
+    }
+  ],
+  "findings": [],
+  "checks_failed": 0,
+  "checks_skipped": 0
+}

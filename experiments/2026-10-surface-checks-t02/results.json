@@ -1,0 +1,304 @@
+{
+  "schema": "surface-variants-v1",
+  "scope": "the place check from asc.gamelog.surface, measured on more clean prose and on a hand-written paraphrase set. Not wired into check_rewrite; nothing here is a contract.",
+  "game_log": "experiments/2026-10-stageb-v11-t01/inputs/game_log.json",
+  "canon": "experiments/2026-10-stageb-v11-t01/inputs/canon",
+  "clean": {
+    "log-backed": {
+      "source": "experiments/2026-10-stageb-v11-t01/relay/responses",
+      "chapters": {
+        "ch01": {
+          "chars": 1178,
+          "place_findings": [],
+          "claims": []
+        },
+        "ch02": {
+          "chars": 1151,
+          "place_findings": [],
+          "claims": []
+        },
+        "ch03": {
+          "chars": 972,
+          "place_findings": [],
+          "claims": []
+        }
+      }
+    },
+    "direct": {
+      "source": "experiments/2026-10-l1-pair-t01/relay/responses",
+      "chapters": {
+        "ch01": {
+          "chars": 1297,
+          "place_findings": [],
+          "claims": []
+        },
+        "ch02": {
+          "chars": 1173,
+          "place_findings": [],
+          "claims": []
+        },
+        "ch03": {
+          "chars": 1207,
+          "place_findings": [],
+          "claims": [
+            "灯台"
+          ]
+        }
+      }
+    },
+    "log-backed-v10": {
+      "source": "experiments/2026-10-full-t01/relay/responses",
+      "chapters": {
+        "ch01": {
+          "chars": 1167,
+          "place_findings": [],
+          "claims": [
+            "王都"
+          ]
+        },
+        "ch02": {
+          "chars": 1169,
+          "place_findings": [],
+          "claims": []
+        },
+        "ch03": {
+          "chars": 1145,
+          "place_findings": [],
+          "claims": []
+        }
+      }
+    }
+  },
+  "cases": {
+    "place_original": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "対岸の島"
+      ],
+      "claims": [
+        "対岸の島"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは船で対岸の島へ渡り、知らない港町を歩いた。",
+      "why": "the injection used in t01"
+    },
+    "place_ni_mukatta": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "対岸の島"
+      ],
+      "claims": [
+        "対岸の島"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "その夜、アリアは対岸の島に向かった。",
+      "why": "へ replaced by に, different verb"
+    },
+    "place_ni_tsuita": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "北の港"
+      ],
+      "claims": [
+        "北の港"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "明け方には、北の港に着いた。",
+      "why": "a new place-shaped name, not in canon"
+    },
+    "place_he_modotta": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "隣町"
+      ],
+      "claims": [
+        "隣町"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは隣町へ戻った。",
+      "why": "へ + 戻った"
+    },
+    "place_wo_koete": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "村"
+      ],
+      "claims": [
+        "村"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "一行は山を越えて村に着いた。",
+      "why": "a clause before the destination"
+    },
+    "place_undeclared_canon": {
+      "expected": "fires",
+      "fired": true,
+      "destinations": [
+        "港"
+      ],
+      "claims": [
+        "港"
+      ],
+      "verdict": "ok",
+      "chapter": "ch03",
+      "sentence": "アリアは港へ向かった。",
+      "why": "a canon place, but this chapter declares no move"
+    },
+    "look_hanashi": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "父は灯りの話に戻った。",
+      "why": "「話」 is not place-shaped"
+    },
+    "look_memory": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "記憶の底へ沈んだ。",
+      "why": "沈んだ is not a movement verb"
+    },
+    "look_daidokoro": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは台所へ行った。",
+      "why": "an indoor room, not a place name"
+    },
+    "look_mieta": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "島が見えた。",
+      "why": "seeing a place is not going to it"
+    },
+    "look_kaze": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "風が沖へ向かった。",
+      "why": "沖 has no place suffix"
+    },
+    "look_furidashi": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "話は振り出しに戻った。",
+      "why": "に戻った about a story, not a person"
+    },
+    "look_mune": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "マーサは手紙を胸に戻した。",
+      "why": "戻した (transitive) is not travel"
+    },
+    "look_allowed": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [
+        "灯台"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは灯台に着いた。",
+      "why": "the chapter's own location is allowed"
+    },
+    "look_declared_move": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [
+        "王都"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは王都へ発った。",
+      "why": "ch01 declares the move 灯台→王都, so 王都 is allowed"
+    },
+    "look_duration": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [
+        "王都"
+      ],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "三日かけて王都へ着いた。",
+      "why": "a duration clause before the place — this used to be read as 「三日かけて王都」 on the v1.0 chapter"
+    },
+    "miss_walked": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "アリアは王都の市場を目指して歩いた。",
+      "why": "歩いた is not in the verb list — a known miss"
+    },
+    "miss_described": {
+      "expected": "silent",
+      "fired": false,
+      "destinations": [],
+      "claims": [],
+      "verdict": "ok",
+      "chapter": "ch01",
+      "sentence": "対岸の島が霞んで見えた。",
+      "why": "description, not travel — a known miss"
+    }
+  },
+  "summary": {
+    "clean_chapters": 9,
+    "clean_chapters_with_findings": 0,
+    "recall": {
+      "fired": 6,
+      "of": 6,
+      "missed": []
+    },
+    "precision": {
+      "silent": 12,
+      "of": 12,
+      "false_positives": []
+    }
+  },
+  "limits": [
+    "The case set is hand-written by the agent, not sampled from model output: it measures behaviour on wording, not a false-positive rate.",
+    "One log and one canon are used for every arm, including the direct arm that never saw them; chapter rows are shared on purpose so the comparison is about prose, not about a different timeline.",
+    "The clean corpus is nine chapters from three runs of the same canon; they are not independent samples of a distribution.",
+    "Only asserted travel is visible: 歩いた and 見えた are known misses, and are kept in the table rather than dropped from it."
+  ]
+}

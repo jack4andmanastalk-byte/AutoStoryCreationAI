@@ -77,7 +77,8 @@ def test_scripted_two_stage_run_is_clean_and_self_contained(tmp_path):
                      "inputs/design/scene.json", "inputs/design/voice.json",
                      "inputs/scripted.json", "manifest.json", "responses.jsonl",
                      "design.report.json", "game_log.json", "game_log.report.json",
-                     "rewrite.report.json", "audit.json", "state.json",
+                     "timeline.json", "rewrite.report.json", "audit.json",
+                     "state.json",
                      "run-summary.json", "text/ch01.md", "text/ch02.md",
                      "text/ch03.md"):
         assert (run / relative).is_file(), relative
@@ -389,3 +390,381 @@ def test_rewrite_check_flags_banned_voice_and_premature_fact_terms():
     assert "fact_boundary" in checks
     assert any("F-04" in item["message_ja"] or "F-03" in item["message_ja"]
                for item in report["findings"])
+
+
+# -- P0: resume, record integrity, Stage B only, dead mentions ---------------
+def _stub_provider(tmp_path: Path, name: str, body: str) -> str:
+    """A command provider whose behaviour is written in its own source."""
+    path = tmp_path / name
+    path.write_text(body, encoding="utf-8")
+    return f"{sys.executable} {path}"
+
+
+FAIL_AT_CH02 = """
+import json, sys
+req = json.load(sys.stdin)
+if req["purpose"].startswith("stage_b:ch02"):
+    sys.stderr.write("boom\\n")
+    sys.exit(1)
+base = "%s/"
+name = "game_log.json" if not req["purpose"].startswith("stage_b") else \\
+    "rewrite/" + req["purpose"].split(":")[1] + ".md"
+print(json.dumps({"text": open(base + name, encoding="utf-8").read()}))
+""" % (INPUTS,)
+
+STAGE_B_ONLY = """
+import json, sys
+req = json.load(sys.stdin)
+if not req["purpose"].startswith("stage_b"):
+    sys.stderr.write("stage A must not be requested in --stage b\\n")
+    sys.exit(9)
+print(json.dumps({"text": open("%s/rewrite/" + req["purpose"].split(":")[1]
+                               + ".md", encoding="utf-8").read()}))
+""" % (INPUTS,)
+
+
+def test_resume_command_is_complete_and_executable(tmp_path):
+    import shlex
+
+    out = tmp_path / "bundle"
+    assert run_cli(out, "--seed", "3", run_id="cmd").returncode == 0
+    state = read_json(out / "cmd" / "state.json")
+    command = state["resume_command"]
+    for flag in ("--script", "--seed 3", "--allow-temp-out", "--resume", "--task t01"):
+        assert flag in command, (flag, command)
+    assert state["argv"] and state["resume_count"] == 0
+    completed = subprocess.run(shlex.split(command), cwd=REPO_ROOT,
+                               capture_output=True, text=True)
+    assert completed.returncode == 0, completed.stderr
+    assert read_json(out / "cmd" / "state.json")["resume_count"] == 1
+
+
+def test_resume_keeps_the_record_and_replays_without_duplicating(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="replay").returncode == 0
+    path = out / "replay" / "responses.jsonl"
+    before = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+              if line.strip()]
+    assert len(before) == 4
+    completed = run_cli(out, "--resume", run_id="replay")
+    assert completed.returncode == 0, completed.stderr
+    after = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+             if line.strip()]
+    assert len(after) == 4, "a replayed answer must not be appended twice"
+    assert [row["ts"] for row in after] == [row["ts"] for row in before], \
+        "resume must not rewrite the recorded timestamps"
+    replay = read_json(out / "replay" / "replay.report.json")
+    assert replay["counts"] == {"replayed": 4}
+    assert replay["duplicate_record_keys"] == []
+
+
+def test_resume_with_a_different_seed_is_refused_and_can_be_allowed(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="seeded").returncode == 0
+    refused = run_cli(out, "--resume", "--seed", "7", run_id="seeded")
+    assert refused.returncode == 2
+    assert "config mismatch on resume: seed" in refused.stderr
+    assert read_json(out / "seeded" / "state.json")["config"]["seed"] == 0
+    allowed = run_cli(out, "--resume", "--seed", "7", "--allow-config-change",
+                      run_id="seeded")
+    assert allowed.returncode == 0, allowed.stderr
+    state = read_json(out / "seeded" / "state.json")
+    assert state["config"]["seed"] == 7
+    assert "seed" in state["config_changes"]
+    replay = read_json(out / "seeded" / "replay.report.json")
+    assert replay["counts"].get("missing") == 4  # no answer matches this seed
+
+
+def test_a_provider_failure_still_writes_resumable_state(tmp_path):
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "fail.py", FAIL_AT_CH02)
+    failed = run_cli(out, "--command", command, provider="command", run_id="half")
+    assert failed.returncode == 2
+    run = out / "half"
+    state = read_json(run / "state.json")
+    assert state["status"] == "failed"
+    assert "boom" in state["error"]
+    assert "--resume" in state["resume_command"]
+    entries = [json.loads(line) for line in
+               (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    assert [row["purpose"] for row in entries] == ["stage_a", "stage_b:ch01"]
+
+    # The same failing provider is usable again: the record is kept and replayed.
+    again = run_cli(out, "--resume", "--command", command, provider="command",
+                    run_id="half")
+    assert again.returncode == 2
+    entries = [json.loads(line) for line in
+               (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    assert [row["purpose"] for row in entries] == ["stage_a", "stage_b:ch01"], \
+        "an interrupted resume must not drop the earlier records"
+    assert read_json(run / "state.json")["resume_count"] == 1
+
+
+def test_a_modified_recorded_response_is_refused(tmp_path):
+    out = tmp_path / "bundle"
+    assert run_cli(out, run_id="tamper").returncode == 0
+    path = out / "tamper" / "responses.jsonl"
+    entries = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+               if line.strip()]
+    entries[0]["response"]["text"] = entries[0]["response"]["text"].replace("嵐", "霧")
+    path.write_text("".join(json.dumps(e, ensure_ascii=False) + "\n" for e in entries),
+                    encoding="utf-8")
+    completed = run_cli(out, "--resume", run_id="tamper")
+    assert completed.returncode == 2
+    assert "response_sha256" in completed.stderr
+    assert read_json(out / "tamper" / "state.json")["status"] == "failed"
+
+
+def test_stage_b_only_rewrites_a_verified_log_without_calling_stage_a(tmp_path):
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "stageb.py", STAGE_B_ONLY)
+    completed = run_cli(out, "--stage", "b", "--game-log",
+                        str(INPUTS / "game_log.json"), "--command", command,
+                        provider="command", run_id="b-only")
+    assert completed.returncode == 0, completed.stderr
+    run = out / "b-only"
+    summary = read_json(run / "run-summary.json")
+    assert summary["stage"] == "b"
+    assert summary["stage_a"]["source"] == "provided"
+    assert summary["stage_a"]["attempts"] == 0
+    assert summary["stage_b"]["status"] == "clean"
+    purposes = [json.loads(line)["purpose"] for line in
+                (run / "responses.jsonl").read_text(encoding="utf-8").splitlines()
+                if line.strip()]
+    assert purposes == ["stage_b:ch01", "stage_b:ch02", "stage_b:ch03"]
+    assert (run / "inputs" / "game_log.input.json").is_file()
+    assert any("入力ログ" in limit for limit in summary["limits"])
+
+
+def test_stage_b_only_refuses_a_log_that_fails_its_checks(tmp_path):
+    raw = json.loads((INPUTS / "game_log.json").read_text(encoding="utf-8"))
+    raw["chapters"][0]["scenes"][0]["present_characters"].append("johan")
+    broken = tmp_path / "broken.json"
+    broken.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    out = tmp_path / "bundle"
+    command = _stub_provider(tmp_path, "stageb2.py", STAGE_B_ONLY)
+    refused = run_cli(out, "--stage", "b", "--game-log", str(broken),
+                      "--command", command, provider="command", run_id="b-broken")
+    assert refused.returncode == 2
+    assert "fail-closed" in refused.stderr
+    state = read_json(out / "b-broken" / "state.json")
+    assert state["status"] == "unresolved"
+    assert "fail-closed" in state["error"]
+
+    # The refused run left a resumable state; the override continues it.
+    allowed = run_cli(out, "--stage", "b", "--game-log", str(broken),
+                      "--allow-unverified-log", "--command", command, "--resume",
+                      "--report-only", provider="command", run_id="b-broken")
+    assert allowed.returncode == 0, allowed.stderr
+    summary = read_json(out / "b-broken" / "run-summary.json")
+    assert summary["stage_a"]["unverified"] is True
+    # Stage B was attempted from the overriding log, so text exists even if the
+    # rewrite checks are not clean.
+    assert (out / "b-broken" / "text" / "ch01.md").is_file()
+
+
+def test_stage_selection_rejects_contradictory_arguments(tmp_path):
+    out = tmp_path / "bundle"
+    missing = run_cli(out, "--stage", "b", run_id="x")
+    assert missing.returncode == 2 and "--game-log" in missing.stderr
+    extra = run_cli(out, "--game-log", str(INPUTS / "game_log.json"), run_id="x")
+    assert extra.returncode == 2 and "--stage b" in extra.stderr
+    stage_a = run_cli(out, "--stage", "a", run_id="a-only")
+    assert stage_a.returncode == 0, stage_a.stderr
+    summary = read_json(out / "a-only" / "run-summary.json")
+    assert summary["stage_a"]["status"] == "clean"
+    assert summary["stage_b"]["status"] == "skipped"
+    assert not (out / "a-only" / "text").exists()
+
+
+def test_dead_mention_needs_its_medium_in_the_same_sentence():
+    """A chapter-level record reference does not cover a present-time act."""
+    log = load_game_log(INPUTS / "game_log.json")
+    canon = load_canon(INPUTS / "canon")
+    voice = load_voice(INPUTS / "design" / "voice.json")
+    scenes = load_scenes(INPUTS / "design" / "scene.json")
+    text = (INPUTS / "rewrite" / "ch01.md").read_text(encoding="utf-8")
+
+    def check(body: str) -> dict:
+        return check_rewrite(body, "ch01", log, canon, voice, scenes,
+                             avoid=(), min_chars=200)
+
+    declared = check(text)
+    assert declared["summary"]["status"] == "clean"
+    assert declared["summary"]["allowed_dead_references"] == 2
+
+    acts = check(text.replace(
+        "潮札を革袋に入れ、",
+        "ヨハンが戸口から入ってきてアリアの肩を叩いた。潮札を革袋に入れ、"))
+    assert acts["summary"]["status"] == "unresolved"
+    hit = [f for f in acts["findings"] if f["check"] == "character_boundary"]
+    assert hit and hit[0]["severity"] == "high"
+    assert "同じ文にない" in hit[0]["message_ja"]
+
+    speaks = check(text.replace(
+        "潮札を革袋に入れ、", "「まだ灯りは消すな」とヨハンが言った。潮札を革袋に入れ、"))
+    assert speaks["summary"]["status"] == "unresolved"
+
+    # Legitimate recollection still passes: the cue is in the naming sentence.
+    recalled = check(text.replace(
+        "兄の名を父が口にしなかった理由を、アリアは聞いたことがなかった。",
+        "あの嵐の夜、ヨハンは港町を守ろうとしていた。"))
+    assert recalled["summary"]["status"] == "clean"
+
+
+def test_results_claim_matches_the_provider(tmp_path):
+    """A relay run must not be summarised with the scripted wording."""
+    stage_a = {key: None for key in
+               ("status", "attempts", "repairs", "first_attempt_findings",
+                "findings", "checks", "markers", "marker_counts")}
+    stage_a["allowed_dead_references"] = []
+    summary = {
+        "provider": {"name": "scripted", "model": "scripted-fixture"},
+        "stage": "both",
+        "evaluation_scope": {}, "inputs": {}, "stage_a": stage_a,
+        "stage_b": {}, "l1_hygiene": {}, "status": "clean", "limits": [],
+    }
+    class _Prompt:
+        digest = "0000000000000000"
+
+    prompts = {name: _Prompt() for name in run_twostage.PROMPT_NAMES}
+    out = tmp_path / "scripted.json"
+    run_twostage._write_results(out, summary, prompts)
+    scripted = json.loads(out.read_text(encoding="utf-8"))["claim"]
+    assert "not a model response" in scripted
+
+    summary["provider"] = {"name": "command", "model": "external"}
+    summary["stage"] = "b"
+    out = tmp_path / "relay.json"
+    run_twostage._write_results(out, summary, prompts)
+    relay = json.loads(out.read_text(encoding="utf-8"))["claim"]
+    assert "not a model response" not in relay
+    assert "not a reproducible model" in relay
+    assert "supplied input" in relay
+
+
+def test_a_missing_required_word_fails_the_work_not_the_chapter(tmp_path):
+    """The required word is a work-level L1 metric (B-06)."""
+    out = tmp_path / "bundle"
+    provider = _stub_provider(tmp_path, "nokey.py", STAGE_B_ONLY.replace(
+        ".read()", ".read().replace('鍵', '錠')"))
+
+    completed = run_cli(out, "--stage", "b", "--game-log",
+                        str(INPUTS / "game_log.json"), "--command", provider,
+                        provider="command", run_id="no-key")
+    assert completed.returncode == 1
+    summary = read_json(out / "no-key" / "run-summary.json")
+    assert summary["stage_b"]["status"] == "unresolved"
+    assert summary["stage_b"]["missing_must_include"] == ["鍵"]
+    # Every chapter's own checks still pass: only the work-level gate failed.
+    assert all(chapter["status"] == "clean"
+               for chapter in summary["stage_b"]["chapters"])
+
+
+def test_prompts_md_lists_only_the_unanswered_request(tmp_path):
+    """Answered prompts are collapsed so the operator answers the open one (R-08)."""
+    relay = tmp_path / "relay"
+    command = f"{sys.executable} {REPO_ROOT / 'scripts' / 'chat_operator.py'} --dir {relay}"
+    out = tmp_path / "bundle"
+
+    first = run_cli(out, "--command", command, provider="command", run_id="pending")
+    assert first.returncode == 3, first.stderr
+    request_path = next((relay / "requests").glob("*.json"))
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    (relay / "responses").mkdir(parents=True, exist_ok=True)
+    (relay / "responses" / request_path.name).write_text(json.dumps({
+        "text": (INPUTS / "game_log.json").read_text(encoding="utf-8"),
+        "prompt_hash": request["prompt_hash"],
+        "model": "test-stub", "provenance": {"origin": "fresh"},
+    }, ensure_ascii=False), encoding="utf-8")
+
+    second = run_cli(out, "--resume", "--command", command, provider="command",
+                     run_id="pending")
+    assert second.returncode == 3, second.stderr
+    prompts = (out / "pending" / "PROMPTS.md").read_text(encoding="utf-8")
+    assert prompts.count("```text") == 1
+    assert "stage_b/ch01" in prompts
+    assert "stage_b/ch02" not in prompts
+    assert "回答済みのプロンプト" in prompts
+
+
+# -- deterministic time authority -------------------------------------------
+def test_the_run_writes_a_derived_timeline_and_hands_it_to_stage_b(tmp_path):
+    out = tmp_path / "bundle"
+    results_path = tmp_path / "results.json"
+    completed = run_cli(out, "--results", str(results_path))
+    assert completed.returncode == 0, completed.stderr
+    run = out / "fixed"
+
+    timeline = read_json(run / "timeline.json")
+    assert timeline["schema"] == "trpg-timeline-v1"
+    assert timeline["mode"] == "deterministic"
+    assert [row["day"] for row in timeline["chapters"]] == [1.0, 4.0, 7.0]
+    assert [row["location"] for row in timeline["chapters"]] == [
+        "灯台", "王都", "灯台"]
+    # The number the prose must not have to compute itself.
+    aria = timeline["chapters"][2]["characters"][0]
+    assert aria["days_since_leaving_here"] == 6.0
+
+    # It is a derived artifact: reproducible from the log plus canon alone.
+    from asc.gamelog.world import derive_timeline
+    canon = load_canon(run / "inputs" / "canon")
+    again = derive_timeline(load_game_log(run / "game_log.json"), canon)
+    assert json.dumps(again, ensure_ascii=False, sort_keys=True) == json.dumps(
+        timeline, ensure_ascii=False, sort_keys=True)
+
+    # The settled table reaches the prompt, so the model reads it, not derives it.
+    prompt = (run / "stage_b" / "ch03-attempt-1.prompt.txt").read_text(
+        encoding="utf-8")
+    assert "この章の日: 7日目" in prompt
+    assert "この場所を離れてから 6日" in prompt
+
+    summary = read_json(run / "run-summary.json")
+    assert summary["timeline"]["chapters"][2]["days"]["aria"]["leaving"] == 6.0
+    assert read_json(results_path)["timeline"]["schema"] == "trpg-timeline-v1"
+
+
+def _ch03_with_wrong_day(tmp_path):
+    good = (INPUTS / "rewrite" / "ch03.md").read_text(encoding="utf-8")
+    wrong = good.replace("灯台に戻ると、", "四日ぶりの灯台だった。灯台に戻ると、")
+    assert "四日ぶり" in wrong
+    responses = base_responses()
+    responses["stage_b:ch03:t01"] = wrong
+    responses["stage_b:ch03:repair:t01"] = wrong
+    return write_script(tmp_path, responses)
+
+
+def test_a_wrong_explicit_day_count_warns_but_does_not_repair(tmp_path):
+    script = _ch03_with_wrong_day(tmp_path)
+    out = tmp_path / "bundle"
+    completed = run_cli(out, "--results", str(tmp_path / "results.json"),
+                        script=script)
+    assert completed.returncode == 0, completed.stderr
+    run = out / "fixed"
+    report = read_json(run / "rewrite.report.json")
+    assert report["status"] == "clean"
+    chapter = report["chapters"]["ch03"]
+    assert chapter["attempts"] == 1          # no repair round was spent
+    findings = [item for item in chapter["findings"]
+                if item["check"] == "timeline_consistency"]
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "medium"
+    assert findings[0]["blocks_repair"] is False
+    assert read_json(run / "run-summary.json")["timeline"]["strict"] is False
+
+
+def test_strict_timeline_makes_the_same_chapter_a_repair(tmp_path):
+    script = _ch03_with_wrong_day(tmp_path)
+    out = tmp_path / "bundle"
+    completed = run_cli(out, "--strict-timeline",
+                        "--results", str(tmp_path / "results.json"),
+                        script=script)
+    assert completed.returncode == 1
+    run = out / "fixed"
+    report = read_json(run / "rewrite.report.json")
+    assert report["status"] == "unresolved"
+    assert report["chapters"]["ch03"]["attempts"] == 2
+    assert read_json(run / "run-summary.json")["timeline"]["strict"] is True
+    assert read_json(tmp_path / "results.json")["timeline"]["strict"] is True

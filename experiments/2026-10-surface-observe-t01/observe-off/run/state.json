@@ -1,0 +1,65 @@
+{
+  "argv": [
+    "--task",
+    "t01",
+    "--canon",
+    "experiments/2026-10-trpg-slice-t01/inputs/canon",
+    "--design-dir",
+    "experiments/2026-10-trpg-slice-t01/inputs/design",
+    "--provider",
+    "scripted",
+    "--script",
+    "experiments/2026-10-trpg-slice-t01/scripted.json",
+    "--out",
+    "experiments/2026-10-surface-observe-t01/observe-off",
+    "--run-id",
+    "run",
+    "--results",
+    "experiments/2026-10-surface-observe-t01/observe-off/results.json",
+    "--quiet"
+  ],
+  "config": {
+    "canon_files_sha256": {
+      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
+      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
+      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
+      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
+    },
+    "design_files_sha256": {
+      "plot.json": "8f763507ded9e0c72b234cf4eb04648993199ac43e3f85f191f27e7ae523f7ec",
+      "plot.report.json": "1ae2d9468c83e1e531bfc6cee516b28eb7d5b4f5b81d7460710c83b1d2ae3563",
+      "scene.json": "894156a181008ee50d4f1af67c34aebf2f337066ab8e2b86481071bc3c49c3ba",
+      "scene.report.json": "b0eed1ac49417f47a2fff3ff1fcdbf63eeae488461d4e8f27a62a579e81a5ee1",
+      "voice.json": "efb945cfc9d7dc90808b137fa82616c602d24f2338c7aad7ef4b3f59ea554ea6",
+      "voice.report.json": "d4c089ef40d098a729ee9aa17cae08e7396fbbdb93655a81d240f562ca99bbc5"
+    },
+    "game_log_sha256": null,
+    "max_attempts": 2,
+    "observe_surface": false,
+    "prompt_hashes": {
+      "stage-a-gamelog": "c051eacd8b244187",
+      "stage-a-repair": "2177a6fbddf7e1de",
+      "stage-b-repair": "e8bf637756ab4724",
+      "stage-b-rewrite": "036a5ee4c553004a"
+    },
+    "protocol_version": "protocol-v1",
+    "provider": "scripted",
+    "script_sha256": "8a4715a3e4989503040865134afb7d898c0497675aa9793f04f06fa090b789e8",
+    "seed": 0,
+    "stage": "both",
+    "strict_timeline": false,
+    "system": "two-stage",
+    "task": "t01",
+    "temperature": 0.8
+  },
+  "game_log_source": null,
+  "pending": null,
+  "resume_command": "/home/user/AutoStoryCreationAI/.venv/bin/python scripts/run_twostage.py --task t01 --canon experiments/2026-10-trpg-slice-t01/inputs/canon --design-dir experiments/2026-10-trpg-slice-t01/inputs/design --provider scripted --script experiments/2026-10-trpg-slice-t01/scripted.json --stage both --out experiments/2026-10-surface-observe-t01/observe-off --run-id run --seed 0 --temperature 0.8 --max-attempts 2 --results experiments/2026-10-surface-observe-t01/observe-off/results.json --resume",
+  "resume_count": 0,
+  "run_id": "run",
+  "schema": "trpg-slice-state-v1",
+  "stage": "both",
+  "status": "clean"
+}

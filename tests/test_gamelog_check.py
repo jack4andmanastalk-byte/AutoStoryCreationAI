@@ -182,3 +182,109 @@ def test_check_cli_accepts_the_fixture_and_rejects_a_broken_copy(context, tmp_pa
                             "--fail-on", "high", "--quiet"]],
                          cwd=REPO_ROOT, capture_output=True, text=True)
     assert bad.returncode == 1
+
+
+# -- P1 fixes (all-phase rehearsal) ----------------------------------------
+def test_same_scene_learn_then_use_is_allowed(context):
+    """A fact gained and used in the same scene is the TRPG loop, not a leak."""
+    def mutate(payload):
+        scene = payload["chapters"][0]["scenes"][0]
+        scene["state_delta"]["learned_facts"] = [{"character": "aria", "fact": "F-05"}]
+        scene["state_delta"]["used_facts"] = [{"character": "aria", "fact": "F-05"}]
+        scene["emitted_markers"] = ["{{learn: aria fact=F-05}}",
+                                    "{{use: aria fact=F-05}}",
+                                    "{{foreshadow: fs-001 setup}}",
+                                    "{{foreshadow: fs-002 setup}}"]
+
+    report = check(context, mutate)
+    assert report["summary"]["status"] == "clean"
+    low = find_ids(report, "knowledge_boundary", "low")
+    assert low and "同じ場面" in low[0]["message_ja"]
+    assert not find_ids(report, "knowledge_boundary", "high")
+
+
+def test_a_dead_characters_knowledge_use_is_high(context):
+    def mutate(payload):
+        scene = payload["chapters"][1]["scenes"][0]
+        scene["state_delta"]["used_facts"] = [{"character": "johan", "fact": "F-04"}]
+        scene["emitted_markers"].append("{{use: johan fact=F-04}}")
+
+    report = check(context, mutate)
+    high = [item for item in find_ids(report, "knowledge_boundary", "high")
+            if "死者" in item["message_ja"]]
+    assert high
+
+
+def test_present_tense_subject_is_checked(context):
+    def dead_subject(payload):
+        payload["chapters"][0]["scenes"][0]["actions"][0]["subject"] = "johan"
+
+    def live_subject(payload):
+        payload["chapters"][0]["scenes"][0]["actions"][0]["subject"] = "aria"
+
+    dead = check(context, dead_subject)
+    high = [item for item in find_ids(dead, "presence_death", "high")
+            if "subject" in item["message_ja"]]
+    assert high
+
+    live = check(context, live_subject)
+    assert live["summary"]["status"] == "clean"
+    assert find_ids(live, "presence_death", "low")
+
+
+def test_chapter_ids_and_order_are_named(context):
+    def duplicate(payload):
+        payload["chapters"].append(copy.deepcopy(payload["chapters"][0]))
+
+    def reversed_order(payload):
+        payload["chapters"][0], payload["chapters"][2] = (
+            payload["chapters"][2], payload["chapters"][0])
+
+    dup = check(context, duplicate)
+    dup_high = [item for item in find_ids(dup, "schema_shape", "high")
+                if "重複" in item["message_ja"]]
+    assert dup_high and "ch01" in dup_high[0]["message_ja"]
+    # The order finding would only repeat what the duplicate already says.
+    assert not [item for item in find_ids(dup, "schema_shape", "high")
+                if "並び順" in item["message_ja"]]
+
+    order = check(context, reversed_order)
+    order_high = [item for item in find_ids(order, "schema_shape", "high")
+                  if "並び順" in item["message_ja"]]
+    assert order_high
+
+
+def test_current_location_and_movement_chain_are_checked(context):
+    def broken_origin(payload):
+        scene = payload["chapters"][1]["scenes"][0]
+        scene["state_delta"]["location_moves"][0]["origin"] = "港"
+
+    def absent_mover(payload):
+        scene = payload["chapters"][0]["scenes"][0]
+        scene["state_delta"]["location_moves"] = [
+            {"character": "celia", "origin": "港", "destination": "王都",
+             "depart_day": 1, "arrival_day": 4}]
+
+    broken = check(context, broken_origin)
+    high = [item for item in find_ids(broken, "timeline_travel", "high")
+            if "起点" in item["message_ja"]]
+    assert high
+
+    absent = check(context, absent_mover)
+    medium = [item for item in find_ids(absent, "timeline_travel", "medium")
+              if "present_characters" in item["message_ja"]]
+    assert medium
+
+
+def test_unknown_keys_are_reported_not_dropped(context):
+    def mutate(payload):
+        scene = payload["chapters"][0]["scenes"][0]
+        scene["present_character"] = ["boris"]
+        scene["state_delta"]["learn"] = [{"character": "aria", "fact": "F-09"}]
+
+    report = check(context, mutate)
+    keys = {item["evidence"]["key"] for item in
+            find_ids(report, "schema_shape", "low")}
+    assert {"present_character", "learn"} <= keys
+    # Reported, not refused: the rest of the log still checks normally.
+    assert report["summary"]["status"] == "clean"
