@@ -619,5 +619,10 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定�
 * **手順**: [`runbook.md`](../experiments/2026-10-realrun-a-t01/runbook.md)。生成は
   `scripts/chat_operator.py` のリレー（記録された実テキスト）。初回は `--resume` を付けない
   （付けると exit 2）。リレー送信ディレクトリは標本ごとに分ける。
+* **プロンプトの事前書き出し**: `scripts/export_stageb_prompts.py` が 3 章ぶんを
+  `prompts/`（`ch0N.prompt.md`・`ALL.md`・`index.json`）に出す。描画はパイプラインと同じ関数
+  （`run_twostage.stage_b_rewrite_prompt`）を使い、初回の実要求と**バイト一致**することを確認した
+  （ch01 `prompt_hash` = `ab8be3c448d7e96d`、v1.1 の実走りと同値）。seed はプロンプトに入らないので
+  3 標本のプロンプトは同一で、**違いは回答だけ**になる。
 * **主張しないこと**: L2/L3 は `frozen_not_measured`、G5 は operator 方式では到達しない、
   面白さは測らない、観測は事例であって率ではない、応答の独立性は保証されない。

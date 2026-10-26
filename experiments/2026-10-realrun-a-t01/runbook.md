@@ -77,9 +77,26 @@ BUNDLE=$PWD/experiments/2026-10-realrun-a-t01
   --results $BUNDLE/sample-1/results.json --resume
 ```
 
-`sample-1` が終わったら `sample-2`（`--seed 1`、`$RELAY=.../relay/sample-2`、`--out .../sample-2`）、
-`sample-3`（`--seed 2`）を同じ手順で。**リレー送信ディレクトリは標本ごとに分ける**
+`sample-1` が終わったら `sample-2`（`$RELAY=.../relay/sample-2`、`--out .../sample-2`）、
+`sample-3` を同じ手順で。**`--seed` は 3 標本とも 0 のまま**にする（seed はプロンプトに入らないので、
+変えても条件は変わらず、要求キーだけが変わる）。**リレー送信ディレクトリは標本ごとに分ける**
 （同じディレクトリを使い回すと、前の標本の回答が再利用される）。
+
+### 1.5 プロンプトを先にまとめて受け取りたい場合
+
+3 章ぶんのプロンプトは、走らせる前に書き出しておける（パイプラインと同じ関数で描画するので、
+実際に要求される文と**バイト一致**する）。
+
+```bash
+.venv/bin/python scripts/export_stageb_prompts.py \
+  --bundle experiments/2026-10-realrun-a-t01 --task t01
+# → experiments/2026-10-realrun-a-t01/prompts/{ch01,ch02,ch03}.prompt.md
+#    prompts/index.json（prompt_hash）／prompts/ALL.md（3 章をまとめた 1 ファイル）
+```
+
+3 標本とも**同じプロンプト**である（違いは回答だけ）。別のチャットで答えるときは、
+標本ごとに前の回答を見せない（見せると独立標本にならない）。章が検査に落ちた場合の**修復
+プロンプトは回答後に決まる**ので、そのとき `run/PROMPTS.md` か `chat_operator.py --status` で取り出す。
 
 ## 2. 計測（3 標本が揃ってから 1 回）
 

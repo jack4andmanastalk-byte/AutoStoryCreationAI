@@ -36,8 +36,12 @@
 | `inputs/canon/` `inputs/design/` `inputs/game_log.json` | v1.1 と同一（sha256 一致を確認） |
 | `preregistration.json` / `preregistration.md` | 走らせる前の判定規則 |
 | `runbook.md` | 3 標本のコマンドとつまずき |
+| `prompts/` | 3 章ぶんの Stage B プロンプト（`ch0N.prompt.md`、まとめた `ALL.md`、`index.json` に `prompt_hash`）。パイプラインと同じ関数で描画し、実際の要求とバイト一致を確認済み |
 | `results.json` | 計測スクリプトの空の出力（`not_run` / `not_enough_data`） |
 | `sample-1…3/`, `relay/sample-1…3/` | **まだ無い**（走行時に作られる） |
+
+プロンプトは 3 標本で共通（seed はプロンプトに入らない）。標本の違いは回答だけなので、
+`sample-2`・`sample-3` は前の標本の回答を見せずに書く。
 
 ## 走行後にここへ書くこと
 
