@@ -195,6 +195,27 @@ def main(argv: list[str] | None = None) -> int:
     canon = None
     design_ran = False
 
+    # A pinned canon is copied into the run for every stage, not only for
+    # --stage draft. The audit reads <run>/canon, so --stage all --canon used to
+    # fail with "canon directory not found" after the draft had been written
+    # (found while preparing experiments/2026-10-realrun-b-t01). Copying it also
+    # makes the run self-contained: the canon it was judged against is inside it.
+    if args.canon and args.stage != "draft":
+        source_canon = Path(args.canon)
+        try:
+            shutil.copytree(source_canon, ledger.path / "canon")
+        except (OSError, shutil.Error) as exc:
+            print(f"error: cannot copy the reused canon into the run: {exc}",
+                  file=sys.stderr)
+            return 2
+        copied = sorted(path.relative_to(source_canon).as_posix()
+                        for path in source_canon.rglob("*") if path.is_file())
+        ledger.track([f"canon/{name}" for name in copied])
+        summary["canon_source"] = {
+            "path": str(source_canon),
+            "files_sha256": _sha256_tree(source_canon),
+        }
+
     # Draft-only paired runs share a frozen canon and design directory; copy
     # the canon into each run so audit and provenance are self-contained.
     if args.stage == "draft" and args.canon:

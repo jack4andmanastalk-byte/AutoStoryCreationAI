@@ -1,0 +1,168 @@
+{
+  "schema": "realrun-preregistration-v1",
+  "experiment": "2026-10-realrun-b-t01",
+  "batch": "B",
+  "registered_on": "2026-10-27",
+  "registered_before_any_sample": true,
+  "design_note": "docs/two_stage_slice.md §23",
+  "question": "バッチ A と同じ canon で S1 の設計 8 本と本文 3 章を 1 標本走らせたとき、(1) 設計は 1 試行目で通るか、(2) 章の長さは目安に入るか、外れるのは書いた時点か修復か、(3) 同じ検査が繰り返し落ちるか、(4) 題材の必須語は完全一致で出るか、(5) 時点・場所のマーカーは本文が書いたか、canon と一致するか。",
+  "operation": {
+    "why": "このリポジトリはモデルを呼ばない。往復は arena.ai のチャット、状態は GitHub で完結させる。作業者が端末を開くことは前提にしない。",
+    "actors": {
+      "harness": "エージェント。scripts/ の実行、要求の書き出し、回答の取り込み、run と計測、コミットまでを行う。",
+      "respondent": "対話モデル。チャットに貼られた 1 リクエストに答える。前のリクエストを持ち越さない。",
+      "reader": "人。チャットの往復を見るだけで、コマンドを実行しない。"
+    },
+    "channel": "arena.ai のチャット。1 リクエストずつ貼り、タグ付きの回答を受け取る。",
+    "durability": "relay/sample-1/requests/ と responses/ を毎往復コミットする。作業環境が消えても GitHub から再開できる。",
+    "user_actions": "プロンプトを貼り、返ってきた回答をそのままチャットに返す。それだけ。端末・.venv・コマンド入力は不要。"
+  },
+  "condition": {
+    "system": "s1",
+    "stage": "all",
+    "invocation": "scripts/run_pipeline.py --task t01 --system s1 --stage all --canon <pinned>（エージェントが実行）",
+    "plan": {
+      "requested": false,
+      "why": "plan の成果物は canon そのものである。『バッチ A と同一 canon』は、plan を固定しなければ満たせない。固定した plan は走らせない（要求を出さない）。",
+      "consequence": "本バッチが測るのは S1 の design → draft であり、plan 段の出来は測らない。『S1 全体』とは呼ばない。"
+    },
+    "canon_source": "inputs/canon（experiments/2026-10-realrun-a-t01/inputs/canon とバイト一致）",
+    "canon_tree_sha256": "eaaf14e6b960f7723284abd08bd11cfa035855e3a6831f56fddaa37ceb99aa71",
+    "canon_files_sha256": {
+      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
+      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
+      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
+      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
+    },
+    "prompts": {
+      "design-brief": {"version": "1.1", "digest": "d3896b1f827382b0"},
+      "design-world": {"version": "1.0", "digest": "16abef1d5aef1eeb"},
+      "design-history": {"version": "1.0", "digest": "5c7d40abddc6b3b8"},
+      "design-character": {"version": "1.0", "digest": "e4bffc2ee9db74b2"},
+      "design-relation": {"version": "1.0", "digest": "f8c3e64187631141"},
+      "design-plot": {"version": "1.0", "digest": "d5889483d2b77e7f"},
+      "design-scene": {"version": "1.0", "digest": "444740c2bfca082c"},
+      "design-voice": {"version": "1.0", "digest": "bf9880f17ffb484d"},
+      "design-repair": {"version": "1.0", "digest": "24400eb90fe44e64"},
+      "draft-chapter": {"version": "1.2", "digest": "1db9cea08abbbb8e"}
+    },
+    "prompt_note": "本バッチの『v1.2』は draft-chapter v1.2 を指す。§22 の v1.2（保留語・文スコープ規則を足したもの）は stage-b-rewrite の v1.2 で、S1 はそのプロンプトを使わない。名前が同じだけで変更内容は別である。",
+    "provider": "command -> scripts/chat_operator.py（エージェントが実行）",
+    "temperature": 0.8,
+    "temperature_note": "run_pipeline の --stage all では設計も 0.8（--stage design 単独の既定 0.6 ではない）。",
+    "repair_limits": {
+      "design_per_doc": 2,
+      "draft_per_chapter": 2,
+      "note": "コード既定（CLI に露出していない）。設計は上限後も unresolved のまま次へ進み、本文は 2 試行とも不合格なら DraftError で停止する。"
+    },
+    "observe_surface": false,
+    "observe_surface_note": "--observe-surface は Stage B（run_twostage.py）の機能で、S1 には無い。バッチ A の R1（地名の観測）は本バッチでは測らない。"
+  },
+  "samples_planned": 1,
+  "sample_ids": ["sample-1"],
+  "sample_rule": "1 標本で打ち切る。足す場合は、走らせる前に B2（別バンドル・別登録）として追加する。結果を見てから標本を足さない。",
+  "length_band": [1000, 1400],
+  "counting_rules": {
+    "why": "バッチ A の R3 は『修復で消えた所見を数えるか、最終報告だけを見るか』を決めていなかった。同じ曖昧さを残さないため、ここで数え方を固定する。",
+    "resolution": "両方を数え、両方の verdict を出す。片方を主に固定しない。結果を見てから読みを選ばない。",
+    "modes": {
+      "repair_erased_included": "設計は design/<doc>.report.json の first_attempt.findings、本文は draft/<chapter>-attempt-<n>.issues.txt、audit は audit.json。修復で消えた所見も 1 件として数える。",
+      "final_only": "設計は design/<doc>.report.json の findings、本文は採用された章の所見（後述のとおり構造上つねに 0）、audit は audit.json。"
+    },
+    "structural_note": "本文（S1 draft）は、採用されなかった試行の所見を最終報告に残さない。所見は draft/<chapter>-attempt-<n>.issues.txt にしか残らない。audit は最終本文にだけ走る。したがって 2 つの数え方が違う値になるのは設計段でだけである。この非対称は仕様であり、欠陥として扱わない（記録はする）。",
+    "length_mode": "長さの判定は最終本文（採用された章）。attempt 1 の字数は原因の切り分けにだけ使い、判定を二重に作らない。"
+  },
+  "rules": {
+    "B1_design_first_attempt": {
+      "question": "設計 8 文書は 1 試行目で検査を通るか。落ちるのはどの検査か。",
+      "unit": "doc",
+      "docs": ["brief", "world", "history", "character", "relation", "plot", "scene", "voice"],
+      "reading": "1 試行目（design/<doc>.report.json の first_attempt.findings）。修復後の findings も併記する。",
+      "verdicts": {
+        "design_clean_first_attempt": "8 文書すべてで 1 試行目の所見が 0",
+        "design_repaired": "1 試行目に所見があり、修復で解消した（unresolved / missing は 0）",
+        "design_unresolved": "修復上限の後も unresolved または missing の文書がある"
+      },
+      "precedence": ["design_unresolved", "design_repaired", "design_clean_first_attempt"]
+    },
+    "B2_length": {
+      "question": "章の長さは目安 1,000〜1,400 字に入るか。外れたのは書いた時点か、修復か。",
+      "min_chapters_in_band": 2,
+      "chapters_per_sample": 3,
+      "measured_on": "最終本文（採用された章）",
+      "cause_split": "attempt 1 の字数（保存された生の応答から、マーカーと空白を除いて数える）と比べる",
+      "verdicts": {
+        "length_ok": "全標本で 2/3 以上が目安内",
+        "length_lost_in_repair": "目安外の章がすべて『attempt 1 は目安内・最終は外』",
+        "length_out_at_write": "目安外の章がすべて『attempt 1 から目安外』",
+        "length_mixed_causes": "両方がある"
+      },
+      "cause_is_reported_even_when_ok": "目安を割った章が 1 つだけで 2/3 を満たす場合も、その章の原因は out_of_band_causes に残す。判定は length_ok のまま（閾値は動かさない）。"
+    },
+    "B3_recurring_failure": {
+      "question": "同じ検査が 2 標本以上で所見を出すか。",
+      "min_samples": 2,
+      "counting": ["repair_erased_included", "final_only"],
+      "verdicts": {
+        "recurring": "2 標本以上で同じ検査が所見を出した（数え方ごとに出す）",
+        "no_recurring_failure": "どの検査も 2 標本以上では所見を出さない",
+        "not_evaluable_at_n1": "標本が 1 つで閾値 2 に届かない。判定しない（所見の一覧は出す）"
+      },
+      "notes": "verdict は repair_erased_included と final_only の両方について出す。N=1 では両方 not_evaluable_at_n1 になる見込みだが、所見の一覧は残す。"
+    },
+    "B4_must_include_exact": {
+      "question": "題材の必須語が本文に完全一致で出るか。",
+      "terms": ["灯台", "鍵", "嵐"],
+      "match": "部分文字列の完全一致",
+      "why_registered": "2026-10-arena-fresh-s1-n3 の seed 1 で『嵐』が『暴風』になり must_include_rate が 0.667 になった。語形の言い換えは不一致として数える。",
+      "verdicts": {
+        "exact_match_ok": "全標本で rate 1.0",
+        "exact_match_gap": "rate < 1.0。欠けた語を列挙する"
+      }
+    },
+    "B5_marker_declaration": {
+      "question": "章の時点と場所のマーカーを本文が書いたか。canon と一致するか。",
+      "reading": "最終本文の最初の {{time: day=N}} と {{location: X}} を canon の章 day / location と比べる。加えて draft.json の injected（canon から補った分）を数える。",
+      "verdicts": {
+        "markers_disagree": "canon と食い違う宣言が 1 つ以上ある（S1 には照合する検査が無い）",
+        "markers_repaired": "食い違いは無いが、canon から補完した章がある",
+        "markers_declared": "補完 0・食い違い 0"
+      },
+      "precedence": ["markers_disagree", "markers_repaired", "markers_declared"]
+    }
+  },
+  "incomplete_rule": "走行が途中で止まった場合（本文が 2 試行とも不合格で DraftError、provider の失敗など）も、そこまでの run を sample-1/run として残し、判定は incomplete を出す。止まった run を消して書き直さない。条件を変えてやり直す場合は、走らせる前に別バッチとして登録する。",
+  "primary_quantities": [
+    "章ごとの最終字数と attempt 1 の字数",
+    "設計 8 文書の status・attempts・first_attempt.findings（check 名と重大度）",
+    "must_include の hits / rate と、欠けた語",
+    "draft.json の injected（補完されたマーカー）",
+    "章の {{time}} / {{location}} と canon の一致",
+    "audit の violations・by_type・by_severity・checks_skipped・CED"
+  ],
+  "secondary_quantities": [
+    "run-summary.json の gates と status",
+    "manifest.json の prompt_hashes（登録した digest との一致）",
+    "responses.jsonl の provenance.origin（fresh / reused / unspecified）",
+    "バッチ A・2026-10-l1-pair-t01 との L1 並置（scripts/compare_l1_arms.py。記述のみ、判定には使わない）"
+  ],
+  "not_measured": {
+    "plan_stage": "走らせない（canon を固定するため）",
+    "place_observation_R1_of_batch_a": "Stage B 専用の観測器。S1 には無い",
+    "L2_L3": "frozen_not_measured",
+    "reader_preference": "測らない"
+  },
+  "not_claimed": [
+    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
+    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
+    "面白さ・読みやすさの比較はしない",
+    "N=1 なので率・区間・有意差を出さない",
+    "バッチ A との差を『S1 と二段階方式の効果』と呼ばない（canon は同じでも、N=1・同一 operator・prompt が別物）",
+    "protocol-v1 の合格判定には使わない（探索的な参考値）",
+    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）",
+    "『S1 全体』を測ったとは言わない（plan は固定）"
+  ],
+  "stop_rule": "1 標本が完走するか、修復上限で停止した時点で測る。途中で結果を見て条件を変えない。応答が揃わないあいだに閾値も変えない。"
+}

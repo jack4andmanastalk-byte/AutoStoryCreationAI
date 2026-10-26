@@ -681,3 +681,103 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定�
   凍結した。現在の描画とは一致しない（テストが「一致しないこと」を確認している）。
 * 検査そのもの（閾値・重大度・修復対象）は変えていない。`fact_boundary` の判定結果は v1.1 と同一で、
   メッセージの文言も保つ（リファクタであり、緩和ではない）。
+
+## 23. バッチ B: 同じ canon で S1 の設計から先を 1 標本（2026-10-27、走行中）
+
+§21.1 で Stage B だけを 3 標本走らせた結果、**設計 8 文書のうち 3 つ（`plot` / `scene` / `voice`）しか
+走っていない**ことが残った。§15.2 も「S1 全体（plan → 8 設計 → draft）との比較」を未実施として
+挙げ、`2026-10-l1-pair-t01` の「次に試すこと」1 番目は、同じタスクで S1 全体を 1 件走らせて
+**設計段の出来が本文と L1 にどう出るか**を見ることを求めている。バッチ A と同じやり方
+（走らせる前に判定規則を固定）で、1 標本ぶんのバンドルを用意して走り始めた:
+[`experiments/2026-10-realrun-b-t01/`](../experiments/2026-10-realrun-b-t01/note.md)。
+
+### 23.1 往復はチャット、状態はリポジトリ
+
+このリポジトリはモデルを呼ばない。バッチ B の運用は次の分担で、**作業者が端末を開くことを前提に
+しない**。
+
+| 役 | すること |
+| --- | --- |
+| ハーネス（エージェント） | `scripts/` の実行、要求の書き出し、回答の取り込み、run・計測・コミット |
+| 回答者（対話モデル） | チャットに貼られた 1 リクエストに答える |
+| 人 | プロンプトを貼り、回答をそのまま返す |
+
+`relay/sample-1/requests/`（要求と `prompt_hash`）と `responses/`（実テキスト）を**1 往復ごとに
+コミットする**。`run_pipeline.py` は resume しないので、回答が揃うまで毎回最初から走らせて記録済みの
+回答を再生するが、その状態は `build/` ではなく `relay/` にあり、GitHub から再開できる。
+
+### 23.2 「S1 全体」と「同一 canon」は両立しない
+
+canon は plan の成果物である。plan を走らせれば canon が変わり、**バッチ A と同一 canon** は
+満たせない。バッチ B は canon を固定する側を取り、**plan は走らせない**（要求も出さない）。
+`run_pipeline.py --canon` は「plan の代わりに既存 canon を使う」入口で、`Makefile` の `design`
+目標も同じ形を取っている。
+
+* 測るのは **S1 の design → draft**。plan 段の出来は測らない。
+* したがって**「S1 全体を測った」とは書かない。** この trade-off は登録の
+  `condition.plan = {requested: false}` として走行前に固定した。
+* 代わりに、バッチ A（Stage B・同じ canon）と `2026-10-l1-pair-t01`（固定設計・同じ canon）の
+  3 腕を同じ canon 上に並べられる。
+
+### 23.3 バッチ A が残した曖昧さを、登録文で潰す
+
+§21.1 の R3 は「2 標本以上で所見を出した検査」とだけ書き、**最終報告だけを見るのか、修復で
+消えた所見も数えるのか**を決めていなかった。バッチ B は**両方を数え、両方の verdict を出し、
+片方を主に固定しない**。
+
+| 数え方 | 設計 | 本文 | audit |
+| --- | --- | --- | --- |
+| `repair_erased_included` | `design/<doc>.report.json` の `first_attempt.findings` | `draft/<ch>-attempt-<n>.issues.txt` | `audit.json` |
+| `final_only` | `design/<doc>.report.json` の `findings` | 採用章の所見（**構造上つねに 0**） | `audit.json` |
+
+S1 の本文は、採用しなかった試行の所見を最終報告に残さない（`issues.txt` にだけ残る）。
+`audit` は最終本文にだけ走る。**2 つの数え方が違う値になるのは設計段でだけ**であり、これは
+仕様であって欠陥ではない（登録に明記した）。
+
+### 23.4 判定規則（走らせる前に固定）
+
+| 規則 | 問い | 判定 |
+| --- | --- | --- |
+| B1 | 設計 8 文書は 1 試行目で通るか | `design_clean_first_attempt` / `design_repaired` / `design_unresolved` |
+| B2 | 章の長さは目安 1,000〜1,400 字に 2/3 以上入るか。外れたのは書いた時点か修復か | `length_ok` / `length_lost_in_repair` / `length_out_at_write` / `length_mixed_causes` |
+| B3 | 同じ検査が 2 標本以上で所見を出すか | `recurring` / `no_recurring_failure` / `not_evaluable_at_n1`（**2 つの数え方それぞれ**） |
+| B4 | 必須語が完全一致で出るか | `exact_match_ok` / `exact_match_gap` |
+| B5 | 時点・場所のマーカーを本文が書いたか、canon と一致するか | `markers_declared` / `markers_repaired` / `markers_disagree` |
+
+B2 はバッチ A の所見（**目安を割る経路は修復にある**）を判定に織り込み、原因は attempt 1 の字数と
+比べて切り分ける。目安を割った章が 1 つだけで 2/3 を満たす場合も、原因は `out_of_band_causes` に
+残す（判定は `length_ok` のまま）。B4 は `2026-10-arena-fresh-s1-n3` の「嵐 → 暴風」
+（`must_include_rate = 0.667`）の再発監視である。
+
+条件は `s1` / `--stage all` / `--canon`（固定）、temperature 0.8（`--stage all` では設計も 0.8）、
+修復上限は設計・本文とも 2 試行。プロンプトは現行（`draft-chapter` **1.2**、`design-brief` 1.1、
+`design-*` 1.0）で、digest を登録に固定した。**§22 の v1.2 とは別物である**（あちらは
+`stage-b-rewrite` v1.2。S1 はそのプロンプトを使わない）。
+
+### 23.5 用意しているもの
+
+* [`preregistration.json`](../experiments/2026-10-realrun-b-t01/preregistration.json) /
+  [`preregistration.md`](../experiments/2026-10-realrun-b-t01/preregistration.md): 判定規則、
+  数え方、役割分担、canon とプロンプトの `sha256`。
+* [`operations.md`](../experiments/2026-10-realrun-b-t01/operations.md): ハーネス側の手順。
+  **読者は実行しない**（記録用）。
+* [`scripts/measure_realrun_b.py`](../scripts/measure_realrun_b.py): 登録の `sha256` を記録し、
+  B1〜B5 を判定する（B3 は 2 つの数え方の両方）。
+* [`tests/test_measure_realrun_b.py`](../tests/test_measure_realrun_b.py): 数え方の差
+  （修復で消えた所見が片方でだけ数えられること）、長さの原因、マーカーの補完と食い違い、
+  途中停止の扱いを、scripted の走りと手組みの run で確認する。
+
+### 23.6 準備中に見つけた実装の穴（修正済み）
+
+`run_pipeline.py --stage all --canon <dir>` は、canon を run ディレクトリへ複製せずに draft まで
+進み、**audit の段で `canon directory not found` で落ちていた**（`--stage draft` だけが複製して
+いた）。バッチ B の条件がまさにこの組み合わせなので、`--canon` を渡した全段で canon を複製し、
+`run-summary.json` に `canon_source.files_sha256` を残すよう直した。run が「どの canon で判定
+されたか」を自分の中に持つので、バンドルが自己完結する。
+
+### 23.7 主張しないこと（走行前から）
+
+L2/L3 は `frozen_not_measured`。G3/G4 は未測定、G5 は operator 方式では到達しない。N=1 なので
+率・区間・有意差を出さない。**plan 段は測っていない。** 地名の観測（バッチ A の R1）は Stage B
+専用の観測器なので S1 では測らない。バッチ A・`s1-draft` との並置は記述であり、
+方式の効果の推定ではない。

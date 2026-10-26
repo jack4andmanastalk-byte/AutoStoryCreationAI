@@ -5,6 +5,7 @@ manifest, canon validation), not the quality of any model.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -326,6 +327,35 @@ def test_cli_runs_the_whole_s1_story_and_audits_it(tmp_path):
     quiet = run_cli("--task", "t01", "--out", str(tmp_path), "--run-id", "story2",
                     "--report-only")
     assert quiet.returncode == 0
+
+
+def test_cli_runs_from_a_pinned_canon_and_copies_it_into_the_run(tmp_path):
+    """--stage all --canon used to fail at the audit: <run>/canon was never copied."""
+    planned = run_cli("--task", "t01", "--stage", "plan", "--out", str(tmp_path),
+                      "--run-id", "plan", "--quiet")
+    assert planned.returncode == 0, planned.stderr
+    source = tmp_path / "plan" / "canon"
+
+    completed = run_cli("--task", "t01", "--stage", "all", "--canon", str(source),
+                        "--out", str(tmp_path), "--run-id", "pinned", "--quiet")
+    assert completed.returncode == 1, completed.stderr   # the demo text is short
+    run = tmp_path / "pinned"
+    assert (run / "canon" / "characters.json").is_file()
+    summary = json.loads((run / "run-summary.json").read_text(encoding="utf-8"))
+    assert "plan" not in summary                        # the plan stage did not run
+    assert summary["audit"]["checks_skipped"] == 0       # the audit could read the canon
+    digest = hashlib.sha256(
+        (run / "canon" / "characters.json").read_bytes()).hexdigest()
+    assert summary["canon_source"]["files_sha256"]["characters.json"] == digest
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    assert "canon/characters.json" in manifest["artifacts"]
+
+
+def test_cli_rejects_a_canon_that_cannot_be_copied(tmp_path):
+    completed = run_cli("--task", "t01", "--stage", "all",
+                        "--canon", str(tmp_path / "missing"), "--out", str(tmp_path))
+    assert completed.returncode == 2
+    assert "cannot copy the reused canon" in completed.stderr
 
 
 def test_cli_runs_the_s0_baseline(tmp_path):

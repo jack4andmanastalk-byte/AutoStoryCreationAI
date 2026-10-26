@@ -364,6 +364,13 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   長さは 1/3・3/3・3/3 で `mixed`（外れたのは修復後の 2 章だけ）。繰り返す失敗は、最終報告で
   数えると 0 ですが、**修復前**には「三年前」（3 標本すべての ch02）と死者の媒体不足（2 標本）が
   出ており、登録文がその数え方を決めていませんでした（両方の読みを記録）。
+* その数え方を潰した**バッチ B**（同じ `t01`・同じ canon で、S1 の設計 8 文書と本文 3 章を 1 標本）
+  を走行中です: [`experiments/2026-10-realrun-b-t01/`](experiments/2026-10-realrun-b-t01/note.md)
+  （`preregistration.json`・`operations.md`・`scripts/measure_realrun_b.py`）。往復は対話モデルとの
+  チャット、状態は `relay/` のコミットで残すので、作業者が端末を開く前提はありません。canon は plan の
+  成果物なので **plan は固定して走らせません** — 測るのは S1 の design → draft で、「S1 全体」とは
+  呼びません（`docs/two_stage_slice.md` §23）。所見は `repair_erased_included` と `final_only` の
+  **両方**で数え、片方を主にしません。
 * `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
   「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は

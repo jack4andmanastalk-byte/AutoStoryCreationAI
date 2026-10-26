@@ -1,0 +1,102 @@
+{
+  "schema": "realrun-b-v1",
+  "experiment": "2026-10-realrun-b-t01",
+  "preregistration": {
+    "path": "experiments/2026-10-realrun-b-t01/preregistration.json",
+    "sha256": "ecaccfe468b7ca926ff5fe5171d07f3a6ffb87348961b796dc67482f97701b2f"
+  },
+  "condition": {
+    "canon_tree_sha256": "eaaf14e6b960f7723284abd08bd11cfa035855e3a6831f56fddaa37ceb99aa71",
+    "canon_matches_registration": true,
+    "canon_files": {
+      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
+      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
+      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
+      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
+    },
+    "canon_source": "experiments/2026-10-realrun-b-t01/inputs/canon",
+    "prompt_hashes_match_registration": true,
+    "prompt_mismatches": [],
+    "provenance_origins": {},
+    "models": {},
+    "plan_requested": false
+  },
+  "samples": {},
+  "verdicts": {
+    "samples_present": 0,
+    "samples_planned": 1,
+    "samples_complete": [],
+    "B1_design_first_attempt": {
+      "verdict": "not_run",
+      "docs": [
+        "brief",
+        "world",
+        "history",
+        "character",
+        "relation",
+        "plot",
+        "scene",
+        "voice"
+      ],
+      "by_doc": {},
+      "first_attempt_findings_by_check": {},
+      "final_findings_by_check": {},
+      "unresolved": {}
+    },
+    "B2_length": {
+      "verdict": "not_run",
+      "chapters_in_band": {},
+      "needed_per_sample": 2,
+      "band": [
+        1000,
+        1400
+      ],
+      "out_of_band_causes": {}
+    },
+    "B3_recurring_failure": {
+      "verdict": {
+        "repair_erased_included": "not_run",
+        "final_only": "not_run"
+      },
+      "min_samples": 2,
+      "by_check": {
+        "repair_erased_included": {},
+        "final_only": {}
+      },
+      "structural_note": "verdict は repair_erased_included と final_only の両方について出す。N=1 では両方 not_evaluable_at_n1 になる見込みだが、所見の一覧は残す。"
+    },
+    "B4_must_include_exact": {
+      "verdict": "not_run",
+      "terms": [
+        "灯台",
+        "鍵",
+        "嵐"
+      ],
+      "missing_terms": {},
+      "rates": {}
+    },
+    "B5_marker_declaration": {
+      "verdict": "not_run",
+      "marker_mismatches": {},
+      "injected_markers": {}
+    }
+  },
+  "not_claimed": [
+    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
+    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
+    "面白さ・読みやすさの比較はしない",
+    "N=1 なので率・区間・有意差を出さない",
+    "バッチ A との差を『S1 と二段階方式の効果』と呼ばない（canon は同じでも、N=1・同一 operator・prompt が別物）",
+    "protocol-v1 の合格判定には使わない（探索的な参考値）",
+    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）",
+    "『S1 全体』を測ったとは言わない（plan は固定）"
+  ],
+  "limits": [
+    "N=1: no rate, interval or significance claim is made from this batch.",
+    "The plan stage was pinned, not run: this measures S1's design -> draft, not S1 end to end.",
+    "The responder cannot be seeded, so the text is not reproducible (G5 stays unmet); provenance is recorded per response, not assumed fresh.",
+    "Length and marker counts are L1 quantities; they say nothing about whether the chapters are any good."
+  ]
+}
