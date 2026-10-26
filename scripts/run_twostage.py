@@ -73,6 +73,9 @@ from asc.gamelog import (  # noqa: E402
     missing_must_include, parse_game_log, rewrite_needs_repair,
 )
 from asc.gamelog.markers import chapter_markers  # noqa: E402
+from asc.gamelog.world import (  # noqa: E402
+    build_world, derive_timeline, render_chapter_timeline,
+)
 from asc.pipeline import (  # noqa: E402
     CommandProvider, GenerationRequest, GenerationResult, ProviderError,
     ResponsePendingError, RunLedger, ScriptedProvider, Task, TaskError,
@@ -480,7 +483,9 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                         ledger: RunLedger, log: GameLog, canon: Canon,
                         voice: Voice, scenes: SceneDoc, prompts: dict, *,
                         temperature: float, seed: int, max_attempts: int,
-                        min_chars: int = MIN_REWRITE_CHARS) -> dict:
+                        min_chars: int = MIN_REWRITE_CHARS,
+                        timeline: dict | None = None,
+                        strict_timeline: bool = False) -> dict:
     findings: list[dict] = []
     report: dict | None = None
     text = ""
@@ -494,6 +499,7 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                 "voice": _voice_slice(voice), "scene": _scene_notes(scenes, log, chapter_id),
                 "game_log": _chapter_slice(log, chapter_id),
                 "markers": _markers_text(log, chapter_id),
+                "timeline": render_chapter_timeline(timeline or {}, chapter_id, canon),
                 "target": "1 章あたり 1,000〜1,400 字を目安に書く（マーカーは字数に含めない）。",
             })
             purpose = f"stage_b:{chapter_id}"
@@ -504,6 +510,7 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                 "findings": _format_findings(findings),
                 "voice": _voice_slice(voice),
                 "markers": _markers_text(log, chapter_id),
+                "timeline": render_chapter_timeline(timeline or {}, chapter_id, canon),
                 "previous": text,
             })
             purpose = f"stage_b:{chapter_id}:repair"
@@ -518,7 +525,8 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
         ledger.write_text(f"stage_b/{chapter_id}-attempt-{attempt}.txt", result.text)
         text = clean_text(result.text)
         report = check_rewrite(text, chapter_id, log, canon, voice, scenes,
-                               avoid=task.avoid, min_chars=min_chars)
+                               avoid=task.avoid, min_chars=min_chars,
+                               timeline=timeline, strict_timeline=strict_timeline)
         findings = report["findings"]
         if not rewrite_needs_repair(findings):
             break
@@ -563,6 +571,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--max-attempts", type=int, default=2)
+    parser.add_argument("--strict-timeline", action="store_true",
+                        help="treat an explicit day count that contradicts the "
+                             "derived timeline as a repair trigger (default: warning)")
     parser.add_argument("--min-chars", type=int, default=MIN_REWRITE_CHARS,
                         help="per-chapter length gate in characters (the prompt "
                              "target is 1,000-1,400; the default is informational)")
@@ -576,7 +587,8 @@ def parse_args(argv=None) -> argparse.Namespace:
 
 #: Config entries that must not change between a run and its ``--resume``.
 CONFIG_COMPARE = ("task", "system", "stage", "seed", "temperature",
-                  "max_attempts", "provider", "protocol_version")
+                  "max_attempts", "provider", "protocol_version",
+                  "strict_timeline")
 #: Input digests that must not change between a run and its ``--resume``.
 INPUT_COMPARE = ("canon_files_sha256", "design_files_sha256",
                  "script_sha256", "game_log_sha256", "prompt_hashes")
@@ -616,6 +628,8 @@ def _resume_command(args: argparse.Namespace, run_id: str) -> str:
         parts += ["--game-log", args.game_log]
     if args.min_chars != MIN_REWRITE_CHARS:
         parts += ["--min-chars", str(args.min_chars)]
+    if args.strict_timeline:
+        parts.append("--strict-timeline")
     if args.allow_unverified_log:
         parts.append("--allow-unverified-log")
     if args.allow_temp_out:
@@ -714,6 +728,7 @@ def main(argv=None) -> int:
     config = {
         "task": task.id, "system": SYSTEM, "stage": args.stage, "seed": args.seed,
         "temperature": args.temperature, "provider": args.provider,
+        "strict_timeline": bool(args.strict_timeline),
         "max_attempts": args.max_attempts,
         "protocol_version": tasks.protocol,
         "canon_files_sha256": _sha256_tree(Path(args.canon)),
@@ -833,6 +848,7 @@ def main(argv=None) -> int:
         summary["config_changes"] = config_changes
 
     stage_b_reports: dict[str, dict] = {}
+    timeline: dict | None = None
     pending: dict | None = None
     status = "clean"
     game_log_source = None
@@ -885,7 +901,12 @@ def main(argv=None) -> int:
             summary["stage_b"] = {"status": "skipped", "reason": error}
             summary["status"] = "unresolved"
             summary["gates"] = {"stage_a_clean": False, "stage_b_clean": False}
-            summary["limits"] = _limits(args.stage)
+            summary["limits"] = _limits(args.stage) + [
+        "時間の厳密判定はログ側だけ。本文は明示された日数だけを導出表と照合し、"
+        "抽象表現（しばらく・明け方）と書かれていない誤りは対象外。"
+        + ("（--strict-timeline: 不一致は修復対象）" if args.strict_timeline
+           else "（既定: 不一致は警告で修復しない）"),
+    ]
             ledger.write_json("run-summary.json", summary)
             _write_state(ledger, status="unresolved", config=config, pending=None,
                          args=args, resume_count=resume_count, error=error,
@@ -945,6 +966,10 @@ def main(argv=None) -> int:
         }
         if a_report.get("unverified"):
             summary["stage_a"]["unverified"] = True
+        if log is not None:
+            # Settled numbers: prose may omit them, but not contradict them.
+            timeline = derive_timeline(log, canon, build_world(canon))
+            ledger.write_json("timeline.json", timeline)
         if log is None or (a_report["summary"]["status"] != "clean"
                            and not args.allow_unverified_log):
             status = "unresolved"
@@ -960,7 +985,8 @@ def main(argv=None) -> int:
                         task, chapter.id, index, provider, ledger, log, canon,
                         voice, scenes, prompts, temperature=args.temperature,
                         seed=args.seed, max_attempts=args.max_attempts,
-                        min_chars=args.min_chars)
+                        min_chars=args.min_chars, timeline=timeline,
+                        strict_timeline=args.strict_timeline)
                     stage_b_reports[chapter.id] = result["report"]
                     if result["report"]["summary"]["status"] != "clean":
                         status = "unresolved"
@@ -1018,6 +1044,9 @@ def main(argv=None) -> int:
                 } for cid, report in stage_b_reports.items()],
             }
 
+    if timeline is not None:
+        summary["timeline"] = _timeline_summary(timeline)
+        summary["timeline"]["strict"] = bool(args.strict_timeline)
     if status != "pending":
         summary["l1_hygiene"] = _l1_hygiene(ledger, task, args.min_chars)
     summary["provider"]["observed"] = _observed_models(ledger)
@@ -1029,7 +1058,12 @@ def main(argv=None) -> int:
         "stage_a_clean": summary.get("stage_a", {}).get("status") == "clean",
         "stage_b_clean": summary.get("stage_b", {}).get("status") == "clean",
     }
-    summary["limits"] = _limits(args.stage)
+    summary["limits"] = _limits(args.stage) + [
+        "時間の厳密判定はログ側だけ。本文は明示された日数だけを導出表と照合し、"
+        "抽象表現（しばらく・明け方）と書かれていない誤りは対象外。"
+        + ("（--strict-timeline: 不一致は修復対象）" if args.strict_timeline
+           else "（既定: 不一致は警告で修復しない）"),
+    ]
     ledger.write_json("run-summary.json", summary)
     _write_state(ledger, status=status, config=config, pending=pending, args=args,
                  resume_count=resume_count, error=None,
@@ -1154,6 +1188,21 @@ def _observed_models(ledger) -> list[dict]:
     return seen
 
 
+def _timeline_summary(timeline: dict) -> dict:
+    """A deterministic digest of the settled numbers, for ``results.json``."""
+    chapters = [{
+        "id": row["id"], "day": row["day"], "location": row["location"],
+        "elapsed_since_previous": row["elapsed_since_previous"],
+        "days": {item["id"]: {"leaving": item["days_since_leaving_here"],
+                              "arriving": item["days_since_arriving_here"]}
+                 for item in row["characters"]},
+    } for row in timeline.get("chapters", [])]
+    canonical = json.dumps(timeline, ensure_ascii=False, sort_keys=True)
+    return {"schema": timeline.get("schema"),
+            "sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+            "chapters": chapters}
+
+
 def _write_results(path: Path, summary: dict, prompts: dict) -> None:
     """Compact, timestamp-free summary suitable for committing to a bundle."""
     provider = summary["provider"]["name"]
@@ -1173,6 +1222,7 @@ def _write_results(path: Path, summary: dict, prompts: dict) -> None:
                      "findings", "checks", "markers", "marker_counts")},
         "stage_a_allowed_dead_references": summary["stage_a"]["allowed_dead_references"],
         "stage_b": summary["stage_b"],
+        "timeline": summary.get("timeline"),
         "l1_hygiene": summary["l1_hygiene"],
         "status": summary["status"],
         "limits": summary["limits"],

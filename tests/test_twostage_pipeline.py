@@ -77,7 +77,8 @@ def test_scripted_two_stage_run_is_clean_and_self_contained(tmp_path):
                      "inputs/design/scene.json", "inputs/design/voice.json",
                      "inputs/scripted.json", "manifest.json", "responses.jsonl",
                      "design.report.json", "game_log.json", "game_log.report.json",
-                     "rewrite.report.json", "audit.json", "state.json",
+                     "timeline.json", "rewrite.report.json", "audit.json",
+                     "state.json",
                      "run-summary.json", "text/ch01.md", "text/ch02.md",
                      "text/ch03.md"):
         assert (run / relative).is_file(), relative
@@ -687,3 +688,83 @@ def test_prompts_md_lists_only_the_unanswered_request(tmp_path):
     assert "stage_b/ch01" in prompts
     assert "stage_b/ch02" not in prompts
     assert "回答済みのプロンプト" in prompts
+
+
+# -- deterministic time authority -------------------------------------------
+def test_the_run_writes_a_derived_timeline_and_hands_it_to_stage_b(tmp_path):
+    out = tmp_path / "bundle"
+    results_path = tmp_path / "results.json"
+    completed = run_cli(out, "--results", str(results_path))
+    assert completed.returncode == 0, completed.stderr
+    run = out / "fixed"
+
+    timeline = read_json(run / "timeline.json")
+    assert timeline["schema"] == "trpg-timeline-v1"
+    assert timeline["mode"] == "deterministic"
+    assert [row["day"] for row in timeline["chapters"]] == [1.0, 4.0, 7.0]
+    assert [row["location"] for row in timeline["chapters"]] == [
+        "灯台", "王都", "灯台"]
+    # The number the prose must not have to compute itself.
+    aria = timeline["chapters"][2]["characters"][0]
+    assert aria["days_since_leaving_here"] == 6.0
+
+    # It is a derived artifact: reproducible from the log plus canon alone.
+    from asc.gamelog.world import derive_timeline
+    canon = load_canon(run / "inputs" / "canon")
+    again = derive_timeline(load_game_log(run / "game_log.json"), canon)
+    assert json.dumps(again, ensure_ascii=False, sort_keys=True) == json.dumps(
+        timeline, ensure_ascii=False, sort_keys=True)
+
+    # The settled table reaches the prompt, so the model reads it, not derives it.
+    prompt = (run / "stage_b" / "ch03-attempt-1.prompt.txt").read_text(
+        encoding="utf-8")
+    assert "この章の日: 7日目" in prompt
+    assert "この場所を離れてから 6日" in prompt
+
+    summary = read_json(run / "run-summary.json")
+    assert summary["timeline"]["chapters"][2]["days"]["aria"]["leaving"] == 6.0
+    assert read_json(results_path)["timeline"]["schema"] == "trpg-timeline-v1"
+
+
+def _ch03_with_wrong_day(tmp_path):
+    good = (INPUTS / "rewrite" / "ch03.md").read_text(encoding="utf-8")
+    wrong = good.replace("灯台に戻ると、", "四日ぶりの灯台だった。灯台に戻ると、")
+    assert "四日ぶり" in wrong
+    responses = base_responses()
+    responses["stage_b:ch03:t01"] = wrong
+    responses["stage_b:ch03:repair:t01"] = wrong
+    return write_script(tmp_path, responses)
+
+
+def test_a_wrong_explicit_day_count_warns_but_does_not_repair(tmp_path):
+    script = _ch03_with_wrong_day(tmp_path)
+    out = tmp_path / "bundle"
+    completed = run_cli(out, "--results", str(tmp_path / "results.json"),
+                        script=script)
+    assert completed.returncode == 0, completed.stderr
+    run = out / "fixed"
+    report = read_json(run / "rewrite.report.json")
+    assert report["status"] == "clean"
+    chapter = report["chapters"]["ch03"]
+    assert chapter["attempts"] == 1          # no repair round was spent
+    findings = [item for item in chapter["findings"]
+                if item["check"] == "timeline_consistency"]
+    assert len(findings) == 1
+    assert findings[0]["severity"] == "medium"
+    assert findings[0]["blocks_repair"] is False
+    assert read_json(run / "run-summary.json")["timeline"]["strict"] is False
+
+
+def test_strict_timeline_makes_the_same_chapter_a_repair(tmp_path):
+    script = _ch03_with_wrong_day(tmp_path)
+    out = tmp_path / "bundle"
+    completed = run_cli(out, "--strict-timeline",
+                        "--results", str(tmp_path / "results.json"),
+                        script=script)
+    assert completed.returncode == 1
+    run = out / "fixed"
+    report = read_json(run / "rewrite.report.json")
+    assert report["status"] == "unresolved"
+    assert report["chapters"]["ch03"]["attempts"] == 2
+    assert read_json(run / "run-summary.json")["timeline"]["strict"] is True
+    assert read_json(tmp_path / "results.json")["timeline"]["strict"] is True

@@ -1,6 +1,6 @@
 """Deterministic Stage B checks: rewritten prose vs the verified game log.
 
-The rewritten chapter is a rendering of the log, not a new story. Four
+The rewritten chapter is a rendering of the log, not a new story. Five
 mechanical questions are asked of it:
 
 * ``marker_sequence`` — does the prose contain exactly the derived marker
@@ -15,6 +15,10 @@ the same sentence?
   marker that gives a dead person a present-time state change?
 * ``voice_contract`` — do the voice document's banned patterns appear, and is
   the chapter at least minimally non-empty?
+* ``timeline_consistency`` — does an *explicitly written* day count match the
+  timeline derived from the log? Abstract time ("しばらく") is allowed to be
+  abstract; only numbers are compared, and a mismatch is a warning unless the
+  caller asks for strict time checking.
 
 All findings are heuristic *look-here* signals except the marker and
 dead-actor-marker ones, which are exact. ``medium``/``high`` findings cause a
@@ -44,6 +48,7 @@ class Check:
     id: str
     acceptance_ja: str
     limits_ja: str
+    question_ja: str = ""
 
 
 CHECKS: tuple[Check, ...] = (
@@ -60,13 +65,28 @@ CHECKS: tuple[Check, ...] = (
           "voice.json の禁止表現と題材の禁止語が出ず、章本文が空でない。",
           "正規表現と文字列の一致のみ。文体の質は判定しない。"
           "題材の必須語は作品全体で `missing_must_include` が判定する。"),
+    Check("timeline_consistency",
+          "本文に書かれた日数が、ログから導出した時系列と矛盾しない。",
+          "「N日ぶり」「N日目」「N日後」「N日かけて」のような**明示された数字**だけを見て、"
+          "導出表の許容値と照合する。数字を書かない抽象表現（しばらく・明け方・数日）は"
+          "対象外で、書かれていない誤りは検出できない。",
+          "時系列の導出表との語彙・数字の一致のみ。抽象化は許容する（厳密判定はログ側だけ）。"),
 )
 
 
 def _finding(check: str, severity: str, message_ja: str,
-             line: int = 0, **evidence: Any) -> dict:
-    return {"check": check, "severity": severity, "message_ja": message_ja,
-            "evidence": {"line": line, **evidence}}
+             line: int = 0, blocks_repair: bool = True, **evidence: Any) -> dict:
+    """One finding. ``blocks_repair=False`` keeps it a warning.
+
+    Severity alone is not enough for the timeline check: prose may abstract
+    time, so a mismatched number is reported but does not force a rewrite
+    unless the run asked for strict time checking.
+    """
+    finding = {"check": check, "severity": severity, "message_ja": message_ja,
+               "evidence": {"line": line, **evidence}}
+    if not blocks_repair:
+        finding["blocks_repair"] = False
+    return finding
 
 
 def _dead_at(canon: Canon, character_id: str) -> bool:
@@ -119,6 +139,128 @@ def _sentences(text: str) -> list[tuple[int, str]]:
     return pairs
 
 
+#: Kanji digits used for day counts in prose (``三日``, ``十二日``, ``二十四日``).
+_KANJI_DIGITS = {"一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7,
+                 "八": 8, "九": 9}
+
+
+def _day_number(raw: str) -> int | None:
+    """``3`` / ``三`` / ``十二`` / ``二十四`` → an int (1..99)."""
+    if raw.isdigit():
+        return int(raw)
+    if not raw or any(ch not in _KANJI_DIGITS and ch != "十" for ch in raw):
+        return None
+    if "十" not in raw:
+        return _KANJI_DIGITS[raw] if len(raw) == 1 else None
+    head, _, tail = raw.partition("十")
+    tens = _KANJI_DIGITS[head] if head else 1
+    ones = _KANJI_DIGITS[tail] if tail else 0
+    if (head and len(head) != 1) or (tail and len(tail) != 1):
+        return None
+    return tens * 10 + ones
+
+
+#: ``(pattern, kind)`` for explicit day counts. Each kind maps to a different
+#: set of allowed values, because "6 日ぶり" and "3 日かけて" answer different
+#: questions. Anything not listed here (``しばらく``, ``翌朝``) is ignored.
+DAY_PATTERNS = (
+    (re.compile(r"([0-9]+|[一二三四五六七八九十]+)\s*日ぶり"), "since_leaving"),
+    (re.compile(r"([0-9]+|[一二三四五六七八九十]+)\s*日目"), "chapter_day"),
+    (re.compile(r"([0-9]+|[一二三四五六七八九十]+)\s*日後"), "days_after"),
+    (re.compile(r"([0-9]+|[一二三四五六七八九十]+)\s*日(?:間)?\s*"
+                r"(?:かけ|かかる|歩|の道のり|の旅)"), "travel"),
+)
+
+#: Time expressions deliberately left alone: they carry no number to check.
+VAGUE_DAY_RE = re.compile(r"(?:数|何|翌|明)日|週間|しばらく|明け方|その夜")
+
+#: Human-readable label for the finding message.
+_KIND_LABEL = {
+    "since_leaving": "その場所を離れてからの日数",
+    "chapter_day": "この章の日",
+    "days_after": "この章からの経過日数",
+    "travel": "移動にかかる日数",
+}
+
+
+def _allowed_days(kind: str, row: dict, timeline: dict) -> list[int]:
+    """The integers that ``kind`` may take in this chapter."""
+    values: list[float] = []
+
+    def add(value) -> None:
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            values.append(float(value))
+
+    if kind == "since_leaving":
+        for item in row.get("characters", []):
+            add(item.get("days_since_leaving_here"))
+    elif kind == "chapter_day":
+        add(row.get("day"))
+    elif kind == "days_after":
+        for item in row.get("characters", []):
+            add(item.get("days_since_arriving_here"))
+        for move in row.get("moves", []):
+            add(move.get("days"))
+        add(row.get("days_until_next"))
+    else:  # travel
+        for move in row.get("moves", []):
+            add(move.get("days"))
+            add(move.get("required_days"))
+        for days in (timeline.get("travel_days") or {}).values():
+            add(days)
+        add(row.get("elapsed_since_previous"))
+    return sorted({int(value) for value in values if float(value).is_integer()})
+
+
+def timeline_findings(text: str, chapter_id: str, timeline: dict,
+                      *, strict: bool = False) -> tuple[list[dict], int, int]:
+    """Compare explicit day counts with the derived timeline.
+
+    Returns ``(findings, checked, skipped)``. ``skipped`` counts sentences that
+    contain a day-like expression this module does not interpret, so a low
+    number is visible in the report instead of being silently ignored.
+
+    Findings are ``medium`` either way, but only *block* a repair round when
+    ``strict`` is true. The prose is allowed to abstract time; it is not
+    allowed to state a number that contradicts the log.
+    """
+    from .world import chapter_timeline
+
+    row = chapter_timeline(timeline, chapter_id)
+    if row is None:
+        return [], 0, 0
+    findings: list[dict] = []
+    checked = skipped = 0
+    for line, sentence in _sentences(text):
+        for pattern, kind in DAY_PATTERNS:
+            for match in pattern.finditer(sentence):
+                value = _day_number(match.group(1))
+                if value is None:
+                    skipped += 1
+                    continue
+                allowed = _allowed_days(kind, row, timeline)
+                if not allowed:
+                    skipped += 1
+                    continue
+                checked += 1
+                if value in allowed:
+                    continue
+                findings.append(_finding(
+                    "timeline_consistency", "medium",
+                    f"「{match.group(0)}」の {value} 日は、{_KIND_LABEL[kind]}として"
+                    f"導出表にない（許容: {', '.join(str(v) for v in allowed)} 日）。",
+                    line, expression=match.group(0), value=value,
+                    kind=kind, allowed=allowed, sentence=sentence[:80],
+                    blocks_repair=strict))
+        # Only count abstractions that *could* have been a number: "数日",
+        # "何日", "一週間", "翌日". Ordinary uses of 日/朝/夜 are not evidence
+        # of a skipped check.
+        if VAGUE_DAY_RE.search(sentence) and not any(
+                pattern.search(sentence) for pattern, _ in DAY_PATTERNS):
+            skipped += 1
+    return findings, checked, skipped
+
+
 def _mentions_without_medium(text: str, names: tuple[str, ...],
                              references: list[dict]) -> list[dict]:
     """Sentences that name a dead person without saying how they appear.
@@ -145,7 +287,8 @@ def _mentions_without_medium(text: str, names: tuple[str, ...],
 
 def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
                   voice: Voice | None = None, scenes: SceneDoc | None = None, *,
-                  avoid: tuple[str, ...] = (), min_chars: int = 120) -> dict:
+                  avoid: tuple[str, ...] = (), min_chars: int = 120,
+                  timeline: dict | None = None, strict_timeline: bool = False) -> dict:
     """Check one rewritten chapter against the verified log and voice spec."""
     chapter = log.chapter(chapter_id)
     findings: list[dict] = []
@@ -320,11 +463,32 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
         checks.append(_result("voice_contract", len(patterns),
                               len(findings) - before))
 
+    # -- timeline_consistency ------------------------------------------------
+    before = len(findings)
+    checked = skipped = 0
+    if timeline is None:
+        checks.append({**_spec("timeline_consistency"), "status": "skipped",
+                       "reason": "時系列の導出表が渡されていない。",
+                       "evaluated": 0, "findings": 0})
+    else:
+        extra, checked, skipped = timeline_findings(
+            body, chapter_id, timeline, strict=strict_timeline)
+        findings.extend(extra)
+        checks.append({**_spec("timeline_consistency"),
+                       "status": "fail" if len(findings) - before else "pass",
+                       "evaluated": checked, "skipped": skipped,
+                       "strict": strict_timeline,
+                       "findings": len(findings) - before})
+
     by_severity: dict[str, int] = {}
     for item in findings:
         by_severity[item["severity"]] = by_severity.get(item["severity"], 0) + 1
     blocking = sum(1 for item in findings
-                   if item["severity"] in REPAIR_SEVERITIES)
+                   if item["severity"] in REPAIR_SEVERITIES
+                   and item.get("blocks_repair", True))
+    warnings = sum(1 for item in findings
+                   if item["severity"] in REPAIR_SEVERITIES
+                   and not item.get("blocks_repair", True))
     return {
         "schema_version": "1.0",
         "tool": "game-log-rewrite-check",
@@ -339,6 +503,9 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
             "chars": chars,
             "findings": len(findings),
             "blocking_findings": blocking,
+            "warning_findings": warnings,
+            "timeline": {"checked": checked, "skipped": skipped,
+                         "strict": strict_timeline},
             "by_severity": by_severity,
             "expected_markers": len(expected),
             "found_markers": len(found),
@@ -380,7 +547,14 @@ def _result(check_id: str, evaluated: int, findings: int) -> dict:
 
 
 def needs_repair(findings: list[dict]) -> bool:
-    return any(item["severity"] in REPAIR_SEVERITIES for item in findings)
+    """Only findings that may block a repair round count.
+
+    A ``timeline_consistency`` finding is a warning unless the run asked for
+    strict time checking (``--strict-timeline``), because prose is allowed to
+    stay abstract about time.
+    """
+    return any(item["severity"] in REPAIR_SEVERITIES
+               and item.get("blocks_repair", True) for item in findings)
 
 
 def render_markdown(report: dict) -> str:

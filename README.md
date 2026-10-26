@@ -336,6 +336,11 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * Stage B 単独の実応答試走は [`experiments/2026-10-stageb-solo-t01/`](experiments/2026-10-stageb-solo-t01/note.md)
   （3 章 `clean`・修復 1 回。ただし `clean` は事実の整合を意味しません）。
 * Stage A の検査は、未知キーの報告、同一場面の `learn`→`use`、現在時 `subject`、死者の `used_facts`、章 ID の重複と章順、人物の現在地の連続性まで見ます。Stage B は題材の必須語を**作品単位**でゲートします。
+* **日数・場所・時系列は決定論側が決めます**（`src/asc/gamelog/world.py`）。canon の `travel_days` を
+  無向グラフとして最短経路を解き、ログを畳んで `timeline.json`（`trpg-timeline-v1`、派生成果物）を
+  作って Stage B のプロンプトへ渡します。モデルには計算させません。本文側は、**明示された日数だけ**を
+  表と照合し（`timeline_consistency`）、既定は警告・`--strict-timeline` で修復対象です。
+  抽象表現（しばらく・明け方）と、書かれていない誤りは対象外です。
 * **Stage B だけを試す**ときは `--stage b --game-log <verified game_log.json>` を使います。Stage A は
   実行せず、与えたログをその場で再検査し、`clean` のときだけ本文化します（不合格は fail-closed。
   `--allow-unverified-log` を明示した場合だけ続行し、`unverified: true` を残します）。

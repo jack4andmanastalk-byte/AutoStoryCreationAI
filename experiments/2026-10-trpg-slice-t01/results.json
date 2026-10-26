@@ -79,13 +79,14 @@
     "L1 は構造・衛生の検査であり、物語の質・面白さ・読者選好の証拠ではない。",
     "L2/L3 は frozen_not_measured。G3/G4 は未達とも合格とも記録しない。",
     "Arena など版を固定できない経路では G5 を主張しない。",
-    "scripted の実行は配線確認であり、実モデルの応答・効果の観測ではない。"
+    "scripted の実行は配線確認であり、実モデルの応答・効果の観測ではない。",
+    "時間の厳密判定はログ側だけ。本文は明示された日数だけを導出表と照合し、抽象表現（しばらく・明け方）と書かれていない誤りは対象外。（既定: 不一致は警告で修復しない）"
   ],
   "prompt_hashes": {
     "stage-a-gamelog": "c051eacd8b244187",
     "stage-a-repair": "2177a6fbddf7e1de",
     "stage-b-repair": "e8bf637756ab4724",
-    "stage-b-rewrite": "3da88aceccc046ce"
+    "stage-b-rewrite": "036a5ee4c553004a"
   },
   "provider": {
     "model": "scripted-fixture",
@@ -269,5 +270,52 @@
     "missing_must_include": [],
     "status": "clean"
   },
-  "status": "clean"
+  "status": "clean",
+  "timeline": {
+    "chapters": [
+      {
+        "day": 1.0,
+        "days": {
+          "aria": {
+            "arriving": null,
+            "leaving": 0.0
+          }
+        },
+        "elapsed_since_previous": null,
+        "id": "ch01",
+        "location": "灯台"
+      },
+      {
+        "day": 4.0,
+        "days": {
+          "aria": {
+            "arriving": 0.0,
+            "leaving": 0.0
+          },
+          "boris": {
+            "arriving": null,
+            "leaving": null
+          }
+        },
+        "elapsed_since_previous": 3.0,
+        "id": "ch02",
+        "location": "王都"
+      },
+      {
+        "day": 7.0,
+        "days": {
+          "aria": {
+            "arriving": 0.0,
+            "leaving": 6.0
+          }
+        },
+        "elapsed_since_previous": 3.0,
+        "id": "ch03",
+        "location": "灯台"
+      }
+    ],
+    "schema": "trpg-timeline-v1",
+    "sha256": "438a244c9222fad51675be12170e07d09f02fae8b42ce5fb37bf956bf852999e",
+    "strict": false
+  }
 }

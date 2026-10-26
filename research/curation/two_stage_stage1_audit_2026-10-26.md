@@ -465,3 +465,24 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
   B-05 と同じトレードオフに入る。
 - 人手照合を手順として固定する（ログの出来事→本文箇所の対応表を章ごとに作り、検出漏れと誤検出を
   同じ様式で記録する）。本試走と Stage B 単独試走の記録がその雛形になる。
+
+## 13. 時間の権威を決定論側へ移す（2026-10-26、実装記録）
+
+§12 の検出漏れ 1（ch03「四日ぶり」）への対応。**観測ではなく改修**である。仕様と限界は
+[`docs/two_stage_slice.md`](../../docs/two_stage_slice.md) §14。
+
+- 追加: `src/asc/gamelog/world.py`（`World` = 無向の移動グラフ + Dijkstra 最短経路、
+  `derive_timeline` = canon とログの畳み込み、`render_chapter_timeline` = Stage B への要約）。
+- 追加: `check_rewrite` の 5 番目の検査 `timeline_consistency`。**明示された日数だけ**を、
+  種類ごとの許容集合（滞在 / 章の日 / 経過 / 移動）と比べる。`medium`、既定は警告、
+  `--strict-timeline` のときだけ修復対象。抽象表現と、書かれていない誤りは対象外（`skipped`）。
+- 追加: run ディレクトリの `timeline.json`（`schema: trpg-timeline-v1`、派生成果物）。
+  `run-summary.json` / `results.json` には要約と SHA-256 だけを入れた。
+- 追加: Stage B プロンプト v1.1（`$timeline` プレースホルダと契約 6「日数を自分で計算しない」）。
+- 追加: probe `B8`（3 通りの比較）、`tests/test_gamelog_timeline.py`（25 件）。
+- 変更なし: protocol-v1 の系・指標・閾値、L1 の値、Stage A の 8 検査、既存 `results.json`
+  （`2026-10-full-t01` の記録は再生成していない）。L2/L3 と G3/G4 は `frozen_not_measured` のまま。
+
+残る検出漏れ（§12 の 2〜4、M-2/M-3/M-4）は今回の範囲外である。ログにない細部の追加や、
+ログが宣言していない数量は、依然として機械的に検出できない。**`clean` は意味的整合の保証ではない**
+という §4・§11・§12 の結論は変わらない。

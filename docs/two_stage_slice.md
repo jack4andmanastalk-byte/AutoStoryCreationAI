@@ -7,7 +7,7 @@
 
 ## 1. 目的と射程
 
-現行の S1（`Plan → Design → Draft`）は、1 回の章生成に「状態管理（何が起きたか）」と「散文表現（どう語るか）」を同時に要求する。本スライスは、設計書を**事実の骨格**として確定する Stage A（`game_log.json`）と、确定した骨格を**視点・文体だけに集中して散文化する** Stage B に分離する。
+現行の S1（`Plan → Design → Draft`）は、1 回の章生成に「状態管理（何が起きたか）」と「散文表現（どう語るか）」を同時に要求する。本スライスは、設計書を**事実の骨格**として確定する Stage A（`game_log.json`）と、確定した骨格を**視点・文体だけに集中して散文化する** Stage B に分離する。
 
 `research/curation/../japan_trpg/report.md` の B2（フェイズ／シーン制）、B5（状況→行動→結果ループ）、C4（秘密の開示設計）を、既存の `canon` / `plot.json` / `scene.json` / `voice.json` の上にそのまま載せる。**新しいゲームエンジンは作らない。**
 
@@ -16,9 +16,10 @@
 1. 章・場面単位の厳密な `game_log.json` スキーマ（`src/asc/gamelog/schema.py`）
 2. `canon`・`plot.json`・`scene.json` に対する 8 種の決定論的検査（`src/asc/gamelog/check.py`）
 3. `state_delta` から確定マーカー列を導出する純関数（`src/asc/gamelog/markers.py`）
-4. Stage B 本文のマーカー・知識境界・人物境界・文体の検査（`src/asc/gamelog/rewrite.py`）
+4. Stage B 本文のマーカー・知識境界・人物境界・文体・明示日数の検査（`src/asc/gamelog/rewrite.py`）
 5. Stage A → 検査 → 修復 → **検証済みログのみ** Stage B → 検査 → 修復、の配線（`scripts/run_twostage.py`）
 6. 固定台本（`scripted`）による決定論的な回帰テストと自己完結バンドル
+7. 移動日数・章の日・滞在日数の**決定論的な導出**（`src/asc/gamelog/world.py`）と、その表を渡す Stage B 配線（§14）
 
 ### 実装していないもの（Phase 3 以降）
 
@@ -26,6 +27,7 @@
 - 物語途中の死亡イベント、章内の複数場所移動、1 章に複数場面をまたぐ語り直し
 - 実モデル（Arena リレー）による応答の収集と L1 ペア比較。**今回は実施していない。**
 - L2/L3 の評定・較正。引き続き `frozen_not_measured`。
+- モデル自身にツールを呼ばせて日付・移動を決めること（§14.5、往復の契約を作り直す必要があるため見送り）。
 
 ## 2. 全体像
 
@@ -39,8 +41,10 @@
           │  決定論的検査 check_game_log（8 検査）→ 不合格なら stage-a-repair.md
           │  状態: clean のみ通過（fail-closed）
           ▼  emitted_markers = derive_markers(state_delta)
-[Stage B] 章ごとに stage-b-rewrite.md（ログの該当章 + voice.json + 確定マーカー列）
-          │  本文 → check_rewrite（4 検査）→ 不合格なら stage-b-repair.md
+          ▼  timeline.json = derive_timeline(log, canon)   ← 日数・場所・順序の確定値
+[Stage B] 章ごとに stage-b-rewrite.md（ログの該当章 + voice.json + 確定マーカー列
+          + この章の時系列表）
+          │  本文 → check_rewrite（5 検査）→ 不合格なら stage-b-repair.md
           ▼
 [監査]    既存 continuity-ledger（audit_texts）＋ L1 衛生指標を記録
           （L2/L3 は実行しない）
@@ -117,6 +121,7 @@ CLI 単体でも実行できる。
 | `character_boundary` | 本文に出る人物が `present_characters` か、**媒体を伴う**死者言及だけ。死者は、名前を含む**文**に宣言済みの媒体語（記録・遺物・回想）か参照の語彙（筆跡・手形・思い出 など）がある場合だけ許容 | 未宣言の死者・媒体のない言及 `high` / 未登場の生存者 `medium` |
 | `fact_boundary` | 未開示事実の `terms`、この章で `withheld` の事実の語彙、死者の現在時状態マーカーがない | 語彙 `medium` / 死者マーカー `high` |
 | `voice_contract` | `voice.json` の `banned`（正規表現）と題材の禁止語が出ず、本文が最低長以上 | `medium`（不正な正規表現は `low`） |
+| `timeline_consistency` | 本文に書かれた**明示的な日数**（「N日ぶり」「N日目」「N日後」「N日かけて」）が、ログから導出した時系列の許容値に含まれる | `medium`。既定は**警告のみ**（修復しない）。`--strict-timeline` のときだけ修復対象 |
 | `missing_must_include`（作品単位） | 題材の必須語が**作品全体**に現れる。章ごとの検査が通っても、欠ければ Stage B 全体を `unresolved` にする | `medium`（run の状態） |
 
 知識境界の語彙検査は**手掛かり**であって断定ではない（既存の `knowledge_violation` と同じく `medium`）。死者の現在時状態マーカー（`{{state: johan ...}}` 等）は文字列として厳密に検出できるため `high` にする。
@@ -303,3 +308,103 @@ run 出力はコミットしていない。
   品質・面白さ（L2/L3）と G5 は主張しない。S1 との比較は未実施。
 - 次に必要: 本文側の現在地・日数（今回の M-1）を機械的に近づけるか、人手照合を手順として固定するか。
   後者を選ぶ場合、照合の観点と記録様式を試走ごとに同じにする。
+
+## 14. 日数・場所・順序の権威を決定論側へ移す（2026-10-26）
+
+§13.1 の検出漏れ M-1（ch03 の「四日ぶり」）は、**言語モデルに計算させていた**ことの症状だった。
+日数・現在地・時系列は、物語の創作物ではなく canon とログから決まる値である。そこで「決める」役割を
+決定論側へ移し、モデルには**決まった値を渡す**だけにした。3 層に分けて持ち場を明示する。
+
+| 層 | 何を決めるか | 実装 | 失敗したときの扱い |
+| --- | --- | --- | --- |
+| 権限 | 移動日数（`travel_days`）・章の日・経過日数・滞在日数 | `src/asc/gamelog/world.py` の `World` / `derive_timeline` | 決定論。推定しない（未知の場所対は `None`） |
+| 受渡し | 確定値を Stage B に渡す | `timeline.json`（派生成果物）＋プロンプトの `$timeline` | 表が無ければ検査は `skipped` |
+| 検証 | 本文に**書かれた**数字が表と合うか | `check_rewrite` の `timeline_consistency` | `medium`。既定は警告、`--strict-timeline` で修復対象 |
+
+### 14.1 `timeline.json` は派生成果物
+
+`scripts/run_twostage.py` は Stage A が検証を通った直後に
+
+```python
+timeline = derive_timeline(log, canon, build_world(canon))
+```
+
+を実行し、run ディレクトリへ `timeline.json`（`schema: trpg-timeline-v1`）を書き出す。中身は
+章ごとの `day` / `location` / `elapsed_since_previous` / `days_until_next`、登場人物ごとの
+`days_since_leaving_here` / `days_since_arriving_here`、`state_delta.location_moves` から畳んだ
+移動（`depart_day` / `arrival_day` / `days` / `required_days`）、そして `travel_days` の全対最短経路。
+
+* 入力は canon と `game_log.json` だけ。**同じ 2 つからは同じ表が出る**（テストで文字列一致を確認）。
+* 手で編集しない。直すべきはログか canon で、表は毎回作り直す。
+* `run-summary.json` と `results.json` には表そのものではなく要約（章ごとの日・場所・滞在日数と
+  SHA-256）を入れる。`results.json` の他の欄は変えていない。
+
+`World` は `locations[].travel_days` を**無向**の重み付きグラフとして読み、`travel_days(a, b)` を
+Dijkstra の最短経路で返す。対称表なので両方向を登録し、同じ対に違う値があれば**小さい方**を採る
+（別経路があるのに移動不能になるのを避ける）。**繋がっていない対は `None`** を返し、勝手に距離を
+作らない。`None` はそのまま「検査できない」として `skipped` に落ちる。
+
+### 14.2 二段構え — ログ側は厳密、本文側は抽象化を許す
+
+利用者の判断（2026-10-26）どおり、**ログの時系列は厳密に、読み物としての本文は抽象化を許す**。
+
+* ログ側（`check_game_log`）は従来どおり厳密。移動日数は `travel_days` と照合し、章の日は単調に進む。
+* 本文側（`timeline_consistency`）が見るのは**明示された数字だけ**。「N日ぶり」「N日目」「N日後」
+  「N日かけて」を拾い、種類ごとに別の許容集合と比べる（「ぶり」は滞在日数、「目」は章の日、
+  「後」は経過、「かけて」は移動日数）。
+* 「しばらく」「明け方」「数日」「翌日」「一週間」のような抽象表現は**対象外**で、`skipped` として
+  数えるだけ。数字を書かない文は**失敗ではない**。章が時系列を口にすることも要求しない。
+* 「N日ぶり」の N は**その場所を離れてからの日数**なので、`days_since_leaving_here` と比べる。
+  到着日からの日数と混同しないよう、種類ごとに許容値を作り直している。
+
+つまり契約は「**明示した数字は表と一致させる**」であって「**表を本文に書かせる**」ではない。
+抽象化は文体の選択であり、検査の対象ではない。
+
+### 14.3 警告を既定にした理由（`--strict-timeline`）
+
+数字の拾い方は語彙による近似なので、偽陽性が出る（「半日だけずれていた」のような数量は拾わないが、
+「三日分の食料」のような言い回しは将来拾いうる）。既定で修復を強制すると、正しい本文を語彙の都合で
+書き換えさせることになる。そこで
+
+* 既定: `medium` の**警告**。`findings` には残るが `blocks_repair` が `False` なので修復しない。
+  `rewrite.report.json` の `warning_findings` と `timeline: {checked, skipped, strict}` で見える。
+* `--strict-timeline`: 同じ所見が修復対象になり、直らなければ章は `unresolved`。
+
+`results.json` の `timeline.strict` にどちらで回したかが残る。既定と厳密を混ぜた比較をしないため、
+run の条件（`config`）にも `strict_timeline` を含め、`--resume` の条件一致判定にも入れてある。
+
+### 14.4 実データでの確認
+
+全工程試走の実ログ（`experiments/2026-10-full-t01/relay/`）から導出した表:
+
+| 章 | 日 | 場所 | 前章から | アリア：この場所を離れてから |
+| --- | ---: | --- | ---: | ---: |
+| ch01 | 1 | 灯台 | — | 0（到着も 0） |
+| ch02 | 4 | 王都 | 3 | 0 |
+| ch03 | 7 | 灯台 | 3 | **6** |
+
+`make probe-gamelog` の B8 で、ch03 に 1 文だけ足して 3 通りを比べた（2026-10-26 実行）:
+
+| 足した文 | 既定（警告） | `--strict-timeline` |
+| --- | --- | --- |
+| 「六日ぶりの灯台だった。」 | `clean` / 警告 0 / checked 1 | `clean` |
+| 「四日ぶりの灯台だった。」 | `clean` / 警告 1（許容: 6 日）/ checked 1 | `unresolved`・blocking 1 |
+| 「しばらくぶりの灯台だった。」 | `clean` / 警告 0 / checked 0・skipped 1 | `clean` |
+
+§13.1 の M-1 は、既定でも**報告される**ようになった（修復はしない）。ただし M-2〜M-4
+（ログにない細部・数値）は依然として検出対象外で、`clean` が意味的整合を意味しないことは変わらない。
+
+### 14.5 やらなかったこと — ツール呼び出し（第 3 段、未実施）
+
+モデル自身に `travel_days` や `derive_timeline` を**呼ばせて**値を決める設計は、今回は採らない。
+
+* `GenerationRequest` / `GenerationResult` は単発往復で、`BundleProvider` の再生契約
+  （`prompt_hash` + `response_sha256`、`--resume`）は「1 プロンプト = 1 応答」を前提にしている。
+  ツール往復を入れると 1 リクエストが手順列になり、記録・再生・`--resume` の意味を作り直す必要がある。
+* 今の時点でモデルが**選ぶ**値は無い。章の日・場所・移動は canon とログで既に決まっており、
+  渡せば足りる。ツール呼び出しが効くのは、新しい場所・未定義の対・分岐する日付をモデルが決める
+  段階（Phase 3 以降）で、そのときは手順列として設計し直す。
+
+したがって今回の変更は**受渡しの追加と検証の追加**であって、生成の自由度は増やしていない。
+L1 の値（`must_include`・legacy 監査・CED）も、protocol-v1 の系・指標・閾値も変えていない。
+新しい所見は `medium` の警告として `rewrite.report.json` にだけ増える。

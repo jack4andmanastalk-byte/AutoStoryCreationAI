@@ -37,6 +37,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from asc.gamelog.check import check_game_log  # noqa: E402
 from asc.gamelog.rewrite import check_rewrite, missing_must_include  # noqa: E402
 from asc.gamelog.schema import load_game_log, parse_game_log  # noqa: E402
+from asc.gamelog.world import derive_timeline  # noqa: E402
 from asc.plot.schema import load_plot  # noqa: E402
 from asc.scene.schema import load_scenes  # noqa: E402
 from asc.story.canon import load_canon  # noqa: E402
@@ -143,6 +144,8 @@ STAGE_B = (
      "短い別名の言及は人物境界に出るか。"),
     ("B7", "タスクの必須語（鍵）を全章から落とす",
      "must_include は作品全体でゲートされるか。"),
+    ("B8", "ch03 の「六日ぶり」を「四日ぶり」に置き換える",
+     "明示された日数の矛盾は検出できるか。抽象化は許容されるか。"),
 )
 
 
@@ -221,6 +224,36 @@ def run_stage_b(bundle: Path) -> int:
             print(f"    missing_must_include={missing} → 作品単位では "
                   f"{'unresolved' if missing else 'clean'}")
             continue
+        if probe_id == "B8":
+            # The scripted ch03 writes no day number at all, so the probe
+            # injects one: the derived table says aria left 灯台 six days ago.
+            timeline = derive_timeline(log, canon)
+            anchor = "灯台に戻ると、"
+            variants = (
+                ("正しい「六日ぶり」", "六日ぶりの灯台だった。"),
+                ("誤った「四日ぶり」", "四日ぶりの灯台だった。"),
+                ("抽象化「しばらく」", "しばらくぶりの灯台だった。"),
+            )
+            for label, opening in variants:
+                text = chapters["ch03"].replace(anchor, opening + anchor)
+                kwargs = dict(avoid=("古代の予言", "選ばれし者"), min_chars=200,
+                              timeline=timeline)
+                warn = check_rewrite(text, "ch03", log, canon, voice, scenes,
+                                     **kwargs)
+                strict = check_rewrite(text, "ch03", log, canon, voice, scenes,
+                                       strict_timeline=True, **kwargs)
+                summary = warn["summary"]
+                print(f"    {label}: warn status={summary['status']} "
+                      f"blocking={summary['blocking_findings']} "
+                      f"warning={summary['warning_findings']} "
+                      f"checked={summary['timeline']['checked']} "
+                      f"skipped={summary['timeline']['skipped']} / "
+                      f"strict status={strict['summary']['status']} "
+                      f"blocking={strict['summary']['blocking_findings']}")
+                for item in warn["findings"]:
+                    if item["check"] == "timeline_consistency":
+                        print(f"      - [{item['severity']}] {item['message_ja']}")
+            continue
         report = check_rewrite(bodies[probe_id], "ch01", log, canon, voice, scenes,
                               avoid=("古代の予言", "選ばれし者"), min_chars=200)
         _print_findings(report)
@@ -228,6 +261,7 @@ def run_stage_b(bundle: Path) -> int:
           "欠けると runner が unresolved にする、という差の確認。）")
     print("    （B6 は canon の別名「兄」（1 文字）を現在時の行動主にしたもの。"
           "character_boundary は 2 文字未満の名前を走査しない。）")
+    print("    （B8 は日数を数字で書いた場合だけを照合する。抽象化と、書かれていない""誤りは対象外。厳密判定は --strict-timeline のときだけ。）")
     return 0
 
 
