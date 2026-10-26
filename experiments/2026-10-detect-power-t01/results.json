@@ -1,0 +1,205 @@
+{
+  "schema": "detection-power-v1",
+  "scope": "which log-dependent checks fire when a known error is injected. Not a measure of story quality, and not a protocol-v1 result.",
+  "game_log": "experiments/2026-10-stageb-v11-t01/inputs/game_log.json",
+  "mutations": [
+    {
+      "id": "wrong_day_since",
+      "chapter": "ch03",
+      "label": "「六日ぶり」を「四日ぶり」にする（離れてからの日数を誤る）"
+    },
+    {
+      "id": "dead_acts_now",
+      "chapter": "ch01",
+      "label": "死者が現在時に行動する一文を足す"
+    },
+    {
+      "id": "withheld_term",
+      "chapter": "ch02",
+      "label": "この章で保留の事実 F-04 の語「三年前」を足す"
+    },
+    {
+      "id": "offlog_place",
+      "chapter": "ch01",
+      "label": "ログにない場所と船旅を足す"
+    },
+    {
+      "id": "unquantified_number",
+      "chapter": "ch02",
+      "label": "ログが宣言しない数量「半日」を足す"
+    }
+  ],
+  "ignored_checks": [
+    "marker_sequence"
+  ],
+  "arms": {
+    "log-backed": {
+      "chapters": [
+        "ch01",
+        "ch02",
+        "ch03"
+      ],
+      "baseline": {
+        "ch01": [],
+        "ch02": [],
+        "ch03": []
+      },
+      "marker_sequence_fails_at_baseline": {
+        "ch01": false,
+        "ch02": false,
+        "ch03": false
+      },
+      "mutations": {
+        "wrong_day_since": {
+          "chapter": "ch03",
+          "label": "「六日ぶり」を「四日ぶり」にする（離れてからの日数を誤る）",
+          "applied": true,
+          "detected": [
+            {
+              "check": "timeline_consistency",
+              "severity": "medium",
+              "message_ja": "「四日ぶり」の 4 日は、その場所を離れてからの日数として導出表にない（許容: 6 日）。"
+            }
+          ],
+          "detected_by": [
+            "timeline_consistency"
+          ]
+        },
+        "dead_acts_now": {
+          "chapter": "ch01",
+          "label": "死者が現在時に行動する一文を足す",
+          "applied": true,
+          "detected": [
+            {
+              "check": "character_boundary",
+              "severity": "high",
+              "message_ja": "死者 ヨハン（ヨハン）の言及に、宣言された媒体（回想／潮札）も参照の語彙も同じ文にない。現在時の行動として読めるため不合格。記録・遺物・回想として書くか、ゲームログに宣言を足す。"
+            }
+          ],
+          "detected_by": [
+            "character_boundary"
+          ]
+        },
+        "withheld_term": {
+          "chapter": "ch02",
+          "label": "この章で保留の事実 F-04 の語「三年前」を足す",
+          "applied": true,
+          "detected": [
+            {
+              "check": "fact_boundary",
+              "severity": "medium",
+              "message_ja": "未開示の事実 F-04 の語「三年前」が本文にある。F-04 はこの章で保留と宣言（兄が灯りを落とした理由は、灯台で潮札を読む終章まで伏せる。）。"
+            }
+          ],
+          "detected_by": [
+            "fact_boundary"
+          ]
+        },
+        "offlog_place": {
+          "chapter": "ch01",
+          "label": "ログにない場所と船旅を足す",
+          "applied": true,
+          "detected": [],
+          "detected_by": []
+        },
+        "unquantified_number": {
+          "chapter": "ch02",
+          "label": "ログが宣言しない数量「半日」を足す",
+          "applied": true,
+          "detected": [],
+          "detected_by": []
+        }
+      }
+    },
+    "direct": {
+      "chapters": [
+        "ch01",
+        "ch02",
+        "ch03"
+      ],
+      "baseline": {
+        "ch01": [
+          {
+            "check": "fact_boundary",
+            "severity": "medium"
+          }
+        ],
+        "ch02": [
+          {
+            "check": "fact_boundary",
+            "severity": "medium"
+          }
+        ],
+        "ch03": [
+          {
+            "check": "character_boundary",
+            "severity": "medium"
+          }
+        ]
+      },
+      "marker_sequence_fails_at_baseline": {
+        "ch01": true,
+        "ch02": true,
+        "ch03": true
+      },
+      "mutations": {
+        "wrong_day_since": {
+          "chapter": "ch03",
+          "label": "「六日ぶり」を「四日ぶり」にする（離れてからの日数を誤る）",
+          "applied": true,
+          "detected": [
+            {
+              "check": "timeline_consistency",
+              "severity": "medium",
+              "message_ja": "「四日ぶり」の 4 日は、その場所を離れてからの日数として導出表にない（許容: 6 日）。"
+            }
+          ],
+          "detected_by": [
+            "timeline_consistency"
+          ]
+        },
+        "dead_acts_now": {
+          "chapter": "ch01",
+          "label": "死者が現在時に行動する一文を足す",
+          "applied": true,
+          "detected": [
+            {
+              "check": "character_boundary",
+              "severity": "high",
+              "message_ja": "死者 ヨハン（ヨハン）の言及に、宣言された媒体（回想／潮札）も参照の語彙も同じ文にない。現在時の行動として読めるため不合格。記録・遺物・回想として書くか、ゲームログに宣言を足す。"
+            }
+          ],
+          "detected_by": [
+            "character_boundary"
+          ]
+        },
+        "withheld_term": {
+          "chapter": "ch02",
+          "label": "この章で保留の事実 F-04 の語「三年前」を足す",
+          "applied": true,
+          "detected": [],
+          "detected_by": []
+        },
+        "offlog_place": {
+          "chapter": "ch01",
+          "label": "ログにない場所と船旅を足す",
+          "applied": true,
+          "detected": [],
+          "detected_by": []
+        },
+        "unquantified_number": {
+          "chapter": "ch02",
+          "label": "ログが宣言しない数量「半日」を足す",
+          "applied": true,
+          "detected": [],
+          "detected_by": []
+        }
+      }
+    }
+  },
+  "limits": [
+    "The direct arm never saw the game log; running the log checks on it is a counterfactual, not a verdict on that text.",
+    "One text per arm and one injection per mutation: a miss is a miss for this text, not a proven blind spot of the check.",
+    "marker_sequence is excluded because the direct arm fails it at baseline for structural reasons."
+  ]
+}

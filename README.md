@@ -337,6 +337,12 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   [`experiments/2026-10-stageb-v11-t01/`](experiments/2026-10-stageb-v11-t01/note.md)。同じ検証済みログから
   3 章を作り直して `clean`（修復 1 回）。誤っていた「四日ぶり」は「六日ぶり」になり、時系列検査が
   照合して不一致 0 でした。ただし `clean` は目標長の達成も意味的整合も意味しません。
+* **検査の検出力**は [`experiments/2026-10-detect-power-t01/`](experiments/2026-10-detect-power-t01/note.md)。
+  既知の誤りを 5 種注入すると、日数・死者の現在時行動・保留事実の語彙は両腕で発火し、
+  ログにない場所・移動と宣言のない数量は**どちらでも検出できません**（`scripts/probe_detection_power.py`）。
+  ログを見ずに書いた本文は、ログ契約を当てると既に 3 件の `medium` 所見を持ちます。
+* `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
+  「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は
   [`experiments/2026-10-l1-pair-t01/`](experiments/2026-10-l1-pair-t01/note.md)。必須語 1.0・禁止 0 は
   両方で同じで、**L1 のパターン集合は 2 条件を識別しません**。差は指標ではなく「ログという照合先が

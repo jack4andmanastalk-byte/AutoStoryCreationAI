@@ -521,3 +521,18 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
 - v1.0 の記録は `prompt_hash` 変更により replay 不可（exit 4）。この run が現在のプロンプトに
   対する有効な記録で、`relay/` から同一の 3 章を再生成できる。
 - 未実施: `--strict-timeline` での同条件の試行、誤った日数を注入したときの修復の観測。
+
+## 16. 検査の検出力と `--strict-timeline`（2026-10-26、観測）
+
+- **検出力**: [`experiments/2026-10-detect-power-t01/`](../../experiments/2026-10-detect-power-t01/note.md)。
+  既知の誤りを 5 種注入し、既存の `check_rewrite` が発火するかを 2 腕（ログを見て書いた本文／
+  見ずに書いた本文）で数えた。日数・死者の現在時行動・保留事実の語彙は 3/5 が両腕で発火。
+  ログ外の場所・移動と宣言のない数量は 0/2（**§13.1 の M-2〜M-4 と同じ穴**）。
+  ログを見ずに書いた本文は、ログ契約を当てると**ベースラインで既に 3 件**（「三年前」2 件・
+  `present_characters` 外のボリス 1 件、すべて `medium`）の所見を持つ。検査が走っていないので
+  通っていた、という §15 の結論の具体例。
+- **`--strict-timeline`**: [`experiments/2026-10-stageb-v11-t01/note.md`](../../experiments/2026-10-stageb-v11-t01/note.md)
+  の追記。ch03 を意図的に「四日ぶり」にすると、既定は `clean`＋警告 1（修復 0）、
+  `--strict-timeline` は `unresolved`＋修復 1 回（指摘どおり六日に戻して `clean`）。
+  run 全体は `clean`・計 2,867 字。**strict は修復の線を動かすだけで、直すのは修復の側**である。
+- どちらも決定論的・L1 のみ。L2/L3 は `frozen_not_measured`、G5 は未達。protocol-v1 は不変。
