@@ -49,7 +49,7 @@
     "prepare_shared": true,
     "shared_prep_complete": true
   },
-  "attempts": 12,
+  "attempts": 13,
   "attempt_history": [
     {
       "attempt": 1,
@@ -178,6 +178,21 @@
           "status": "pending",
           "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try12",
           "detail": "error: ch02: NEED RESPONSE key=s1-t01-plot-with_plot-s2-draft-ch02-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/responses/s1-t01-plot-with_plot-s2-draft-ch02-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try12"
+        }
+      }
+    },
+    {
+      "attempt": 13,
+      "arms": {
+        "no_plot": {
+          "status": "pending",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try13",
+          "detail": "error: ch03: NEED RESPONSE key=s1-t01-plot-no_plot-s3-draft-ch03-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/responses/s1-t01-plot-no_plot-s3-draft-ch03-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try13"
+        },
+        "with_plot": {
+          "status": "pending",
+          "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try13",
+          "detail": "error: ch03: NEED RESPONSE key=s1-t01-plot-with_plot-s3-draft-ch03-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/with_plot/responses/s1-t01-plot-with_plot-s3-draft-ch03-a1.json\nrun: /home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try13"
         }
       }
     }
