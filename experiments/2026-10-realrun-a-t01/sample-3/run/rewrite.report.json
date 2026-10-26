@@ -109,6 +109,110 @@
         "warning_findings": 0
       },
       "tool": "game-log-rewrite-check"
+    },
+    "ch02": {
+      "allowed_dead_references": [
+        {
+          "action": "a3",
+          "chapter": "ch02",
+          "event_type": "record_reference",
+          "medium": "石膏手形",
+          "scene": "g02",
+          "subject": "johan"
+        }
+      ],
+      "attempts": 2,
+      "chapter": "ch02",
+      "checks": [
+        {
+          "acceptance_ja": "本文のマーカー列がゲームログの導出列と完全一致する。",
+          "evaluated": 14,
+          "findings": 0,
+          "id": "marker_sequence",
+          "limits_ja": "マーカーの文字列と順序だけを見る。散文の内容は見ない。",
+          "status": "pass"
+        },
+        {
+          "acceptance_ja": "本文に出る人物がログの登場人物か、媒体を伴う死者への言及だけである。",
+          "evaluated": 4,
+          "findings": 0,
+          "id": "character_boundary",
+          "limits_ja": "名前・別名の 2 文字以上の文字列一致。死者は、名前を含む文に宣言済みの媒体語か参照の語彙（筆跡・手形・思い出 など）がある場合だけ許容する。比喩・一般名詞・回想の言い回しとの混同は起こりうる。",
+          "status": "pass"
+        },
+        {
+          "acceptance_ja": "未開示の事実の語彙や、死者の現在時状態マーカーが現れない。",
+          "evaluated": 5,
+          "findings": 0,
+          "id": "fact_boundary",
+          "limits_ja": "語彙一致は手掛かりであり断定ではない（medium）。死者マーカーは厳密。",
+          "status": "pass"
+        },
+        {
+          "acceptance_ja": "voice.json の禁止表現と題材の禁止語が出ず、章本文が空でない。",
+          "evaluated": 2,
+          "findings": 0,
+          "id": "voice_contract",
+          "limits_ja": "正規表現と文字列の一致のみ。文体の質は判定しない。題材の必須語は作品全体で `missing_must_include` が判定する。",
+          "status": "pass"
+        },
+        {
+          "acceptance_ja": "本文に書かれた日数が、ログから導出した時系列と矛盾しない。",
+          "evaluated": 1,
+          "findings": 0,
+          "id": "timeline_consistency",
+          "limits_ja": "「N日ぶり」「N日目」「N日後」「N日かけて」のような**明示された数字**だけを見て、導出表の許容値と照合する。数字を書かない抽象表現（しばらく・明け方・数日）は対象外で、書かれていない誤りは検出できない。",
+          "skipped": 0,
+          "status": "pass",
+          "strict": false
+        }
+      ],
+      "expected_markers": [
+        "{{time: day=4}}",
+        "{{location: 王都}}",
+        "{{learn: aria fact=F-02}}",
+        "{{learn: aria fact=F-03}}",
+        "{{use: boris fact=F-02}}",
+        "{{foreshadow: fs-002 payoff}}",
+        "{{foreshadow: fs-003 setup}}"
+      ],
+      "findings": [],
+      "found_markers": [
+        "{{time: day=4}}",
+        "{{location: 王都}}",
+        "{{learn: aria fact=F-02}}",
+        "{{learn: aria fact=F-03}}",
+        "{{use: boris fact=F-02}}",
+        "{{foreshadow: fs-002 payoff}}",
+        "{{foreshadow: fs-003 setup}}"
+      ],
+      "observation_summary": {
+        "advisory": "asc.gamelog.surface.place_findings",
+        "count": 0,
+        "note": "観測のみ。findings・status・修復の判断には使わない。"
+      },
+      "observations": [],
+      "repairs": 1,
+      "schema_version": "1.0",
+      "summary": {
+        "allowed_dead_references": 1,
+        "blocking_findings": 0,
+        "by_severity": {},
+        "chars": 1102,
+        "checks_run": 5,
+        "checks_skipped": 0,
+        "expected_markers": 7,
+        "findings": 0,
+        "found_markers": 7,
+        "status": "clean",
+        "timeline": {
+          "checked": 1,
+          "skipped": 0,
+          "strict": false
+        },
+        "warning_findings": 0
+      },
+      "tool": "game-log-rewrite-check"
     }
   },
   "missing_must_include": [],

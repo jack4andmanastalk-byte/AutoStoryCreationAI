@@ -68,7 +68,7 @@
   "replay": {
     "counts": {
       "missing": 2,
-      "replayed": 1
+      "replayed": 2
     },
     "duplicate_record_keys": [],
     "events": [
@@ -78,16 +78,21 @@
         "response_sha256": "635145e2239c09f40f62047897fe8ce7825d0b1af8bb52190a3070ff71896569"
       },
       {
-        "outcome": "missing",
-        "request": "stage_b:ch02/attempt=1/chapter=ch02/seed=2"
+        "outcome": "replayed",
+        "request": "stage_b:ch02/attempt=1/chapter=ch02/seed=2",
+        "response_sha256": "332cb0cf744b23fd52902a8343296549a46efb2ef300fcdb4e6ec5bd370ec96f"
       },
       {
         "outcome": "missing",
         "request": "stage_b:ch02:repair/attempt=2/chapter=ch02/seed=2"
+      },
+      {
+        "outcome": "missing",
+        "request": "stage_b:ch03/attempt=1/chapter=ch03/seed=3"
       }
     ]
   },
-  "resume_count": 1,
+  "resume_count": 2,
   "run_id": "run",
   "stage": "b",
   "stage_a": {
@@ -214,6 +219,26 @@
         "found_markers": 6,
         "id": "ch01",
         "repairs": 0,
+        "status": "clean"
+      },
+      {
+        "allowed_dead_references": [
+          {
+            "action": "a3",
+            "chapter": "ch02",
+            "event_type": "record_reference",
+            "medium": "石膏手形",
+            "scene": "g02",
+            "subject": "johan"
+          }
+        ],
+        "attempts": 2,
+        "chars": 1102,
+        "expected_markers": 7,
+        "findings": 0,
+        "found_markers": 7,
+        "id": "ch02",
+        "repairs": 1,
         "status": "clean"
       }
     ],
