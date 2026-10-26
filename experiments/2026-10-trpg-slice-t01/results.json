@@ -85,7 +85,13 @@
   "provider": {
     "model": "scripted-fixture",
     "model_version": "v1",
-    "name": "scripted"
+    "name": "scripted",
+    "observed": [
+      {
+        "model": "scripted-fixture",
+        "model_version": "v1"
+      }
+    ]
   },
   "schema": "trpg-slice-wiring-v1",
   "scope": "Arena.ai x L1; L2/L3 frozen_not_measured",

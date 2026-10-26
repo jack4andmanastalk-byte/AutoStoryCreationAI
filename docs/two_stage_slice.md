@@ -213,3 +213,29 @@ Stage B プロンプトは `game_log.json` の**該当章だけ**と `voice.json
 章順・章 ID 重複、現在地の連続性、`must_include` のゲート、`MIN_REWRITE_CHARS`、`PROMPTS.md` の未回答 1 件化。
 
 §8 の「Stage B 3 章すべて `clean`」「既存監査の違反 3 件は既知の誤検出類型」という記述は**そのまま有効**だが、それは**検査が期待どおり動いたこと**の確認であり、意味的整合性の証明ではない。上記の穴は `make probe-gamelog`（`scripts/probe_gamelog_contracts.py`）で再現できる。
+
+## 12. Stage B 単独の実応答試走（2026-10-26、1 件）
+
+[`experiments/2026-10-stageb-solo-t01/`](../experiments/2026-10-stageb-solo-t01/note.md) で、
+`--stage b --game-log` に t01 の検証済みログを与え、Stage A を呼ばずに 3 章を実応答で書いた。
+回答は `relay/` に置き、章ごとに `--resume` で続行している（4 要求・resume 5 回）。
+
+| 項目 | 値 |
+| --- | --- |
+| Stage A | 実行せず。与えたログを再検査して `clean`（`source: provided`、`attempts: 0`） |
+| Stage B | ch01 / ch02 は 1 回で `clean`、ch03 は 1 回不合格 → 修復 1 回で `clean` |
+| 文字数 | 1,152 / 1,023 / 1,006（計 3,181） |
+| マーカー | 6 / 7 / 6。すべて導出列と一致 |
+| 既存 continuity 監査 | 違反 3 件（`dead_character_reappears` / `medium`）、CED 8.373/10k |
+
+- **誤検出 1 件**: ch03 の「書いたのはヨハンだった。」は、直前の文で潮札の筆跡に触れている記録への
+  言及だが、文スコープの判定は同じ文に媒体語を要求するため `high` になった。修復は 1 か所のみ。
+- **検出漏れ（人手で発見、いずれも `clean` のまま）**: 「四日ぶりの灯台」（実際は六日）、
+  「片方だけでは灯りは消せない」（題材の前提と矛盾）、「二本ぶんの空き」（直後の記述と不一致）、
+  ch01 の「鍵は二本ある」（F-02 は ch02 開示。ただし fs-001 の setup と同文面）、
+  ch02 のアリアの現在地（`characters.json` は `灯台` のまま）。
+- したがって **`clean` は「ログの事実と整合している」ことを意味しない**。§11 の穴は実応答でも
+  そのまま現れた。
+- 品質・面白さは未測定（L2/L3 `frozen_not_measured`）。版を固定できないため G5 は主張しない。
+  `results.json` の `claim` は provider ごとに切り替わり、relay run では「実応答だが再現可能な
+  モデルではない」と明記される。

@@ -1,0 +1,43 @@
+{
+  "characters": [
+    {
+      "id": "aria",
+      "name": "アリア",
+      "aliases": ["灯守の娘"],
+      "status": "alive",
+      "location": "灯台",
+      "age_at_start": 24,
+      "knows": ["F-01"],
+      "notes": "灯台守の娘。物語の視点人物。"
+    },
+    {
+      "id": "boris",
+      "name": "ボリス",
+      "aliases": ["鍵屋"],
+      "status": "alive",
+      "location": "王都",
+      "age_at_start": 51,
+      "knows": ["F-02", "F-03"],
+      "notes": "王都の鍵屋。帳面を管理する。"
+    },
+    {
+      "id": "celia",
+      "name": "セリア",
+      "aliases": ["渡し守"],
+      "status": "alive",
+      "location": "港",
+      "age_at_start": 33,
+      "knows": [],
+      "notes": "港の渡し守。このスライスには登場しない（未登場人物の検出用）。"
+    },
+    {
+      "id": "johan",
+      "name": "ヨハン",
+      "aliases": ["兄", "帰らぬ兄"],
+      "status": "dead",
+      "location": "王都",
+      "knows": ["F-04"],
+      "notes": "物語開始前に死亡。潮札・石膏手形・回想の中だけに現れる。"
+    }
+  ]
+}

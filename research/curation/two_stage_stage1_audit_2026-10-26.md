@@ -398,3 +398,21 @@ experiments/2026-11-stageb-t01/          ← 新規。自己完結バンドル
 - 実モデル応答・Arena リレー・L1 ペア比較は未実施。L1 は構造・衛生のみ、**L2/L3 と G3/G4 は `frozen_not_measured`**、G5 は主張しない。
 - protocol-v1 の系・指標・閾値は変更していない。
 - P1（§5.2）は未着手: A-07（同一場面 learn→use の偽陽性）は全工程試走の前に必要。
+
+## 10. Stage B 単独の実応答試走（同日、P0 の後）
+
+詳細は [`experiments/2026-10-stageb-solo-t01/note.md`](../../experiments/2026-10-stageb-solo-t01/note.md)。
+`--stage b --game-log` で t01 の検証済みログを使い、Stage A を呼ばずに 3 章を実応答で書いた
+（`arena-agent-mode` / `unversioned-2026-10-26`、生成と検査は同一エージェント、N=1）。
+
+| 観点（§4 の分類） | 実応答で観測したこと |
+| --- | --- |
+| 現在地・移動（A-01） | ch03 の「四日ぶりの灯台」は誤り（day 1 出発・day 7 帰着＝六日）。`location_moves` は日数の前後だけを見るため `clean` のまま |
+| 事実の保持（B-03/B-04） | 「片方だけでは、灯りは消せない」は前提と矛盾。マーカーは残るので `marker_sequence` も `fact_boundary` も通る |
+| 保留事実（A-05） | ch01 の「鍵は二本ある」は F-02（setup ch02）の内容だが `terms` は `予備の鍵` のみで一致しない。fs-001 の setup と同文面で、保留と伏線設置が重なる |
+| 死者言及（A-02） | **偽陽性 1 件**。「書いたのはヨハンだった。」を `high` とし修復 1 回。記録への言及だが同じ文に媒体語がない |
+| 再開・記録（A-10） | 章ごとに exit 3 → 回答 → `--resume` の往復が 4 要求で成立。`replay.report.json` に replayed/missing の内訳が残り、二重追記なし |
+| 来歴（§4.6） | `results.json` の `claim` が provider 固定文言だったため、relay run に「not a model response」と出ていた。provider 別に分岐し、`provider.observed` に記録された model/model_version を残すよう修正 |
+
+**結論は §4 と同じ**: 決定論的検査は `clean` を返しても、事実・日数・推論の整合は保証しない。
+次の全工程試走では、`clean` の章に対して §6.1 の人手照合を必ず行う。

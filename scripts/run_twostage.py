@@ -999,6 +999,7 @@ def main(argv=None) -> int:
 
     if status != "pending":
         summary["l1_hygiene"] = _l1_hygiene(ledger, task)
+    summary["provider"]["observed"] = _observed_models(ledger)
     if isinstance(provider, BundleProvider):
         summary["replay"] = provider.report()
         ledger.write_json("replay.report.json", summary["replay"])
@@ -1078,12 +1079,44 @@ def _l1_hygiene(ledger: RunLedger, task: Task) -> dict:
     }
 
 
+#: What a summary may claim, per provider. A relay run is a real response but not
+#: a reproducible model, so the scripted wording must not be reused for it.
+CLAIMS = {
+    "scripted": ("fixed scripted wiring check; not a model response, not evidence "
+                 "of story quality or of any L1 improvement over direct generation"),
+    "command": ("relay run: the prose was written by an external operator, so it is "
+                "not a reproducible model and G5 is not claimed; L1 structure and "
+                "hygiene only, not evidence of story quality"),
+}
+STAGE_B_CLAIM = ("; the game log is a supplied input, not this run's model output")
+
+
+def _observed_models(ledger) -> list[dict]:
+    """Distinct ``(model, model_version)`` seen in the recorded responses."""
+    path = ledger.path / "responses.jsonl"
+    if not path.is_file():
+        return []
+    seen: list[dict] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        response = (json.loads(line).get("response") or {})
+        item = {"model": response.get("model"),
+                "model_version": response.get("model_version")}
+        if item not in seen:
+            seen.append(item)
+    return seen
+
+
 def _write_results(path: Path, summary: dict, prompts: dict) -> None:
     """Compact, timestamp-free summary suitable for committing to a bundle."""
+    provider = summary["provider"]["name"]
+    claim = CLAIMS.get(provider, CLAIMS["scripted"])
+    if summary.get("stage") == "b":
+        claim += STAGE_B_CLAIM
     payload = {
         "schema": "trpg-slice-wiring-v1",
-        "claim": ("fixed scripted wiring check; not a model response, not evidence "
-                  "of story quality or of any L1 improvement over direct generation"),
+        "claim": claim,
         "scope": "Arena.ai x L1; L2/L3 frozen_not_measured",
         "evaluation_scope": summary["evaluation_scope"],
         "provider": summary["provider"],

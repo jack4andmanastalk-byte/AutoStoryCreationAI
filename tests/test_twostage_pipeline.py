@@ -611,3 +611,34 @@ def test_dead_mention_needs_its_medium_in_the_same_sentence():
         "兄の名を父が口にしなかった理由を、アリアは聞いたことがなかった。",
         "あの嵐の夜、ヨハンは港町を守ろうとしていた。"))
     assert recalled["summary"]["status"] == "clean"
+
+
+def test_results_claim_matches_the_provider(tmp_path):
+    """A relay run must not be summarised with the scripted wording."""
+    stage_a = {key: None for key in
+               ("status", "attempts", "repairs", "first_attempt_findings",
+                "findings", "checks", "markers", "marker_counts")}
+    stage_a["allowed_dead_references"] = []
+    summary = {
+        "provider": {"name": "scripted", "model": "scripted-fixture"},
+        "stage": "both",
+        "evaluation_scope": {}, "inputs": {}, "stage_a": stage_a,
+        "stage_b": {}, "l1_hygiene": {}, "status": "clean", "limits": [],
+    }
+    class _Prompt:
+        digest = "0000000000000000"
+
+    prompts = {name: _Prompt() for name in run_twostage.PROMPT_NAMES}
+    out = tmp_path / "scripted.json"
+    run_twostage._write_results(out, summary, prompts)
+    scripted = json.loads(out.read_text(encoding="utf-8"))["claim"]
+    assert "not a model response" in scripted
+
+    summary["provider"] = {"name": "command", "model": "external"}
+    summary["stage"] = "b"
+    out = tmp_path / "relay.json"
+    run_twostage._write_results(out, summary, prompts)
+    relay = json.loads(out.read_text(encoding="utf-8"))["claim"]
+    assert "not a model response" not in relay
+    assert "not a reproducible model" in relay
+    assert "supplied input" in relay

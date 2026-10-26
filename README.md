@@ -331,6 +331,8 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * 固定台本バンドルは [`experiments/2026-10-trpg-slice-t01/`](experiments/2026-10-trpg-slice-t01/note.md)。
   `--out` は `experiments/<id>/` 配下のみ（`build/` / `runs/` は拒否）。回答待ちの Arena リレーは
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
+* Stage B 単独の実応答試走は [`experiments/2026-10-stageb-solo-t01/`](experiments/2026-10-stageb-solo-t01/note.md)
+  （3 章 `clean`・修復 1 回。ただし `clean` は事実の整合を意味しません）。
 * **Stage B だけを試す**ときは `--stage b --game-log <verified game_log.json>` を使います。Stage A は
   実行せず、与えたログをその場で再検査し、`clean` のときだけ本文化します（不合格は fail-closed。
   `--allow-unverified-log` を明示した場合だけ続行し、`unverified: true` を残します）。

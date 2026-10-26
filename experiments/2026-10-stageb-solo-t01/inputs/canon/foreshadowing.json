@@ -1,0 +1,22 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "父が『鍵は二本ある』と言ったまま口を閉ざしたこと。",
+      "setup": "ch01",
+      "payoff": "ch03"
+    },
+    {
+      "id": "fs-002",
+      "description": "三年前の嵐の夜の記録が帳面から欠けていること。",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-003",
+      "description": "潮札に書かれた『半灯』の刻み。",
+      "setup": "ch02",
+      "payoff": "ch03"
+    }
+  ]
+}
