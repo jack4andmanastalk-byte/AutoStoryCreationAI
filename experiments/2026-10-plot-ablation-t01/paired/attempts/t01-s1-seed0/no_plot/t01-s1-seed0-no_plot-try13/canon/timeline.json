@@ -1,0 +1,19 @@
+{
+  "chapters": [
+    {
+      "id": "ch01",
+      "day": 1,
+      "location": "灯台"
+    },
+    {
+      "id": "ch02",
+      "day": 5,
+      "location": "王都"
+    },
+    {
+      "id": "ch03",
+      "day": 9,
+      "location": "灯台"
+    }
+  ]
+}

@@ -1,0 +1,121 @@
+{
+  "audit": {
+    "by_severity": {
+      "medium": 5
+    },
+    "ced_per_10k_chars": 12.447,
+    "checks_skipped": 0,
+    "violations": 5
+  },
+  "chars": 3374,
+  "draft": {
+    "chapters": [
+      {
+        "chars": 964,
+        "day": 1,
+        "id": "ch01",
+        "injected": [],
+        "location": "灯台",
+        "markers": 13
+      },
+      {
+        "chars": 1202,
+        "day": 5,
+        "id": "ch02",
+        "injected": [],
+        "location": "王都",
+        "markers": 8
+      },
+      {
+        "chars": 1208,
+        "day": 9,
+        "id": "ch03",
+        "injected": [],
+        "location": "灯台",
+        "markers": 7
+      }
+    ],
+    "chars": 3374,
+    "must_include": {
+      "hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "rate": 1.0
+    },
+    "task": {
+      "avoid": [
+        "選ばれし者",
+        "古代の予言"
+      ],
+      "control": "fantasy",
+      "genre": "fantasy",
+      "id": "t01",
+      "logline": "嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。",
+      "must_include": [
+        "灯台",
+        "鍵",
+        "嵐"
+      ],
+      "title_ja": "灯台の鍵"
+    },
+    "warnings_ja": [
+      "ch01: 964 字（目安 1000〜1400 字の外）"
+    ]
+  },
+  "draft_condition": {
+    "canon_files_sha256": {
+      "README.md": "7955fa091afddab3e0f89d7cbd17f576587c8a90abf21d5fb0f93974e9a7fba9",
+      "characters.json": "743a1f778f99820b485a105782570947332d63264e83f44112cfe9049654279e",
+      "facts.json": "89c2e0fd32d207d3ae012a6e340ee761bd1edd319404842d41327149082b4b7b",
+      "foreshadowing.json": "7fbea1850151e2fdbb27440a6436401a0ab19341477c7eb3de9fe9a7d99115db",
+      "locations.json": "9437b02749216cf2f83499a1b49070b3fdfcb9241604b30f7fb13f69325407ba",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "6e496b5e00ab3b73fda3e0f10c351f4625e0a1cd4c90c4db91ee3faa2c3f2b98"
+    },
+    "canon_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon",
+    "design_files_sha256": {
+      "attempts/brief-attempt-1.txt": "a30400c7c31b93ae242d2b30e8bcac6b5b111ca0efb44da60e3f411ed381a1c6",
+      "attempts/character-attempt-1.txt": "75c6270e4e41634891e3c9cdb6d34b50146cf2f3facc61ef7566afd8a5333e87",
+      "attempts/history-attempt-1.txt": "d115a511c793dae985caf09331bad6156246aabbda682911da0ff981f43b0e8a",
+      "attempts/history-attempt-2.txt": "9aa6dbc59e0e78e8bcdbfeb1f0a8f358a2c8c2590e168b6a68f1541ddd7f3b6d",
+      "attempts/plot-attempt-1.txt": "70bcde28823126639d3ff2762157aa7737ac92172598b292b6929ba15d8b397d",
+      "attempts/relation-attempt-1.txt": "d41f2ef6d051628cc6cf00c23527811de774f5e6f1bcb16e23b11475ac6e0855",
+      "attempts/scene-attempt-1.txt": "1c02d76d42a7c7239fe55b9b51c5520febdf80e298db5f809f9e4e967cba49ab",
+      "attempts/voice-attempt-1.txt": "0573b9aac1d131b68026f72ceb3cc5c1c6368beea215f78a54aed09b78a582e0",
+      "attempts/world-attempt-1.txt": "cb04737125551926397b7ce7575c0f2fd40c1b1631ec487866c7744f8b235f21",
+      "brief.json": "dc26506a7ddf561e4b7ff508059e0720619b868290e6caa76e27c9cd7e910276",
+      "brief.report.json": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c",
+      "character.json": "819e7378394bdc34e65bf39021d1328341db38e5e0b56e401613a4fa902bfb64",
+      "character.report.json": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac",
+      "design.json": "78cb80bd1d571554d17f72c836ae06aacf706b63b6e18ac4c20c32588b218d5d",
+      "history.json": "dd941ec746334338b014e9a8c6fe3285a0d149210e7c37fc70b4450ea1dada8f",
+      "history.report.json": "c92de6571c5a8ae2f438ab978fc8743b6df79fdf0ffc5ce39a0d2b8a370fe43e",
+      "plot.json": "aee37510cedb0d883b356299a7dd4c5324cbd2142202ab01c612d510274bfebe",
+      "plot.report.json": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19",
+      "relation.json": "7c81f26e4126fb9d2821ff664ce5ffdf2d3f92210417ee388cded6931b757119",
+      "relation.report.json": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f",
+      "scene.json": "f132ee164bffbf7697acee7ab7c61ad78770055854013a4cc67223a8120eb8b1",
+      "scene.report.json": "66707f993822c9041eb4d326b86ad8d87355e51ad52b8452ca337d288b1c253e",
+      "voice.json": "7700044d90bc3ac8d66faf350c244f3d032d2e26891790d46524748250f593dd",
+      "voice.report.json": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f",
+      "world.json": "ccdb703e753a8c2be84d3ff159ce4f8a72a8ef4fe2fa90938fbf9f1027ec4963",
+      "world.report.json": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+    },
+    "design_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design",
+    "plot_memos": true
+  },
+  "gates": {
+    "all_checks_ran": true,
+    "length": true,
+    "must_include": true,
+    "no_high_severity": true
+  },
+  "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try14",
+  "run_id": "t01-s1-seed0-with_plot-try14",
+  "stage": "draft",
+  "status": "pass",
+  "system": "s1",
+  "task": "t01"
+}

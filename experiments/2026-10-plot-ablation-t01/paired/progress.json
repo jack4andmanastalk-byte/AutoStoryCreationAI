@@ -1,0 +1,15 @@
+{
+  "status": "completed",
+  "experiment_id": "t01-s1-seed0",
+  "attempt": 14,
+  "arms": {
+    "no_plot": {
+      "status": "complete",
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14"
+    },
+    "with_plot": {
+      "status": "complete",
+      "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try14"
+    }
+  }
+}

@@ -1,0 +1,672 @@
+{
+  "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14/canon",
+  "canon_warnings": [],
+  "chapters": [
+    {
+      "chars": 1325,
+      "id": "ch01",
+      "markers": 13,
+      "mentions": 15,
+      "path": "ch01.md"
+    },
+    {
+      "chars": 1361,
+      "id": "ch02",
+      "markers": 7,
+      "mentions": 14,
+      "path": "ch02.md"
+    },
+    {
+      "chars": 1273,
+      "id": "ch03",
+      "markers": 7,
+      "mentions": 9,
+      "path": "ch03.md"
+    }
+  ],
+  "checks": [
+    {
+      "acceptance_ja": "死亡章より後の章で、その人物の行為マーカー（state/learn/use）または発話（名前＋直後の「」）が 0 件であること。名前の言及だけの場合は回想・遺体・手紙と区別できないため medium として報告する。",
+      "evaluated": 1,
+      "id": "dead_character_reappears",
+      "limits_ja": "名前の言及は存在の証明ではない。夢・回想・遺体・代役は誤検出になりうる。",
+      "question_ja": "死亡が確定した人物が、その後の章で行為・発話していないか。",
+      "requires": [
+        "characters",
+        "chapters"
+      ],
+      "status": "fail",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "violations": 7
+    },
+    {
+      "acceptance_ja": "`use` マーカーの事実が、その人物の既知集合（canon の knows ＋ それ以前の `learn`）に含まれること。含まれない場合は high。事実の語彙（terms）が学習前の台詞に現れる場合は、話者推定を含むため medium。",
+      "evaluated": 0,
+      "id": "knowledge_violation",
+      "limits_ja": "台詞の話者推定は行単位の近接に依存する。地の文の言及は対象外。",
+      "question_ja": "人物が、知る前の章で事実を使っていないか。",
+      "requires": [
+        "characters",
+        "facts"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T012",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "知り得ない情報の使用",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "各伏線について、回収章 ≥ 設置章であること。回収のみで設置がない場合はmedium、canon の宣言と実際の章が食い違う場合は low。",
+      "evaluated": 6,
+      "id": "foreshadow_order",
+      "limits_ja": "回収の「意味が通るか」は判定しない。順序と有無だけを見る。",
+      "question_ja": "回収が設置より前になっていないか。回収だけが存在しないか。",
+      "requires": [
+        "foreshadowing"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/japan_2026:T034",
+        "narrative/japan_2026:T035",
+        "narrative/japan_2026:T036",
+        "narrative/japan_2026:T037"
+      ],
+      "title_ja": "伏線の設置と回収の順序",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "最終章までに `payoff` マーカー（または canon の payoff 章）に到達した伏線の集合が、設置済みの集合と一致すること。差集合は medium。",
+      "evaluated": 6,
+      "id": "unresolved_foreshadow",
+      "limits_ja": "続巻前提の作品では未回収が正常。単巻として監査する場合のみ有効。",
+      "question_ja": "設置されたが回収されていない伏線が残っていないか。",
+      "requires": [
+        "foreshadowing",
+        "chapters"
+      ],
+      "status": "fail",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/us_2026:T012"
+      ],
+      "title_ja": "未回収の伏線",
+      "violations": 1
+    },
+    {
+      "acceptance_ja": "連続する章の日数差 ≥ canon の移動日数であること。移動日数が未定義の組は判定せず、skipped として件数を報告する。",
+      "evaluated": 0,
+      "id": "travel_time",
+      "limits_ja": "移動日数表の網羅性に依存する。同日移動・省略・転移は誤検出になりうる。",
+      "question_ja": "章の経過日数が、場所間の移動日数以上か。",
+      "requires": [
+        "locations",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T112",
+        "production/game_narrative_us:P22"
+      ],
+      "title_ja": "移動時間の整合",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "`age` マーカーの値が、開始時年齢＋誕生日の通過回数と一致すること。誕生日が未設定の場合は、前回の明示年齢より減少していないことのみを見る。",
+      "evaluated": 0,
+      "id": "stated_age",
+      "limits_ja": "年齢は作中で明示された箇所しか検査できない。",
+      "question_ja": "本文中で示された年齢が、経過時間と矛盾しないか。",
+      "requires": [
+        "characters",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T116",
+        "production/game_narrative_us:P19"
+      ],
+      "title_ja": "年齢・時点の整合",
+      "violations": 0
+    }
+  ],
+  "generated_at": "2026-10-26T05:27:09Z",
+  "ledger": {
+    "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14/canon",
+    "chapter_time": {
+      "ch01": {
+        "day": 1,
+        "location": "灯台"
+      },
+      "ch02": {
+        "day": 5,
+        "location": "王都"
+      },
+      "ch03": {
+        "day": 9,
+        "location": "灯台"
+      }
+    },
+    "characters": [
+      {
+        "age": 34,
+        "id": "hilda",
+        "known_facts": [
+          "F-03",
+          "F-04",
+          "F-06",
+          "F-07",
+          "F-08",
+          "F-09",
+          "F-10",
+          "F-11"
+        ],
+        "last_seen_chapter": "ch02",
+        "location": "王都",
+        "status": "alive"
+      },
+      {
+        "age": null,
+        "id": "johan",
+        "known_facts": [
+          "F-07",
+          "F-08",
+          "F-09",
+          "F-11"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "王都",
+        "status": "dead"
+      },
+      {
+        "age": 19,
+        "id": "mina",
+        "known_facts": [
+          "F-01",
+          "F-02",
+          "F-03",
+          "F-04",
+          "F-05",
+          "F-06",
+          "F-07",
+          "F-08",
+          "F-09",
+          "F-10",
+          "F-11"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      },
+      {
+        "age": 52,
+        "id": "roderick",
+        "known_facts": [
+          "F-01",
+          "F-02",
+          "F-03",
+          "F-04",
+          "F-05",
+          "F-06",
+          "F-07",
+          "F-08",
+          "F-09",
+          "F-10",
+          "F-11"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      },
+      {
+        "age": 26,
+        "id": "seth",
+        "known_facts": [
+          "F-01",
+          "F-03",
+          "F-04",
+          "F-05",
+          "F-10",
+          "F-11"
+        ],
+        "last_seen_chapter": "ch01",
+        "location": "灯台",
+        "status": "alive"
+      }
+    ],
+    "events": [
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:3",
+        "kind": "foreshadow",
+        "line": 3,
+        "order": 3,
+        "subject": "fs-001"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-08",
+        "evidence": "ch01.md:3",
+        "kind": "learn",
+        "line": 3,
+        "order": 4,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:4",
+        "kind": "foreshadow",
+        "line": 4,
+        "order": 5,
+        "subject": "fs-004"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-03",
+        "evidence": "ch01.md:7",
+        "kind": "learn",
+        "line": 7,
+        "order": 6,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-04",
+        "evidence": "ch01.md:7",
+        "kind": "learn",
+        "line": 7,
+        "order": 7,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-03",
+        "evidence": "ch01.md:7",
+        "kind": "learn",
+        "line": 7,
+        "order": 8,
+        "subject": "seth"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-04",
+        "evidence": "ch01.md:7",
+        "kind": "learn",
+        "line": 7,
+        "order": 9,
+        "subject": "seth"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:8",
+        "kind": "foreshadow",
+        "line": 8,
+        "order": 10,
+        "subject": "fs-002"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "F-05",
+        "evidence": "ch01.md:9",
+        "kind": "learn",
+        "line": 9,
+        "order": 11,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:9",
+        "kind": "foreshadow",
+        "line": 9,
+        "order": 12,
+        "subject": "fs-005"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:12",
+        "kind": "foreshadow",
+        "line": 12,
+        "order": 13,
+        "subject": "fs-003"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "payoff",
+        "evidence": "ch02.md:6",
+        "kind": "foreshadow",
+        "line": 6,
+        "order": 16,
+        "subject": "fs-002"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "F-07",
+        "evidence": "ch02.md:13",
+        "kind": "learn",
+        "line": 13,
+        "order": 17,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "F-09",
+        "evidence": "ch02.md:16",
+        "kind": "learn",
+        "line": 16,
+        "order": 18,
+        "subject": "mina"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "setup",
+        "evidence": "ch02.md:17",
+        "kind": "foreshadow",
+        "line": 17,
+        "order": 19,
+        "subject": "fs-006"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "payoff",
+        "evidence": "ch02.md:19",
+        "kind": "foreshadow",
+        "line": 19,
+        "order": 20,
+        "subject": "fs-003"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "F-07",
+        "evidence": "ch03.md:11",
+        "kind": "learn",
+        "line": 11,
+        "order": 23,
+        "subject": "roderick"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "F-09",
+        "evidence": "ch03.md:15",
+        "kind": "learn",
+        "line": 15,
+        "order": 24,
+        "subject": "roderick"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:23",
+        "kind": "foreshadow",
+        "line": 23,
+        "order": 25,
+        "subject": "fs-005"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:29",
+        "kind": "foreshadow",
+        "line": 29,
+        "order": 26,
+        "subject": "fs-006"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:31",
+        "kind": "foreshadow",
+        "line": 31,
+        "order": 27,
+        "subject": "fs-001"
+      }
+    ],
+    "foreshadowing": [
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch01",
+        "description": "鍵の三つの刻み。ロデリクは三つ目を『壊れている』と言い、嵐の夜は鍵を手放すなとだけ付け加える。",
+        "id": "fs-001",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch02",
+        "declared_setup": "ch01",
+        "description": "潮鏡に映る、鍵を握った石膏の右手と棚の札。札の文字は潮鏡では読めない。",
+        "id": "fs-002",
+        "payoff_chapter": "ch02",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch02",
+        "declared_setup": "ch01",
+        "description": "セスが三年前の浜で拾った、文字のかすれた潮札。彼には読めず、ミーナへ託す。",
+        "id": "fs-003",
+        "payoff_chapter": "ch02",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch02",
+        "declared_setup": "ch01",
+        "description": "雷の話題になるとロデリクが咳き込んで話を切り、灯寮の名が出ると黙る。",
+        "id": "fs-004",
+        "payoff_chapter": null,
+        "resolved": false,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch01",
+        "description": "九日目の日没に油が尽きるというロデリクの計算と、並べて置かれた松明の油壺の減り。",
+        "id": "fs-005",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch02",
+        "description": "ヒルダが渡した、半灯へ回す順番の覚え書き。末尾に『嵐の夜は握ったまま』とある。",
+        "id": "fs-006",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch02"
+      }
+    ],
+    "schema_version": "1.0"
+  },
+  "schema_version": "1.0",
+  "summary": {
+    "by_severity": {
+      "medium": 8
+    },
+    "by_type": {
+      "dead_character_reappears": 7,
+      "unresolved_foreshadow": 1
+    },
+    "ced_per_10k_chars": 20.207,
+    "chars": 3959,
+    "checks_run": 6,
+    "checks_skipped": 0,
+    "suppressed": 0,
+    "violations": 8,
+    "weighted_score": 16
+  },
+  "suppressed": [],
+  "tool": "continuity-ledger",
+  "violations": [
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 12,
+        "path": "ch02.md",
+        "quote": "『潮の灯りは霧を退け、かつ雷を招く。ヨハン・アール、嵐の夜、沖の雷が港町を焼かんとして灯を消し、之を止む。同一夜、死す』"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 14,
+        "path": "ch02.md",
+        "quote": "「兄は臆病者ではなかった」"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 15,
+        "path": "ch02.md",
+        "quote": "「灯寮は霧を恐れた。雷の一行は、削られたのです」ヒルダは紙を裏返した。「代わりに写しが挟んであった。潮札の合わせ方。兄が死ぬ前に書いたもの」"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 23,
+        "path": "ch02.md",
+        "quote": "「九日の日没までに、鍵を半灯へ回す」彼女は覚え書きと草稿の写しを懐へ収め、手形へ背を向けた。「兄の除籍は、私が持ち帰る」"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 11,
+        "path": "ch03.md",
+        "quote": "「間に合った」彼女は息を切らして懐から紙を出し、父の前へ広げた。「兄が灯りを消したのは、雷を港町へ落とさないためだった。灯寮はその行を記録から削っただけ」{{learn: roderick fact=F-07}}"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 19,
+        "path": "ch03.md",
+        "quote": "「灯寮は知らないだけ。兄が確かめて、死んだ」"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 25,
+        "path": "ch03.md",
+        "quote": "夕焼けが沈みかけ、黒い雲が水平線を呑んでいた。ミーナは鍵を油栓へ差した。三年前、兄が最後に触れた金属。鍵を回すと油が流れ込み、灯皿に新しい炎が立つ。"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン・アール は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/foreshadowing:fs-004",
+      "chapter": "ch03",
+      "evidence": {
+        "last_chapter": "ch03",
+        "setup": "ch01"
+      },
+      "evidence_basis": "marker",
+      "intentional": false,
+      "message_ja": "fs-004 は ch01 で設置されたが、ch03 までに回収されていない。",
+      "severity": "medium",
+      "subject": "fs-004",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/us_2026:T012"
+      ],
+      "title_ja": "未回収の伏線",
+      "type": "unresolved_foreshadow"
+    }
+  ]
+}

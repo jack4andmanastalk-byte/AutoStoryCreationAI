@@ -1,0 +1,638 @@
+{
+  "schema": "plot-memo-ablation-l1-v1",
+  "experiment_id": "t01-s1-seed0",
+  "scope": "Arena × L1 exploratory reference only",
+  "target": "Plot-SKILL-derived memo handoff only; not overall SKILL efficacy",
+  "evaluation_scope": {
+    "provider_constraint": "arena-only",
+    "l2": "frozen_not_measured",
+    "l3": "frozen_not_measured"
+  },
+  "g5": "not_established_by_single_pair",
+  "conditions": {
+    "task": "t01",
+    "system": "s1",
+    "seed": 0,
+    "temperature": 0.8,
+    "provider": "arena",
+    "shared_canon_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon",
+    "shared_design_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design",
+    "canon_files_sha256": {
+      "README.md": "7955fa091afddab3e0f89d7cbd17f576587c8a90abf21d5fb0f93974e9a7fba9",
+      "characters.json": "743a1f778f99820b485a105782570947332d63264e83f44112cfe9049654279e",
+      "facts.json": "89c2e0fd32d207d3ae012a6e340ee761bd1edd319404842d41327149082b4b7b",
+      "foreshadowing.json": "7fbea1850151e2fdbb27440a6436401a0ab19341477c7eb3de9fe9a7d99115db",
+      "locations.json": "9437b02749216cf2f83499a1b49070b3fdfcb9241604b30f7fb13f69325407ba",
+      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+      "timeline.json": "6e496b5e00ab3b73fda3e0f10c351f4625e0a1cd4c90c4db91ee3faa2c3f2b98"
+    },
+    "design_files_sha256": {
+      "attempts/brief-attempt-1.txt": "a30400c7c31b93ae242d2b30e8bcac6b5b111ca0efb44da60e3f411ed381a1c6",
+      "attempts/character-attempt-1.txt": "75c6270e4e41634891e3c9cdb6d34b50146cf2f3facc61ef7566afd8a5333e87",
+      "attempts/history-attempt-1.txt": "d115a511c793dae985caf09331bad6156246aabbda682911da0ff981f43b0e8a",
+      "attempts/history-attempt-2.txt": "9aa6dbc59e0e78e8bcdbfeb1f0a8f358a2c8c2590e168b6a68f1541ddd7f3b6d",
+      "attempts/plot-attempt-1.txt": "70bcde28823126639d3ff2762157aa7737ac92172598b292b6929ba15d8b397d",
+      "attempts/relation-attempt-1.txt": "d41f2ef6d051628cc6cf00c23527811de774f5e6f1bcb16e23b11475ac6e0855",
+      "attempts/scene-attempt-1.txt": "1c02d76d42a7c7239fe55b9b51c5520febdf80e298db5f809f9e4e967cba49ab",
+      "attempts/voice-attempt-1.txt": "0573b9aac1d131b68026f72ceb3cc5c1c6368beea215f78a54aed09b78a582e0",
+      "attempts/world-attempt-1.txt": "cb04737125551926397b7ce7575c0f2fd40c1b1631ec487866c7744f8b235f21",
+      "brief.json": "dc26506a7ddf561e4b7ff508059e0720619b868290e6caa76e27c9cd7e910276",
+      "brief.report.json": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c",
+      "character.json": "819e7378394bdc34e65bf39021d1328341db38e5e0b56e401613a4fa902bfb64",
+      "character.report.json": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac",
+      "design.json": "78cb80bd1d571554d17f72c836ae06aacf706b63b6e18ac4c20c32588b218d5d",
+      "history.json": "dd941ec746334338b014e9a8c6fe3285a0d149210e7c37fc70b4450ea1dada8f",
+      "history.report.json": "c92de6571c5a8ae2f438ab978fc8743b6df79fdf0ffc5ce39a0d2b8a370fe43e",
+      "plot.json": "aee37510cedb0d883b356299a7dd4c5324cbd2142202ab01c612d510274bfebe",
+      "plot.report.json": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19",
+      "relation.json": "7c81f26e4126fb9d2821ff664ce5ffdf2d3f92210417ee388cded6931b757119",
+      "relation.report.json": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f",
+      "scene.json": "f132ee164bffbf7697acee7ab7c61ad78770055854013a4cc67223a8120eb8b1",
+      "scene.report.json": "66707f993822c9041eb4d326b86ad8d87355e51ad52b8452ca337d288b1c253e",
+      "voice.json": "7700044d90bc3ac8d66faf350c244f3d032d2e26891790d46524748250f593dd",
+      "voice.report.json": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f",
+      "world.json": "ccdb703e753a8c2be84d3ff159ce4f8a72a8ef4fe2fa90938fbf9f1027ec4963",
+      "world.report.json": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+    }
+  },
+  "model": {
+    "name": "arena-agent-mode",
+    "version": "unversioned",
+    "version_pinned": false,
+    "by_request": {
+      "draft:ch01": {
+        "model": "arena-agent-mode",
+        "model_version": "unversioned",
+        "origin": "unspecified"
+      },
+      "draft:ch02": {
+        "model": "arena-agent-mode",
+        "model_version": "unversioned",
+        "origin": "unspecified"
+      },
+      "draft:ch03": {
+        "model": "arena-agent-mode",
+        "model_version": "unversioned",
+        "origin": "unspecified"
+      }
+    }
+  },
+  "prompt_control": {
+    "ch01_diff_only_plot_memo_lines": true,
+    "later_chapter_prompts": "may differ through prior-chapter text; downstream mediation"
+  },
+  "arms": {
+    "no_plot": {
+      "manifest": {
+        "artifacts": [
+          "draft.json",
+          "draft/ch01-attempt-1.txt",
+          "draft/ch02-attempt-1.txt",
+          "draft/ch03-attempt-1.txt",
+          "responses.jsonl",
+          "text/ch01.md",
+          "text/ch02.md",
+          "text/ch03.md"
+        ],
+        "error": null,
+        "finished_at": "2026-10-26T05:27:08Z",
+        "git_commit": "54536979a556a37af9dc8b5bcd61a58b81cb9432",
+        "model": "arena-agent-mode",
+        "model_version": "unversioned",
+        "prompt_hashes": {
+          "draft-chapter": "1db9cea08abbbb8e",
+          "draft:ch01": "09143bfcbad0a32d",
+          "draft:ch02": "709aa056ec43872d",
+          "draft:ch03": "5aba77d4d73c3985"
+        },
+        "protocol_version": "protocol-v1",
+        "provider": "command",
+        "response_count": 3,
+        "responses_sha256": "4adde592c572a7d17e44520607d05b9832c2f899b42e90e263fbc04ec8e4ac46",
+        "run_id": "t01-s1-seed0-no_plot-try14",
+        "seed": 0,
+        "started_at": "2026-10-26T05:27:08Z",
+        "status": "ok",
+        "system": "s1",
+        "task_id": "t01",
+        "temperature": 0.8,
+        "usage": {
+          "operator": 3
+        }
+      },
+      "run_summary": {
+        "audit": {
+          "by_severity": {
+            "medium": 8
+          },
+          "ced_per_10k_chars": 20.207,
+          "checks_skipped": 0,
+          "violations": 8
+        },
+        "chars": 3343,
+        "draft": {
+          "chapters": [
+            {
+              "chars": 1028,
+              "day": 1,
+              "id": "ch01",
+              "injected": [],
+              "location": "灯台",
+              "markers": 13
+            },
+            {
+              "chars": 1206,
+              "day": 5,
+              "id": "ch02",
+              "injected": [],
+              "location": "王都",
+              "markers": 7
+            },
+            {
+              "chars": 1109,
+              "day": 9,
+              "id": "ch03",
+              "injected": [],
+              "location": "灯台",
+              "markers": 7
+            }
+          ],
+          "chars": 3343,
+          "must_include": {
+            "hits": {
+              "嵐": true,
+              "灯台": true,
+              "鍵": true
+            },
+            "rate": 1.0
+          },
+          "task": {
+            "avoid": [
+              "選ばれし者",
+              "古代の予言"
+            ],
+            "control": "fantasy",
+            "genre": "fantasy",
+            "id": "t01",
+            "logline": "嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。",
+            "must_include": [
+              "灯台",
+              "鍵",
+              "嵐"
+            ],
+            "title_ja": "灯台の鍵"
+          },
+          "warnings_ja": []
+        },
+        "draft_condition": {
+          "canon_files_sha256": {
+            "README.md": "7955fa091afddab3e0f89d7cbd17f576587c8a90abf21d5fb0f93974e9a7fba9",
+            "characters.json": "743a1f778f99820b485a105782570947332d63264e83f44112cfe9049654279e",
+            "facts.json": "89c2e0fd32d207d3ae012a6e340ee761bd1edd319404842d41327149082b4b7b",
+            "foreshadowing.json": "7fbea1850151e2fdbb27440a6436401a0ab19341477c7eb3de9fe9a7d99115db",
+            "locations.json": "9437b02749216cf2f83499a1b49070b3fdfcb9241604b30f7fb13f69325407ba",
+            "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+            "timeline.json": "6e496b5e00ab3b73fda3e0f10c351f4625e0a1cd4c90c4db91ee3faa2c3f2b98"
+          },
+          "canon_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon",
+          "design_files_sha256": {
+            "attempts/brief-attempt-1.txt": "a30400c7c31b93ae242d2b30e8bcac6b5b111ca0efb44da60e3f411ed381a1c6",
+            "attempts/character-attempt-1.txt": "75c6270e4e41634891e3c9cdb6d34b50146cf2f3facc61ef7566afd8a5333e87",
+            "attempts/history-attempt-1.txt": "d115a511c793dae985caf09331bad6156246aabbda682911da0ff981f43b0e8a",
+            "attempts/history-attempt-2.txt": "9aa6dbc59e0e78e8bcdbfeb1f0a8f358a2c8c2590e168b6a68f1541ddd7f3b6d",
+            "attempts/plot-attempt-1.txt": "70bcde28823126639d3ff2762157aa7737ac92172598b292b6929ba15d8b397d",
+            "attempts/relation-attempt-1.txt": "d41f2ef6d051628cc6cf00c23527811de774f5e6f1bcb16e23b11475ac6e0855",
+            "attempts/scene-attempt-1.txt": "1c02d76d42a7c7239fe55b9b51c5520febdf80e298db5f809f9e4e967cba49ab",
+            "attempts/voice-attempt-1.txt": "0573b9aac1d131b68026f72ceb3cc5c1c6368beea215f78a54aed09b78a582e0",
+            "attempts/world-attempt-1.txt": "cb04737125551926397b7ce7575c0f2fd40c1b1631ec487866c7744f8b235f21",
+            "brief.json": "dc26506a7ddf561e4b7ff508059e0720619b868290e6caa76e27c9cd7e910276",
+            "brief.report.json": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c",
+            "character.json": "819e7378394bdc34e65bf39021d1328341db38e5e0b56e401613a4fa902bfb64",
+            "character.report.json": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac",
+            "design.json": "78cb80bd1d571554d17f72c836ae06aacf706b63b6e18ac4c20c32588b218d5d",
+            "history.json": "dd941ec746334338b014e9a8c6fe3285a0d149210e7c37fc70b4450ea1dada8f",
+            "history.report.json": "c92de6571c5a8ae2f438ab978fc8743b6df79fdf0ffc5ce39a0d2b8a370fe43e",
+            "plot.json": "aee37510cedb0d883b356299a7dd4c5324cbd2142202ab01c612d510274bfebe",
+            "plot.report.json": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19",
+            "relation.json": "7c81f26e4126fb9d2821ff664ce5ffdf2d3f92210417ee388cded6931b757119",
+            "relation.report.json": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f",
+            "scene.json": "f132ee164bffbf7697acee7ab7c61ad78770055854013a4cc67223a8120eb8b1",
+            "scene.report.json": "66707f993822c9041eb4d326b86ad8d87355e51ad52b8452ca337d288b1c253e",
+            "voice.json": "7700044d90bc3ac8d66faf350c244f3d032d2e26891790d46524748250f593dd",
+            "voice.report.json": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f",
+            "world.json": "ccdb703e753a8c2be84d3ff159ce4f8a72a8ef4fe2fa90938fbf9f1027ec4963",
+            "world.report.json": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+          },
+          "design_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design",
+          "plot_memos": false
+        },
+        "gates": {
+          "all_checks_ran": true,
+          "length": true,
+          "must_include": true,
+          "no_high_severity": true
+        },
+        "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14",
+        "run_id": "t01-s1-seed0-no_plot-try14",
+        "stage": "draft",
+        "status": "pass",
+        "system": "s1",
+        "task": "t01"
+      },
+      "l1": {
+        "run_id": "t01-s1-seed0-no_plot-try14",
+        "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/no_plot/t01-s1-seed0-no_plot-try14",
+        "status": "pass",
+        "chars_excluding_markers": 3343,
+        "must_include": {
+          "hits": {
+            "嵐": true,
+            "灯台": true,
+            "鍵": true
+          },
+          "rate": 1.0
+        },
+        "task_avoid_hits": {
+          "選ばれし者": 0,
+          "古代の予言": 0
+        },
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "continuity": {
+          "chars": 3959,
+          "violations": 8,
+          "by_type": {
+            "dead_character_reappears": 7,
+            "unresolved_foreshadow": 1
+          },
+          "by_severity": {
+            "medium": 8
+          },
+          "ced_per_10k_chars": 20.207,
+          "weighted_score": 16,
+          "suppressed": 0,
+          "checks_run": 6,
+          "checks_skipped": 0
+        },
+        "audit": {
+          "by_severity": {
+            "medium": 8
+          },
+          "ced_per_10k_chars": 20.207,
+          "checks_skipped": 0,
+          "violations": 8
+        },
+        "descriptive_metrics": {
+          "documents": 3,
+          "chars": 3959,
+          "paragraphs": 24,
+          "mean_paragraph_chars": 165.0,
+          "dialogue_ratio": 0.223,
+          "style": {
+            "kind": "proxy",
+            "note_ja": "文体の均質化を測る代理指標。作品の質を直接測るものではない。",
+            "orthography": {
+              "こと/事": {
+                "hiragana": 3,
+                "kanji": 1,
+                "dominance": 0.75,
+                "uses": 4
+              },
+              "できる/出来る": {
+                "hiragana": 0,
+                "kanji": 0,
+                "dominance": null,
+                "uses": 0
+              },
+              "ため/為": {
+                "hiragana": 2,
+                "kanji": 0,
+                "dominance": 1.0,
+                "uses": 2
+              },
+              "もの/物": {
+                "hiragana": 2,
+                "kanji": 0,
+                "dominance": 1.0,
+                "uses": 2
+              }
+            },
+            "pre_comma_hiragana_rate": 0.8,
+            "comma_count": 110,
+            "sentence_length_mean": 19.9,
+            "sentence_length_cv": 0.529,
+            "sentence_count": 168
+          }
+        },
+        "evaluation_json": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/l1/attempt-14/no_plot/evaluation.json"
+      },
+      "draft_prompt_hashes": {
+        "draft:ch01": "09143bfcbad0a32dfb9ba524936c2df7d667d5ee145231d474cfaeb3c56d9c0d",
+        "draft:ch02": "709aa056ec43872d2f80d843a848b76ee46b7f614edc5aec49f89971cee4d45a",
+        "draft:ch03": "5aba77d4d73c3985c42b4391b5ed2ccdbd73d4df7d1d0a0c7a8aebe1d4728c76"
+      }
+    },
+    "with_plot": {
+      "manifest": {
+        "artifacts": [
+          "draft.json",
+          "draft/ch01-attempt-1.txt",
+          "draft/ch02-attempt-1.txt",
+          "draft/ch03-attempt-1.txt",
+          "responses.jsonl",
+          "text/ch01.md",
+          "text/ch02.md",
+          "text/ch03.md"
+        ],
+        "error": null,
+        "finished_at": "2026-10-26T05:27:09Z",
+        "git_commit": "54536979a556a37af9dc8b5bcd61a58b81cb9432",
+        "model": "arena-agent-mode",
+        "model_version": "unversioned",
+        "prompt_hashes": {
+          "draft-chapter": "1db9cea08abbbb8e",
+          "draft:ch01": "f7b63c15aa0622d7",
+          "draft:ch02": "b36c556de8013ebe",
+          "draft:ch03": "91049f54545b04d7"
+        },
+        "protocol_version": "protocol-v1",
+        "provider": "command",
+        "response_count": 3,
+        "responses_sha256": "6abb1f1051b8b1a95874f6c3db3a2df39577948e91f89ac67c924817b38c7af8",
+        "run_id": "t01-s1-seed0-with_plot-try14",
+        "seed": 0,
+        "started_at": "2026-10-26T05:27:09Z",
+        "status": "ok",
+        "system": "s1",
+        "task_id": "t01",
+        "temperature": 0.8,
+        "usage": {
+          "operator": 3
+        }
+      },
+      "run_summary": {
+        "audit": {
+          "by_severity": {
+            "medium": 5
+          },
+          "ced_per_10k_chars": 12.447,
+          "checks_skipped": 0,
+          "violations": 5
+        },
+        "chars": 3374,
+        "draft": {
+          "chapters": [
+            {
+              "chars": 964,
+              "day": 1,
+              "id": "ch01",
+              "injected": [],
+              "location": "灯台",
+              "markers": 13
+            },
+            {
+              "chars": 1202,
+              "day": 5,
+              "id": "ch02",
+              "injected": [],
+              "location": "王都",
+              "markers": 8
+            },
+            {
+              "chars": 1208,
+              "day": 9,
+              "id": "ch03",
+              "injected": [],
+              "location": "灯台",
+              "markers": 7
+            }
+          ],
+          "chars": 3374,
+          "must_include": {
+            "hits": {
+              "嵐": true,
+              "灯台": true,
+              "鍵": true
+            },
+            "rate": 1.0
+          },
+          "task": {
+            "avoid": [
+              "選ばれし者",
+              "古代の予言"
+            ],
+            "control": "fantasy",
+            "genre": "fantasy",
+            "id": "t01",
+            "logline": "嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。",
+            "must_include": [
+              "灯台",
+              "鍵",
+              "嵐"
+            ],
+            "title_ja": "灯台の鍵"
+          },
+          "warnings_ja": [
+            "ch01: 964 字（目安 1000〜1400 字の外）"
+          ]
+        },
+        "draft_condition": {
+          "canon_files_sha256": {
+            "README.md": "7955fa091afddab3e0f89d7cbd17f576587c8a90abf21d5fb0f93974e9a7fba9",
+            "characters.json": "743a1f778f99820b485a105782570947332d63264e83f44112cfe9049654279e",
+            "facts.json": "89c2e0fd32d207d3ae012a6e340ee761bd1edd319404842d41327149082b4b7b",
+            "foreshadowing.json": "7fbea1850151e2fdbb27440a6436401a0ab19341477c7eb3de9fe9a7d99115db",
+            "locations.json": "9437b02749216cf2f83499a1b49070b3fdfcb9241604b30f7fb13f69325407ba",
+            "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
+            "timeline.json": "6e496b5e00ab3b73fda3e0f10c351f4625e0a1cd4c90c4db91ee3faa2c3f2b98"
+          },
+          "canon_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/canon",
+          "design_files_sha256": {
+            "attempts/brief-attempt-1.txt": "a30400c7c31b93ae242d2b30e8bcac6b5b111ca0efb44da60e3f411ed381a1c6",
+            "attempts/character-attempt-1.txt": "75c6270e4e41634891e3c9cdb6d34b50146cf2f3facc61ef7566afd8a5333e87",
+            "attempts/history-attempt-1.txt": "d115a511c793dae985caf09331bad6156246aabbda682911da0ff981f43b0e8a",
+            "attempts/history-attempt-2.txt": "9aa6dbc59e0e78e8bcdbfeb1f0a8f358a2c8c2590e168b6a68f1541ddd7f3b6d",
+            "attempts/plot-attempt-1.txt": "70bcde28823126639d3ff2762157aa7737ac92172598b292b6929ba15d8b397d",
+            "attempts/relation-attempt-1.txt": "d41f2ef6d051628cc6cf00c23527811de774f5e6f1bcb16e23b11475ac6e0855",
+            "attempts/scene-attempt-1.txt": "1c02d76d42a7c7239fe55b9b51c5520febdf80e298db5f809f9e4e967cba49ab",
+            "attempts/voice-attempt-1.txt": "0573b9aac1d131b68026f72ceb3cc5c1c6368beea215f78a54aed09b78a582e0",
+            "attempts/world-attempt-1.txt": "cb04737125551926397b7ce7575c0f2fd40c1b1631ec487866c7744f8b235f21",
+            "brief.json": "dc26506a7ddf561e4b7ff508059e0720619b868290e6caa76e27c9cd7e910276",
+            "brief.report.json": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c",
+            "character.json": "819e7378394bdc34e65bf39021d1328341db38e5e0b56e401613a4fa902bfb64",
+            "character.report.json": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac",
+            "design.json": "78cb80bd1d571554d17f72c836ae06aacf706b63b6e18ac4c20c32588b218d5d",
+            "history.json": "dd941ec746334338b014e9a8c6fe3285a0d149210e7c37fc70b4450ea1dada8f",
+            "history.report.json": "c92de6571c5a8ae2f438ab978fc8743b6df79fdf0ffc5ce39a0d2b8a370fe43e",
+            "plot.json": "aee37510cedb0d883b356299a7dd4c5324cbd2142202ab01c612d510274bfebe",
+            "plot.report.json": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19",
+            "relation.json": "7c81f26e4126fb9d2821ff664ce5ffdf2d3f92210417ee388cded6931b757119",
+            "relation.report.json": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f",
+            "scene.json": "f132ee164bffbf7697acee7ab7c61ad78770055854013a4cc67223a8120eb8b1",
+            "scene.report.json": "66707f993822c9041eb4d326b86ad8d87355e51ad52b8452ca337d288b1c253e",
+            "voice.json": "7700044d90bc3ac8d66faf350c244f3d032d2e26891790d46524748250f593dd",
+            "voice.report.json": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f",
+            "world.json": "ccdb703e753a8c2be84d3ff159ce4f8a72a8ef4fe2fa90938fbf9f1027ec4963",
+            "world.report.json": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+          },
+          "design_source": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/inputs/design",
+          "plot_memos": true
+        },
+        "gates": {
+          "all_checks_ran": true,
+          "length": true,
+          "must_include": true,
+          "no_high_severity": true
+        },
+        "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try14",
+        "run_id": "t01-s1-seed0-with_plot-try14",
+        "stage": "draft",
+        "status": "pass",
+        "system": "s1",
+        "task": "t01"
+      },
+      "l1": {
+        "run_id": "t01-s1-seed0-with_plot-try14",
+        "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/attempts/t01-s1-seed0/with_plot/t01-s1-seed0-with_plot-try14",
+        "status": "pass",
+        "chars_excluding_markers": 3374,
+        "must_include": {
+          "hits": {
+            "嵐": true,
+            "灯台": true,
+            "鍵": true
+          },
+          "rate": 1.0
+        },
+        "task_avoid_hits": {
+          "選ばれし者": 0,
+          "古代の予言": 0
+        },
+        "forbidden_hits": 0,
+        "forbidden_per_10k_chars": 0.0,
+        "continuity": {
+          "chars": 4017,
+          "violations": 5,
+          "by_type": {
+            "dead_character_reappears": 5
+          },
+          "by_severity": {
+            "medium": 5
+          },
+          "ced_per_10k_chars": 12.447,
+          "weighted_score": 10,
+          "suppressed": 0,
+          "checks_run": 6,
+          "checks_skipped": 0
+        },
+        "audit": {
+          "by_severity": {
+            "medium": 5
+          },
+          "ced_per_10k_chars": 12.447,
+          "checks_skipped": 0,
+          "violations": 5
+        },
+        "descriptive_metrics": {
+          "documents": 3,
+          "chars": 4017,
+          "paragraphs": 26,
+          "mean_paragraph_chars": 154.5,
+          "dialogue_ratio": 0.228,
+          "style": {
+            "kind": "proxy",
+            "note_ja": "文体の均質化を測る代理指標。作品の質を直接測るものではない。",
+            "orthography": {
+              "こと/事": {
+                "hiragana": 1,
+                "kanji": 1,
+                "dominance": 0.5,
+                "uses": 2
+              },
+              "できる/出来る": {
+                "hiragana": 0,
+                "kanji": 0,
+                "dominance": null,
+                "uses": 0
+              },
+              "ため/為": {
+                "hiragana": 4,
+                "kanji": 0,
+                "dominance": 1.0,
+                "uses": 4
+              },
+              "もの/物": {
+                "hiragana": 2,
+                "kanji": 0,
+                "dominance": 1.0,
+                "uses": 2
+              }
+            },
+            "pre_comma_hiragana_rate": 0.839,
+            "comma_count": 112,
+            "sentence_length_mean": 19.3,
+            "sentence_length_cv": 0.515,
+            "sentence_count": 175
+          }
+        },
+        "evaluation_json": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/l1/attempt-14/with_plot/evaluation.json"
+      },
+      "draft_prompt_hashes": {
+        "draft:ch01": "f7b63c15aa0622d77d1360c2362fe5de5bef519706750ba335072f678fec154c",
+        "draft:ch02": "b36c556de8013ebe293fc7e6e9fcb86844950b31f6ddfe7ec3dd0ff7a5335092",
+        "draft:ch03": "91049f54545b04d711d6df114cc6432f5359d749b3203d4040ba5851d7d399e3"
+      }
+    }
+  },
+  "paired_l1_deltas": {
+    "chars_excluding_markers": {
+      "without_plot": 3343,
+      "with_plot": 3374,
+      "delta_with_minus_without": 31
+    },
+    "must_include_rate": {
+      "without_plot": 1.0,
+      "with_plot": 1.0,
+      "delta_with_minus_without": 0.0
+    },
+    "forbidden_hits": {
+      "without_plot": 0,
+      "with_plot": 0,
+      "delta_with_minus_without": 0
+    },
+    "task_avoid_hits": {
+      "without_plot": 0,
+      "with_plot": 0,
+      "delta_with_minus_without": 0
+    },
+    "forbidden_per_10k_chars": {
+      "without_plot": 0.0,
+      "with_plot": 0.0,
+      "delta_with_minus_without": 0.0
+    },
+    "continuity_violations": {
+      "without_plot": 8,
+      "with_plot": 5,
+      "delta_with_minus_without": -3
+    },
+    "high_continuity_violations": {
+      "without_plot": null,
+      "with_plot": null,
+      "delta_with_minus_without": null
+    },
+    "checks_skipped": {
+      "without_plot": 0,
+      "with_plot": 0,
+      "delta_with_minus_without": 0
+    },
+    "ced_per_10k_chars": {
+      "without_plot": 20.207,
+      "with_plot": 12.447,
+      "delta_with_minus_without": -7.76
+    }
+  },
+  "l1_evaluation_dirs": {
+    "no_plot": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/l1/attempt-14/no_plot",
+    "with_plot": "/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/l1/attempt-14/with_plot"
+  }
+}

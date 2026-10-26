@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Run a paired L1-only ablation of chapter-local Plot memos.
 
-A canon and clean design directory must already exist and are held fixed for
+A canon and clean design directory must either already exist or be prepared
+inside the experiment bundle with ``--prepare-shared``, and are held fixed for
 both arms. At the first invocation, immutable copies are archived under the
 experiment output directory; by default, run logs and Arena relay requests and
 responses also live there. This makes a pending experiment resumable after an
@@ -15,11 +16,14 @@ Example (active repository scope: Arena relay only):
         --design-dir experiments/plot-ablation-prep/design \\
         --provider arena --out experiments/plot-ablation-t01/paired
 
-If Arena responses are pending, the script exports tagged prompts and exits 3.
-Ingest those answers with ``relay_prompts.py`` and rerun with ``--resume``.
+    # Or manage shared plan/design preparation in the same persistent bundle:
+    python3 scripts/run_plot_ablation.py --id t01-s1-seed0 --task t01 \\
+        --prepare-shared --provider arena \\
+        --out experiments/2026-10-plot-ablation-t01/paired
 
-The shared plan/design preparation is intentionally separate so it is not
-regenerated between the paired Draft conditions.
+If Arena responses are pending, the script exports tagged prompts (both per-arm
+and combined in ``<out>/PROMPTS.md``) and exits 3. Ingest those answers with
+``--ingest answers.txt --resume`` (or ``relay_prompts.py``) and rerun.
 """
 from __future__ import annotations
 
@@ -35,19 +39,68 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 from asc.evaluation.scope import EvaluationScopeError, load_evaluation_scope  # noqa: E402
 from asc.pipeline.tasks import TaskError, load_tasks  # noqa: E402
+from asc.story.canon import CanonError, load_canon  # noqa: E402
+import relay_prompts  # noqa: E402
 
 DEFAULT_TASKS = REPO_ROOT / "benchmarks" / "protocol-v1" / "tasks.yaml"
 DEFAULT_SCRIPT = REPO_ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "plan-demo.json"
+REQUIRED_DESIGN_FILES = ("plot.json", "plot.report.json", "scene.json", "voice.json")
+ALL_DESIGN_DOCS = ("brief", "world", "history", "character", "relation", "plot", "scene", "voice")
 
 
 def _sha256_tree(path: Path) -> dict[str, str]:
+    if not path.is_dir():
+        return {}
     return {
         file.relative_to(path).as_posix(): hashlib.sha256(file.read_bytes()).hexdigest()
         for file in sorted(path.rglob("*")) if file.is_file()
     }
+
+
+def _is_under_build(path: Path) -> bool:
+    build_root = (REPO_ROOT / "build").resolve()
+    resolved = path.resolve()
+    return resolved == build_root or build_root in resolved.parents
+
+
+def _is_canon_ready(canon_dir: Path) -> bool:
+    if not canon_dir.is_dir() or not any(canon_dir.glob("*.json")):
+        return False
+    try:
+        canon = load_canon(canon_dir)
+    except CanonError:
+        return False
+    return bool(canon.chapters)
+
+
+def _is_shared_design_ready(canon_dir: Path, design_dir: Path) -> bool:
+    if not _is_canon_ready(canon_dir) or not design_dir.is_dir():
+        return False
+    if any(not (design_dir / name).is_file() for name in REQUIRED_DESIGN_FILES):
+        return False
+    try:
+        report = json.loads((design_dir / "plot.report.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return isinstance(report, dict) and report.get("status") == "clean"
+
+
+def _copy_tree_contents(src: Path, dst: Path) -> None:
+    dst.mkdir(parents=True, exist_ok=True)
+    for item in sorted(src.iterdir()):
+        if item.name.startswith("."):
+            continue
+        target = dst / item.name
+        if item.is_dir():
+            if target.exists():
+                shutil.rmtree(target)
+            shutil.copytree(item, target)
+        elif item.is_file():
+            shutil.copy2(item, target)
 
 
 def _read_responses(run_dir: Path) -> list[dict]:
@@ -157,6 +210,92 @@ cannot establish a general effect. No L2/L3 judgments were made.
 """
 
 
+def _run_shared_prep(args, canon_dir: Path, design_dir: Path,
+                     run_root: Path, operator_root: Path, attempt: int) -> dict:
+    operator_dir = operator_root / "shared_prep"
+    prep_run_root = run_root / "shared_prep"
+    if not _is_canon_ready(canon_dir):
+        plan_run_id = f"{args.id}-shared-plan-try{attempt:02d}"
+        command = [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_pipeline.py"),
+            "--task", args.task, "--tasks-file", args.tasks_file,
+            "--system", "s1", "--stage", "plan",
+            "--seed", str(args.seed), "--temperature", str(args.temperature),
+            "--out", str(prep_run_root), "--run-id", plan_run_id,
+            "--report-only", "--quiet",
+        ]
+        if args.provider == "scripted":
+            command.extend(["--provider", "scripted", "--script", args.script])
+        else:
+            operator_command = shlex.join([
+                sys.executable, str(REPO_ROOT / "scripts" / "chat_operator.py"),
+                "--dir", str(operator_dir), "--model", "arena-agent-mode",
+                "--model-version", "unversioned",
+            ])
+            command.extend([
+                "--provider", "command", "--command", operator_command,
+                "--model", "arena-agent-mode",
+            ])
+        completed = subprocess.run(command, cwd=REPO_ROOT, capture_output=True, text=True)
+        plan_dir = prep_run_root / plan_run_id
+        for prev in sorted(prep_run_root.glob(f"{args.id}-shared-plan-try*")):
+            if prev != plan_dir and prev.is_dir():
+                shutil.rmtree(prev)
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        if completed.returncode == 2 and "NEED RESPONSE" in detail:
+            return {"status": "pending", "stage": "plan",
+                    "run_dir": str(plan_dir), "detail": detail}
+        if completed.returncode != 0:
+            raise RuntimeError(f"shared_prep Plan run failed ({completed.returncode}): {detail}")
+        _copy_tree_contents(plan_dir / "canon", canon_dir)
+
+    if not _is_shared_design_ready(canon_dir, design_dir):
+        design_run_id = f"{args.id}-shared-design-try{attempt:02d}"
+        command = [
+            sys.executable, str(REPO_ROOT / "scripts" / "run_pipeline.py"),
+            "--task", args.task, "--tasks-file", args.tasks_file,
+            "--system", "s1", "--stage", "design",
+            "--canon", str(canon_dir.resolve()),
+            "--seed", str(args.seed), "--temperature", str(args.temperature),
+            "--out", str(prep_run_root), "--run-id", design_run_id,
+            "--report-only", "--quiet",
+        ]
+        if args.provider == "scripted":
+            command.extend(["--provider", "scripted", "--script", args.script])
+        else:
+            operator_command = shlex.join([
+                sys.executable, str(REPO_ROOT / "scripts" / "chat_operator.py"),
+                "--dir", str(operator_dir), "--model", "arena-agent-mode",
+                "--model-version", "unversioned",
+            ])
+            command.extend([
+                "--provider", "command", "--command", operator_command,
+                "--model", "arena-agent-mode",
+            ])
+        completed = subprocess.run(command, cwd=REPO_ROOT, capture_output=True, text=True)
+        design_run_dir = prep_run_root / design_run_id
+        for prev in sorted(prep_run_root.glob(f"{args.id}-shared-design-try*")):
+            if prev != design_run_dir and prev.is_dir():
+                shutil.rmtree(prev)
+        if (design_run_dir / "design").is_dir():
+            _copy_tree_contents(design_run_dir / "design", design_dir)
+        if (design_run_dir / "design.json").is_file():
+            shutil.copy2(design_run_dir / "design.json", design_dir / "design.json")
+        detail = completed.stderr.strip() or completed.stdout.strip()
+        if completed.returncode == 2 and "NEED RESPONSE" in detail:
+            return {"status": "pending", "stage": "design",
+                    "run_dir": str(design_run_dir), "detail": detail}
+        if completed.returncode != 0:
+            raise RuntimeError(
+                f"shared_prep Design run failed ({completed.returncode}): {detail}")
+        if not _is_shared_design_ready(canon_dir, design_dir):
+            raise RuntimeError(
+                "shared_prep Design completed without clean plot, scene, and voice artifacts")
+        return {"status": "complete", "stage": "design", "run_dir": str(design_run_dir)}
+
+    return {"status": "complete", "stage": "design", "run_dir": str(design_dir)}
+
+
 def _run_pipeline(args, arm: str, include_plot: bool, run_root: Path,
                   operator_root: Path, attempt: int) -> dict:
     run_id = f"{args.id}-{arm}-try{attempt:02d}"
@@ -204,12 +343,30 @@ def _export_pending(operator_dir: Path) -> dict:
     return json.loads(completed.stdout)
 
 
+def _write_combined_prompts(out_dir: Path, operator_root: Path,
+                            pending_keys: list[str]) -> Path:
+    items: list[dict] = []
+    done = 0
+    for arm in pending_keys:
+        op_dir = operator_root / arm
+        if (op_dir / "requests").is_dir():
+            items.extend(relay_prompts.pending(op_dir))
+        if (op_dir / "responses").is_dir():
+            done += len(list((op_dir / "responses").glob("*.json")))
+    combined_path = out_dir / "PROMPTS.md"
+    combined_path.write_text(
+        relay_prompts.render_prompt_markdown(items, len(items), done),
+        encoding="utf-8")
+    return combined_path
+
+
 def _save_json(path: Path, payload: dict) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8")
 
 
-def _pending_note(args, operator_root: Path, pending: dict[str, dict]) -> str:
+def _pending_note(args, out_dir: Path, operator_root: Path,
+                  pending: dict[str, dict]) -> str:
     blocks = []
     for arm, item in pending.items():
         operator_dir = operator_root / arm
@@ -220,23 +377,31 @@ def _pending_note(args, operator_root: Path, pending: dict[str, dict]) -> str:
             f"`{shlex.quote(sys.executable)} scripts/relay_prompts.py ingest "
             f"--dir {shlex.quote(str(operator_dir))} "
             "--file answers.txt --model arena-agent-mode --model-version unversioned`\n")
-    resume = " ".join([
+    resume_parts = [
         f"{shlex.quote(sys.executable)} scripts/run_plot_ablation.py",
         f"--id {shlex.quote(args.id)} --task {shlex.quote(args.task)}",
         f"--canon {shlex.quote(str(Path(args.canon).resolve()))}",
         f"--design-dir {shlex.quote(str(Path(args.design_dir).resolve()))}",
+    ]
+    if getattr(args, "prepare_shared", False):
+        resume_parts.append("--prepare-shared")
+    resume_parts.extend([
         f"--provider arena --seed {args.seed} --temperature {args.temperature}",
         f"--out {shlex.quote(str(Path(args.out).resolve()))}",
         f"--runs-root {shlex.quote(str(Path(args.runs_root).resolve()))}",
         f"--operator-root {shlex.quote(str(Path(args.operator_root).resolve()))} --resume",
     ])
+    resume = " ".join(resume_parts)
+    one_step_ingest = resume + " --ingest answers.txt"
     return (
         f"# Plot memo ablation: {args.id} — Arena responses pending\n\n"
         "No experiment result has been produced yet. Each arm has its own operator directory; "
-        "keep its tagged answers with the matching arm.\n\n"
+        "keep its tagged answers with the matching arm.\n"
+        f"Combined pending prompt bundle: `{out_dir / 'PROMPTS.md'}`.\n\n"
         + "\n".join(blocks)
-        + "\nAfter ingesting the answers, rerun the same command to continue.\n\n"
-        + "```sh\n" + resume + "\n```\n"
+        + "\nAfter ingesting the answers, rerun the same command to continue "
+        "(or pass `--ingest answers.txt --resume` to ingest across arms/stages and advance in one command):\n\n"
+        + "```sh\n" + resume + "\n# or in one step:\n" + one_step_ingest + "\n```\n"
     )
 
 
@@ -254,16 +419,101 @@ def _evaluate_l1(run_dir: Path, out_dir: Path) -> dict:
     return json.loads((out_dir / "evaluation.json").read_text(encoding="utf-8"))
 
 
+def _parse_ingest_payload(path: Path, map_entries: list[str]) -> dict[str, str]:
+    text = path.read_text(encoding="utf-8")
+    tag_map: dict[str, str] = {}
+    for entry in map_entries:
+        if "=" not in entry:
+            raise ValueError(f"--map expects FROM=TO, got {entry!r}")
+        source, target = entry.split("=", 1)
+        tag_map[source.strip()] = target.strip()
+
+    errors = [
+        {"tag": match.group(1), "reason": match.group(2).strip()}
+        for match in relay_prompts.ERROR.finditer(text)
+    ]
+    if errors:
+        raise ValueError(f"ingest file contains <<<ERROR>>> blocks: {errors}")
+
+    answers: dict[str, str] = {}
+    for match in relay_prompts.ANSWER.finditer(text):
+        raw, body = match.group(1), match.group(2).strip()
+        tag = tag_map.get(raw, raw)
+        if tag in answers:
+            raise ValueError(f"duplicate tag in ingest file: {tag}")
+        if not body:
+            raise ValueError(f"empty answer for tag: {tag}")
+        answers[tag] = body
+
+    if not answers:
+        raise ValueError(f"no <<<ANSWER TAG>>> blocks found in {path}")
+    return answers
+
+
+def _ingest_matching_for_operators(operator_root: Path, answers: dict[str, str],
+                                   consumed: set[str], *,
+                                   only_pending: bool = False) -> int:
+    newly_written = 0
+    for name in ("shared_prep", "no_plot", "with_plot"):
+        op_dir = operator_root / name
+        if not (op_dir / "requests").is_dir():
+            continue
+        candidates = (relay_prompts.pending(op_dir) if only_pending
+                      else relay_prompts.all_requests(op_dir))
+        blocks = []
+        matched_tags = []
+        for item in candidates:
+            tag = item["tag"]
+            if tag in answers:
+                if only_pending and tag in consumed:
+                    continue
+                blocks.append(f"<<<ANSWER {tag}>>>\n{answers[tag]}\n<<<END {tag}>>>")
+                matched_tags.append(tag)
+        if not blocks:
+            continue
+        summary = relay_prompts.ingest(
+            op_dir, "\n\n".join(blocks),
+            model="arena-agent-mode", model_version="unversioned")
+        if summary["rejected"] or summary["errors"]:
+            raise ValueError(f"relay ingest rejected in {op_dir}: {summary}")
+        for tag in matched_tags:
+            consumed.add(tag)
+        newly_written += len(summary["written"])
+    return newly_written
+
+
+def _configs_compatible(saved: dict, current: dict, out_dir: Path) -> bool:
+    for key in ("id", "task", "provider", "seed", "temperature"):
+        if saved.get(key) != current.get(key):
+            return False
+    # If canon or design were already finalized when saved, their file trees must match.
+    if saved.get("canon_files_sha256") and saved.get("canon_files_sha256") != current.get("canon_files_sha256"):
+        return False
+    if (not saved.get("prepare_shared") or saved.get("shared_prep_complete")) and saved.get("design_files_sha256"):
+        if saved.get("design_files_sha256") != current.get("design_files_sha256"):
+            return False
+    # Check custom roots if they were not the bundle-local defaults.
+    default_runs = str((out_dir / "attempts").resolve())
+    default_op = str((out_dir / "relay" / current["id"]).resolve())
+    if current["runs_root"] != default_runs and saved.get("runs_root") != current["runs_root"]:
+        return False
+    if current["operator_root"] != default_op and saved.get("operator_root") != current["operator_root"]:
+        return False
+    return True
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--id", required=True, help="safe experiment id used in run ids")
     parser.add_argument("--task", default="t01")
     parser.add_argument("--tasks-file", default=str(DEFAULT_TASKS))
-    parser.add_argument("--canon", help="shared canon directory (required for a new run)")
+    parser.add_argument("--canon", help="shared canon directory (required unless --prepare-shared or --resume)")
     parser.add_argument("--design-dir",
                         help="shared design directory with clean plot, scene and voice "
-                             "(required for a new run)")
+                             "(required unless --prepare-shared or --resume)")
+    parser.add_argument("--prepare-shared", action="store_true",
+                        help="prepare shared canon and design inside <out>/inputs before paired Draft")
     parser.add_argument("--provider", required=True, choices=["arena", "scripted"])
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT),
                         help="fixture path for scripted wiring tests only")
@@ -276,11 +526,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Arena relay root (default: <out>/relay; persistent)")
     parser.add_argument("--resume", action="store_true",
                         help="resume a pending Arena relay using its existing operator responses")
+    parser.add_argument("--ingest", default=None,
+                        help="path to a file with <<<ANSWER TAG>>> blocks to ingest before running")
+    parser.add_argument("--map", action="append", default=[], metavar="FROM=TO",
+                        help="explicit tag remapping for --ingest (repeatable)")
     args = parser.parse_args(argv)
     if not re.fullmatch(r"[A-Za-z0-9._-]+", args.id):
         parser.error("--id may contain only ASCII letters, digits, '.', '_' and '-'")
     if args.resume and args.provider != "arena":
         parser.error("--resume is only supported for the Arena relay")
+    if args.ingest and args.provider != "arena":
+        parser.error("--ingest is only supported for the Arena relay")
     return args
 
 
@@ -297,6 +553,28 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     out_dir = Path(args.out).resolve()
+    if _is_under_build(out_dir):
+        print("error: --out must not be under build/ (scratch is not persisted)", file=sys.stderr)
+        return 2
+    if args.runs_root and _is_under_build(Path(args.runs_root)):
+        print("error: --runs-root must not be under build/", file=sys.stderr)
+        return 2
+    if args.operator_root and _is_under_build(Path(args.operator_root)):
+        print("error: --operator-root must not be under build/", file=sys.stderr)
+        return 2
+
+    ingest_answers: dict[str, str] | None = None
+    if args.ingest:
+        ingest_path = Path(args.ingest)
+        if not ingest_path.is_file():
+            print(f"error: no such ingest file: {ingest_path}", file=sys.stderr)
+            return 2
+        try:
+            ingest_answers = _parse_ingest_payload(ingest_path, args.map)
+        except (OSError, ValueError) as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
+
     state_path = out_dir / "state.json"
     archived_inputs = out_dir / "inputs"
     archived_canon = archived_inputs / "canon"
@@ -306,6 +584,13 @@ def main(argv: list[str] | None = None) -> int:
         if not state_path.is_file():
             print("error: --resume requires a saved pending experiment state", file=sys.stderr)
             return 2
+        try:
+            saved_state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            print(f"error: cannot read resume state: {exc}", file=sys.stderr)
+            return 2
+        if saved_state.get("config", {}).get("prepare_shared"):
+            args.prepare_shared = True
         # New runs are self-contained. For a legacy run without an archived
         # input bundle, require the original source paths and retain its old
         # behavior rather than silently rebuilding or substituting any input.
@@ -315,7 +600,8 @@ def main(argv: list[str] | None = None) -> int:
                     (args.design_dir, archived_design, "design")):
                 if supplied:
                     supplied_path = Path(supplied).resolve()
-                    if supplied_path.is_dir() and _sha256_tree(supplied_path) != _sha256_tree(archived):
+                    if (supplied_path.is_dir() and _sha256_tree(archived)
+                            and _sha256_tree(supplied_path) != _sha256_tree(archived)):
                         print(f"error: supplied {label} differs from the archived experiment input",
                               file=sys.stderr)
                         return 2
@@ -328,16 +614,6 @@ def main(argv: list[str] | None = None) -> int:
             canon_dir = Path(args.canon).resolve()
             design_dir = Path(args.design_dir).resolve()
     else:
-        if not args.canon or not args.design_dir:
-            print("error: --canon and --design-dir are required for a new experiment",
-                  file=sys.stderr)
-            return 2
-        canon_source = Path(args.canon).resolve()
-        design_source = Path(args.design_dir).resolve()
-        for directory, label in ((canon_source, "canon"), (design_source, "design")):
-            if not directory.is_dir():
-                print(f"error: {label} directory does not exist: {directory}", file=sys.stderr)
-                return 2
         if out_dir.exists():
             print("error: output exists; choose a new experiment output directory", file=sys.stderr)
             return 2
@@ -353,11 +629,39 @@ def main(argv: list[str] | None = None) -> int:
             print("error: Arena operator directory already exists: "
                   f"{prospective_operator_base / args.id}", file=sys.stderr)
             return 2
-        out_dir.mkdir(parents=True)
-        archived_inputs.mkdir(parents=True)
-        shutil.copytree(canon_source, archived_canon)
-        shutil.copytree(design_source, archived_design)
-        canon_dir, design_dir = archived_canon, archived_design
+        if args.prepare_shared:
+            canon_source = Path(args.canon).resolve() if args.canon else None
+            design_source = Path(args.design_dir).resolve() if args.design_dir else None
+            if canon_source is not None and not canon_source.is_dir():
+                print(f"error: canon directory does not exist: {canon_source}", file=sys.stderr)
+                return 2
+            if design_source is not None and not design_source.is_dir():
+                print(f"error: design directory does not exist: {design_source}", file=sys.stderr)
+                return 2
+            out_dir.mkdir(parents=True)
+            archived_canon.mkdir(parents=True)
+            archived_design.mkdir(parents=True)
+            if canon_source is not None:
+                _copy_tree_contents(canon_source, archived_canon)
+            if design_source is not None:
+                _copy_tree_contents(design_source, archived_design)
+            canon_dir, design_dir = archived_canon, archived_design
+        else:
+            if not args.canon or not args.design_dir:
+                print("error: --canon and --design-dir are required for a new experiment "
+                      "(or pass --prepare-shared)", file=sys.stderr)
+                return 2
+            canon_source = Path(args.canon).resolve()
+            design_source = Path(args.design_dir).resolve()
+            for directory, label in ((canon_source, "canon"), (design_source, "design")):
+                if not directory.is_dir():
+                    print(f"error: {label} directory does not exist: {directory}", file=sys.stderr)
+                    return 2
+            out_dir.mkdir(parents=True)
+            archived_inputs.mkdir(parents=True)
+            shutil.copytree(canon_source, archived_canon)
+            shutil.copytree(design_source, archived_design)
+            canon_dir, design_dir = archived_canon, archived_design
 
     for directory, label in ((canon_dir, "canon"), (design_dir, "design")):
         if not directory.is_dir():
@@ -377,6 +681,7 @@ def main(argv: list[str] | None = None) -> int:
     args.runs_root = str(runs_root)
     args.operator_root = str(operator_base)
 
+    shared_ready = _is_shared_design_ready(canon_dir, design_dir)
     config = {
         "id": args.id, "task": args.task, "provider": args.provider,
         "seed": args.seed, "temperature": args.temperature,
@@ -385,13 +690,13 @@ def main(argv: list[str] | None = None) -> int:
         "design_files_sha256": _sha256_tree(design_dir),
         "runs_root": str(runs_root), "operator_root": str(operator_root),
     }
+    if args.prepare_shared:
+        config["prepare_shared"] = True
+        config["shared_prep_complete"] = shared_ready
+
     if args.resume:
-        try:
-            state = json.loads(state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            print(f"error: cannot read resume state: {exc}", file=sys.stderr)
-            return 2
-        if state.get("config") != config:
+        state = saved_state
+        if not _configs_compatible(state.get("config", {}), config, out_dir):
             print("error: resume settings or archived canon/design inputs changed",
                   file=sys.stderr)
             return 2
@@ -409,49 +714,142 @@ def main(argv: list[str] | None = None) -> int:
         state = {"config": config, "attempts": 0, "attempt_history": [], "completed": False}
         _save_json(state_path, state)
 
-    attempt = int(state.get("attempts", 0)) + 1
-    state["attempts"] = attempt
-    _save_json(state_path, state)
+    consumed_tags: set[str] = set()
+    if ingest_answers is not None:
+        try:
+            _ingest_matching_for_operators(
+                operator_root, ingest_answers, consumed_tags, only_pending=False)
+        except ValueError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
 
-    arms_runs: dict[str, Path] = {}
-    arm_status: dict[str, dict] = {}
     try:
-        for arm, include_plot in (("no_plot", False), ("with_plot", True)):
-            outcome = _run_pipeline(
-                args, arm, include_plot, run_root / arm,
-                operator_root, attempt)
-            arm_status[arm] = outcome
-            arms_runs[arm] = Path(outcome["run_dir"])
-        attempt_entry = {"attempt": attempt, "arms": arm_status}
-        state["attempt_history"].append(attempt_entry)
-        _save_json(state_path, state)
+        while True:
+            attempt = int(state.get("attempts", 0)) + 1
+            state["attempts"] = attempt
+            _save_json(state_path, state)
 
-        pending_exports = {}
-        if args.provider == "arena":
-            for arm, outcome in arm_status.items():
-                if outcome["status"] == "pending":
-                    pending_exports[arm] = _export_pending(operator_root / arm)
-        if pending_exports:
-            progress = {
-                "status": "waiting_for_arena_responses",
-                "experiment_id": args.id,
-                "attempt": attempt,
-                "arms": arm_status,
-                "relay": {
-                    arm: {"pending": value["pending"],
-                          "prompts": str(operator_root / arm / "relay" / "PROMPTS.md"),
-                          "operator_dir": str(operator_root / arm)}
-                    for arm, value in pending_exports.items()
-                },
-            }
-            _save_json(out_dir / "progress.json", progress)
-            (out_dir / "note.md").write_text(
-                _pending_note(args, operator_root, pending_exports), encoding="utf-8")
-            print(json.dumps({"status": progress["status"],
-                              "progress": str(out_dir / "progress.json"),
-                              "note": str(out_dir / "note.md"),
-                              "relay": progress["relay"]}, ensure_ascii=False, indent=2))
-            return 3
+            shared_ready = _is_shared_design_ready(canon_dir, design_dir)
+            if not shared_ready:
+                if not args.prepare_shared:
+                    raise RuntimeError(
+                        "shared canon/design is incomplete and --prepare-shared was not enabled")
+                prep_outcome = _run_shared_prep(
+                    args, canon_dir, design_dir, run_root, operator_root, attempt)
+                state["config"]["canon_files_sha256"] = _sha256_tree(canon_dir)
+                state["config"]["design_files_sha256"] = _sha256_tree(design_dir)
+                if prep_outcome["status"] == "pending":
+                    state["attempt_history"].append(
+                        {"attempt": attempt, "shared_prep": prep_outcome, "arms": {}})
+                    _save_json(state_path, state)
+                    if ingest_answers is not None:
+                        newly = _ingest_matching_for_operators(
+                            operator_root, ingest_answers, consumed_tags, only_pending=True)
+                        if newly > 0:
+                            continue
+                        unmatched = sorted(set(ingest_answers) - consumed_tags)
+                        if unmatched:
+                            print(f"error: unknown tag(s) in ingest file: {', '.join(unmatched)}",
+                                  file=sys.stderr)
+                            return 1
+                    exported = _export_pending(operator_root / "shared_prep")
+                    combined_md = _write_combined_prompts(
+                        out_dir, operator_root, ["shared_prep"])
+                    progress = {
+                        "status": "waiting_for_arena_responses",
+                        "stage": f"shared_prep:{prep_outcome['stage']}",
+                        "experiment_id": args.id,
+                        "attempt": attempt,
+                        "shared_prep": prep_outcome,
+                        "arms": {},
+                        "prompts_markdown": str(combined_md),
+                        "relay": {
+                            "shared_prep": {
+                                "pending": exported["pending"],
+                                "prompts": str(operator_root / "shared_prep" / "relay" / "PROMPTS.md"),
+                                "operator_dir": str(operator_root / "shared_prep"),
+                            }
+                        },
+                    }
+                    _save_json(out_dir / "progress.json", progress)
+                    (out_dir / "note.md").write_text(
+                        _pending_note(args, out_dir, operator_root,
+                                      {"shared_prep": exported}),
+                        encoding="utf-8")
+                    print(json.dumps({
+                        "status": progress["status"],
+                        "stage": progress["stage"],
+                        "progress": str(out_dir / "progress.json"),
+                        "note": str(out_dir / "note.md"),
+                        "prompts": str(combined_md),
+                        "relay": progress["relay"],
+                    }, ensure_ascii=False, indent=2))
+                    return 3
+
+                state["config"]["shared_prep_complete"] = True
+                _save_json(state_path, state)
+
+            arms_runs: dict[str, Path] = {}
+            arm_status: dict[str, dict] = {}
+            for arm, include_plot in (("no_plot", False), ("with_plot", True)):
+                outcome = _run_pipeline(
+                    args, arm, include_plot, run_root / arm,
+                    operator_root, attempt)
+                arm_status[arm] = outcome
+                arms_runs[arm] = Path(outcome["run_dir"])
+            attempt_entry = {"attempt": attempt, "arms": arm_status}
+            state["attempt_history"].append(attempt_entry)
+            _save_json(state_path, state)
+
+            pending_exports = {}
+            if args.provider == "arena":
+                for arm, outcome in arm_status.items():
+                    if outcome["status"] == "pending":
+                        pending_exports[arm] = _export_pending(operator_root / arm)
+            if pending_exports:
+                if ingest_answers is not None:
+                    newly = _ingest_matching_for_operators(
+                        operator_root, ingest_answers, consumed_tags, only_pending=True)
+                    if newly > 0:
+                        continue
+                    unmatched = sorted(set(ingest_answers) - consumed_tags)
+                    if unmatched:
+                        print(f"error: unknown tag(s) in ingest file: {', '.join(unmatched)}",
+                              file=sys.stderr)
+                        return 1
+                combined_md = _write_combined_prompts(
+                    out_dir, operator_root, list(pending_exports.keys()))
+                progress = {
+                    "status": "waiting_for_arena_responses",
+                    "experiment_id": args.id,
+                    "attempt": attempt,
+                    "arms": arm_status,
+                    "prompts_markdown": str(combined_md),
+                    "relay": {
+                        arm: {"pending": value["pending"],
+                              "prompts": str(operator_root / arm / "relay" / "PROMPTS.md"),
+                              "operator_dir": str(operator_root / arm)}
+                        for arm, value in pending_exports.items()
+                    },
+                }
+                _save_json(out_dir / "progress.json", progress)
+                (out_dir / "note.md").write_text(
+                    _pending_note(args, out_dir, operator_root, pending_exports),
+                    encoding="utf-8")
+                print(json.dumps({"status": progress["status"],
+                                  "progress": str(out_dir / "progress.json"),
+                                  "note": str(out_dir / "note.md"),
+                                  "prompts": str(combined_md),
+                                  "relay": progress["relay"]}, ensure_ascii=False, indent=2))
+                return 3
+
+            if ingest_answers is not None:
+                unmatched = sorted(set(ingest_answers) - consumed_tags)
+                if unmatched:
+                    print(f"error: unknown tag(s) in ingest file: {', '.join(unmatched)}",
+                          file=sys.stderr)
+                    return 1
+            break
 
         runs = arms_runs
         summaries = {
@@ -581,7 +979,7 @@ def main(argv: list[str] | None = None) -> int:
             "arms": {arm: {"status": "complete", "run_dir": str(path)}
                      for arm, path in runs.items()},
         })
-    except (OSError, RuntimeError, json.JSONDecodeError) as exc:
+    except (OSError, RuntimeError, ValueError, json.JSONDecodeError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

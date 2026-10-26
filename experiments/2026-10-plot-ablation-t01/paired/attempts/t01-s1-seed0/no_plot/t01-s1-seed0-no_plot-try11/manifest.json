@@ -1,0 +1,23 @@
+{
+  "artifacts": [],
+  "error": "ch01: NEED RESPONSE key=s1-t01-plot-no_plot-s1-draft-ch01-a1 file=/home/user/AutoStoryCreationAI/experiments/2026-10-plot-ablation-t01/paired/relay/t01-s1-seed0/no_plot/responses/s1-t01-plot-no_plot-s1-draft-ch01-a1.json",
+  "finished_at": "2026-10-26T04:41:39Z",
+  "git_commit": "79f35555559d052181f173b4da4271efae3eed47",
+  "model": "arena-agent-mode",
+  "model_version": null,
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e"
+  },
+  "protocol_version": "protocol-v1",
+  "provider": "command",
+  "response_count": 0,
+  "responses_sha256": null,
+  "run_id": "t01-s1-seed0-no_plot-try11",
+  "seed": 0,
+  "started_at": "2026-10-26T04:41:39Z",
+  "status": "failed",
+  "system": "s1",
+  "task_id": "t01",
+  "temperature": 0.8,
+  "usage": {}
+}

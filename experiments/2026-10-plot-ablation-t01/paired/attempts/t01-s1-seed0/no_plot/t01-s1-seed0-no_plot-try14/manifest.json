@@ -1,0 +1,37 @@
+{
+  "artifacts": [
+    "draft.json",
+    "draft/ch01-attempt-1.txt",
+    "draft/ch02-attempt-1.txt",
+    "draft/ch03-attempt-1.txt",
+    "responses.jsonl",
+    "text/ch01.md",
+    "text/ch02.md",
+    "text/ch03.md"
+  ],
+  "error": null,
+  "finished_at": "2026-10-26T05:27:08Z",
+  "git_commit": "54536979a556a37af9dc8b5bcd61a58b81cb9432",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned",
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e",
+    "draft:ch01": "09143bfcbad0a32d",
+    "draft:ch02": "709aa056ec43872d",
+    "draft:ch03": "5aba77d4d73c3985"
+  },
+  "protocol_version": "protocol-v1",
+  "provider": "command",
+  "response_count": 3,
+  "responses_sha256": "4adde592c572a7d17e44520607d05b9832c2f899b42e90e263fbc04ec8e4ac46",
+  "run_id": "t01-s1-seed0-no_plot-try14",
+  "seed": 0,
+  "started_at": "2026-10-26T05:27:08Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "t01",
+  "temperature": 0.8,
+  "usage": {
+    "operator": 3
+  }
+}

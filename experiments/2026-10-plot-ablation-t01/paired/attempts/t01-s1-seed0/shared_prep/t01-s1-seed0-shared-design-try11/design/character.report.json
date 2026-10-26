@@ -1,0 +1,17 @@
+{
+  "attempts": 1,
+  "checks_failed": 0,
+  "doc": "character",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "prompt": {
+    "digest": "e4bffc2ee9db74b2",
+    "name": "design-character",
+    "version": "1.0"
+  },
+  "repairs": 0,
+  "status": "clean"
+}

@@ -1,0 +1,39 @@
+{
+  "artifacts": [
+    "brief.md",
+    "canon/README.md",
+    "canon/characters.json",
+    "canon/facts.json",
+    "canon/foreshadowing.json",
+    "canon/locations.json",
+    "canon/suppressions.json",
+    "canon/timeline.json",
+    "plan.json",
+    "plan/attempt-1.txt",
+    "responses.jsonl"
+  ],
+  "error": null,
+  "finished_at": "2026-10-26T04:29:48Z",
+  "git_commit": "3a07199549e21091c5af2153a009b118d3613cc9",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned",
+  "prompt_hashes": {
+    "plan": "fcb46f74144a3151",
+    "plan-canon": "d5efcf43e513e63c",
+    "plan-repair": "4b4307af6b4381cb"
+  },
+  "protocol_version": "protocol-v1",
+  "provider": "command",
+  "response_count": 1,
+  "responses_sha256": "008edbedae902f434def1944d144e0598e75ff32afdbd530a1d938adb99c7a3c",
+  "run_id": "t01-s1-seed0-shared-plan-try02",
+  "seed": 0,
+  "started_at": "2026-10-26T04:29:48Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "t01",
+  "temperature": 0.8,
+  "usage": {
+    "operator": 1
+  }
+}
