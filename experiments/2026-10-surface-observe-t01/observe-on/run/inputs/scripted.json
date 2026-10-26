@@ -1,0 +1,9 @@
+{
+  "_note": "固定台本（scripted）。実モデルの応答も、実モデルの効果観測も含まない。Phase 1-2 の配線・回帰テスト専用。",
+  "responses": {
+    "stage_a:t01": {"$file": "inputs/game_log.json"},
+    "stage_b:ch01:t01": {"$file": "inputs/rewrite/ch01.md"},
+    "stage_b:ch02:t01": {"$file": "inputs/rewrite/ch02.md"},
+    "stage_b:ch03:t01": {"$file": "inputs/rewrite/ch03.md"}
+  }
+}

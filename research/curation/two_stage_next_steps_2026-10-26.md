@@ -187,3 +187,15 @@ B-03〜B-05（意味照合 = L2 相当、依然として未実装）である。
   「この 18 文で期待どおり」以上の意味を持たない。取りこぼし（「歩いた」「霞んで見えた」）は
   仕様上の限界として表に残す。
 - 残り: 観測モードでの事例収集、S1 全体（plan → 8 設計 → draft）との比較。
+
+## 追記（2026-10-26）: 観測モードの実装
+
+- **結果**: [`experiments/2026-10-surface-observe-t01/`](../../experiments/2026-10-surface-observe-t01/note.md)
+  （仕様は `docs/two_stage_slice.md` §20）。`--observe-surface` で候補検査の結果を
+  `observations` として走りに残せるようにした（既定は無効・キーも出ない）。
+  scripted バンドルの 2 走りで契約側（`status`・`findings`・`checks`）が完全一致、
+  ログ外の旅を注入しても `status` は `clean` のまま観測だけが 1 件増えることを確認。
+- **穴を 1 つ塞いだ**: 候補検査の項目は `advisory: True` だけで、`findings` に混ぜると
+  medium として修復が走る状態だった。`blocks_repair: False` を明記した。
+- 残り: 実走りで観測を集めて「未宣言の canon 地名」の事例を読む、t02 の事例表へ反映、
+  S1 全体（plan → 8 設計 → draft）との比較。

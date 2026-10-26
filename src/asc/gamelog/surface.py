@@ -14,9 +14,12 @@ answer, kept **outside** the contract on purpose:
   is a *report* (which numerals appear, which have no counterpart in the log or
   canon), not a verdict.
 
-Nothing here is wired into :func:`asc.gamelog.rewrite.check_rewrite`. The module
-exists so the experiment can measure recall and precision on real text, and so a
-later decision to adopt (or drop) it is made against numbers instead of taste.
+Nothing here decides anything. The place side can be attached as *observations*
+(``check_rewrite(..., observe_surface=True)``, ``run_twostage.py
+--observe-surface``) so that real runs collect the heuristic's false positives
+for a human to read; observations are not findings, carry ``blocks_repair=False``,
+and are absent entirely unless the caller asks. The module exists so a later
+decision to adopt (or drop) it is made against numbers instead of taste.
 """
 from __future__ import annotations
 
@@ -100,8 +103,9 @@ def _destination_name(raw: str) -> str:
 def place_findings(text: str, chapter: dict, canon: Canon) -> list[dict]:
     """Travel to a place that the canon or the log for this chapter lacks.
 
-    Advisory (``blocks_repair=False`` semantics): the caller decides what to do
-    with it. ``chapter`` is a row from
+    Advisory: ``blocks_repair`` is spelled out as ``False`` rather than left
+    implied, so that even a caller who routes these into ``findings`` cannot
+    turn them into a repair trigger by accident. ``chapter`` is a row from
     :func:`asc.gamelog.world.derive_timeline`.
     """
     known = set(canon.locations)
@@ -122,6 +126,7 @@ def place_findings(text: str, chapter: dict, canon: Canon) -> list[dict]:
             "check": "movement_surface",
             "severity": "medium",
             "advisory": True,
+            "blocks_repair": False,
             "message_ja": f"「{claim.expression}」— {reason}。",
             "evidence": {"destination": name, "expression": claim.expression,
                          "line": claim.line, "sentence": claim.sentence[:80]},

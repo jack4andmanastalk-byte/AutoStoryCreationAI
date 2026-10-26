@@ -349,6 +349,9 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   言い換え耐性の測定（clean 9 章で所見 0・言い換え 6/6・紛らわしい文 12/12）の途中で、実本文の
   「三日かけて王都へ着いた」から目的地の抽出欠陥が見つかり、修正しました。ただし「canon にあるが
   この章で宣言されていない」枝は章の外の移動を偽陽性にするため、契約には入れていません。
+  事例を集めるため、`run_twostage.py --observe-surface` で結果を `observations` として走りに
+  残せるようにしました（既定は無効。所見にも状態にも影響せず、修復は起きません —
+  [`2026-10-surface-observe-t01`](experiments/2026-10-surface-observe-t01/note.md)）。
 * `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
   「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は

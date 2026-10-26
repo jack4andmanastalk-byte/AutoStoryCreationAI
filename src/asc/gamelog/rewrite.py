@@ -38,6 +38,8 @@ from ..style.schema import Voice
 from .markers import (DEAD_ACTOR_MARKER_KINDS, DERIVED_KINDS,
                       expected_marker_texts, prose_markers)
 from .schema import GameLog, REFERENCE_TYPES
+from .surface import place_findings
+from .world import chapter_timeline
 
 MARKER_RE = re.compile(r"\{\{[^{}]*\}\}")
 REPAIR_SEVERITIES = frozenset({"high", "medium"})
@@ -288,8 +290,16 @@ def _mentions_without_medium(text: str, names: tuple[str, ...],
 def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
                   voice: Voice | None = None, scenes: SceneDoc | None = None, *,
                   avoid: tuple[str, ...] = (), min_chars: int = 120,
-                  timeline: dict | None = None, strict_timeline: bool = False) -> dict:
-    """Check one rewritten chapter against the verified log and voice spec."""
+                  timeline: dict | None = None, strict_timeline: bool = False,
+                  observe_surface: bool = False) -> dict:
+    """Check one rewritten chapter against the verified log and voice spec.
+
+    ``observe_surface`` adds a list of *observations* — the candidate place check
+    from :mod:`asc.gamelog.surface`, which is deliberately outside the contract.
+    Observations never enter ``findings``, never change ``status``, and are not
+    written at all unless the caller asks: they exist so that real runs collect
+    examples of the check's false positives before anyone decides to adopt it.
+    """
     chapter = log.chapter(chapter_id)
     findings: list[dict] = []
     checks: list[dict] = []
@@ -489,6 +499,19 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
     warnings = sum(1 for item in findings
                    if item["severity"] in REPAIR_SEVERITIES
                    and not item.get("blocks_repair", True))
+    observed: dict = {}
+    if observe_surface:
+        row = (chapter_timeline(timeline, chapter_id)
+               if timeline else {"location": None, "moves": []})
+        observations = place_findings(body, row, canon)
+        observed = {
+            "observations": observations,
+            "observation_summary": {
+                "advisory": "asc.gamelog.surface.place_findings",
+                "count": len(observations),
+                "note": ("観測のみ。findings・status・修復の判断には使わない。"),
+            },
+        }
     return {
         "schema_version": "1.0",
         "tool": "game-log-rewrite-check",
@@ -513,6 +536,7 @@ def check_rewrite(text: str, chapter_id: str, log: GameLog, canon: Canon,
             "checks_run": sum(1 for c in checks if c["status"] != "skipped"),
             "checks_skipped": sum(1 for c in checks if c["status"] == "skipped"),
         },
+        **observed,
     }
 
 
@@ -582,6 +606,10 @@ def render_markdown(report: dict) -> str:
         for item in report["findings"]:
             lines.append(f"* [{item['severity']}] `{item['check']}` "
                          f"{item['message_ja']}")
+    if report.get("observations"):
+        lines += ["", "## 観測（契約外・判定に使わない）", ""]
+        for item in report["observations"]:
+            lines.append(f"* `{item['check']}` {item['message_ja']}")
     lines += ["", "構造・衛生の L1 検査であり、文章の質や面白さは判定しない。", ""]
     return "\n".join(lines)
 

@@ -1,0 +1,404 @@
+{
+  "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-surface-observe-t01/observe-off/run/inputs/canon",
+  "canon_warnings": [],
+  "chapters": [
+    {
+      "chars": 481,
+      "id": "ch01",
+      "markers": 6,
+      "mentions": 6,
+      "path": "ch01.md"
+    },
+    {
+      "chars": 507,
+      "id": "ch02",
+      "markers": 7,
+      "mentions": 8,
+      "path": "ch02.md"
+    },
+    {
+      "chars": 426,
+      "id": "ch03",
+      "markers": 6,
+      "mentions": 4,
+      "path": "ch03.md"
+    }
+  ],
+  "checks": [
+    {
+      "acceptance_ja": "死亡章より後の章で、その人物の行為マーカー（state/learn/use）または発話（名前＋直後の「」）が 0 件であること。名前の言及だけの場合は回想・遺体・手紙と区別できないため medium として報告する。",
+      "evaluated": 1,
+      "id": "dead_character_reappears",
+      "limits_ja": "名前の言及は存在の証明ではない。夢・回想・遺体・代役は誤検出になりうる。",
+      "question_ja": "死亡が確定した人物が、その後の章で行為・発話していないか。",
+      "requires": [
+        "characters",
+        "chapters"
+      ],
+      "status": "fail",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "violations": 3
+    },
+    {
+      "acceptance_ja": "`use` マーカーの事実が、その人物の既知集合（canon の knows ＋ それ以前の `learn`）に含まれること。含まれない場合は high。事実の語彙（terms）が学習前の台詞に現れる場合は、話者推定を含むため medium。",
+      "evaluated": 3,
+      "id": "knowledge_violation",
+      "limits_ja": "台詞の話者推定は行単位の近接に依存する。地の文の言及は対象外。",
+      "question_ja": "人物が、知る前の章で事実を使っていないか。",
+      "requires": [
+        "characters",
+        "facts"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T012",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "知り得ない情報の使用",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "各伏線について、回収章 ≥ 設置章であること。回収のみで設置がない場合はmedium、canon の宣言と実際の章が食い違う場合は low。",
+      "evaluated": 3,
+      "id": "foreshadow_order",
+      "limits_ja": "回収の「意味が通るか」は判定しない。順序と有無だけを見る。",
+      "question_ja": "回収が設置より前になっていないか。回収だけが存在しないか。",
+      "requires": [
+        "foreshadowing"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/japan_2026:T034",
+        "narrative/japan_2026:T035",
+        "narrative/japan_2026:T036",
+        "narrative/japan_2026:T037"
+      ],
+      "title_ja": "伏線の設置と回収の順序",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "最終章までに `payoff` マーカー（または canon の payoff 章）に到達した伏線の集合が、設置済みの集合と一致すること。差集合は medium。",
+      "evaluated": 3,
+      "id": "unresolved_foreshadow",
+      "limits_ja": "続巻前提の作品では未回収が正常。単巻として監査する場合のみ有効。",
+      "question_ja": "設置されたが回収されていない伏線が残っていないか。",
+      "requires": [
+        "foreshadowing",
+        "chapters"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/us_2026:T012"
+      ],
+      "title_ja": "未回収の伏線",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "連続する章の日数差 ≥ canon の移動日数であること。移動日数が未定義の組は判定せず、skipped として件数を報告する。",
+      "evaluated": 0,
+      "id": "travel_time",
+      "limits_ja": "移動日数表の網羅性に依存する。同日移動・省略・転移は誤検出になりうる。",
+      "question_ja": "章の経過日数が、場所間の移動日数以上か。",
+      "requires": [
+        "locations",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T112",
+        "production/game_narrative_us:P22"
+      ],
+      "title_ja": "移動時間の整合",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "`age` マーカーの値が、開始時年齢＋誕生日の通過回数と一致すること。誕生日が未設定の場合は、前回の明示年齢より減少していないことのみを見る。",
+      "evaluated": 0,
+      "id": "stated_age",
+      "limits_ja": "年齢は作中で明示された箇所しか検査できない。",
+      "question_ja": "本文中で示された年齢が、経過時間と矛盾しないか。",
+      "requires": [
+        "characters",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T116",
+        "production/game_narrative_us:P19"
+      ],
+      "title_ja": "年齢・時点の整合",
+      "violations": 0
+    }
+  ],
+  "generated_at": "2026-10-26T11:53:15Z",
+  "ledger": {
+    "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-surface-observe-t01/observe-off/run/inputs/canon",
+    "chapter_time": {
+      "ch01": {
+        "day": 1,
+        "location": "灯台"
+      },
+      "ch02": {
+        "day": 4,
+        "location": "王都"
+      },
+      "ch03": {
+        "day": 7,
+        "location": "灯台"
+      }
+    },
+    "characters": [
+      {
+        "age": 24,
+        "id": "aria",
+        "known_facts": [
+          "F-01",
+          "F-02",
+          "F-03",
+          "F-04",
+          "F-05"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      },
+      {
+        "age": 51,
+        "id": "boris",
+        "known_facts": [
+          "F-02",
+          "F-03"
+        ],
+        "last_seen_chapter": "ch02",
+        "location": "王都",
+        "status": "alive"
+      },
+      {
+        "age": 33,
+        "id": "celia",
+        "known_facts": [],
+        "last_seen_chapter": null,
+        "location": "港",
+        "status": "alive"
+      },
+      {
+        "age": null,
+        "id": "johan",
+        "known_facts": [
+          "F-04"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "王都",
+        "status": "dead"
+      }
+    ],
+    "events": [
+      {
+        "chapter": "ch01",
+        "detail": "F-05",
+        "evidence": "ch01.md:2",
+        "kind": "learn",
+        "line": 2,
+        "order": 3,
+        "subject": "aria"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:4",
+        "kind": "foreshadow",
+        "line": 4,
+        "order": 5,
+        "subject": "fs-001"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:4",
+        "kind": "foreshadow",
+        "line": 4,
+        "order": 6,
+        "subject": "fs-002"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "F-02",
+        "evidence": "ch02.md:2",
+        "kind": "learn",
+        "line": 2,
+        "order": 9,
+        "subject": "aria"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "F-03",
+        "evidence": "ch02.md:2",
+        "kind": "learn",
+        "line": 2,
+        "order": 10,
+        "subject": "aria"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "payoff",
+        "evidence": "ch02.md:6",
+        "kind": "foreshadow",
+        "line": 6,
+        "order": 12,
+        "subject": "fs-002"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "setup",
+        "evidence": "ch02.md:6",
+        "kind": "foreshadow",
+        "line": 6,
+        "order": 13,
+        "subject": "fs-003"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "F-04",
+        "evidence": "ch03.md:2",
+        "kind": "learn",
+        "line": 2,
+        "order": 16,
+        "subject": "aria"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:4",
+        "kind": "foreshadow",
+        "line": 4,
+        "order": 18,
+        "subject": "fs-001"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:4",
+        "kind": "foreshadow",
+        "line": 4,
+        "order": 19,
+        "subject": "fs-003"
+      }
+    ],
+    "foreshadowing": [
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch01",
+        "description": "父が『鍵は二本ある』と言ったまま口を閉ざしたこと。",
+        "id": "fs-001",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch02",
+        "declared_setup": "ch01",
+        "description": "三年前の嵐の夜の記録が帳面から欠けていること。",
+        "id": "fs-002",
+        "payoff_chapter": "ch02",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch02",
+        "description": "潮札に書かれた『半灯』の刻み。",
+        "id": "fs-003",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch02"
+      }
+    ],
+    "schema_version": "1.0"
+  },
+  "schema_version": "1.0",
+  "summary": {
+    "by_severity": {
+      "medium": 3
+    },
+    "by_type": {
+      "dead_character_reappears": 3
+    },
+    "ced_per_10k_chars": 21.216,
+    "chars": 1414,
+    "checks_run": 6,
+    "checks_skipped": 0,
+    "suppressed": 0,
+    "violations": 3,
+    "weighted_score": 6
+  },
+  "suppressed": [],
+  "tool": "continuity-ledger",
+  "violations": [
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 6,
+        "path": "ch02.md",
+        "quote": "奥の棚に、石膏の右手が置いてある。{{foreshadow: fs-002 payoff}}潮札に記された手つきと同じ形だ。ヨハンの手形だった。札の文字は後から書き足されていて、最初の記録とは筆が違う。{{foreshadow: fs-003 setup}}アリアは写しと照らし合わせ、欠けていた行が消されたのではなく、"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 2,
+        "path": "ch03.md",
+        "quote": "灯台に戻ると、灯りはまだ燃えていた。{{learn: aria fact=F-04}}写しの最後の行に、雷を避けるために灯りを落としたとあった。あの嵐の夜、ヨハンは港町を守ろうとしていた。三年前から、記録はその理由だけを消していた。{{use: aria fact=F-03}}"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:johan.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 4,
+        "path": "ch03.md",
+        "quote": "アリアは潮札を取り出した。ヨハンの手が残した文字が、今は読める。{{foreshadow: fs-001 payoff}}鍵は二本などなかった。父がそう言ったのは、予備を探させないためだった。{{foreshadow: fs-003 payoff}}半灯の刻みに合わせると、灯りは一段だけ低くなった。"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "ヨハン は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "johan",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    }
+  ]
+}

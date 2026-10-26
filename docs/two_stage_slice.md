@@ -580,3 +580,23 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定�
   今回は助かっただけで、次に観測で集めるべきはこの枝の事例である。
 * **限界**: 18 件はこちらが書いた文で、実本文の分布ではない。6/6・12/12 は「この 18 文で期待どおり」
   以上の意味を持たない。取りこぼし（「歩いた」「霞んで見えた」）は仕様上の限界で、表に残してある。
+
+## 20. 観測モード: 候補検査を契約の外で走らせる（2026-10-26）
+
+§19 で「事例を集めるまで地名検査は採らない」と決めたので、集める仕組みを先に作った:
+[`experiments/2026-10-surface-observe-t01/`](../experiments/2026-10-surface-observe-t01/note.md)
+（`schema: surface-observe-v1`）。
+
+* `check_rewrite(..., observe_surface=True)` は報告に `observations` / `observation_summary` を足す。
+  **既定は無効**で、無効ならキー自体が存在しない（既存の記録は変わらない）。
+  `scripts/run_twostage.py --observe-surface` が走りから通す。
+* 観測は `findings` に入れないので、`status`・重大度・修復判定に触れない。同じ scripted バンドルを
+  2 回走らせて、`status`・`findings`・`checks` が**完全に一致**することを確認した
+  （ch01〜ch03 の `clean`、`observations` はオンの走りにだけ存在）。
+* ログ外の旅を ch01 に注入すると、フラグ無しは `clean` / 所見 0、`--observe-surface` も
+  `clean` / 所見 0 で、**観測だけが 1 件**（`対岸の島`）増える。
+* **見つかった穴**: `place_findings` は `advisory: True` しか持っておらず、既存の `needs_repair` は
+  「`REPAIR_SEVERITIES` かつ `blocks_repair` が真」で判定する。つまり観測を `findings` に混ぜるだけで
+  修復が走っていた。各項目に `blocks_repair: False` を明記して塞いだ。
+* **限界**: 測ったのは scripted の本文で、実モデルの文章ではない。観測は事例を集めるだけで率を測らない。
+  L2/L3 は `frozen_not_measured`、G5 は未達、protocol-v1 は不変。

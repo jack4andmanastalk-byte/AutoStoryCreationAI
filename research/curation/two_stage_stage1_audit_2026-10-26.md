@@ -566,3 +566,16 @@ A-01/A-04（本文の現在地・日数は未検査）が、実応答でもそ�
   章の外の移動（回想・伝聞）を偽陽性にする。次に観測で集めるべきはこの枝の事例。
 - 事例表はこちらが書いた文であり、実本文の分布ではない。数字は「この 18 文で期待どおり」の意味に
   留める。採否は変えず、引き続き `check_rewrite` には未接続。
+
+## 19. 観測モード（2026-10-26）
+
+[`experiments/2026-10-surface-observe-t01/`](../../experiments/2026-10-surface-observe-t01/note.md)
+（`docs/two_stage_slice.md` §20）。
+
+- `check_rewrite(..., observe_surface=True)` / `run_twostage.py --observe-surface` で、候補検査の
+  結果を `observations` として走りの記録に残せる。既定は無効で、無効ならキーが存在しない。
+- 非干渉を測った: 同一 scripted バンドルの 2 走りで `status`・`findings`・`checks` が一致
+  （3 章すべて `clean`）。ログ外の旅を注入すると観測だけが 1 件増え、`status` は `clean` のまま。
+- **穴を 1 つ塞いだ**: `place_findings` は `advisory: True` だけで `blocks_repair` を持たず、
+  `findings` に混ぜれば medium として**修復が走る**状態だった。各項目に `blocks_repair: False` を明記。
+- 限界: scripted 本文での配線確認であり、実モデルの文章ではない。観測は事例収集であり率の測定ではない。

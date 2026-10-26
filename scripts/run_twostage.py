@@ -485,7 +485,8 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
                         temperature: float, seed: int, max_attempts: int,
                         min_chars: int = MIN_REWRITE_CHARS,
                         timeline: dict | None = None,
-                        strict_timeline: bool = False) -> dict:
+                        strict_timeline: bool = False,
+                        observe_surface: bool = False) -> dict:
     findings: list[dict] = []
     report: dict | None = None
     text = ""
@@ -526,7 +527,8 @@ def run_stage_b_chapter(task: Task, chapter_id: str, index: int, provider,
         text = clean_text(result.text)
         report = check_rewrite(text, chapter_id, log, canon, voice, scenes,
                                avoid=task.avoid, min_chars=min_chars,
-                               timeline=timeline, strict_timeline=strict_timeline)
+                               timeline=timeline, strict_timeline=strict_timeline,
+                               observe_surface=observe_surface)
         findings = report["findings"]
         if not rewrite_needs_repair(findings):
             break
@@ -571,6 +573,10 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--max-attempts", type=int, default=2)
+    parser.add_argument("--observe-surface", action="store_true",
+                        help="record the candidate place check's observations in "
+                             "each chapter report (never used as a finding or a "
+                             "repair trigger; see asc.gamelog.surface)")
     parser.add_argument("--strict-timeline", action="store_true",
                         help="treat an explicit day count that contradicts the "
                              "derived timeline as a repair trigger (default: warning)")
@@ -630,6 +636,8 @@ def _resume_command(args: argparse.Namespace, run_id: str) -> str:
         parts += ["--min-chars", str(args.min_chars)]
     if args.strict_timeline:
         parts.append("--strict-timeline")
+    if args.observe_surface:
+        parts.append("--observe-surface")
     if args.allow_unverified_log:
         parts.append("--allow-unverified-log")
     if args.allow_temp_out:
@@ -729,6 +737,7 @@ def main(argv=None) -> int:
         "task": task.id, "system": SYSTEM, "stage": args.stage, "seed": args.seed,
         "temperature": args.temperature, "provider": args.provider,
         "strict_timeline": bool(args.strict_timeline),
+        "observe_surface": bool(args.observe_surface),
         "max_attempts": args.max_attempts,
         "protocol_version": tasks.protocol,
         "canon_files_sha256": _sha256_tree(Path(args.canon)),
@@ -986,7 +995,8 @@ def main(argv=None) -> int:
                         voice, scenes, prompts, temperature=args.temperature,
                         seed=args.seed, max_attempts=args.max_attempts,
                         min_chars=args.min_chars, timeline=timeline,
-                        strict_timeline=args.strict_timeline)
+                        strict_timeline=args.strict_timeline,
+                        observe_surface=args.observe_surface)
                     stage_b_reports[chapter.id] = result["report"]
                     if result["report"]["summary"]["status"] != "clean":
                         status = "unresolved"
