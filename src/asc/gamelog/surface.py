@@ -81,7 +81,11 @@ def movement_claims(text: str) -> list[MovementClaim]:
     return claims
 
 
-_CLAUSE_SPLIT_RE = re.compile(r"[はがをで]|から|まで|、")
+#: Boundaries that end a leading clause before the place name. ``て``/``で`` are
+#: here because real prose writes 「三日かけて王都へ着いた」: without them the
+#: duration is carried into the destination (「三日かけて王都」) and the finding
+#: names a place that does not exist.
+_CLAUSE_SPLIT_RE = re.compile(r"[はがをでて]|から|まで|、")
 
 
 def _destination_name(raw: str) -> str:
