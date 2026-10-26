@@ -333,6 +333,10 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   同じバンドルへ `PROMPTS.md` を書き、`--resume` で記録済み応答を再生して続行します。
 * 全工程の実応答試走は [`experiments/2026-10-full-t01/`](experiments/2026-10-full-t01/note.md)
   （Stage A 1 回で clean・Stage B 3 章 clean・計 3,047 字。人手照合で検出漏れ 4 件、`clean` は事実の整合を意味しません）。
+* 日数の確定表（`$timeline`）を入れた Stage B v1.1 での再生成は
+  [`experiments/2026-10-stageb-v11-t01/`](experiments/2026-10-stageb-v11-t01/note.md)。同じ検証済みログから
+  3 章を作り直して `clean`（修復 1 回）。誤っていた「四日ぶり」は「六日ぶり」になり、時系列検査が
+  照合して不一致 0 でした。ただし `clean` は目標長の達成も意味的整合も意味しません。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は
   [`experiments/2026-10-l1-pair-t01/`](experiments/2026-10-l1-pair-t01/note.md)。必須語 1.0・禁止 0 は
   両方で同じで、**L1 のパターン集合は 2 条件を識別しません**。差は指標ではなく「ログという照合先が

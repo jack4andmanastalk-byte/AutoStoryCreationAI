@@ -1,0 +1,289 @@
+{
+  "schema_version": "1.0",
+  "task": "t01",
+  "notes": "嵐の夜の当直から王都への往復までを 3 章 3 場面で。アリアは記録の欠落を追い、最後は刻みに従って半灯を選ぶ。",
+  "chapters": [
+    {
+      "id": "ch01",
+      "day": 1,
+      "location": "灯台",
+      "emitted_markers": [
+        "{{time: day=1}}",
+        "{{location: 灯台}}"
+      ],
+      "scenes": [
+        {
+          "id": "g01",
+          "scene_ref": "s01",
+          "act_ref": "setup",
+          "turn_ref": "t1",
+          "situation": "嵐の夜の当直。油栓の前で、父が残した帳面と潮札が手元にある。",
+          "purpose": "帳面の余白の日数と潮札の刻みを手掛かりに、王都へ行く理由を作る。",
+          "conflict": "灯りを離れるなという言いつけと、欠けた頁を確かめたい気持ちがせめぎ合う。",
+          "change": "アリアは往復六日ぶんの油を数え、潮札を革袋に入れて王都へ発つと決める。",
+          "tension": "curiosity",
+          "choice": "アリアは当直を続けたまま、灯りを絶やさない範囲で王都へ往復すると決める。",
+          "outcome": "アリアは帳面の余白にある『往復六日』の書き込みを見つけ、油の残量と照らし合わせる。",
+          "present_characters": [
+            "aria"
+          ],
+          "actions": [
+            {
+              "id": "a1",
+              "type": "action",
+              "actor": "aria",
+              "summary": "アリアは油栓の目盛りを読み、帳面の余白に書き込まれた日数を指でなぞる。",
+              "target": "父の帳面",
+              "subject": "",
+              "medium": "",
+              "text": ""
+            },
+            {
+              "id": "a2",
+              "type": "record_reference",
+              "actor": "aria",
+              "summary": "アリアは麻布の包みから出た潮札の刻みを数え、書かれた短い一行を読む。死者本人は現在時に現れない。",
+              "target": "",
+              "subject": "johan",
+              "medium": "潮札",
+              "text": "刻みは三つ。嵐の夜は握ったまま。"
+            },
+            {
+              "id": "a3",
+              "type": "memory_mention",
+              "actor": "aria",
+              "summary": "アリアは、鍵の話を途中でやめた父の沈黙を思い出す。",
+              "target": "",
+              "subject": "johan",
+              "medium": "回想",
+              "text": ""
+            }
+          ],
+          "state_delta": {
+            "learned_facts": [
+              {
+                "character": "aria",
+                "fact": "F-05"
+              }
+            ],
+            "used_facts": [
+              {
+                "character": "aria",
+                "fact": "F-01"
+              }
+            ],
+            "foreshadow_events": [
+              {
+                "id": "fs-001",
+                "event": "setup"
+              },
+              {
+                "id": "fs-002",
+                "event": "setup"
+              }
+            ],
+            "location_moves": [
+              {
+                "character": "aria",
+                "origin": "灯台",
+                "destination": "王都",
+                "depart_day": 1,
+                "arrival_day": 4
+              }
+            ]
+          },
+          "emitted_markers": [
+            "{{learn: aria fact=F-05}}",
+            "{{use: aria fact=F-01}}",
+            "{{foreshadow: fs-001 setup}}",
+            "{{foreshadow: fs-002 setup}}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ch02",
+      "day": 4,
+      "location": "王都",
+      "emitted_markers": [
+        "{{time: day=4}}",
+        "{{location: 王都}}"
+      ],
+      "scenes": [
+        {
+          "id": "g02",
+          "scene_ref": "s02",
+          "act_ref": "investigation",
+          "turn_ref": "t2",
+          "situation": "三日歩いた末の鍵屋。棚の鍵と、布に載った石膏の右手が並んでいる。",
+          "purpose": "預かり物の写しと石膏手形を照合し、記録が後から書き換えられた証拠を得る。",
+          "conflict": "ボリスは預かり物は渡せないと繰り返し、アリアは欠けた頁の写しを求めて譲らない。",
+          "change": "アリアは写しを受け取り、潮札の刻みと写しの欄が食い違うことに気づく。",
+          "tension": "irony",
+          "choice": "アリアは鍵だけを受け取って帰る道を捨て、書き換えられた頁の写しを持ち帰ると決める。",
+          "outcome": "アリアは写しの墨の色と石膏手形の札を突き合わせ、三年前の記録が後から足されたと判断する。",
+          "present_characters": [
+            "aria",
+            "boris"
+          ],
+          "actions": [
+            {
+              "id": "a1",
+              "type": "dialogue",
+              "actor": "boris",
+              "summary": "ボリスは棚の空いた幅を示し、預かり物は渡せないが写しなら持って行けと言う。",
+              "target": "aria",
+              "subject": "",
+              "medium": "",
+              "text": "預かり物だ。写しなら持って行け。"
+            },
+            {
+              "id": "a2",
+              "type": "action",
+              "actor": "aria",
+              "summary": "アリアは帳面の写しを灯にかざし、嵐の夜の欄の墨の色を本文と見比べる。",
+              "target": "帳面の写し",
+              "subject": "",
+              "medium": "",
+              "text": ""
+            },
+            {
+              "id": "a3",
+              "type": "record_reference",
+              "actor": "aria",
+              "summary": "アリアは棚の石膏の右手に結わえた札を読み、日付を写しの欄と突き合わせる。死者は動かない。",
+              "target": "",
+              "subject": "johan",
+              "medium": "石膏手形",
+              "text": ""
+            }
+          ],
+          "state_delta": {
+            "learned_facts": [
+              {
+                "character": "aria",
+                "fact": "F-02"
+              },
+              {
+                "character": "aria",
+                "fact": "F-03"
+              }
+            ],
+            "used_facts": [
+              {
+                "character": "boris",
+                "fact": "F-02"
+              }
+            ],
+            "foreshadow_events": [
+              {
+                "id": "fs-002",
+                "event": "payoff"
+              },
+              {
+                "id": "fs-003",
+                "event": "setup"
+              }
+            ],
+            "location_moves": [
+              {
+                "character": "aria",
+                "origin": "王都",
+                "destination": "灯台",
+                "depart_day": 4,
+                "arrival_day": 7
+              }
+            ]
+          },
+          "emitted_markers": [
+            "{{learn: aria fact=F-02}}",
+            "{{learn: aria fact=F-03}}",
+            "{{use: boris fact=F-02}}",
+            "{{foreshadow: fs-002 payoff}}",
+            "{{foreshadow: fs-003 setup}}"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ch03",
+      "day": 7,
+      "location": "灯台",
+      "emitted_markers": [
+        "{{time: day=7}}",
+        "{{location: 灯台}}"
+      ],
+      "scenes": [
+        {
+          "id": "g03",
+          "scene_ref": "s03",
+          "act_ref": "resolution",
+          "turn_ref": "t3",
+          "situation": "七日目の日没前、戻った灯台。油栓と潮札だけが残っている。",
+          "purpose": "潮札の刻みに合わせて灯りを半分に絞り、兄の選択を自分の務めとして引き受ける。",
+          "conflict": "王都の予備の鍵に頼りたい気持ちと、この場で灯りを支える責任が対立する。",
+          "change": "アリアは予備の鍵を探すのをやめ、半灯の刻みを選んで嵐の夜を越える。",
+          "tension": "deadline",
+          "choice": "アリアは潮札の刻みどおりに芯を半分へ絞り、自分の手で灯りを守ると決める。",
+          "outcome": "半灯の灯りが霧を岸の手前で止め、アリアは記録から消されていた理由を潮札の最後の行から知る。",
+          "present_characters": [
+            "aria"
+          ],
+          "actions": [
+            {
+              "id": "a1",
+              "type": "action",
+              "actor": "aria",
+              "summary": "アリアは油を注ぎ、潮札の刻みに合わせて芯を半分に絞る。",
+              "target": "油栓",
+              "subject": "",
+              "medium": "",
+              "text": ""
+            },
+            {
+              "id": "a2",
+              "type": "record_reference",
+              "actor": "aria",
+              "summary": "アリアは潮札の最後の行を読み、ヨハンが灯りを落とした理由を記録から知る。",
+              "target": "",
+              "subject": "johan",
+              "medium": "潮札",
+              "text": "雷の夜、半灯に落とす。港は沈めない。"
+            }
+          ],
+          "state_delta": {
+            "learned_facts": [
+              {
+                "character": "aria",
+                "fact": "F-04"
+              }
+            ],
+            "used_facts": [
+              {
+                "character": "aria",
+                "fact": "F-03"
+              }
+            ],
+            "foreshadow_events": [
+              {
+                "id": "fs-001",
+                "event": "payoff"
+              },
+              {
+                "id": "fs-003",
+                "event": "payoff"
+              }
+            ],
+            "location_moves": []
+          },
+          "emitted_markers": [
+            "{{learn: aria fact=F-04}}",
+            "{{use: aria fact=F-03}}",
+            "{{foreshadow: fs-001 payoff}}",
+            "{{foreshadow: fs-003 payoff}}"
+          ]
+        }
+      ]
+    }
+  ]
+}
