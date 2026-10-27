@@ -16,6 +16,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "src"))
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
 import measure_realrun_b  # noqa: E402
@@ -68,6 +69,27 @@ def load_prereg() -> dict:
     return json.loads((BUNDLE / "preregistration.json").read_text(encoding="utf-8"))
 
 
+def prereg_with_live_history_pin(tmp_path: Path) -> Path:
+    """Copy of batch B's registration carrying the live design-history pin.
+
+    Batch B's frozen pins predate the B2 prompt change (design-history 1.1),
+    while the scripted fixture run is generated with live templates. Measuring
+    that fresh scripted run against the frozen pin must, correctly, report a
+    condition violation -- so the scripted arithmetic tests measure against
+    this copy instead. The bundle's own registration is never rewritten.
+    """
+    from asc.pipeline.prompts import load_prompt
+
+    data = load_prereg()
+    prompt = load_prompt("design-history")
+    data["condition"]["prompt_set"]["pins"]["design-history"] = {
+        "version": str(prompt.version), "digest": prompt.digest}
+    path = tmp_path / "preregistration-live.json"
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+                    encoding="utf-8")
+    return path
+
+
 def test_the_registration_is_fixed_and_hashed(tmp_path):
     result = measure(tmp_path)
     prereg = BUNDLE / "preregistration.json"
@@ -108,7 +130,7 @@ def test_an_empty_batch_says_not_run(tmp_path):
 
 
 def test_scripted_s1_run_is_counted_and_rules_applied(tmp_path, scripted_run):
-    result = measure(tmp_path, "--sample", f"sample-1={scripted_run}")
+    result = measure(tmp_path, "--preregistration", str(prereg_with_live_history_pin(tmp_path)), "--sample", f"sample-1={scripted_run}")
     sample = result["samples"]["sample-1"]
     verdicts = result["verdicts"]
 
@@ -182,7 +204,7 @@ def test_a_design_finding_repaired_away_still_counts(tmp_path, scripted_run):
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
                            encoding="utf-8")
 
-    result = measure(tmp_path, "--sample", f"sample-1={run_copy}")
+    result = measure(tmp_path, "--preregistration", str(prereg_with_live_history_pin(tmp_path)), "--sample", f"sample-1={run_copy}")
     design = result["samples"]["sample-1"]["design"]
 
     assert design["first_attempt_findings"] == 1
@@ -203,7 +225,7 @@ def test_a_run_without_plan_generated_canon_is_a_condition_violation(
     summary_path.write_text(json.dumps(summary, ensure_ascii=False, indent=2) + "\n",
                             encoding="utf-8")
 
-    result = measure(tmp_path, "--sample", f"sample-1={run_copy}")
+    result = measure(tmp_path, "--preregistration", str(prereg_with_live_history_pin(tmp_path)), "--sample", f"sample-1={run_copy}")
     codes = [item["code"] for item in result["samples"]["sample-1"]["condition_violations"]]
 
     assert "canon_not_plan_generated" in codes
@@ -294,3 +316,30 @@ def test_condition_violation_wins_over_other_verdicts():
     assert verdicts["B2_first_attempt"]["verdict"] == "condition_violation"
     assert verdicts["B3_length"]["verdict"] == "condition_violation"
     assert verdicts["B4_audit"]["verdict"] == "condition_violation"
+
+
+def test_optional_target_rule_verdict():
+    prereg = load_prereg()
+    prereg["rules"]["H_history_first_attempt"] = {
+        "doc": "history", "checks": ["canon_separated"]}
+
+    absent = fake_sample(design={
+        "docs": {"history": {"first_attempt": {"count": 0, "by_check": {}}}}})
+    verdict = measure_realrun_b.verdicts(
+        {"sample-1": absent}, prereg)["H_history_first_attempt"]
+    assert verdict["verdict"] == "target_findings_absent"
+    assert verdict["by_sample"] == {"sample-1": 0}
+
+    present = fake_sample(design={"docs": {"history": {
+        "first_attempt": {"count": 2, "by_check": {"canon_separated": 2}}}}})
+    verdict = measure_realrun_b.verdicts(
+        {"sample-1": present}, prereg)["H_history_first_attempt"]
+    assert verdict["verdict"] == "target_findings_present"
+    assert verdict["details"]["sample-1"]["doc_first_findings"] == 2
+
+    empty = measure_realrun_b.verdicts({}, prereg)
+    assert empty["H_history_first_attempt"]["verdict"] == "not_run"
+
+    # Registrations without an H rule (batch B) gain no extra verdict.
+    plain = measure_realrun_b.verdicts({"sample-1": fake_sample()}, load_prereg())
+    assert "H_history_first_attempt" not in plain

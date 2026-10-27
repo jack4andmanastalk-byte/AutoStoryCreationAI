@@ -22,6 +22,11 @@ A sample's directory must be ``<bundle>/sample-N/run``; ``--sample NAME=PATH``
 overrides discovery, which is also how the script is tested against scripted
 runs. A scripted run checks the arithmetic only; it is not evidence about a
 real model's prose.
+
+Later batches (e.g. B2) may add optional ``H_*`` rules to their registration:
+a target rule names one design doc and the check ids whose *first-attempt*
+findings it tracks. When such a rule is present it is evaluated here as well;
+registrations without one (batch B) are measured exactly as before.
 """
 from __future__ import annotations
 
@@ -953,11 +958,65 @@ def _aggregate(labels: list[str], priority: list[str]) -> str:
     return labels[0] if labels else "not_enough_data"
 
 
+def _target_rule_keys(prereg: dict) -> list[str]:
+    """Optional ``H_*`` rules from later registrations (see module docstring)."""
+    rules = _as_dict(prereg.get("rules"))
+    return [
+        str(key)
+        for key, value in rules.items()
+        if str(key).startswith("H_")
+        and isinstance(value, dict)
+        and value.get("doc")
+        and _as_list(value.get("checks"))
+    ]
+
+
+def _target_rule_verdict(
+    key: str,
+    samples: dict[str, dict],
+    prereg: dict,
+    violations_by_sample: dict,
+    enough: bool,
+) -> dict:
+    rule = _as_dict(_as_dict(prereg.get("rules")).get(key))
+    doc = str(rule.get("doc") or "")
+    checks = [str(check) for check in _as_list(rule.get("checks"))]
+    counts: dict[str, int] = {}
+    details: dict[str, dict] = {}
+    incomplete = False
+    for name, row in samples.items():
+        if not row.get("complete"):
+            incomplete = True
+        docs = _as_dict(_as_dict(row.get("design")).get("docs"))
+        first = _as_dict(_as_dict(docs.get(doc)).get("first_attempt"))
+        by_check = _as_dict(first.get("by_check"))
+        target = sum(int(by_check.get(check) or 0) for check in checks)
+        counts[name] = target
+        details[name] = {
+            "doc": doc,
+            "checks": checks,
+            "target_first_findings": target,
+            "doc_first_findings": int(first.get("count") or 0),
+            "doc_first_by_check": by_check,
+        }
+    if violations_by_sample:
+        verdict = "condition_violation"
+    elif not enough:
+        verdict = "not_enough_data"
+    elif incomplete:
+        verdict = "incomplete"
+    elif any(counts.values()):
+        verdict = "target_findings_present"
+    else:
+        verdict = "target_findings_absent"
+    return {"verdict": verdict, "by_sample": counts, "details": details}
+
+
 def verdicts(samples: dict[str, dict], prereg: dict) -> dict:
     planned = int(prereg.get("samples_planned") or 0)
     enough = len(samples) >= planned if planned else bool(samples)
     if not samples:
-        return {
+        empty: dict = {
             "samples_present": 0,
             "samples_planned": planned,
             "enough_samples": False,
@@ -967,6 +1026,9 @@ def verdicts(samples: dict[str, dict], prereg: dict) -> dict:
             "B3_length": {"verdict": "not_enough_data", "by_sample": {}},
             "B4_audit": {"verdict": "not_enough_data", "by_sample": {}},
         }
+        for key in _target_rule_keys(prereg):
+            empty[key] = {"verdict": "not_run", "by_sample": {}}
+        return empty
 
     completion = {name: _completion_label(row) for name, row in samples.items()}
     first_attempt = {
@@ -1057,7 +1119,7 @@ def verdicts(samples: dict[str, dict], prereg: dict) -> dict:
             ),
         }
 
-    return {
+    result: dict = {
         "samples_present": len(samples),
         "samples_planned": planned,
         "enough_samples": enough,
@@ -1111,6 +1173,11 @@ def verdicts(samples: dict[str, dict], prereg: dict) -> dict:
             },
         },
     }
+    for key in _target_rule_keys(prereg):
+        result[key] = _target_rule_verdict(
+            key, samples, prereg, violations_by_sample, enough
+        )
+    return result
 
 
 def _registration_checks(prereg: dict) -> dict:
