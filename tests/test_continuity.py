@@ -58,6 +58,63 @@ def test_intentional_contradiction_is_suppressed_not_dropped(report):
                 if v["chapter"] == "ch05" and v["type"] == "dead_character_reappears"]
 
 
+def test_dead_references_are_observations_not_violations(tmp_path):
+    canon = tmp_path / "canon"
+    canon.mkdir()
+    (canon / "characters.yaml").write_text(
+        "characters:\n"
+        "  - id: aria\n"
+        "    name: アリア\n"
+        "    status: alive\n"
+        "  - id: boris\n"
+        "    name: ボリス\n"
+        "    status: dead\n"
+        "    status_since: ch01\n",
+        encoding="utf-8")
+    text = tmp_path / "text"
+    text.mkdir()
+    (text / "ch01.md").write_text("アリアは灯台にいた。\n", encoding="utf-8")
+    (text / "ch02.md").write_text(
+        "「ボリスは臆病者ではなかった」とアリアは言った。\n"
+        "ボリスの鍵をアリアは握った。\n"
+        "三年前、ボリスは鍵を託した。\n"
+        "『ボリスは鍵を託した』と記録にある。\n"
+        "ボリスは扉を開けた。\n"
+        "アリアはボリスを見た。\n"
+        "ボリスは「鍵を返せ」と言った。\n",
+        encoding="utf-8")
+
+    result = audit_texts(canon, text)
+
+    assert result["summary"]["observations"] == 4
+    reasons = {
+        reason
+        for item in result["observations"]
+        for reason in item["evidence"]["reasons"]
+    }
+    assert {"quoted_text", "non_subject", "cue:三年前", "cue:記録"} <= reasons
+    assert {item["type"] for item in result["observations"]} == {
+        "dead_character_reference"}
+
+    dead = by_type(result, "dead_character_reappears")
+    assert [v["severity"] for v in dead] == ["high", "medium", "medium"]
+    assert [v["evidence"]["context"] for v in dead] == [
+        "speech", "unclassified", "unclassified"]
+    check = next(c for c in result["checks"] if c["id"] == "dead_character_reappears")
+    assert check["violations"] == 3
+    assert check["observations"] == 4
+
+
+def test_mention_records_sentence_and_quoted_text():
+    line = "アリアは歩いた。『ボリスは鍵を託した』"
+    mentions = find_mentions(line, "ch02", {"アリア": "aria", "ボリス": "boris"})
+    boris = next(m for m in mentions if m.character_id == "boris")
+    assert boris.sentence == "『ボリスは鍵を託した』"
+    assert boris.following.startswith("は")
+    assert boris.in_quoted_text
+    assert not boris.in_dialogue
+
+
 def test_every_check_reports_its_acceptance_condition(report):
     assert len(report["checks"]) == 6
     for check in report["checks"]:

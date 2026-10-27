@@ -21,6 +21,22 @@ from pathlib import Path
 
 MARKER_RE = re.compile(r"\{\{\s*([a-z_]+)\s*:\s*([^}]*)\}\}")
 DIALOGUE_RE = re.compile(r"「([^」]*)」")
+QUOTED_RE = re.compile(r"「[^」]*」|『[^』]*』")
+
+#: Words that mark a *reference* to someone rather than a present-time act.
+#: Stage B uses the same deliberately small, documented heuristic when a
+#: declared ``memory_mention`` / ``record_reference`` names a dead person.
+#: Keeping the list here lets the prose parser and both checkers share one
+#: contract instead of drifting into two near-duplicates.
+REFERENCE_CUES = (
+    # records and relics
+    "筆跡", "手形", "文字", "記録", "帳面", "頁", "札", "書き", "印",
+    "遺した", "残した", "預けた", "手紙", "日記", "写真", "墓", "遺体",
+    # recollection and past narration
+    "思い出", "思い返", "記憶", "覚えて", "覚えてい", "回想", "面影",
+    "昔", "あの頃", "なつかし", "かつて", "生前", "三年前", "あの夜",
+    "あの嵐", "あの日", "その夜", "横顔", "名を", "声を聞",
+)
 
 #: markers the audit understands, and what they mean
 MARKER_KINDS = {
@@ -64,8 +80,17 @@ class Mention:
     character_id: str
     name: str
     in_dialogue: bool
-    quoted_line: bool  # the name itself is inside 「」
+    quoted_line: bool  # this mention is attributed speech before a 「 span
     text: str
+    offset: int = 0
+    sentence: str = ""
+    following: str = ""
+    in_quoted_text: bool = False
+
+    @property
+    def reference_cues(self) -> tuple[str, ...]:
+        """Reference/past cues in the sentence containing this mention."""
+        return tuple(cue for cue in REFERENCE_CUES if cue in self.sentence)
 
 
 @dataclass
@@ -96,6 +121,22 @@ def parse_markers(text: str, chapter: str) -> list[Marker]:
     return markers
 
 
+def _sentence_span(line: str, start: int, end: int) -> tuple[str, str]:
+    """Return ``(sentence, following_text_in_sentence)`` for one occurrence.
+
+    Markers are removed from the returned prose. Sentence boundaries are the
+    explicit Japanese/ASCII terminators already used by speaker attribution;
+    this is deliberately not a linguistic parser.
+    """
+    sentence_start = max(line.rfind(mark, 0, start) for mark in "。！？!?") + 1
+    candidates = [line.find(mark, end) for mark in "。！？!?"]
+    candidates = [pos for pos in candidates if pos != -1]
+    sentence_end = min(candidates) + 1 if candidates else len(line)
+    sentence = MARKER_RE.sub("", line[sentence_start:sentence_end]).strip()
+    following = MARKER_RE.sub("", line[end:sentence_end]).strip()
+    return sentence, following
+
+
 def find_mentions(text: str, chapter: str, names: dict[str, str]) -> list[Mention]:
     """Locate character names and decide whether the line attributes speech.
 
@@ -114,6 +155,7 @@ def find_mentions(text: str, chapter: str, names: dict[str, str]) -> list[Mentio
     mentions: list[Mention] = []
     for index, line in enumerate(text.splitlines(), start=1):
         spans = [(m.start(), m.end()) for m in DIALOGUE_RE.finditer(line)]
+        quoted_spans = [(m.start(), m.end()) for m in QUOTED_RE.finditer(line)]
         occurrences = []
         for name, cid in names.items():
             start = 0
@@ -135,6 +177,7 @@ def find_mentions(text: str, chapter: str, names: dict[str, str]) -> list[Mentio
                     gap = line[pos + len(name):start]
                     speaks = not re.search(r"[。！？!?]", gap)
                     break
+            sentence, following = _sentence_span(line, pos, end)
             mentions.append(Mention(
                 chapter=chapter,
                 line=index,
@@ -143,6 +186,10 @@ def find_mentions(text: str, chapter: str, names: dict[str, str]) -> list[Mentio
                 in_dialogue=quoted,
                 quoted_line=speaks,
                 text=line.strip()[:160],
+                offset=pos,
+                sentence=sentence,
+                following=following,
+                in_quoted_text=any(a <= pos < b for a, b in quoted_spans),
             ))
     return mentions
 

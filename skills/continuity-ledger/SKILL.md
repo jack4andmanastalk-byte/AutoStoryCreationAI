@@ -50,10 +50,12 @@ canon の書式とマーカーの一覧は [`references/canon-schema.md`](refere
      --markdown build/audit/report.md
    ```
 
-4. **high から読む。** high はマーカーか発話に裏づけられた違反。medium は名前の言及・
-   時間のずれなど、誤検出の余地があるもの。low は情報提供。
-5. **意図した矛盾は除外する。** 回想・夢・遺体・代役などは `suppressions.yaml` に
-   理由つきで登録する。除外した件数もレポートに残る。
+4. **high から読む。** high はマーカーか発話に裏づけられた違反。medium は
+   分類できない名前の言及・時間のずれなど、誤検出の余地があるもの。low は情報提供。
+   死者への言及のうち、引用・参照語彙・助詞から参照文脈と分類できたものは
+   `observations` に残し、違反には数えない。
+5. **意図した矛盾は除外する。** 分類できない回想・夢・遺体・代役などは
+   `suppressions.yaml` に理由つきで登録する。除外した件数もレポートに残る。
 6. **台帳を次の章へ渡す。** `--ledger` の出力（人物の状態・既知の事実・伏線の状態）を
    次の執筆に渡す。本文ではなく、この JSON を入力にする。
 
@@ -74,7 +76,7 @@ canon の書式とマーカーの一覧は [`references/canon-schema.md`](refere
 | 仕込んだ矛盾を検出できる | `harness/cases/demo` の 7 件を再現する（`tests/test_continuity.py`） |
 | 意図的な矛盾を除外できる | `suppressions.yaml` の 1 件が `suppressed` に入り、`violations` に入らない |
 | canon が欠けたら落ちない | 該当検査が `skipped` になり、理由がレポートに出る |
-| 誤検出を重要度で分ける | 名前の言及だけの検出は medium 以下、マーカー裏づけは high |
+| 誤検出を重要度で分ける | 参照文脈の名前は `observations`、分類できない言及は medium、マーカー/発話裏づけは high |
 | CI で使える | `--fail-on high` で終了コードが 1 になる |
 
 **この 5 条件は本リポジトリが書いた編集上の基準であり、原典の主張ではない。**

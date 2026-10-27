@@ -96,3 +96,5 @@ B2 は、その制約をプロンプトに明記した `design-history` v1.1 で
 2. 監査の `dead_character_reappears`（medium）は 2 バッチ連続で言及を拾っている。
    検査の意図（行為者としての再登場の検出）と実挙動（言及の検出）の切り分けが次の候補だが、
    変える場合はプロンプトか検査かを先に登録で決める。
+   → その後の判断と検査側の変更は [`docs/two_stage_slice.md` §25](../../docs/two_stage_slice.md)
+   に記録した。本バッチの `audit.json` と verdict は書き換えていない。

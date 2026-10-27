@@ -9,7 +9,10 @@ The reported severity encodes *how* the violation was found:
 
 * ``high``   — backed by an explicit marker (or a speaking mention) after the
   death / before the knowledge was acquired.
-* ``medium`` — backed by a name mention only, or by a time/location mismatch.
+* ``medium`` — backed by an *unclassified* name mention only, or by a
+  time/location mismatch. Name mentions with an explicit reference context
+  (quoted text, reference/past cues in the same sentence, or a non-subject
+  form) are retained as observations rather than counted as violations.
 * ``low``    — informational, e.g. a foreshadow whose declared payoff differs
   from the one in the text.
 """
@@ -24,7 +27,7 @@ from pathlib import Path
 
 from .canon import Canon, CanonError, chapter_key, load_canon
 from .ledger import Ledger, build_ledger
-from .text import ChapterText, load_chapters
+from .text import ChapterText, Mention, load_chapters
 
 
 # --------------------------------------------------------------------------
@@ -61,11 +64,13 @@ CHECKS: tuple[CheckSpec, ...] = (
         question_ja="死亡が確定した人物が、その後の章で行為・発話していないか。",
         acceptance_ja=(
             "死亡章より後の章で、その人物の行為マーカー（state/learn/use）または"
-            "発話（名前＋直後の「」）が 0 件であること。名前の言及だけの場合は"
-            "回想・遺体・手紙と区別できないため medium として報告する。"
+            "発話（名前＋直後の「」）が 0 件であること。名前だけの場合は、"
+            "引用内・同じ文の参照/過去の手掛かり・非主語形を参照として"
+            " observations に残し、分類できない言及だけを medium とする。"
         ),
         requires=("characters", "chapters"),
-        limits_ja="名前の言及は存在の証明ではない。夢・回想・遺体・代役は誤検出になりうる。",
+        limits_ja=("名前の言及は存在の証明ではない。文単位の語彙と助詞だけの"
+                   "機械的分類であり、夢・幽霊・代役・省略された主語は誤分類になりうる。"),
     ),
     CheckSpec(
         id="knowledge_violation",
@@ -177,6 +182,41 @@ def _chapter_ref(path_name: str | None, line: int | None) -> dict:
     return ref
 
 
+_HONORIFIC_FOLLOWING_RE = re.compile(r"^(?:さん|さま|様|君|ちゃん)")
+
+# A name followed by one of these forms is being referred to (possessor,
+# comparison, role, or topic of talk) rather than presented as the
+# grammatical subject of a present-time action. Object/destination/source
+# particles (を/に/へ/から) deliberately stay unclassified: "met/saw the dead
+# person" may still be a reappearance. Subject-like forms (は/が/も) also stay
+# unclassified unless a reference/past cue is present.
+_NON_SUBJECT_FOLLOWING = (
+    "のように", "みたい", "と同じ", "に似", "について", "のこと",
+    "という", "として", "の",
+)
+
+
+def _dead_mention_context(mention: Mention) -> tuple[str, list[str]]:
+    """Classify a non-speaking dead-character name mention.
+
+    Returns ``("reference", reasons)`` only for mechanically explicit
+    reference contexts; everything else is ``("unclassified", [])`` and keeps
+    the audit's conservative medium signal. This is not semantic parsing:
+    an omitted particle or an unusual supernatural construction can still be
+    misclassified, which is why reference mentions remain in the report as
+    observations instead of disappearing.
+    """
+    cues = [f"cue:{cue}" for cue in mention.reference_cues]
+    if cues:
+        return "reference", cues
+    if mention.in_quoted_text:
+        return "reference", ["quoted_text"]
+    following = _HONORIFIC_FOLLOWING_RE.sub("", mention.following.lstrip())
+    if following.startswith(_NON_SUBJECT_FOLLOWING):
+        return "reference", ["non_subject"]
+    return "unclassified", []
+
+
 class Audit:
     def __init__(self, canon: Canon, chapters: list[ChapterText]):
         self.canon = canon
@@ -187,6 +227,7 @@ class Audit:
         self.ledger: Ledger = build_ledger(canon, self.chapters)
         self.violations: list[Violation] = []
         self.suppressed: list[Violation] = []
+        self.observations: list[dict] = []
         self.checks: list[dict] = []
         self.by_chapter = {c.id: c for c in self.chapters}
 
@@ -222,12 +263,14 @@ class Audit:
         if missing:
             self.checks.append({**spec.as_dict(), "status": "skipped",
                                 "reason": f"canon lacks: {', '.join(missing)}",
-                                "evaluated": 0, "violations": 0})
+                                "evaluated": 0, "violations": 0, "observations": 0})
             return
         before = len(self.violations)
+        before_observations = len(self.observations)
         evaluated = fn()
         self.checks.append({**spec.as_dict(), "status": "pass" if len(self.violations) == before else "fail",
-                            "evaluated": evaluated, "violations": len(self.violations) - before})
+                            "evaluated": evaluated, "violations": len(self.violations) - before,
+                            "observations": len(self.observations) - before_observations})
 
     # -- checks ----------------------------------------------------------
     def check_dead_character_reappears(self) -> int:
@@ -266,19 +309,49 @@ class Audit:
                         continue
                     if mention.quoted_line:
                         severity, basis = "high", "name_mention"
+                        context, reasons = "speech", []
                         message = (f"{char.name} は {death_chapter} で死亡しているが、"
                                    f"{chapter.id} で発話している。")
                     else:
+                        context, reasons = _dead_mention_context(mention)
+                        if context == "reference":
+                            self.observations.append({
+                                "type": "dead_character_reference",
+                                "title_ja": "死亡した人物への参照",
+                                "subject": char.id,
+                                "chapter": chapter.id,
+                                "message_ja": (
+                                    f"{char.name} は {death_chapter} で死亡しているが、"
+                                    f"{chapter.id} の言及は参照文脈と分類したため、"
+                                    "再登場とは数えない。"),
+                                "canon_ref": (
+                                    f"{self.canon.root.name}/characters:{char.id}.status"),
+                                "evidence_basis": "name_mention",
+                                "technique_ids": list(
+                                    CHECK_BY_ID["dead_character_reappears"].technique_ids),
+                                "evidence": {
+                                    **_chapter_ref(chapter.path.name, mention.line),
+                                    "quote": mention.text,
+                                    "sentence": mention.sentence,
+                                    "context": context,
+                                    "reasons": reasons,
+                                },
+                            })
+                            continue
                         severity, basis = "medium", "name_mention"
                         message = (f"{char.name} は {death_chapter} で死亡しているが、"
-                                   f"{chapter.id} で名前が現れる（回想・遺体・言及の可能性）。")
+                                   f"{chapter.id} で名前が現れ、参照文脈と分類できない"
+                                   "（現在時の再登場・回想・遺体・言及の可能性）。")
                     self._add(Violation(
                         type="dead_character_reappears", severity=severity, subject=char.id,
                         chapter=chapter.id, message_ja=message,
                         canon_ref=f"{self.canon.root.name}/characters:{char.id}.status",
                         evidence_basis=basis,
                         evidence={**_chapter_ref(chapter.path.name, mention.line),
-                                  "quote": mention.text},
+                                  "quote": mention.text,
+                                  "sentence": mention.sentence,
+                                  "context": context,
+                                  "reasons": reasons},
                     ))
         return evaluated
 
@@ -498,6 +571,7 @@ class Audit:
             ],
             "checks": self.checks,
             "violations": [v.as_dict() for v in violations],
+            "observations": self.observations,
             "suppressed": [{**v.as_dict(), "reason": next(
                 (s.reason for s in self.canon.suppressions
                  if s.covers(v.type, v.subject, v.chapter)), "")}
@@ -512,6 +586,7 @@ class Audit:
                 # ConStory-Bench-style density: defects per 10k characters
                 "ced_per_10k_chars": round(len(violations) / chars * 10_000, 3) if chars else None,
                 "weighted_score": weighted,
+                "observations": len(self.observations),
                 "suppressed": len(self.suppressed),
                 "checks_run": sum(1 for c in self.checks if c["status"] != "skipped"),
                 "checks_skipped": sum(1 for c in self.checks if c["status"] == "skipped"),
@@ -558,13 +633,14 @@ def render_markdown(report: dict) -> str:
         "",
         "## 検査の実行状況",
         "",
-        "| 検査 | 状態 | 対象 | 違反 | 合格条件 |",
-        "| --- | --- | ---: | ---: | --- |",
+        "| 検査 | 状態 | 対象 | 違反 | 観測 | 合格条件 |",
+        "| --- | --- | ---: | ---: | ---: | --- |",
     ]
     for check in report["checks"]:
         lines.append(
             f"| `{check['id']}` | {check['status']} | {check['evaluated']} | "
-            f"{check['violations']} | {check['acceptance_ja']} |")
+            f"{check['violations']} | {check.get('observations', 0)} | "
+            f"{check['acceptance_ja']} |")
     skipped = [c for c in report["checks"] if c["status"] == "skipped"]
     if skipped:
         lines += ["", "**実行できなかった検査**（canon の不足）:", ""]
@@ -584,6 +660,16 @@ def render_markdown(report: dict) -> str:
                 f"{violation['subject'] or '—'} | {violation['message_ja']} | "
                 f"{violation['evidence_basis']} {where} |")
 
+    if report.get("observations"):
+        lines += ["", "## 違反に数えなかった参照", "",
+                  "| 種別 | 章 | 対象 | 理由 | メッセージ |",
+                  "| --- | --- | --- | --- | --- |"]
+        for item in report["observations"]:
+            reasons = ", ".join((item.get("evidence") or {}).get("reasons") or [])
+            lines.append(
+                f"| `{item['type']}` | {item['chapter']} | {item['subject']} | "
+                f"{reasons} | {item['message_ja']} |")
+
     if report["suppressed"]:
         lines += ["", "## 意図的な矛盾として除外", "",
                   "| 種別 | 章 | 対象 | 理由 |", "| --- | --- | --- | --- |"]
@@ -599,7 +685,7 @@ def render_markdown(report: dict) -> str:
         "",
         "## この監査で分からないこと",
         "",
-        "* 名前の言及だけの違反は、回想・遺体・手紙・代役と区別できない。",
+        "* 名前の言及は、引用・参照語彙・助詞だけで分類する。参照として観測に残したものも、意味上の再登場でないことの証明ではない。",
         "* 台詞の話者推定は行内の近接に依存する。",
         "* 意味的な破綻（動機の飛躍、主題の不一致）は対象外。`evaluation-harness` の L2 で扱う。",
         "",

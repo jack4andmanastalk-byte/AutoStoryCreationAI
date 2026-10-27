@@ -520,6 +520,9 @@ def _summarise_audit(
     report_violations = [
         item for item in _as_list((report or {}).get("violations")) if isinstance(item, dict)
     ]
+    report_observations = [
+        item for item in _as_list((report or {}).get("observations")) if isinstance(item, dict)
+    ]
     by_severity = _as_dict(base.get("by_severity"))
     if not by_severity and report_violations:
         by_severity = _count_values(report_violations, "severity")
@@ -532,6 +535,9 @@ def _summarise_audit(
         "violations": _as_int(base.get("violations"))
         if base.get("violations") is not None
         else (len(report_violations) if report is not None else None),
+        "observations": _as_int(base.get("observations"))
+        if base.get("observations") is not None
+        else (len(report_observations) if "observations" in (report or {}) else None),
         "by_severity": {
             str(key): int(value)
             for key, value in sorted(by_severity.items())
@@ -554,6 +560,17 @@ def _summarise_audit(
                 "chapter": item.get("chapter"),
             }
             for item in report_violations
+        ],
+        "observation_details": [
+            {
+                "type": str(item.get("type") or item.get("check") or item.get("id") or "unknown"),
+                "chapter": item.get("chapter"),
+                "reasons": [
+                    str(reason)
+                    for reason in _as_list(_as_dict(item.get("evidence")).get("reasons"))
+                ],
+            }
+            for item in report_observations
         ],
     }
 

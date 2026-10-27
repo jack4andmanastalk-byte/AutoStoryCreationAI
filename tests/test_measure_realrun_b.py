@@ -184,6 +184,48 @@ def test_scripted_s1_run_is_counted_and_rules_applied(tmp_path, scripted_run):
     assert verdicts["B4_audit"]["verdict"] == "audit_no_high_all_checks_ran"
 
 
+def test_audit_observations_are_measured_without_rewriting_old_reports(tmp_path):
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    report = {
+        "summary": {
+            "violations": 0,
+            "observations": 1,
+            "by_severity": {},
+            "by_type": {},
+            "checks_run": 6,
+            "checks_skipped": 0,
+            "ced_per_10k_chars": 0.0,
+            "chars": 1000,
+        },
+        "violations": [],
+        "observations": [{
+            "type": "dead_character_reference",
+            "chapter": "ch02",
+            "evidence": {"reasons": ["quoted_text"]},
+        }],
+    }
+    (run_dir / "audit.json").write_text(
+        json.dumps(report, ensure_ascii=False), encoding="utf-8")
+
+    audit = measure_realrun_b._summarise_audit(run_dir, None, [])
+    assert audit["observations"] == 1
+    assert audit["observation_details"] == [{
+        "type": "dead_character_reference",
+        "chapter": "ch02",
+        "reasons": ["quoted_text"],
+    }]
+
+    # An old report has no observations field at all; that is unknown, not 0.
+    del report["observations"]
+    del report["summary"]["observations"]
+    (run_dir / "audit.json").write_text(
+        json.dumps(report, ensure_ascii=False), encoding="utf-8")
+    audit = measure_realrun_b._summarise_audit(run_dir, None, [])
+    assert audit["observations"] is None
+    assert audit["observation_details"] == []
+
+
 def test_a_design_finding_repaired_away_still_counts(tmp_path, scripted_run):
     run_copy = tmp_path / "run"
     shutil.copytree(scripted_run, run_copy)

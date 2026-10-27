@@ -34,6 +34,7 @@ from typing import Any
 from ..evaluation.metrics import Document, find_forbidden
 from ..scene.schema import SceneDoc
 from ..story.canon import Canon
+from ..story.text import REFERENCE_CUES
 from ..style.schema import Voice
 from .markers import (DEAD_ACTOR_MARKER_KINDS, DERIVED_KINDS,
                       expected_marker_texts, prose_markers)
@@ -96,20 +97,8 @@ def _dead_at(canon: Canon, character_id: str) -> bool:
     return bool(char and char.status == "dead")
 
 
-#: Words that mark a *reference* to someone rather than a present-time act.
-#: ``memory_mention`` / ``record_reference`` are allowed when the sentence that
-#: names the dead person carries the declared medium or one of these cues.
-#: The list is deliberately small and documented as a heuristic: it cannot tell
-#: "said with affection" from "stood in the doorway".
-REFERENCE_CUES = (
-    # records and relics
-    "筆跡", "手形", "文字", "記録", "帳面", "頁", "札", "書き", "印",
-    "遺した", "残した", "預けた", "手紙", "日記", "写真", "墓", "遺体",
-    # recollection and past narration
-    "思い出", "思い返", "記憶", "覚えて", "覚えてい", "回想", "面影",
-    "昔", "あの頃", "なつかし", "かつて", "生前", "三年前", "あの夜",
-    "あの嵐", "あの日", "その夜", "横顔", "名を", "声を聞",
-)
+#: ``REFERENCE_CUES`` is imported from ``asc.story.text`` so Stage B and the
+#: continuity audit apply the same sentence-level reference heuristic.
 
 
 def _medium_terms(medium: str) -> set[str]:

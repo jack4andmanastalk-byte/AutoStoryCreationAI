@@ -343,6 +343,7 @@ def main(argv: list[str] | None = None) -> int:
         ledger.write_json("audit.json", report)
         summary["audit"] = {
             "violations": report["summary"]["violations"],
+            "observations": report["summary"].get("observations", 0),
             "by_severity": report["summary"]["by_severity"],
             "checks_skipped": report["summary"]["checks_skipped"],
             "ced_per_10k_chars": report["summary"]["ced_per_10k_chars"],

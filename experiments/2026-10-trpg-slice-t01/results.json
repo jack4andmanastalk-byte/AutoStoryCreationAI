@@ -46,16 +46,13 @@
     "chapters": 3,
     "chars": 1012,
     "continuity": {
-      "by_severity": {
-        "medium": 3
-      },
-      "by_type": {
-        "dead_character_reappears": 3
-      },
-      "ced_per_10k_chars": 21.216,
+      "by_severity": {},
+      "by_type": {},
+      "ced_per_10k_chars": 0.0,
       "checks_skipped": 0,
-      "note": "name_mention による dead_character_reappears (medium) は既存監査器の既知の限界。Stage B では宣言済みのrecord_reference / memory_mention として許容している。",
-      "violations": 3
+      "note": "死者の名前だけの言及は、引用・参照語彙・助詞で分類できるものをobservations として残し、分類できないものだけをdead_character_reappears (medium) とする。Stage B の宣言済みrecord_reference / memory_mention とは別の、監査側の近似である。",
+      "observations": 3,
+      "violations": 0
     },
     "length_gate": {
       "gate_note": "既定の 200 字は空文の検出用。目標長は合否に使っておらず、下回っても clean になりうる（P1-8）。",
