@@ -70,17 +70,21 @@ make report
   --project-id prj-seaside --title "潮の記録者" \
   --premise "港町で失われた潮位記録を追う。" --chapters 3 --target-chars 1200
 .venv/bin/python scripts/story_project.py --root works run prj-seaside      # 応答待ちで exit 3
-.venv/bin/python scripts/story_project.py --root works relay export prj-seaside
-# 生成した応答を tag 付きで answers.txt に書く
-.venv/bin/python scripts/story_project.py --root works relay ingest prj-seaside --file answers.txt
-.venv/bin/python scripts/story_project.py --root works resume prj-seaside   # 未回答の数だけ繰り返す
+.venv/bin/python scripts/story_project.py --root works relay status prj-seaside
+# 示されたタグに生成した本文を answers.txt で答える（捏造しない）
+.venv/bin/python scripts/story_project.py --root works relay submit prj-seaside --file answers.txt
+#   exit 3 = 次の1件 / 0 = 完成 / 2 = 失敗。待機中は submit を繰り返す（3章で12回）
 .venv/bin/python scripts/story_project.py --root works render prj-seaside \
   --out works/prj-seaside/manuscript.md
 ```
 
+`relay submit` は取り込みと再開を1コマンドにまとめた1ラウンドの単位です。完成・失敗・
+未回答のどれも同じ書式で報告し、終了コードがその状態になります（`0` / `3` / `2`）。
+回答済みの要求は再生成せず、完成済みの作品には取り込みません。
+
 `run_pipeline.py` と `run_twostage.py` は、凍結した実験条件を再実行するための
 固定経路で、標準フローではありません（[`docs/standard_flow.md`](docs/standard_flow.md) §1）。
-導線は `make quickstart-check`（`tests/test_standard_flow.py`）で回帰対象にしています。
+導線は `make quickstart-check`（`tests/test_standard_flow.py` と `tests/test_relay_round.py`）で回帰対象にしています。
 
 個別に実行する場合:
 

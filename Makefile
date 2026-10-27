@@ -195,8 +195,8 @@ ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
 		--rubric harness/rubrics/story-quality-v0.yaml --patterns harness/patterns.yaml \
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
 
-quickstart-check: ## verify the standard flow (premise -> 3 chapters) with the scripted fixture
-	$(RUN) -m pytest tests/test_standard_flow.py -q
+quickstart-check: ## verify the standard flow and the relay round with the scripted fixture
+	$(RUN) -m pytest tests/test_standard_flow.py tests/test_relay_round.py -q
 
 gamelog-check: ## check the scripted Stage A game log against canon/plot/scenes
 	$(RUN) scripts/check_gamelog.py \

@@ -57,15 +57,36 @@ ingest the answers: python3 scripts/story_project.py relay ingest prj-seaside --
 resume after writing the response: story_project.py resume prj-seaside
 ```
 
-## 3. プロンプトを1件処理して応答を書き戻す
+## 3. 待っている1件に答えて、1コマンドで続ける
+
+1ラウンドは「①次の1件を知る → ②答える → ③submit」で完結する。
 
 ```bash
-.venv/bin/python scripts/story_project.py --root works relay export prj-seaside
-# works/prj-seaside/relay/PROMPTS.md と outbox/request-01-<tag>.md を読む
-# 生成した本文を <tag> 付きで answers.txt に書く（プロンプト本文はチャットに貼らない）
-.venv/bin/python scripts/story_project.py --root works relay ingest prj-seaside --file answers.txt
-.venv/bin/python scripts/story_project.py --root works resume prj-seaside
+# ① 何が待っているか（生成しない）。run が exit 3 のときは自動で書き出されている
+.venv/bin/python scripts/story_project.py --root works relay status prj-seaside
+#    → Next request: tag 1F3A9C2D (design: brief)
+#    → works/prj-seaside/relay/PROMPTS.md / outbox/request-01-1F3A9C2D.md
+
+# ② 生成した本文を answers.txt に書く（タグは PROMPTS.md の8文字をそのまま）
+#    <<<ANSWER 1F3A9C2D>>>
+#    …本文…
+#    <<<END 1F3A9C2D>>>
+
+# ③ 取り込んで、そのまま続ける
+.venv/bin/python scripts/story_project.py --root works relay submit prj-seaside --file answers.txt
 ```
+
+`relay submit` は次のどれかを同じ書式で報告し、その終了コードを返す。
+
+| exit | 意味 | 次にすること |
+| --- | --- | --- |
+| `3` | 次の1件が待っている | `relay status` で示されたタグに答えて、また `relay submit` |
+| `0` | 完成。待機なし | `Next:` の `render --out` で原稿を書き出す（手順5） |
+| `2` | stage が失敗 | `Next:` の `resume --retry-failed`（新しい attempt。失敗 run は残る） |
+| `1` | 貼り付けが不正（未知タグ・空・タグ重複） | `index.json` のタグを確認して書き直す（何も生成されない） |
+
+`relay export` と `relay ingest` は③を分割した下位コマンドで、書き出しだけ・取り込み
+だけを行いたいときに使う。取り込んだあと `resume` するのは `submit` と同じ経路。
 
 - 応答は必ず `<<<ANSWER タグ>>>` … `<<<END タグ>>>` で囲む。タグは `PROMPTS.md` の
   8文字をそのまま使う（推測・使い回しをしない）。
@@ -73,16 +94,23 @@ resume after writing the response: story_project.py resume prj-seaside
   未知のタグは `unknown tag` として拒否し、勝手に別の request へ付けない。
 - 応答を捏造しない。生成した本文だけを逐語で入れる。生成できなかった場合は
   `<<<ERROR タグ>>>` を使い、理由を1行書く。
-- 手順3は **1件ごとに繰り返す**。1作品（3章）で12件（plan 1・設計 8・本文 3）。
-  各回の `resume` は記録済み応答を再生成せず、次の未回答から続ける。
-- 一括の書き出し・往復の短縮は U-02 の課題として未実装である。
+- 手順3は **1件ごとに繰り返す**。1作品（3章）で12ラウンド（plan 1・設計 8・本文 3）。
+  各ラウンドの `submit` は記録済み応答を再生成せず、次の未回答から続ける。
+- 待っている要求はパイプライン順（plan → design → draft）に1件だけ示される。先の要求は
+  前段の結果に依存するため、プロンプトを先に作らない（推測生成をしない）。
+- 完成済み・失敗済みの作品への `submit` は取り込まない。完成なら `continue` / `revise`、
+  失敗なら `--retry-failed` を案内する。
 
 ## 4. 完成と状態を確認する
 
 ```bash
-.venv/bin/python scripts/story_project.py --root works status prj-seaside
-.venv/bin/python scripts/story_project.py --root works doctor prj-seaside
+.venv/bin/python scripts/story_project.py --root works relay status prj-seaside   # 1巡の報告
+.venv/bin/python scripts/story_project.py --root works status prj-seaside         # 工程と原稿
+.venv/bin/python scripts/story_project.py --root works doctor prj-seaside         # 横断整合性
 ```
+
+`status` は `Relay: N answered / M pending` の1行を出し、待機中なら `next_actions` に
+`relay export`（＝手順3）、完成なら `Manuscript:` と書き出しコマンドを出す。
 
 `status` は工程（plan / design / draft）、未回答件数、次の操作、そして完成時には
 `Manuscript:` と書き出しコマンドを表示する。`doctor` は project・node・revision・
@@ -141,6 +169,8 @@ make quickstart-check
 
 `tests/test_standard_flow.py` が、premise → init → run → relay export → ingest →
 resume → render を回し、`status` と `doctor` の表示、8文字タグ、未知タグの拒否を
+固定する。`tests/test_relay_round.py` が、1ラウンド（status → submit → 次の1件）と
+終了コード、完成後の再 submit が何も変えないこと、失敗時の `--retry-failed` 誘導を
 固定する。台本の応答はモデル出力ではなく、品質の主張には使わない。
 
 ## この手順を使わない場合（研究用の固定経路）
@@ -158,11 +188,12 @@ resume → render を回し、`status` と `doctor` の表示、8文字タグ、
 
 | 症状 | 意味 | 次にすること |
 | --- | --- | --- |
-| exit 3 + `pending:` | 応答待ち | 手順3（export → 生成 → ingest → resume） |
-| exit 3 + `response is still missing` | そのrequestの応答がまだ無い | `relay export` で未回答を確認し、ingest してから resume |
+| exit 3 + `pending:` | 応答待ち | `Next:` の `relay submit`（手順3） |
+| exit 3 + `Skipped: the answer file had no block…` | 回答が入っていない/タグ違い | `relay status` のタグで書き直す |
+| exit 3 + `response is still missing` | 応答ファイルがまだ無い | `relay export` で未回答を確認し、`submit` |
 | exit 2 + `provider exited 4` | プロンプトが変わった応答（stale） | その応答は捨て、新しい `PROMPTS.md` のタグで生成し直す |
-| exit 2 + `... stage failed:` | 生成textが検査を通らない | `status` で `Failed stages` を見て `resume --retry-failed`（新しい attempt になる。失敗runは残る） |
-| `unknown tag` / `rejected` | タグの貼り間違い | `index.json` のタグを確認。`--map FROM=TO` は明示した場合だけ使う |
+| exit 2 + `Failed: ... stage failed:` | 生成textが検査を通らない | `Next:` の `resume --retry-failed`（新しい attempt。失敗 run は残る） |
+| exit 1 + `rejected (tag …): unknown tag` | タグの貼り間違い | `index.json` のタグを確認。`--map FROM=TO` は明示した場合だけ使う |
 | `No module named ...` | 依存の無い python | `make setup` の `.venv/bin/python` を使う |
 
 ## してはいけないこと

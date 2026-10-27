@@ -141,3 +141,16 @@
 - 残り: 実応答での dogfood（U-03）。relay の一括書き出しと pending 表示の統一（U-02）。
   原稿の章見出しとマーカー表示（U-08）。L2/L3 は `frozen_not_measured` のまま。
 
+### U-02 Arena relay の一巡支援を整える（2026-10-27）
+
+- 追加: `relay submit`（取り込み + 再開）、`relay status` の1巡報告（`asc-relay-round-v1`）、
+  終了コード `0` 完了 / `3` 応答待ち / `2` 失敗、`status` の `Relay:` 行。
+- 変更: 待機中の next action を `relay export` に統一（`status` / `doctor` 共通）。
+- 安全側: 完成済み・失敗済みの作品への `submit` は取り込まない（完成→`continue`/`revise`、
+  失敗→`--retry-failed`）。回答済み要求は書き出さず、保存済み応答は書き換えない。
+- 回帰: `tests/test_relay_round.py`、`make quickstart-check`。
+- 確認: 固定台本で12ラウンド（各1コマンド）で完成。要求数12・応答数12のまま。
+  記録は [`experiments/2026-10-u02-relay-round-t01/`](../experiments/2026-10-u02-relay-round-t01/note.md)。
+- 残り: 往復回数そのもの（12）は減っていない。1応答で複数成果物を返す契約変更は、
+  検査の粒度が変わるため実運用で必要性が出てから扱う。実応答の確認は U-03。
+

@@ -501,10 +501,15 @@ providerになります。これが**標準フロー**で、providerを省略す
 # 1回の生成を人間が開始する（応答が無ければexit 3でその場に止まる）
 python3 scripts/story_project.py --root works run prj-seaside
 
-# 未回答のプロンプトを書き出し、応答を取り込み、続きから再開する
+# 何が待っているか（生成しない。1巡の報告と終了コード 0/3/2）
+python3 scripts/story_project.py --root works relay status prj-seaside
+
+# 応答を1件書いたら、取り込みと再開をまとめて行う
+python3 scripts/story_project.py --root works relay submit prj-seaside --file answers.txt
+
+# 書き出しだけ・取り込みだけを行いたい場合
 python3 scripts/story_project.py --root works relay export prj-seaside
 python3 scripts/story_project.py --root works relay ingest prj-seaside --file answers.txt
-python3 scripts/story_project.py --root works resume prj-seaside
 
 # 何が足りないか / 次に何をするか / 原稿の場所
 python3 scripts/story_project.py --root works status prj-seaside   # Next: と Manuscript:
@@ -792,6 +797,9 @@ runs/projects/<project_id>/
   `prompt_hash`）、`responses/<key>.json`（応答と `prompt_hash`・`model`）、
   `relay export` の出力（`PROMPTS.md`・`index.json`・`outbox/`）が入る。タグは
   8 hex で、タグ→key の対応は index と request ファイルが台帳になる。
+  `relay status` / `relay submit` の報告は `asc-relay-round-v1` で、状態・次の1件・
+  次のコマンドを返す。回答済みの要求は書き出さず、完成済み・失敗済みの作品には
+  取り込まない。
 - `manuscript.md`: `render --out` の出力。JSON を開かずに読むための原稿。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json`、改訂・分岐runには `revise.json`（コピー元のhashと生成し直した対象）も

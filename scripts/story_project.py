@@ -300,6 +300,24 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="accept a mistyped tag explicitly, e.g. --map ch02=1F3A9C2D",
     )
     relay_ingest.add_argument("--json", dest="json_output", action="store_true")
+    relay_submit = relay_commands.add_parser(
+        "submit",
+        help="ingest an answer file and continue the work in one step",
+    )
+    relay_submit.add_argument("project_id")
+    relay_submit.add_argument("--file", required=True, help="UTF-8 text file with the answers")
+    relay_submit.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
+    relay_submit.add_argument("--model-version", help="default: unversioned-<today>")
+    relay_submit.add_argument(
+        "--map", action="append", default=[], metavar="FROM=TO",
+        help="accept a mistyped tag explicitly, e.g. --map ch02=1F3A9C2D",
+    )
+    relay_submit.add_argument(
+        "--retry-failed", action="store_true",
+        help="retry a failed stage as a fresh run instead of refusing",
+    )
+    _generation_arguments(relay_submit)
+    relay_submit.add_argument("--json", dest="json_output", action="store_true")
 
     bundle = subparsers.add_parser("bundle", help="export, verify, or restore replay sources")
     bundle_commands = bundle.add_subparsers(dest="bundle_command", required=True)
@@ -515,38 +533,167 @@ def _export_relay(project_id: str, directory: Path, out: Path | None = None) -> 
     return summary
 
 
-def _relay_summary(project_id: str, directory: Path) -> dict:
+#: A stage can fail because the interpreter that runs this script lacks an
+#: optional dependency (PyYAML is needed once the design checks run).  Retrying
+#: the stage cannot fix that, so say what can.
+MISSING_DEPENDENCY_HINT = (
+    "This is a missing Python dependency, not a problem with the answer. "
+    "Run the same command with the project interpreter "
+    "(`.venv/bin/python scripts/story_project.py ...`) after `make setup`."
+)
+
+#: What a retry actually does: the failed run is kept, the stage starts again,
+#: and prompts that are byte-identical reuse the answers stored in the relay
+#: (the relay is keyed by prompt, not by attempt).  A changed prompt asks again.
+RETRY_NOTE = (
+    "A retry makes a new attempt and keeps the failed run. Prompts that are "
+    "unchanged reuse the answers already stored in the relay; a changed prompt "
+    "is asked again."
+)
+
+#: One relay round is: answer the request that is waiting, ingest it, resume.
+#: The report below is the single place that says where the round stands.
+RELAY_ROUND_SCHEMA = "asc-relay-round-v1"
+
+#: Pipeline order of the purposes a request can carry.
+_PURPOSE_STAGE = {"plan": 0, "design": 1, "draft": 2}
+
+
+def _cli_base(store: ProjectStore) -> str:
+    base = "python3 scripts/story_project.py"
+    default_root = (REPO_ROOT / "runs" / "projects").resolve()
+    if store.root.resolve() != default_root:
+        base += f" --root {store.root}"
+    return base
+
+
+def _purpose_stage(purpose: str | None) -> str:
+    name = str(purpose or "").split(":", 1)[0]
+    return name or "unknown"
+
+
+def _stage_rank(purpose: str | None) -> tuple[int, str]:
+    stage = _purpose_stage(purpose)
+    return (_PURPOSE_STAGE.get(stage, 9), str(purpose or ""))
+
+
+def _relay_round(
+    store: ProjectStore, project_id: str, directory: Path, *,
+    node_id: str | None = None,
+) -> dict:
+    """Where one relay round stands, and the one next thing to do.
+
+    The report is deliberately small: state, how many answers are stored, the
+    request that is waiting (if any), and the command to run next.  It never
+    regenerates an answered request and never invents a prompt: the next
+    request only exists once the previous stage has accepted its answer.
+    """
     requests_dir = directory / "requests"
     responses_dir = directory / "responses"
+    status = store.status(project_id, node_id)
     pending = relay_prompts.pending(directory) if requests_dir.is_dir() else []
-    answered = (
-        len(list(responses_dir.glob("*.json"))) if responses_dir.is_dir() else 0
+    pending = sorted(pending, key=lambda row: _stage_rank(row["purpose"]))
+    requests = relay_prompts.all_requests(directory) if requests_dir.is_dir() else []
+    answered = len(list(responses_dir.glob("*.json"))) if responses_dir.is_dir() else 0
+    base = _cli_base(store)
+    node_option = (
+        f" --node {status['node_id']}"
+        if status.get("node_id") != status.get("root_node_id") else ""
     )
+
+    next_request = None
+    if pending:
+        row = pending[0]
+        response_path = responses_dir / f"{row['key']}.json"
+        request_path = requests_dir / f"{row['key']}.json"
+        next_request = {
+            "tag": row["tag"],
+            "key": row["key"],
+            "purpose": row["purpose"],
+            "stage": _purpose_stage(row["purpose"]),
+            "request_path": str(request_path),
+            "response_path": str(response_path),
+            "response_ready": response_path.is_file(),
+        }
+
+    manuscript = _manuscript_hint(status)
+    work_state = status.get("work", {}).get("state")
+    if work_state == "failed":
+        next_command = f"{base} resume {project_id}{node_option} --retry-failed"
+    elif next_request is not None:
+        next_command = (
+            f"{base} relay submit {project_id}{node_option} --file <answers.txt>"
+        )
+    elif work_state == "waiting_response":
+        # The prompt was recorded but the response file is gone or was renamed:
+        # resume finds out, it never makes up an answer.
+        next_command = f"{base} resume {project_id}{node_option}"
+    elif manuscript is not None:
+        next_command = manuscript[0]
+    else:
+        next_command = f"{base} status {project_id}{node_option}"
+
     return {
+        "schema": RELAY_ROUND_SCHEMA,
         "project_id": project_id,
+        "node_id": status.get("node_id"),
         "directory": str(directory),
-        "requests": len(relay_prompts.all_requests(directory)) if requests_dir.is_dir() else 0,
+        "state": status.get("work", {}).get("state", status.get("state")),
+        "stages": status.get("work", {}).get("stages"),
+        "requests": len(requests),
         "answered": answered,
-        "pending": [
-            {"tag": row["tag"], "key": row["key"], "purpose": row["purpose"]}
-            for row in pending
-        ],
+        "pending_count": len(pending),
+        "next": next_request,
+        "next_command": next_command,
+        "manuscript": (
+            {"path": manuscript[1], "command": manuscript[0],
+             "written": Path(manuscript[1]).is_file()}
+            if manuscript is not None else None
+        ),
+        "actions": list(status.get("next_actions") or ()),
     }
 
 
-def _print_relay(report: dict) -> None:
-    print(f"Project: {report['project_id']}")
+def _print_round(report: dict) -> None:
+    stages = report.get("stages") or {}
+    detail = ", ".join(f"{name}={value}" for name, value in stages.items()) or "unknown"
+    print(f"Project: {report['project_id']} ({report['state']})")
+    print(f"Stages: {detail}")
+    print(
+        f"Relay: {report['answered']} answered / {report['pending_count']} pending "
+        f"/ {report['requests']} request(s) recorded"
+    )
     print(f"Relay directory: {report['directory']}")
-    if not report.get("requests"):
-        print("Requests: none (no prompt has been recorded yet)")
-        return
-    print(f"Requests: {report['requests']}; answered: {report['answered']}")
-    if not report["pending"]:
-        print("Nothing pending: resume to continue.")
-        return
-    print(f"Pending: {len(report['pending'])}")
-    for row in report["pending"]:
-        print(f"  tag {row['tag']}  purpose {row['purpose']}  key {row['key']}")
+    if report["next"] is not None:
+        row = report["next"]
+        print(f"Next request: tag {row['tag']} ({row['stage']}: {row['purpose']})")
+        print(f"  request:  {row['request_path']}")
+        print(f"  response: {row['response_path']}")
+        if row["response_ready"]:
+            print("  the response file already exists; submit it to continue")
+    manuscript = report.get("manuscript")
+    if manuscript is not None:
+        label = "" if manuscript["written"] else " (not written yet)"
+        print(f"Manuscript: {manuscript['path']}{label}")
+    print(f"Next: {report['next_command']}")
+
+
+def _relay_line(status: dict) -> str | None:
+    """One line about the relay, or None when the standard flow was not used."""
+    directory = Path(status["project_dir"]) / RELAY_SUBDIR
+    requests = directory / "requests"
+    if not requests.is_dir():
+        return None
+    total = len(list(requests.glob("*.json")))
+    responses = directory / "responses"
+    answered = len(list(responses.glob("*.json"))) if responses.is_dir() else 0
+    pending = total - answered
+    if pending:
+        return (
+            f"Relay: {answered} answered / {pending} pending "
+            f"(next: relay submit {status['project_id']} --file <answers.txt>)"
+        )
+    return f"Relay: {answered} answered / 0 pending ({directory})"
 
 
 def _manuscript_hint(status: dict) -> tuple[str, str] | None:
@@ -598,6 +745,9 @@ def _print_human(status: dict, *, created: bool) -> None:
         _print_work(work)
     else:
         print(f"Pending responses: {len(status.get('pending', []))}")
+    relay = _relay_line(status)
+    if relay is not None:
+        print(relay)
     _print_actions(list(status.get("next_actions") or ()))
     hint = _manuscript_hint(status)
     if hint is not None:
@@ -862,6 +1012,212 @@ def _print_world(status: dict) -> None:
     current = [row for row in status["canon_entries"] if row["current"]]
     stale = sum(1 for row in current if row["stale"])
     print(f"Current canon: {len(current)}; stale: {stale}")
+
+
+def _parse_tag_map(entries: list[str]) -> dict[str, str]:
+    mapping: dict[str, str] = {}
+    for entry in entries:
+        if "=" not in entry:
+            raise ProjectError(f"--map expects FROM=TO, got {entry!r}")
+        source, target = entry.split("=", 1)
+        mapping[source.strip()] = target.strip()
+    return mapping
+
+
+def _ingest_answers(args, directory: Path) -> dict:
+    path = Path(args.file).expanduser()
+    if not path.is_file():
+        raise ProjectError(f"no such answer file: {path}")
+    version = args.model_version or datetime.now(timezone.utc).strftime(
+        "unversioned-%Y-%m-%d"
+    )
+    summary = relay_prompts.ingest(
+        directory, path.read_text(encoding="utf-8"),
+        model=getattr(args, "model", None) or "arena-agent-mode",
+        model_version=version, tag_map=_parse_tag_map(args.map),
+    )
+    return summary
+
+
+def _print_ingest(summary: dict) -> None:
+    print(f"Answers written: {len(summary['written'])}")
+    for key in summary["written"]:
+        print(f"  {key}")
+    for row in summary["errors"]:
+        print(f"error block (tag {row['tag']}): {row['reason']}")
+    for row in summary["rejected"]:
+        print(f"rejected (tag {row['tag']}): {row['reason']}")
+    print(f"Still pending: {summary['still_pending']}")
+
+
+def _run_or_resume(store: ProjectStore, args, *, retry_failed: bool = False):
+    """Start a new revision, or continue the interrupted one.
+
+    A run that has not started a stage yet is started; anything else resumes,
+    so a submitted answer is never the reason a finished stage runs again.
+    """
+    node_id = getattr(args, "node_id", None)
+    state = store.status(args.project_id, node_id)["work"]["state"]
+    provider = _make_provider(args, store)
+    runner = ProjectRunner(store)
+    if state == "not_started":
+        return runner.run(
+            args.project_id, provider,
+            seed=getattr(args, "seed", 0),
+            temperature=getattr(args, "temperature", None),
+            node_id=node_id,
+        )
+    return runner.resume(
+        args.project_id, provider, node_id=node_id,
+        retry_failed=retry_failed,
+    )
+
+
+def _relay_command(args: argparse.Namespace, store: ProjectStore) -> int:
+    """``relay export|status|ingest|submit``: one round, one report.
+
+    ``submit`` is the whole round after the answers are written: ingest them and
+    continue the work.  It refuses to touch a complete work and points at
+    ``resume --retry-failed`` instead of collecting answers for a failed stage,
+    so an answered request is never re-asked or overwritten by habit.
+    """
+    directory = _relay_directory(store, args.project_id, args)
+    node_id = getattr(args, "node_id", None)
+    command = args.relay_command
+    payload: dict = {}
+
+    def current() -> dict:
+        return _relay_round(store, args.project_id, directory, node_id=node_id)
+
+    def finish(
+        *, ingest: bool = False, pending: BaseException | None = None,
+        failure: BaseException | None = None, code: int | None = None,
+    ) -> int:
+        report = current()
+        payload["round"] = report
+        if code is None:
+            if report["state"] == "failed":
+                code = 2
+            else:
+                code = 3 if report["pending_count"] else 0
+        _emit_round(
+            args, payload, ingest=ingest, store=store,
+            pending=pending, failure=failure,
+        )
+        return code
+
+    if command == "status":
+        report = current()
+        if getattr(args, "json_output", False):
+            print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+        else:
+            _print_round(report)
+        if report["state"] == "failed":
+            return 2
+        return 3 if report["pending_count"] else 0
+
+    if command == "export":
+        out = Path(args.out).expanduser() if getattr(args, "out", None) else None
+        payload["export"] = _export_relay(args.project_id, directory, out)
+        return finish(code=0)
+
+    before = current()
+    retry_failed = bool(getattr(args, "retry_failed", False))
+    if command == "submit" and before["state"] == "complete":
+        payload["skipped"] = (
+            "the work is already complete; nothing was ingested. "
+            "Use continue or revise to make a new revision."
+        )
+        return finish(code=0)
+    if command == "submit" and before["state"] == "failed" and not retry_failed:
+        payload["skipped"] = (
+            "a stage is failed; retrying it makes a new attempt that reuses the "
+            "answers already stored for unchanged prompts, so new answers would "
+            "be ignored. Rerun with --retry-failed instead."
+        )
+        return finish(code=2)
+
+    if (directory / "requests").is_dir():
+        payload["ingest"] = _ingest_answers(args, directory)
+    else:
+        payload["ingest"] = {
+            "written": [], "errors": [], "rejected": [], "remapped": [],
+            "still_pending": 0,
+            "note": "no request has been recorded yet; run the project first",
+        }
+    rejected = payload["ingest"]["rejected"] or payload["ingest"]["errors"]
+    if rejected:
+        # Nothing was generated: the paste has to be fixed first.
+        return finish(ingest=True, code=1)
+    if command == "ingest":
+        return finish(ingest=True)
+
+    if not payload["ingest"]["written"] and before["state"] != "failed":
+        ready = (before.get("next") or {}).get("response_ready")
+        payload["skipped"] = (
+            "the response file for the waiting request already exists; "
+            "nothing was ingested"
+            if ready else "the answer file had no block for a waiting request"
+        )
+        return finish(ingest=True, code=3)
+    try:
+        result = _run_or_resume(store, args, retry_failed=retry_failed)
+        payload["result"] = {
+            "state": result.status["work"]["state"],
+            "attempt_id": result.attempt_id,
+            "stages": result.status["work"]["stages"],
+        }
+    except ProjectRunPending as exc:
+        payload["pending"] = {
+            "key": exc.pending.get("key"), "purpose": exc.pending.get("purpose"),
+        }
+        # Keep the paste-ready prompts in step with the next request.
+        _export_relay(args.project_id, directory)
+        return finish(ingest=True, pending=exc, code=3)
+    except ProjectRunError as exc:
+        payload["error"] = str(exc)
+        return finish(ingest=True, failure=exc, code=2)
+    if payload["result"]["state"] != "complete":
+        _export_relay(args.project_id, directory)
+    return finish(ingest=True)
+
+
+def _emit_round(
+    args: argparse.Namespace, payload: dict, *, ingest: bool,
+    store: ProjectStore,
+    pending: BaseException | None = None, failure: BaseException | None = None,
+) -> None:
+    if getattr(args, "json_output", False):
+        print(json.dumps(payload, ensure_ascii=False, sort_keys=True))
+        return
+    if payload.get("skipped"):
+        print(f"Skipped: {payload['skipped']}")
+        if ingest:
+            print("")
+    if ingest:
+        _print_ingest(payload["ingest"])
+        print("")
+    _print_round(payload["round"])
+    if pending is not None:
+        print(f"Waiting: {pending}")
+    if failure is not None:
+        print(f"Failed: {failure}")
+        if "No module named" in str(failure):
+            print(MISSING_DEPENDENCY_HINT)
+        else:
+            print(RETRY_NOTE)
+    if payload["round"]["state"] == "complete":
+        manuscript = payload["round"].get("manuscript")
+        if manuscript is not None:
+            print("Complete. Read the manuscript with the Next command above.")
+    elif any(
+        row.get("action") == "resume --retry-failed"
+        for row in payload["round"].get("actions") or ()
+    ):
+        for row in payload["round"]["actions"]:
+            if row.get("action") == "resume --retry-failed":
+                print(f"Retry: {row['command']}")
+                break
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -1218,66 +1574,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "relay":
-            directory = _relay_directory(store, args.project_id, args)
-            if not (directory / "requests").is_dir():
-                report = _relay_summary(args.project_id, directory)
-            elif args.relay_command == "export":
-                report = _export_relay(
-                    args.project_id, directory,
-                    Path(args.out).expanduser() if getattr(args, "out", None) else None,
-                )
-            elif args.relay_command == "ingest":
-                path = Path(args.file).expanduser()
-                if not path.is_file():
-                    raise ProjectError(f"no such answer file: {path}")
-                tag_map: dict[str, str] = {}
-                for entry in args.map:
-                    if "=" not in entry:
-                        raise ProjectError(f"--map expects FROM=TO, got {entry!r}")
-                    source, target = entry.split("=", 1)
-                    tag_map[source.strip()] = target.strip()
-                version = args.model_version or datetime.now(
-                    timezone.utc
-                ).strftime("unversioned-%Y-%m-%d")
-                report = relay_prompts.ingest(
-                    directory, path.read_text(encoding="utf-8"), model=args.model,
-                    model_version=version, tag_map=tag_map,
-                )
-                report["project_id"] = args.project_id
-                report["directory"] = str(directory)
-            else:
-                report = _relay_summary(args.project_id, directory)
-            if args.json_output:
-                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
-            elif "written" in report:
-                print(f"Project: {report['project_id']}")
-                print(f"Answers written: {len(report['written'])}")
-                for key in report["written"]:
-                    print(f"  {key}")
-                for row in report["errors"]:
-                    print(f"error block (tag {row['tag']}): {row['reason']}")
-                for row in report["rejected"]:
-                    print(f"rejected (tag {row['tag']}): {row['reason']}")
-                print(f"Still pending: {report['still_pending']}")
-                if report["written"] and not report["still_pending"]:
-                    print(
-                        "next: python3 scripts/story_project.py "
-                        f"resume {report['project_id']}"
-                    )
-            elif "pending" in report and isinstance(report["pending"], list):
-                _print_relay(report)
-                if report["pending"]:
-                    print(
-                        "next: python3 scripts/story_project.py "
-                        f"relay export {report['project_id']}"
-                    )
-            else:
-                print(f"Project: {report['project_id']}")
-                print(f"Prompts: {report['pending']} pending / {report['done']} answered")
-                print(f"Outbox: {report['out']}")
-                if report["pending"]:
-                    print(f"  {Path(report['out']) / 'PROMPTS.md'}")
-            return 0
+            return _relay_command(args, store)
 
         status = store.status(args.project_id, args.node_id)
         if args.command == "pending":
@@ -1299,41 +1596,48 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     except ProjectRunPending as exc:
         # One waiting state, one place to look: refresh the paste-ready prompts
-        # so the next operator turn never has to guess which file to open.
-        exported = None
+        # and name the single next command (ingest + resume in one step).
+        round_report = None
         try:
             directory = _relay_directory(store, exc.project_id, args)
             if (directory / "requests").is_dir():
-                exported = _export_relay(exc.project_id, directory)
+                _export_relay(exc.project_id, directory)
+                round_report = _relay_round(
+                    store, exc.project_id, directory,
+                    node_id=exc.status.get("node_id"),
+                )
         except (OSError, ProjectError, ProviderError):
-            exported = None
+            round_report = None
         if getattr(args, "json_output", False):
             print(json.dumps(exc.status, ensure_ascii=False, sort_keys=True))
         else:
             print(f"pending: {exc}", file=sys.stderr)
             print(f"response: {exc.pending.get('response_path')}", file=sys.stderr)
-            if exported is not None:
+            if round_report is not None:
                 print(
-                    f"prompts: {exported['pending']} pending / {exported['done']} answered",
+                    f"prompts: {round_report['pending_count']} pending / "
+                    f"{round_report['answered']} answered",
                     file=sys.stderr,
                 )
-                print(f"  {Path(exported['out']) / 'PROMPTS.md'}", file=sys.stderr)
                 print(
-                    "ingest the answers: python3 scripts/story_project.py "
-                    f"relay ingest {exc.project_id} --file <answers.txt>",
+                    f"  {Path(round_report['directory']) / 'PROMPTS.md'}",
                     file=sys.stderr,
                 )
-            node_option = ""
-            if exc.status.get("node_id") != exc.status.get("root_node_id"):
-                node_option = f" --node {exc.status['node_id']}"
-            print(
-                "resume after writing the response: "
-                f"story_project.py resume {exc.project_id}{node_option}",
-                file=sys.stderr,
-            )
+                print(f"next: {round_report['next_command']}", file=sys.stderr)
+            else:
+                node_option = ""
+                if exc.status.get("node_id") != exc.status.get("root_node_id"):
+                    node_option = f" --node {exc.status['node_id']}"
+                print(
+                    "resume after writing the response: "
+                    f"story_project.py resume {exc.project_id}{node_option}",
+                    file=sys.stderr,
+                )
         return 3
     except ProjectRunError as exc:
         print(f"error: {exc}", file=sys.stderr)
+        if "No module named" in str(exc):
+            print(MISSING_DEPENDENCY_HINT, file=sys.stderr)
         if exc.run_dir is not None:
             print(f"run: {exc.run_dir}", file=sys.stderr)
         return 2

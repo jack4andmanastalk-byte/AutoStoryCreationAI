@@ -1,0 +1,190 @@
+{
+  "claims_not_made": [
+    "quality",
+    "interest",
+    "L2/L3",
+    "rates",
+    "causal effect"
+  ],
+  "commands_before_u02": [
+    "relay export",
+    "generate",
+    "relay ingest",
+    "resume",
+    "status"
+  ],
+  "commands_per_round_u02": [
+    "relay status",
+    "generate",
+    "relay submit"
+  ],
+  "date": "2026-10-27",
+  "entry_point": "scripts/story_project.py relay status|submit",
+  "experiment": "2026-10-u02-relay-round-t01",
+  "final": {
+    "answered": 12,
+    "next": null,
+    "next_command": "python3 scripts/story_project.py --root <root> render prj-u02 --out <root>/prj-u02/manuscript.md",
+    "pending": 0,
+    "requests": 12,
+    "state": "complete"
+  },
+  "fixture": "benchmarks/protocol-v1/fixtures/project-demo.json",
+  "kind": "scripted wiring check (no model output)",
+  "l2_l3": "frozen_not_measured",
+  "not_model_output": true,
+  "resubmit_when_complete": {
+    "exit": 0,
+    "response_count": 12,
+    "responses_unchanged": true,
+    "skipped": "the work is already complete; nothing was ingested. Use continue or revise to make a new revision."
+  },
+  "round_count": 12,
+  "round_schema": "asc-relay-round-v1",
+  "rounds": [
+    {
+      "answered": 1,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:brief",
+      "pending": 1,
+      "purpose": "plan",
+      "round": 1,
+      "stage": "plan",
+      "state": "waiting_response",
+      "tag": "DD5B3B9C"
+    },
+    {
+      "answered": 2,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:world",
+      "pending": 1,
+      "purpose": "design:brief",
+      "round": 2,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "60AAAEBD"
+    },
+    {
+      "answered": 3,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:history",
+      "pending": 1,
+      "purpose": "design:world",
+      "round": 3,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "58FEC702"
+    },
+    {
+      "answered": 4,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:character",
+      "pending": 1,
+      "purpose": "design:history",
+      "round": 4,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "9C3B1E6A"
+    },
+    {
+      "answered": 5,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:relation",
+      "pending": 1,
+      "purpose": "design:character",
+      "round": 5,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "AD65AAF9"
+    },
+    {
+      "answered": 6,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:plot",
+      "pending": 1,
+      "purpose": "design:relation",
+      "round": 6,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "B205B260"
+    },
+    {
+      "answered": 7,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:scene",
+      "pending": 1,
+      "purpose": "design:plot",
+      "round": 7,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "F3B13E9E"
+    },
+    {
+      "answered": 8,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "design:voice",
+      "pending": 1,
+      "purpose": "design:scene",
+      "round": 8,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "66777A5A"
+    },
+    {
+      "answered": 9,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "draft:ch01",
+      "pending": 1,
+      "purpose": "design:voice",
+      "round": 9,
+      "stage": "design",
+      "state": "waiting_response",
+      "tag": "D148FF2F"
+    },
+    {
+      "answered": 10,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "draft:ch02",
+      "pending": 1,
+      "purpose": "draft:ch01",
+      "round": 10,
+      "stage": "draft",
+      "state": "waiting_response",
+      "tag": "CF5B1333"
+    },
+    {
+      "answered": 11,
+      "exit": 3,
+      "next_command": "python3 scripts/story_project.py --root <root> relay submit prj-u02 --file <answers.txt>",
+      "next_purpose": "draft:ch03",
+      "pending": 1,
+      "purpose": "draft:ch02",
+      "round": 11,
+      "stage": "draft",
+      "state": "waiting_response",
+      "tag": "579117A6"
+    },
+    {
+      "answered": 12,
+      "exit": 0,
+      "next_command": "python3 scripts/story_project.py --root <root> render prj-u02 --out <root>/prj-u02/manuscript.md",
+      "next_purpose": null,
+      "pending": 0,
+      "purpose": "draft:ch03",
+      "round": 12,
+      "stage": "draft",
+      "state": "complete",
+      "tag": "7EB2C1D9"
+    }
+  ]
+}

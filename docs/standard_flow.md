@@ -53,19 +53,57 @@
         └─ continue / revise / branch / compose / bundle
 ```
 
-各段の間で、応答待ちは必ず1つの状態として残る。
+各段の間で、応答待ちは必ず1つの状態として残る。1巡（1ラウンド）は次の3つで完結する。
 
 ```text
-run / resume が exit 3
-  → relay export  （未回答のプロンプトを PROMPTS.md と index.json に書き出す）
-  → 生成（Arena のAIが1件ずつ応答する。応答の捏造・代筆はしない）
-  → relay ingest  （<<<ANSWER タグ>>> を responses/ へ。タグ→key は台帳が決める）
-  → resume        （記録済みの応答は再生成せず、次の未回答から続ける）
+① run（最初の1回だけ）または relay submit
+   → exit 3。このとき PROMPTS.md が自動更新され、次の1件が示される
+② 待っている1件に応答する
+   → プロンプトは relay/requests/ にある。生成した本文だけを answers.txt に
+     <<<ANSWER タグ>>> … <<<END タグ>>> で書く（捏造・代筆はしない）
+③ relay submit --file answers.txt
+   → 取り込み（タグ→key は台帳が決める。prompt_hash を固定して保存）
+   → そのまま再開（記録済みの応答は照合して再利用し、次の未回答から委譲）
+   → exit 3（次の1件）/ 0（完成）/ 2（失敗）。どれも同じ書式で報告する
 ```
 
-`run` は最初の1回だけ、以後は `resume` を使う。`resume` は記録済み応答を照合して
-再利用し、次の未回答から provider へ委譲する。応答ファイルが無いまま `resume` しても
-新しい run は作らず、exit 3 で待機状態を返す。
+`relay status` は生成せずに同じ報告だけを出す（`exit 0` 完成・待機なし /
+`3` 応答待ち / `2` 失敗）。`relay export` と `relay ingest` は③を分割した
+下位コマンドで、取り込みだけ・書き出しだけを行いたいときに使う。
+
+`run` は最初の1回だけ、以後は `relay submit`（または `resume`）を使う。`resume` は
+記録済み応答を照合して再利用し、次の未回答から provider へ委譲する。応答ファイルが
+無いまま `resume` しても新しい run は作らず、exit 3 で待機状態を返す。完成した作品に
+`relay submit` しても取り込まず、「完成済み。新しい版は `continue` / `revise`」と返す。
+
+### 1ラウンドの報告
+
+`relay status` / `relay submit` は、どの状態でも同じ形で答える。
+
+```text
+Project: prj-seaside (waiting_response)
+Stages: plan=done, design=waiting_response, draft=pending
+Relay: 1 answered / 1 pending / 2 request(s) recorded
+Relay directory: works/prj-seaside/relay
+Next request: tag 1F3A9C2D (design: brief)
+  request:  works/prj-seaside/relay/requests/<key>.json
+  response: works/prj-seaside/relay/responses/<key>.json
+Next: python3 scripts/story_project.py --root works relay submit prj-seaside --file <answers.txt>
+```
+
+- 待っている要求は**パイプライン順**（plan → design → draft）で1件だけ示す。
+- 完成なら `Next:` が原稿の書き出しコマンドになる。失敗なら `--retry-failed` になる。
+- 同じ内容が `status` / `doctor` の `next_actions` にも出る（`relay export`）。
+- 終了コードは「作業単位の状態」そのもの: `0` 完了・待機なし、`3` 応答待ち、`2` 失敗。
+
+### 完了済み応答を再生成しない
+
+- `relay export` は**未回答だけ**を書き出す。回答済みは件数としてしか出ない。
+- `relay submit` は取り込んだ応答を `prompt_hash` 付きで保存し、`resume` は記録済みの
+  応答を prompt・seed・temperature・request key で照合して再利用する。照合が合わなければ
+  再開を拒否する。
+- 完成済み・失敗済みの作品への `relay submit` は取り込まない（完成時は `0`、失敗時は
+  `--retry-failed` の案内）。保存済みの応答ファイルは書き換えない。
 
 ## 3. 状態と成果物の場所
 
@@ -114,6 +152,11 @@ run / resume が exit 3
 | relay タグ | 4 hex → **8 hex** | 同一 node では key が `purpose` しか違わず、4文字で実際に衝突した。衝突時は応答が別 request に付いたまま成功と表示された（U-01 の作例で発見） |
 | 完成時の表示 | `status` が `Manuscript:` と `render --out` を表示 | 最終成果物と状態を1コマンドで示す |
 | 未開始の next action | `run <project>`（provider 引数なし） | 既定 provider が relay になったため |
+| `relay submit`（U-02） | 取り込みと再開を1コマンドにし、状態・次の1件・次のコマンド・完成/失敗を同じ書式で報告 | 1ラウンドが「3コマンド+状態確認」に分かれ、往復のたびに台帳を読み直していた |
+| `relay status` の終了コード | `0` / `3` / `2` を状態に対応させた | スクリプトも人も、報告を読まずに次を決められる |
+| 待機中の next action | `pending` → `relay export`（`status` / `doctor` 共通） | relay 手順と別の入口に見えていた |
+| 完成・失敗時の `relay submit` | 取り込まずに `continue`/`revise` または `--retry-failed` を案内 | 完了済み応答の上書きと、再試行で再利用されない回答の収集を防ぐ |
+| `status` の relay 行 | `Relay: N answered / M pending` | 完成・待機が1画面で分かる |
 
 `build_actions` の pending 関連の文言（`pending` → `relay export` への統一など）は
 **U-02 で扱う**。今回は既存の契約を壊さない範囲に留めた。
@@ -138,3 +181,25 @@ run / resume が exit 3
   記録は [`experiments/2026-10-u01-standard-flow-t01/`](../experiments/2026-10-u01-standard-flow-t01/note.md)。
 - **残した制限**: 実応答での導線確認は U-03（dogfood）で行う。relay の往復回数
   （1作品で12回）と、stage ごとの一括書き出しは U-02 の課題として残した。
+
+## 8. U-02 の記録（2026-10-27）
+
+- **きっかけ**: U-01 の作例で、1作品が12往復になり、各往復が「export → 生成 → ingest →
+  resume → status」の5操作に分かれていた。状態の確認と次の操作が別の場所にあった。
+- **困りごとの分類**: 運用（往復と状態確認）。
+- **行った変更**:
+  - `relay submit`（ingest + resume）を追加し、1ラウンドを1コマンドにした。
+  - `relay status` を1ラウンドの報告に統一し、終了コードを状態に対応させた
+    （`0` 完了・待機なし / `3` 応答待ち / `2` 失敗）。
+  - 待機中の `next_actions` を `relay export` に変更（`status` と `doctor` で共通）。
+  - 完成済み・失敗済みの作品では `relay submit` が取り込まないようにした。
+  - `status` に `Relay: N answered / M pending` を表示。
+- **確認したこと**: 固定台本で、1作品を12ラウンド（各1コマンド）で完成まで通した。
+  要求数12・応答数12のまま増えず、完成後の再 submit は応答ファイルを1バイトも変えない。
+  失敗stageでは `--retry-failed` を案内し、回答は取り込まない。記録は
+  [`experiments/2026-10-u02-relay-round-t01/`](../experiments/2026-10-u02-relay-round-t01/note.md)。
+- **残した制限**: 往復回数そのもの（12）は減っていない。設計8件と本文3件は前段の結果に
+  依存するため、プロンプトを先に作れない（推測生成をしない方針）。往復を減らすには
+  「1つの応答の中で複数成果物を返す」契約変更が要るが、検査の粒度が変わるため
+  U-03 の実運用で必要性が出てから扱う。実応答での確認は U-03。
+

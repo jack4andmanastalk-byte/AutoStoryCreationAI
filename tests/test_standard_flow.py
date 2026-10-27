@@ -58,9 +58,13 @@ def init_project(root: Path, project_id: str = "prj-flow") -> Path:
 
 
 def export(root: Path, project_id: str) -> dict:
+    """``relay export`` JSON: the export summary plus the round report."""
     result = cli("--root", str(root), "relay", "export", project_id, "--json")
     assert result.returncode == 0, result.stderr
-    return json.loads(result.stdout)
+    payload = json.loads(result.stdout)
+    summary = dict(payload["export"])
+    summary["round"] = payload["round"]
+    return summary
 
 
 def answer_pending(root: Path, project_id: str, answers: dict[str, str]) -> int:
@@ -85,7 +89,7 @@ def answer_pending(root: Path, project_id: str, answers: dict[str, str]) -> int:
         "--file", str(answer_file), "--json",
     )
     assert result.returncode == 0, result.stderr
-    ingested = json.loads(result.stdout)
+    ingested = json.loads(result.stdout)["ingest"]
     assert not ingested["rejected"], ingested["rejected"]
     return len(ingested["written"])
 
@@ -189,11 +193,13 @@ def test_relay_ingest_rejects_an_unknown_tag(tmp_path: Path):
         "--root", str(tmp_path), "relay", "ingest", "prj-flow",
         "--file", str(answer_file), "--json",
     )
-    assert result.returncode == 0, result.stderr
+    # A rejected paste is a usage error (exit 1): nothing is generated from it.
+    assert result.returncode == 1
     payload = json.loads(result.stdout)
-    assert payload["written"] == []
-    assert payload["rejected"][0]["reason"] == "unknown tag"
-    assert payload["still_pending"] == 1
+    assert payload["ingest"]["written"] == []
+    assert payload["ingest"]["rejected"][0]["reason"] == "unknown tag"
+    assert payload["ingest"]["still_pending"] == 1
+    assert payload["round"]["pending_count"] == 1
 
 
 def test_relay_status_before_any_request_points_at_the_first_run(tmp_path: Path):
@@ -202,7 +208,9 @@ def test_relay_status_before_any_request_points_at_the_first_run(tmp_path: Path)
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["requests"] == 0
-    assert payload["pending"] == []
+    assert payload["pending_count"] == 0
+    assert payload["next"] is None
+    assert payload["state"] == "not_started"
 
 
 @pytest.mark.parametrize("name", ["standard_flow.md", "quickstart.md"])
