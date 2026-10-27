@@ -681,3 +681,42 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定�
   凍結した。現在の描画とは一致しない（テストが「一致しないこと」を確認している）。
 * 検査そのもの（閾値・重大度・修復対象）は変えていない。`fact_boundary` の判定結果は v1.1 と同一で、
   メッセージの文言も保つ（リファクタであり、緩和ではない）。
+
+## 23. バッチ B: S1 全体（plan→8 設計→draft）1 標本の事前登録（2026-10-27）
+
+バッチ A（§21）は、固定 canon・固定 design・固定ログを入力にした Stage B だけの走りであり、
+§15.2 の区別では **S1 全体ではない**。S1 全体——plan が canon を作り、8 設計がその canon を読み、
+draft が canon と設計書を読む経路（[`docs/project.md`](project.md)、[`docs/protocol.md`](protocol.md)）——は
+実応答ではまだ一度も通っていない。そこで、走らせる前に判定規則を固定した:
+[`experiments/2026-10-realrun-b-t01/`](../experiments/2026-10-realrun-b-t01/note.md)。
+
+* **条件**: タスク t01、`run_pipeline.py --system s1 --stage all`（設計段あり）、seed 0、temperature 0.8、
+  **1 標本**（`sample-1`）。結果を見てから標本を足す場合は、走らせる前に別バッチ（B2）として登録する。
+* **「同一 canon」の解釈**: バッチ A の固定 canon の再利用ではない。この run の plan が一度だけ作った
+  単一の canon（6 JSON）を、8 設計と draft が同一に読む。設計思想上 plan が canon を生成する側であり、
+  固定 canon の再利用では S1 全体にならないためである。実行コマンドに `--canon` を付けないことと、
+  `run-summary.json` に `plan.attempts` があることで照合する。
+* **プロンプト固定**: S1 経路で使う全テンプレートの name/version/digest を登録に固定した（本文は登録に
+  含めない）。v1.2 なのはこの経路では `draft-chapter` のみで、§22 の v1.2 は Stage B 専用の話である。
+  `benchmarks/protocol-v1/tasks.yaml` の sha256 も登録に固定した。
+* **判定は 5 つ**: B0 条件一致（外部 canon 再利用・plan 欠落・設計集合違い・digest 不一致は条件違反）、
+  B1 完走とゲート（設計の `unresolved`/`missing` は fail-open を隠さず別区分にする）、B2 初回不適合、
+  B3 長さ（章 1,000〜1,400 字が 2 章以上かつ合計 3,000〜4,200 字）、B4 最終本文の監査（high 0 件かつ
+  `checks_skipped=0`）。
+* **B2 の数え方（バッチ A の反省）**: 設計の所見は、修復で最終報告から消えても
+  `first_attempt.findings` を主として数える。plan は `plan.attempts>1` または初回エラーファイルの存在、
+  draft は初回 issues または 2 回目の応答がある章を「初回不受理」とする。最終 findings は別欄に残す。
+  バッチ A の R3 がこの点を登録で決めていなかった曖昧さを、ここでは登録文で明示して解消する。
+* **計測**: `scripts/measure_realrun_b.py` が登録ファイルの sha256 を結果に記録し、閾値と digest を
+  そこから読む。プロンプト本文・応答本文は結果に含めず、件数・check 名・hash のみを記録する。
+  `results.json` は現在 `not_run`（標本 0)。scripted 配線確認は算術の検証であり、実応答の証拠ではない。
+* **手順**: [`runbook.md`](../experiments/2026-10-realrun-b-t01/runbook.md)。生成は
+  `scripts/chat_operator.py` のリレー（記録された実テキスト）。回答待ち（exit 2 かつ pending 非空）の
+  ときだけ実応答を取り込み、未完の run だけを消して同じコマンドを再実行する。relay 自体は消さない。
+  実行は Arena Agent Mode 内で行い、GitHub を永続化・再検証の層とする
+  （運用モデルの分析と再設計は [`docs/arena_operation.md`](arena_operation.md)。
+  ローカル実行は前提にしない）。
+* **主張しないこと**: L2/L3 は `frozen_not_measured` のまま。G3/G4 未測定、G5 は operator 方式では
+  到達しない。面白さ・品質は測らない。N=1 であり率・再発率は主張しない。canon が新規生成されるため
+  バッチ A との本文の対比較にも使わない。応答の独立性は保証されず、provenance が記録されていない
+  応答を新規生成だったとみなさない。
