@@ -129,12 +129,14 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
   の出力先）を `<node_dir>/rendered.json` に記録し、`status` / `relay status` がそのパスと現リビジョン
   での書き出し有無を表示するようにした。また `relay status --out <path>` / `relay submit --out <path>`
   で任意の出力先を直接指定して確認できるようにもした。
-- **F-26 design 成果物はコミットに残らない**（運用として明記）。`runs/` は `.gitignore` 対象
-  なので、世界・歴史・人物・関係・物語構造・場面・文体の実体（`runs/*-design/design/*.json`）
-  はリポジトリに入らない。残るのは `relay/requests`（プロンプト）と `relay/responses`（応答の
-  逐語）、`nodes/`（revision・checkpoint・artifact 参照）、`manuscript.md`。応答から
-  `relay submit` で同じ設計を再取り込みできるので再現経路はあるが、成果物を直接読みたい
-  読者には `responses` を開いてもらう必要がある。
+- **F-26 design・canon・検査要約を JSON を開かずに読む経路が無かった**（修正済み）。
+  `scripts/story_project.py summary <project_id>`（`src/asc/project/summary.py`）を追加し、
+  JSON を開かずに①作品情報と章別文字数（`info`）、②設定台帳（`canon`）、③8設計書の要点と状態
+  （`design`）、④検査・監査の編集支援要約（`checks`：Blocker / Warning / Observation の仕分けと
+  次に直す `revise --design` / `revise --chapter` / `adopt-child` コマンド）を Markdown で出力できる
+  ようにした。また `runs/` が存在しない環境でも `relay/responses/` の受理応答から canon と8設計書を
+  復元して要約を表示できるようにした（本実験の出力は [`project_summary.md`](project_summary.md) と
+  [`child_summary.md`](child_summary.md)）。
 
 - **F-17 / U-08 原稿に章見出しが無く検査マーカーが残る**（修正済み）。`render --reader` を
   追加し、既定の `render`（検査対象と同じマーカー込みの正本）は変えずに、読書用のコピー

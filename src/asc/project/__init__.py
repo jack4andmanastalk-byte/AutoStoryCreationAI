@@ -47,6 +47,13 @@ from .observability import (
     build_actions,
     summarize,
 )
+from .summary import (
+    PROJECT_SUMMARY_SCHEMA,
+    SUMMARY_SECTIONS,
+    ProjectSummary,
+    ProjectSummaryResult,
+    SummaryError,
+)
 from .resume import ResumeError, ResumeProvider
 from .revise import ReviseContext, ReviseError
 from .runner import (
@@ -170,6 +177,11 @@ __all__ = [
     "WorldStore",
     "WORLD_CONTEXT_KIND",
     "WORK_SUMMARY_SCHEMA",
+    "PROJECT_SUMMARY_SCHEMA",
+    "SUMMARY_SECTIONS",
+    "ProjectSummary",
+    "ProjectSummaryResult",
+    "SummaryError",
     "build_actions",
     "summarize",
     "build_context_packet",

@@ -60,6 +60,7 @@ from asc.pipeline import (  # noqa: E402
 )
 from asc.project import (  # noqa: E402
     DEFAULT_STAGES,
+    SUMMARY_SECTIONS,
     ArtifactRef,
     CanonScope,
     ProjectComposer,
@@ -69,6 +70,7 @@ from asc.project import (  # noqa: E402
     ProjectRunPending,
     ProjectRunner,
     ProjectStore,
+    ProjectSummary,
     ProjectValidationError,
     WorkSpec,
     WorldCompiler,
@@ -463,6 +465,21 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     diff.add_argument("--right", required=True, help="same forms as --left")
     diff.add_argument("--node", dest="node_id", help="node for current/stage sides")
     diff.add_argument("--json", dest="json_output", action="store_true")
+
+    summary = subparsers.add_parser(
+        "summary",
+        help="show human-readable work info, canon, design, and editorial check summaries",
+    )
+    summary.add_argument("project_id")
+    summary.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
+    summary.add_argument("--revision", dest="revision_id", help="revision ID (default: current)")
+    summary.add_argument(
+        "--section", dest="sections", action="append", default=[],
+        choices=(*SUMMARY_SECTIONS, "all"),
+        help="section to include (repeatable: info, canon, design, checks, all; default: all)",
+    )
+    summary.add_argument("--out", help="write the Markdown summary to this file")
+    summary.add_argument("--json", dest="json_output", action="store_true")
 
     status = subparsers.add_parser("status", help="load and summarize an existing project")
     status.add_argument("project_id")
@@ -1812,6 +1829,37 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command == "relay":
             return _relay_command(args, store)
+
+        if args.command == "summary":
+            raw_sections = args.sections or ["all"]
+            sections = (
+                SUMMARY_SECTIONS
+                if "all" in raw_sections
+                else tuple(dict.fromkeys(raw_sections))
+            )
+            result = ProjectSummary(store).summarize(
+                args.project_id, args.node_id,
+                revision_id=args.revision_id, sections=sections,
+            )
+            report = result.to_dict()
+            if args.out:
+                output = Path(args.out).expanduser()
+                output.parent.mkdir(parents=True, exist_ok=True)
+                output.write_text(result.markdown, encoding="utf-8")
+                report["external_out"] = str(output)
+            if args.json_output:
+                report["markdown"] = result.markdown
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            elif args.out:
+                print(f"Output: {Path(args.out).expanduser()}")
+                print(
+                    f"Checks: blockers={result.checks['blocker_count']}, "
+                    f"warnings={result.checks['warning_count']}, "
+                    f"observations={result.checks['observation_count']}"
+                )
+            else:
+                print(result.markdown, end="")
+            return 0
 
         status = store.status(args.project_id, args.node_id)
         if args.command == "pending":
