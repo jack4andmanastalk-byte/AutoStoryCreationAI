@@ -1,0 +1,53 @@
+{
+  "pairs": [
+    {
+      "a": "akari", "b": "genzo",
+      "public": "灯台守の父と娘",
+      "stakes": "娘は兄の死の真相を知りたがり、父は沈黙で娘を守ろうとする",
+      "conflict": "真相を知りたい娘の目的と、娘を真相から遠ざけたい父の目的は両立しない"
+    },
+    {
+      "a": "akari", "b": "hisano",
+      "public": "鍵を貸した側と借りた側",
+      "stakes": "久乃は蒼との約束を果たす機会を探り、灯里は貸した鍵の行方を問う",
+      "conflict": "灯里は今すぐ答えを求めるが、久乃は蒼の墓のある港町でなければ真実を話せないため、急ぐ目的と場を選ぶ目的が両立しない"
+    },
+    {
+      "a": "genzo", "b": "hisano",
+      "public": "灯台守と港町の船乗り",
+      "stakes": "二人とも三年前の夜の経緯を知りながら、灯里には話していない",
+      "conflict": "源蔵は過去を伏せ続けたいが、久乃は約束を果たして過去を返したいため両立しない"
+    },
+    {
+      "a": "akari", "b": "so",
+      "public": "兄妹",
+      "stakes": "兄の遺した鍵が、妹の選択を左右する",
+      "conflict": "灯里は兄本人から答えを聞きたいが、死者は答えられないため、その望みは果たしようがない"
+    }
+  ],
+  "knowledge": [
+    {"character": "akari", "fact": "F-01", "state": "knows"},
+    {"character": "akari", "fact": "F-02", "state": "knows"},
+    {"character": "akari", "fact": "F-03", "state": "unknown"},
+    {"character": "genzo", "fact": "F-01", "state": "knows"},
+    {"character": "genzo", "fact": "F-02", "state": "knows"},
+    {"character": "genzo", "fact": "F-03", "state": "suspects"},
+    {"character": "hisano", "fact": "F-03", "state": "knows"}
+  ],
+  "changes": [
+    {
+      "pair": ["akari", "hisano"], "chapter": "ch02",
+      "trigger": "灯里が港町まで鍵を追うことを選び、久乃が鍵の経緯をすべて話すことを選ぶ",
+      "after": "疑いの間柄から、蒼との約束を共有する間柄になる"
+    },
+    {
+      "pair": ["akari", "genzo"], "chapter": "ch03",
+      "trigger": "源蔵が沈黙を破って三年前の夜を話し、灯里がそれを受け止めて灯室に立つ",
+      "after": "務めを託す父と、自分の意志で引き受ける娘になる"
+    }
+  ],
+  "silences": [
+    {"chapter": "ch01", "who": "genzo", "unsaid_ja": "蒼が鍵を久乃に託したのではないかと感づいていること"},
+    {"chapter": "ch01", "who": "hisano", "unsaid_ja": "蒼から託された鍵をまだ持っていること"}
+  ]
+}

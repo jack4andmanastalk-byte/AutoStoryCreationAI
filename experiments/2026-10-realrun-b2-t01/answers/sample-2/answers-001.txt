@@ -1,0 +1,46 @@
+<<<ANSWER 1AD3>>>
+{
+  "brief": {
+    "theme_ja": "姉の死の真相を追うことと、灯台の灯りを守る務めとのはざまで、娘が選び直す話。",
+    "protagonist_ja": "灯台守の娘・澪。姉の死にまつわる鍵の行方を知りたいが、灯りを離れることを恐れる。",
+    "setting_ja": "嵐の入り江に立つ灯台と、二日先の港町。時代は特定しない海辺の世界。",
+    "tone_ja": "静かで引き締まった、湿り気のある語り。",
+    "turn_ja": "貸した鍵と並ぶもう一つの鍵が、三年前に死んだ姉が船頭のトキに託したものだと分かる。",
+    "ending_ja": "澪が二つの鍵を持ち帰り、嵐の夜に自分の意志で灯りを守り抜く解決で終わる。"
+  },
+  "characters": [
+    {"id": "mio", "name": "澪", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 20,
+     "birthday_day": 300, "knows": ["F-01", "F-02"], "notes": "灯台守の娘。父に代わって灯りを守ることが増えた"},
+    {"id": "heisaku", "name": "平作", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 56,
+     "birthday_day": 306, "knows": ["F-01", "F-02"], "notes": "灯台守。澪の父。腰を痛めて階段の上り下りがつらい"},
+    {"id": "shio", "name": "汐", "aliases": [], "status": "dead",
+     "status_since": "ch01", "location": "港町", "age_at_start": 23,
+     "birthday_day": 312, "knows": [], "notes": "澪の姉。三年前に海で死んだ"},
+    {"id": "toki", "name": "トキ", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 38,
+     "birthday_day": 318, "knows": ["F-03"], "notes": "港町の船頭。嵐で灯台の入り江に避難している"}
+  ],
+  "facts": [
+    {"id": "F-01", "summary": "灯台の灯りは嵐の夜に消してはいけない", "terms": ["灯りを消してはいけない"], "setup": "ch01"},
+    {"id": "F-02", "summary": "汐は三年前に海で死んだ", "terms": ["三年前"], "setup": "ch01"},
+    {"id": "F-03", "summary": "汐は死の直前、貝の印のある鍵をトキに託していた", "terms": ["貝の印"], "setup": "ch02"}
+  ],
+  "locations": [
+    {"id": "灯台", "travel_days": {"港町": 2}},
+    {"id": "港町", "travel_days": {"灯台": 2}}
+  ],
+  "timeline": {
+    "chapters": [
+      {"id": "ch01", "day": 1, "location": "灯台"},
+      {"id": "ch02", "day": 4, "location": "港町"},
+      {"id": "ch03", "day": 7, "location": "灯台"}
+    ]
+  },
+  "foreshadowing": [
+    {"id": "fs-001", "description": "鍵に残る姉の印", "setup": "ch01", "payoff": "ch02"},
+    {"id": "fs-002", "description": "鍵のことを聞くと黙る父・平作", "setup": "ch01", "payoff": "ch03"}
+  ]
+}
+<<<END 1AD3>>>

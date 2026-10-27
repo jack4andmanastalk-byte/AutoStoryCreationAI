@@ -1,0 +1,174 @@
+{
+  "attempts": 1,
+  "brief": {
+    "ending_ja": "澪が二つの鍵を持ち帰り、嵐の夜に自分の意志で灯りを守り抜く解決で終わる。",
+    "protagonist_ja": "灯台守の娘・澪。姉の死にまつわる鍵の行方を知りたいが、灯りを離れることを恐れる。",
+    "setting_ja": "嵐の入り江に立つ灯台と、二日先の港町。時代は特定しない海辺の世界。",
+    "theme_ja": "姉の死の真相を追うことと、灯台の灯りを守る務めとのはざまで、娘が選び直す話。",
+    "tone_ja": "静かで引き締まった、湿り気のある語り。",
+    "turn_ja": "貸した鍵と並ぶもう一つの鍵が、三年前に死んだ姉が船頭のトキに託したものだと分かる。"
+  },
+  "canon": {
+    "brief": {
+      "ending_ja": "澪が二つの鍵を持ち帰り、嵐の夜に自分の意志で灯りを守り抜く解決で終わる。",
+      "protagonist_ja": "灯台守の娘・澪。姉の死にまつわる鍵の行方を知りたいが、灯りを離れることを恐れる。",
+      "setting_ja": "嵐の入り江に立つ灯台と、二日先の港町。時代は特定しない海辺の世界。",
+      "theme_ja": "姉の死の真相を追うことと、灯台の灯りを守る務めとのはざまで、娘が選び直す話。",
+      "tone_ja": "静かで引き締まった、湿り気のある語り。",
+      "turn_ja": "貸した鍵と並ぶもう一つの鍵が、三年前に死んだ姉が船頭のトキに託したものだと分かる。"
+    },
+    "characters": [
+      {
+        "age_at_start": 20,
+        "aliases": [],
+        "birthday_day": 300,
+        "id": "mio",
+        "knows": [
+          "F-01",
+          "F-02"
+        ],
+        "location": "灯台",
+        "name": "澪",
+        "notes": "灯台守の娘。父に代わって灯りを守ることが増えた",
+        "status": "alive",
+        "status_since": "ch01"
+      },
+      {
+        "age_at_start": 56,
+        "aliases": [],
+        "birthday_day": 306,
+        "id": "heisaku",
+        "knows": [
+          "F-01",
+          "F-02"
+        ],
+        "location": "灯台",
+        "name": "平作",
+        "notes": "灯台守。澪の父。腰を痛めて階段の上り下りがつらい",
+        "status": "alive",
+        "status_since": "ch01"
+      },
+      {
+        "age_at_start": 23,
+        "aliases": [],
+        "birthday_day": 312,
+        "id": "shio",
+        "knows": [],
+        "location": "港町",
+        "name": "汐",
+        "notes": "澪の姉。三年前に海で死んだ",
+        "status": "dead",
+        "status_since": "ch01"
+      },
+      {
+        "age_at_start": 38,
+        "aliases": [],
+        "birthday_day": 318,
+        "id": "toki",
+        "knows": [
+          "F-03"
+        ],
+        "location": "灯台",
+        "name": "トキ",
+        "notes": "港町の船頭。嵐で灯台の入り江に避難している",
+        "status": "alive",
+        "status_since": "ch01"
+      }
+    ],
+    "facts": [
+      {
+        "id": "F-01",
+        "setup": "ch01",
+        "summary": "灯台の灯りは嵐の夜に消してはいけない",
+        "terms": [
+          "灯りを消してはいけない"
+        ]
+      },
+      {
+        "id": "F-02",
+        "setup": "ch01",
+        "summary": "汐は三年前に海で死んだ",
+        "terms": [
+          "三年前"
+        ]
+      },
+      {
+        "id": "F-03",
+        "setup": "ch02",
+        "summary": "汐は死の直前、貝の印のある鍵をトキに託していた",
+        "terms": [
+          "貝の印"
+        ]
+      }
+    ],
+    "foreshadowing": [
+      {
+        "description": "鍵に残る姉の印",
+        "id": "fs-001",
+        "payoff": "ch02",
+        "setup": "ch01"
+      },
+      {
+        "description": "鍵のことを聞くと黙る父・平作",
+        "id": "fs-002",
+        "payoff": "ch03",
+        "setup": "ch01"
+      }
+    ],
+    "locations": [
+      {
+        "id": "灯台",
+        "travel_days": {
+          "港町": 2
+        }
+      },
+      {
+        "id": "港町",
+        "travel_days": {
+          "灯台": 2
+        }
+      }
+    ],
+    "suppressions": [],
+    "timeline": {
+      "chapters": [
+        {
+          "day": 1,
+          "id": "ch01",
+          "location": "灯台"
+        },
+        {
+          "day": 4,
+          "id": "ch02",
+          "location": "港町"
+        },
+        {
+          "day": 7,
+          "id": "ch03",
+          "location": "灯台"
+        }
+      ]
+    }
+  },
+  "prompt": {
+    "digest": "d5efcf43e513e63c",
+    "name": "plan-canon",
+    "version": "1.0"
+  },
+  "task": {
+    "avoid": [
+      "選ばれし者",
+      "古代の予言"
+    ],
+    "control": "fantasy",
+    "genre": "fantasy",
+    "id": "t01",
+    "logline": "嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。",
+    "must_include": [
+      "灯台",
+      "鍵",
+      "嵐"
+    ],
+    "title_ja": "灯台の鍵"
+  }
+}

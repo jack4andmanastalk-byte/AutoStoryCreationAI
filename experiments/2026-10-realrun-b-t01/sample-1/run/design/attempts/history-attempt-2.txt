@@ -1,0 +1,34 @@
+{
+  "eras": [
+    {"id": "era-1", "name": "灯台守の家の代", "begins": -40, "ends": 0}
+  ],
+  "events": [
+    {"id": "ev-1", "year": -40, "title": "灯台が建てられ、源蔵の家が灯台守を任される",
+     "cause": "", "effect": "入り江の船の目印となり、灯りを消してはいけないという掟が生まれる",
+     "trace": "灯室の扉に残る古い掟の書き付け", "era": "era-1"},
+    {"id": "ev-2", "year": -3, "title": "嵐の夜、蒼が鍵を久乃に託す",
+     "cause": "ev-1", "effect": "鍵は久乃の手に渡り、灯台守の家の外に出る",
+     "trace": "鍵に残る蒼の刻印", "era": "era-1"},
+    {"id": "ev-3", "year": -3, "title": "蒼が海難で死ぬ",
+     "cause": "ev-2", "effect": "灯里が灯りを守る役目を引き継ぎ始める",
+     "trace": "港町の墓と、源蔵の沈黙。港町では「蒼は海に呼ばれて消えた」と言い伝えられる", "era": "era-1"},
+    {"id": "ev-4", "year": 0, "title": "嵐の夜、久乃が入り江に避難し、灯里が鍵を貸す",
+     "cause": "ev-3", "effect": "鍵の行方を追う灯里の旅が始まる",
+     "trace": "貸し出された鍵と、その経緯を知る者たちの記憶", "era": "era-1"}
+  ],
+  "sources": [
+    {"id": "src-1", "kind": "正史", "holder": "灯台守の家", "origin": "cited",
+     "citation": "灯りを消してはいけない"},
+    {"id": "src-2", "kind": "異説", "holder": "港町の船問屋", "origin": "invented",
+     "citation": "蒼は海に呼ばれて消えた"}
+  ],
+  "apocrypha": [
+    "蒼は海に呼ばれて消えた"
+  ],
+  "knowledge": {
+    "akari": {"knows": ["ev-1", "ev-3"], "unknown": ["ev-2"]},
+    "genzo": {"knows": ["ev-1", "ev-2", "ev-3"], "unknown": []},
+    "hisano": {"knows": ["ev-2", "ev-3"], "unknown": ["ev-1"]}
+  },
+  "notes": ""
+}

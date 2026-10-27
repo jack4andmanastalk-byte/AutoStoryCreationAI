@@ -106,11 +106,12 @@ def test_scripted_two_stage_run_is_clean_and_self_contained(tmp_path):
     assert summary["gates"] == {"stage_a_clean": True, "stage_b_clean": True}
     assert summary["l1_hygiene"]["must_include"]["rate"] == 1.0
     assert summary["l1_hygiene"]["continuity"]["checks_skipped"] == 0
-    # The legacy string-based audit still reports dead-name mentions as medium.
-    # This is not claimed as an improvement; Stage B classifies them explicitly.
-    assert summary["l1_hygiene"]["continuity"]["by_type"] == {
-        "dead_character_reappears": 3}
-    assert summary["l1_hygiene"]["continuity"]["by_severity"] == {"medium": 3}
+    # The continuity audit now separates reference-context dead-name mentions
+    # into observations; unclassified mentions would remain medium violations.
+    assert summary["l1_hygiene"]["continuity"]["violations"] == 0
+    assert summary["l1_hygiene"]["continuity"]["observations"] == 3
+    assert summary["l1_hygiene"]["continuity"]["by_type"] == {}
+    assert summary["l1_hygiene"]["continuity"]["by_severity"] == {}
 
     results = read_json(results_path)
     assert results["schema"] == "trpg-slice-wiring-v1"

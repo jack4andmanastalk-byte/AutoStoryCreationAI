@@ -1,0 +1,237 @@
+{
+  "schema": "realrun-b2-preregistration-v1",
+  "experiment": "2026-10-realrun-b2-t01",
+  "batch": "B2",
+  "registered_on": "2026-10-27",
+  "registered_before_any_sample": true,
+  "question": "history プロンプト v1.1（history 検査だけが知っていた制約を明記）で S1 全体（plan→8設計→draft）を1標本通したとき、介入対象の canon_separated 初回所見は出るか。また他の段の初回不適合・長さ・監査はどうか。",
+  "condition": {
+    "task": "t01",
+    "system": "s1",
+    "stage": "all",
+    "design_stage": true,
+    "design_docs": [
+      "brief",
+      "world",
+      "history",
+      "character",
+      "relation",
+      "plot",
+      "scene",
+      "voice"
+    ],
+    "chapters": 3,
+    "canon_policy": {
+      "mode": "plan_generated_once_within_the_single_run",
+      "meaning_of_same_canon": "このrunのplanが一度だけ作った単一のcanonを、8設計とdraftが読む。バッチAのinputs/canonは再利用しない。",
+      "external_canon": null,
+      "verification": "実行コマンドに--canonを付けず、run-summary.jsonにplan.attemptsがあり、run/canonの6つのJSONが揃うこと。planが無い走りは条件違反として数えない。",
+      "expected_canon_files": [
+        "characters.json",
+        "facts.json",
+        "locations.json",
+        "timeline.json",
+        "foreshadowing.json",
+        "suppressions.json"
+      ],
+      "rationale": "docs/project.mdは「planはcanonを作り、designはplan runのcanonを読み、draftはplanのcanonとdesignの設計書を読む」とし、docs/two_stage_slice.md §15.2は固定canonのdraft段だけをS1全体と呼ばない。したがってバッチA canonの再利用ではS1全体にならない。"
+    },
+    "prompt_set": {
+      "label": "S1 prompt set with design-history v1.1 (B2 intervention); draft-chapter v1.2",
+      "note": "バッチBから変えたのは design-history（1.0→1.1）だけ。他のテンプレートは版・digestともバッチBと同一に固定し、本文は登録に含めない。",
+      "pins": {
+        "plan-canon": {
+          "version": "1.0",
+          "digest": "d5efcf43e513e63c"
+        },
+        "plan-repair": {
+          "version": "1.0",
+          "digest": "4b4307af6b4381cb"
+        },
+        "design-brief": {
+          "version": "1.1",
+          "digest": "d3896b1f827382b0"
+        },
+        "design-world": {
+          "version": "1.0",
+          "digest": "16abef1d5aef1eeb"
+        },
+        "design-history": {
+          "version": "1.1",
+          "digest": "845a20e30993bc51"
+        },
+        "design-character": {
+          "version": "1.0",
+          "digest": "e4bffc2ee9db74b2"
+        },
+        "design-relation": {
+          "version": "1.0",
+          "digest": "f8c3e64187631141"
+        },
+        "design-plot": {
+          "version": "1.0",
+          "digest": "d5889483d2b77e7f"
+        },
+        "design-scene": {
+          "version": "1.0",
+          "digest": "444740c2bfca082c"
+        },
+        "design-voice": {
+          "version": "1.0",
+          "digest": "bf9880f17ffb484d"
+        },
+        "design-repair": {
+          "version": "1.0",
+          "digest": "24400eb90fe44e64"
+        },
+        "draft-chapter": {
+          "version": "1.2",
+          "digest": "1db9cea08abbbb8e"
+        }
+      }
+    },
+    "tasks_file": {
+      "path": "benchmarks/protocol-v1/tasks.yaml",
+      "sha256": "bb5229eb3e996b56aeaa1a7cd2553ab7e54dc36dec7ad90ba78cfbd1cc35b595"
+    },
+    "provider": "command -> scripts/chat_operator.py; 受け渡しは scripts/relay_prompts.py",
+    "seed": 0,
+    "temperature": 0.8,
+    "pipeline_default_max_attempts": {
+      "plan": 2,
+      "design_each_doc": 2,
+      "draft_each_chapter": 2
+    },
+    "changed_from_batch_b": {
+      "prior_experiment": "2026-10-realrun-b-t01",
+      "changes": [
+        "design-history プロンプトを 1.0 から 1.1 に上げ、history 検査（canon_separated / trace_exists / knowledge_consistent）だけが知っていた未記載の制約をプロンプトに明記した"
+      ],
+      "unchanged": [
+        "タスク t01、seed 0、temperature 0.8、canon 方針、設計8種、他の全プロンプト",
+        "判定 B0〜B4 の定義と閾値、初回所見の数え方"
+      ]
+    }
+  },
+  "samples_planned": 1,
+  "sample_ids": [
+    "sample-2"
+  ],
+  "sample_rule": "B2は1標本（sample-2）で打ち切る。バッチBの標本とは design-history の版が違うため、標本を合算して率を出さない。さらに足す場合は、走らせる前にB3として登録する。",
+  "length_band": [
+    1000,
+    1400
+  ],
+  "total_length_band": [
+    3000,
+    4200
+  ],
+  "rules": {
+    "B0_condition": {
+      "question": "走りが、登録したS1全体・同一canon方針・プロンプト固定に一致するか",
+      "verdicts": {
+        "condition_ok": "task/system/stage/seed/temperatureが一致し、planがcanonを生成し、プロンプトdigestが登録と一致する",
+        "condition_violation": "外部canonの再利用、plan欠落、設計書の集合違い、プロンプトdigest不一致などがある。他の判定は主張に使わない",
+        "not_run": "標本が無い"
+      }
+    },
+    "B1_completion": {
+      "question": "plan→8設計→draft→監査まで完走し、プロトコルのゲートを通るか",
+      "verdicts": {
+        "complete_pass": "run-summary.jsonがありstatus=passで、8設計すべてclean",
+        "complete_but_gate_fail": "完走したがstatus=failで、8設計すべてclean",
+        "complete_with_unresolved_design": "完走したが、設計にunresolvedまたはmissingがある（fail-openを隠さない）",
+        "incomplete": "manifest等はあるがrun-summary.jsonが無い",
+        "not_run": "標本が無い",
+        "condition_violation": "B0が条件違反"
+      }
+    },
+    "B2_first_attempt": {
+      "question": "初回出力のどこで検査・受理条件に落ち、修復／再試行でどうなったか",
+      "counting_rule": {
+        "primary": "count_first_attempt_findings_even_if_repaired_away",
+        "design": "各設計書のdesign/<doc>.report.jsonのfirst_attempt.findingsを主として数える。最終findingsで消えていても数える。最終findingsは別欄に記録する。",
+        "plan": "plan.attempts>1、またはplan/attempt-1.error.txtがある場合に初回失敗があったものとして数える。",
+        "draft": "draft/<chapter>-attempt-1.issues.txtがある、またはattempt 2の応答がある章を、初回受理条件に落ちた章として数える。",
+        "audit": "S1には改稿段がないため、continuity監査は最終本文に対する所見としてB4で別に数え、B2には混ぜない。",
+        "batch_a_lesson": "最終報告だけを見て修復で消えた所見を0件として扱わない。これがバッチAのR3で曖昧だった点であり、ここでは初回所見を数えると明示する。"
+      },
+      "verdicts": {
+        "first_attempt_clean": "plan初回失敗なし、8設計の初回findings合計0、draftの初回不受理0章",
+        "first_attempt_findings_repaired": "初回不適合があったが、最終的にplan/draftは受理され、設計にunresolved/missingや修復対象（high/medium）の最終findingsが残らない",
+        "first_attempt_findings_remain_nonblocking": "初回findingsはあるが修復対象ではなく最終報告にも残る（おもにlow）。修復で直ったとは言わない",
+        "first_attempt_findings_unresolved": "設計にunresolved/missing、または修復対象の最終findingsが残る",
+        "incomplete": "完走していない",
+        "not_enough_data": "標本が無い",
+        "condition_violation": "B0が条件違反"
+      }
+    },
+    "B3_length": {
+      "question": "章の長さと合計は目安に入るか",
+      "min_chapters_in_band": 2,
+      "chapters_per_sample": 3,
+      "verdicts": {
+        "length_ok": "1,000〜1,400字の章が2章以上で、合計も3,000〜4,200字",
+        "length_mixed": "章条件と合計条件のどちらか一方だけを満たす",
+        "length_outside": "章条件も合計条件も満たさない",
+        "not_enough_data": "標本が無い、または完走本文が無い",
+        "condition_violation": "B0が条件違反"
+      }
+    },
+    "B4_audit": {
+      "question": "最終本文の継続性監査（L1）は、検査をすべて実行しhigh違反なしで終わるか",
+      "verdicts": {
+        "audit_no_high_all_checks_ran": "high違反0でchecks_skipped=0。意味的整合の保証ではない",
+        "audit_high_present": "high違反が1件以上ある",
+        "audit_incomplete_coverage": "high違反はないがchecks_skipped>0で、監査が届いていない範囲がある",
+        "not_measured": "監査結果が無い",
+        "not_enough_data": "標本が無い",
+        "condition_violation": "B0が条件違反"
+      }
+    },
+    "H_history_first_attempt": {
+      "question": "介入対象である history の canon_separated 初回所見は、v1.1 プロンプトで出るか",
+      "doc": "history",
+      "checks": [
+        "canon_separated"
+      ],
+      "counting_rule": "design/history.report.json の first_attempt.findings のうち check=canon_separated を数える。修復で消えても数える（B2_first_attempt と同じ数え方）。",
+      "prior_observation": "バッチBでは canon_separated の初回所見が3件あり、すべて修復で消えた",
+      "verdicts": {
+        "target_findings_absent": "canon_separated の初回所見が0件。v1.1 の明記と矛盾しない観測（効果の証明ではない）",
+        "target_findings_present": "canon_separated の初回所見が1件以上。明記してもなお出る",
+        "incomplete": "完走していない",
+        "not_enough_data": "標本が計画数に届いていない",
+        "not_run": "標本が無い",
+        "condition_violation": "B0 が条件違反"
+      },
+      "confound": "生成担い手（同一の Arena エージェント）はバッチBで同じ指摘を経験済みであり、所見の増減をプロンプト変更だけに帰因できない。H は因果の判定ではなく、対象所見が出たかどうかの記録である。"
+    }
+  },
+  "primary_quantities": [
+    "planのattemptsと初回失敗の有無",
+    "生成されたcanonの件数・checks_covered・6ファイルのsha256",
+    "設計書ごとのstatus/attempts/repairs、初回findingsと最終findings（check別・severity別）",
+    "修復で完全一致のまま消えた設計findings件数（補助値。主数え方は初回findingsそのもの）",
+    "章ごとのchars、長さ目安内可否、attempts、初回issues、injected markers、markers",
+    "必須語率、run-summaryのgates/status",
+    "auditのviolations/by_severity/by_type/checks_skipped/CED",
+    "responses.jsonlの応答数・purpose別件数・provenance.origin別件数",
+    "介入判定 H のため、history の初回 findings の check 別件数（特に対象 canon_separated）"
+  ],
+  "secondary_quantities": [
+    "CEDはauditの参考値として記録するが、単独の判定規則にはしない",
+    "バッチBとの比較は記述的な対照に留める。canon は新規生成され、design-history の版と担い手の経験も異なるため、効果量や率の比較として扱わない"
+  ],
+  "not_claimed": [
+    "L2/L3（意味の整合・質）はfrozen_not_measuredのまま",
+    "G3/G4は未測定、G5（同一seedで同一出力）はoperator方式では到達しない",
+    "面白さ・読みやすさ・品質の比較はしない",
+    "N=1である。率・再発率・一般的な遵守率は主張しない",
+    "応答の独立性は保証されない。provenanceがunspecifiedの応答を新規生成だったとみなさない",
+    "台本（scripted）での配線確認を実モデル応答として扱わない",
+    "プロンプト v1.1 の効果（因果）は主張しない。同一担い手がバッチBで同じ指摘を経験しており分離できない",
+    "バッチBとB2を合算した率・再発率は主張しない（design-history の版という条件差がある）"
+  ],
+  "stop_rule": "sample-2が完走するか、回答待ちでない失敗で停止した時点で測る。途中で結果を見て条件・プロンプト・閾値を変えない。標本を足す場合は走らせる前にB3として別途登録する。"
+}

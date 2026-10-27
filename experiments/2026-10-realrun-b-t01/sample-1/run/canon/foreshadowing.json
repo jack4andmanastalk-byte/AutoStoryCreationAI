@@ -1,0 +1,16 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "鍵に残る兄の刻印",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-002",
+      "description": "鍵のことを聞くと黙る父・源蔵",
+      "setup": "ch01",
+      "payoff": "ch03"
+    }
+  ]
+}

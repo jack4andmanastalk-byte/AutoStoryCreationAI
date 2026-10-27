@@ -1192,13 +1192,15 @@ def _l1_hygiene(ledger: RunLedger, task: Task,
         },
         "continuity": (None if audit is None else {
             "violations": audit["summary"]["violations"],
+            "observations": audit["summary"].get("observations", 0),
             "by_type": audit["summary"]["by_type"],
             "by_severity": audit["summary"]["by_severity"],
             "checks_skipped": audit["summary"]["checks_skipped"],
             "ced_per_10k_chars": audit["summary"]["ced_per_10k_chars"],
-            "note": ("name_mention による dead_character_reappears (medium) は"
-                     "既存監査器の既知の限界。Stage B では宣言済みの"
-                     "record_reference / memory_mention として許容している。"),
+            "note": ("死者の名前だけの言及は、引用・参照語彙・助詞で分類できるものを"
+                     "observations として残し、分類できないものだけを"
+                     "dead_character_reappears (medium) とする。Stage B の宣言済み"
+                     "record_reference / memory_mention とは別の、監査側の近似である。"),
         }),
     }
 

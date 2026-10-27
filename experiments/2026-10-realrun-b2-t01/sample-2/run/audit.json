@@ -1,0 +1,328 @@
+{
+  "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-b2-t01/sample-2/run/canon",
+  "canon_warnings": [],
+  "chapters": [
+    {
+      "chars": 1178,
+      "id": "ch01",
+      "markers": 4,
+      "mentions": 21,
+      "path": "ch01.md"
+    },
+    {
+      "chars": 1126,
+      "id": "ch02",
+      "markers": 4,
+      "mentions": 22,
+      "path": "ch02.md"
+    },
+    {
+      "chars": 1222,
+      "id": "ch03",
+      "markers": 3,
+      "mentions": 20,
+      "path": "ch03.md"
+    }
+  ],
+  "checks": [
+    {
+      "acceptance_ja": "死亡章より後の章で、その人物の行為マーカー（state/learn/use）または発話（名前＋直後の「」）が 0 件であること。名前の言及だけの場合は回想・遺体・手紙と区別できないため medium として報告する。",
+      "evaluated": 1,
+      "id": "dead_character_reappears",
+      "limits_ja": "名前の言及は存在の証明ではない。夢・回想・遺体・代役は誤検出になりうる。",
+      "question_ja": "死亡が確定した人物が、その後の章で行為・発話していないか。",
+      "requires": [
+        "characters",
+        "chapters"
+      ],
+      "status": "fail",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "violations": 2
+    },
+    {
+      "acceptance_ja": "`use` マーカーの事実が、その人物の既知集合（canon の knows ＋ それ以前の `learn`）に含まれること。含まれない場合は high。事実の語彙（terms）が学習前の台詞に現れる場合は、話者推定を含むため medium。",
+      "evaluated": 0,
+      "id": "knowledge_violation",
+      "limits_ja": "台詞の話者推定は行単位の近接に依存する。地の文の言及は対象外。",
+      "question_ja": "人物が、知る前の章で事実を使っていないか。",
+      "requires": [
+        "characters",
+        "facts"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T012",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "知り得ない情報の使用",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "各伏線について、回収章 ≥ 設置章であること。回収のみで設置がない場合はmedium、canon の宣言と実際の章が食い違う場合は low。",
+      "evaluated": 2,
+      "id": "foreshadow_order",
+      "limits_ja": "回収の「意味が通るか」は判定しない。順序と有無だけを見る。",
+      "question_ja": "回収が設置より前になっていないか。回収だけが存在しないか。",
+      "requires": [
+        "foreshadowing"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/japan_2026:T034",
+        "narrative/japan_2026:T035",
+        "narrative/japan_2026:T036",
+        "narrative/japan_2026:T037"
+      ],
+      "title_ja": "伏線の設置と回収の順序",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "最終章までに `payoff` マーカー（または canon の payoff 章）に到達した伏線の集合が、設置済みの集合と一致すること。差集合は medium。",
+      "evaluated": 2,
+      "id": "unresolved_foreshadow",
+      "limits_ja": "続巻前提の作品では未回収が正常。単巻として監査する場合のみ有効。",
+      "question_ja": "設置されたが回収されていない伏線が残っていないか。",
+      "requires": [
+        "foreshadowing",
+        "chapters"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T033",
+        "narrative/us_2026:T012"
+      ],
+      "title_ja": "未回収の伏線",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "連続する章の日数差 ≥ canon の移動日数であること。移動日数が未定義の組は判定せず、skipped として件数を報告する。",
+      "evaluated": 0,
+      "id": "travel_time",
+      "limits_ja": "移動日数表の網羅性に依存する。同日移動・省略・転移は誤検出になりうる。",
+      "question_ja": "章の経過日数が、場所間の移動日数以上か。",
+      "requires": [
+        "locations",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/japan_2026:T112",
+        "production/game_narrative_us:P22"
+      ],
+      "title_ja": "移動時間の整合",
+      "violations": 0
+    },
+    {
+      "acceptance_ja": "`age` マーカーの値が、開始時年齢＋誕生日の通過回数と一致すること。誕生日が未設定の場合は、前回の明示年齢より減少していないことのみを見る。",
+      "evaluated": 0,
+      "id": "stated_age",
+      "limits_ja": "年齢は作中で明示された箇所しか検査できない。",
+      "question_ja": "本文中で示された年齢が、経過時間と矛盾しないか。",
+      "requires": [
+        "characters",
+        "timeline"
+      ],
+      "status": "pass",
+      "technique_ids": [
+        "narrative/us_2026:T116",
+        "production/game_narrative_us:P19"
+      ],
+      "title_ja": "年齢・時点の整合",
+      "violations": 0
+    }
+  ],
+  "generated_at": "2026-10-27T04:57:03Z",
+  "ledger": {
+    "canon": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-b2-t01/sample-2/run/canon",
+    "chapter_time": {
+      "ch01": {
+        "day": 1,
+        "location": "灯台"
+      },
+      "ch02": {
+        "day": 4,
+        "location": "港町"
+      },
+      "ch03": {
+        "day": 7,
+        "location": "灯台"
+      }
+    },
+    "characters": [
+      {
+        "age": 56,
+        "id": "heisaku",
+        "known_facts": [
+          "F-01",
+          "F-02"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      },
+      {
+        "age": 20,
+        "id": "mio",
+        "known_facts": [
+          "F-01",
+          "F-02",
+          "F-03"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      },
+      {
+        "age": 23,
+        "id": "shio",
+        "known_facts": [],
+        "last_seen_chapter": "ch03",
+        "location": "港町",
+        "status": "dead"
+      },
+      {
+        "age": 38,
+        "id": "toki",
+        "known_facts": [
+          "F-03"
+        ],
+        "last_seen_chapter": "ch03",
+        "location": "灯台",
+        "status": "alive"
+      }
+    ],
+    "events": [
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:12",
+        "kind": "foreshadow",
+        "line": 12,
+        "order": 3,
+        "subject": "fs-001"
+      },
+      {
+        "chapter": "ch01",
+        "detail": "setup",
+        "evidence": "ch01.md:15",
+        "kind": "foreshadow",
+        "line": 15,
+        "order": 4,
+        "subject": "fs-002"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "F-03",
+        "evidence": "ch02.md:12",
+        "kind": "learn",
+        "line": 12,
+        "order": 7,
+        "subject": "mio"
+      },
+      {
+        "chapter": "ch02",
+        "detail": "payoff",
+        "evidence": "ch02.md:12",
+        "kind": "foreshadow",
+        "line": 12,
+        "order": 8,
+        "subject": "fs-001"
+      },
+      {
+        "chapter": "ch03",
+        "detail": "payoff",
+        "evidence": "ch03.md:10",
+        "kind": "foreshadow",
+        "line": 10,
+        "order": 11,
+        "subject": "fs-002"
+      }
+    ],
+    "foreshadowing": [
+      {
+        "declared_payoff": "ch02",
+        "declared_setup": "ch01",
+        "description": "鍵に残る姉の印",
+        "id": "fs-001",
+        "payoff_chapter": "ch02",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      },
+      {
+        "declared_payoff": "ch03",
+        "declared_setup": "ch01",
+        "description": "鍵のことを聞くと黙る父・平作",
+        "id": "fs-002",
+        "payoff_chapter": "ch03",
+        "resolved": true,
+        "setup_chapter": "ch01"
+      }
+    ],
+    "schema_version": "1.0"
+  },
+  "schema_version": "1.0",
+  "summary": {
+    "by_severity": {
+      "medium": 2
+    },
+    "by_type": {
+      "dead_character_reappears": 2
+    },
+    "ced_per_10k_chars": 5.672,
+    "chars": 3526,
+    "checks_run": 6,
+    "checks_skipped": 0,
+    "suppressed": 0,
+    "violations": 2,
+    "weighted_score": 4
+  },
+  "suppressed": [],
+  "tool": "continuity-ledger",
+  "violations": [
+    {
+      "canon_ref": "canon/characters:shio.status",
+      "chapter": "ch02",
+      "evidence": {
+        "line": 12,
+        "path": "ch02.md",
+        "quote": "「三年前の嵐の夜、あたしは汐さんからこの鍵を託されたんだ」{{learn: mio fact=F-03}}{{foreshadow: fs-001 payoff}}"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "汐 は ch01 で死亡しているが、ch02 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "shio",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    },
+    {
+      "canon_ref": "canon/characters:shio.status",
+      "chapter": "ch03",
+      "evidence": {
+        "line": 12,
+        "path": "ch03.md",
+        "quote": "「言えば、お前は海を追うと思った。汐のようにな。……おれは怖かったんだ。灯りも、娘も、両方失うのが」"
+      },
+      "evidence_basis": "name_mention",
+      "intentional": false,
+      "message_ja": "汐 は ch01 で死亡しているが、ch03 で名前が現れる（回想・遺体・言及の可能性）。",
+      "severity": "medium",
+      "subject": "shio",
+      "technique_ids": [
+        "production/game_narrative_us:P19",
+        "narrative/us_2026:T116"
+      ],
+      "title_ja": "死亡した人物の再登場",
+      "type": "dead_character_reappears"
+    }
+  ]
+}

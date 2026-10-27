@@ -1,0 +1,16 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "鍵に残る姉の印",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-002",
+      "description": "鍵のことを聞くと黙る父・平作",
+      "setup": "ch01",
+      "payoff": "ch03"
+    }
+  ]
+}

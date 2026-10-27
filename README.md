@@ -166,6 +166,7 @@ gh release download datasets-narou-commercialized
 | [`research/curation/spec_changes_2026-10.md`](research/curation/spec_changes_2026-10.md) | 実装時に補った合格条件と設計変更の記録 |
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
 | [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
+| [`docs/arena_operation.md`](docs/arena_operation.md) | **実行前提の運用モデル**。Arena Agent Mode × GitHub で完結する実行・生成・永続化・再検証の役割分担（分析・検証・再設計） |
 | [`docs/replay.md`](docs/replay.md) | 記録済み応答を外部providerなしで再実行し、prompt・response・成果物の一致を監査する方法 |
 | [`docs/continuous_creation_roadmap.md`](docs/continuous_creation_roadmap.md) | 単一作品の再開から、続編・入れ子作品・世界スケール親作品までの設計と実装順序 |
 | [`docs/project.md`](docs/project.md) | 任意premiseの創作projectを作成し、S1のplan/design/draftを実行・中断再開・continuation・多段入れ子作品の依存順実行とpinned再帰編纂・複数時間軸/地域/文化状態/世界canonの保存と選択ContextPacket・年代記/地誌/文化圏/作品集の編纂・外部replay bundleのexport/verify/restoreを行う方法 |

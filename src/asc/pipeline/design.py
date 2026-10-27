@@ -78,18 +78,20 @@ similar は 3 件以上。禁止条件には確認方法を添える。""",
   "eras": [{"id": "era-1", "name": "時代名", "begins": -100, "ends": 0}],
   "events": [
     {"id": "ev-1", "year": -50, "title": "出来事", "cause": "原因となった出来事のID",
-     "effect": "結果", "trace": "現在に残る痕跡", "era": "era-1"}
+     "effect": "結果", "trace": "現在に残る痕跡（5字以上）", "era": "era-1"}
   ],
   "sources": [
-    {"id": "src-1", "kind": "正史か異説か", "holder": "保持者",
-     "origin": "由来", "citation": "引用"}
+    {"id": "src-1", "kind": "正史か異説か", "holder": "保持者（必須）",
+     "origin": "invented / adapted / cited のいずれか", "citation": "引用（cited の場合は必須）"}
   ],
-  "apocrypha": ["異説として扱う言い伝え"],
+  "apocrypha": ["異説として扱う言い伝え（出来事の題・結果・痕跡のいずれかにも現れるもの）"],
   "knowledge": {"人物ID": {"knows": ["ev-1"], "unknown": ["ev-2"]}},
   "notes": ""
 }
 出来事は年代順。原因の参照は実在の出来事を指し、年代が前後しない。
 すべての出来事に痕跡を書く。正史と異説を分ける。
+史料の由来は invented / adapted / cited のいずれかにする。
+異説は年表の出来事にも現れるものにする。
 知識地図の人物は canon に、出来事は年表に存在させる。""",
     "character": """\
 {
