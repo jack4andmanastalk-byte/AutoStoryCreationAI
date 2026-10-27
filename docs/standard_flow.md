@@ -125,7 +125,8 @@ Next: python3 scripts/story_project.py --root works relay submit prj-seaside --f
 - 既定の `<root>` は `runs/projects/` だが、**`runs/` は git 管理外**でセッションを
   越えて残る保証がない。残す作品は `--root works`（リポジトリ内・版管理）に置く。
   実験として登録する走りは `experiments/<id>/` に置く。
-- 最終成果物は `render --out <root>/<project_id>/manuscript.md` の markdown である。
+- 最終成果物は `render --out <root>/<project_id>/manuscript.md` の markdown である（検査マーカー込みの正本）。
+  人間が読むときは `render --reader` で章見出し付き・マーカーなしの読書用コピーも出せる。
   JSON（`runs/`）を開かないと本文が読めない状態を標準にしない。
 - `status` は完成した作品で `Manuscript:` と書き出しコマンドを表示する。
 - 再現に必要な材料は `bundle export` にまとまる（relay と run のハッシュ付き）。

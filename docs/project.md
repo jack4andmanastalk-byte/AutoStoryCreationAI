@@ -801,7 +801,7 @@ runs/projects/<project_id>/
   `relay status` / `relay submit` の報告は `asc-relay-round-v1` で、状態・次の1件・
   次のコマンドを返す。回答済みの要求は書き出さず、完成済み・失敗済みの作品には
   取り込まない。
-- `manuscript.md`: `render --out` の出力。JSON を開かずに読むための原稿。
+- `manuscript.md`: `render --out` の出力（検査マーカー込みの正本）。読書用に章見出しを付けマーカーを外すときは `render --reader`。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json`、改訂・分岐runには `revise.json`（コピー元のhashと生成し直した対象）も
   あり、旧runは別directoryに残る。

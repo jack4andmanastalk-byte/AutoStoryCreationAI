@@ -144,6 +144,35 @@ def test_the_whole_work_drives_to_completion_and_reports_the_manuscript(tmp_path
     assert len(list((directory / "relay" / "responses").glob("*.json"))) == 12
 
 
+def test_a_finished_round_reports_the_warnings_the_draft_stage_recorded(tmp_path: Path):
+    """The draft warns about chapter length; a round is where a person reads it.
+
+    The warnings used to live only in the run's ``draft.json``, so a completed
+    work looked clean even when every chapter was far from the target.  They are
+    warnings, not failures: the work still completes.
+    """
+    init_project(tmp_path, chapters=3)
+    rounds = drive(tmp_path, "prj-round", answers_by_purpose())
+    final = rounds[-1]
+    assert final["state"] == "complete"
+    assert final["warnings"], "the scripted chapters are far below 1200 chars"
+    assert any("目安" in item for item in final["warnings"])
+
+    human = cli("--root", str(tmp_path), "relay", "status", "prj-round")
+    assert human.returncode == 0
+    assert "Warnings:" in human.stdout
+    assert "（目安 1200〜1200 字の外）" in human.stdout
+    # The exit code still says "done", because a warning is not a failure.
+    assert "complete" in human.stdout
+
+
+def test_a_round_before_any_draft_reports_no_warnings(tmp_path: Path):
+    init_project(tmp_path)
+    assert cli("--root", str(tmp_path), "run", "prj-round").returncode == 3
+    status = round_status(tmp_path, "prj-round")
+    assert status["warnings"] == []
+
+
 def test_submitting_again_changes_nothing(tmp_path: Path):
     directory = init_project(tmp_path)
     drive(tmp_path, "prj-round", answers_by_purpose())

@@ -93,7 +93,7 @@ def run_doc(name: str, payload: dict | str, task, canon, tmp_path: Path,
     ("character", "主要人物は全員書く", "1.0"),
     ("relation", "設定台帳で既知の事実を unknown と主張しない", "1.0"),
     ("plot", "転換点を 3〜5 件置き", "1.0"),
-    ("scene", "開示か保留のどちらかに置く", "1.0"),
+    ("scene", "planted には canon の布石 ID を書かない", "1.1"),
     ("voice", "一人称なら自称を宣言する", "1.0"),
 ])
 def test_prompt_states_the_mechanical_contract(

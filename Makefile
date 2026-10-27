@@ -196,7 +196,7 @@ ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
 
 quickstart-check: ## verify the standard flow and the relay round with the scripted fixture
-	$(RUN) -m pytest tests/test_standard_flow.py tests/test_relay_round.py -q
+	$(RUN) -m pytest tests/test_standard_flow.py tests/test_relay_round.py tests/test_render_reader.py -q
 
 gamelog-check: ## check the scripted Stage A game log against canon/plot/scenes
 	$(RUN) scripts/check_gamelog.py \

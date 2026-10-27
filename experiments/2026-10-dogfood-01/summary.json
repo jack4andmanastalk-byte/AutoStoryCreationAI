@@ -71,16 +71,23 @@
     {
       "area": "text",
       "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
         "docs/quickstart.md"
       ],
       "id": "F-22",
-      "status": "documented",
+      "status": "fixed",
       "summary": "chapter length targets are advisory: 647/668/795 body chars against 900, findings 0"
     },
     {
       "area": "text",
+      "files": [
+        "prompts/design-scene.md",
+        "src/asc/pipeline/design.py",
+        "tests/test_design_prompt_contracts.py"
+      ],
       "id": "F-23",
-      "status": "open",
+      "status": "fixed (design-scene v1.1; design-character already stated >= 30 chars)",
       "summary": "check minima (speech.sample >= 30 chars, planted must not use canon IDs) are not stated in the request prompt; caused both repairs"
     },
     {
@@ -100,6 +107,18 @@
       "id": "F-26",
       "status": "documented",
       "summary": "design artifacts live under runs/ (gitignored); relay responses are the committed verbatim record"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "src/asc/story/text.py",
+        "src/asc/project/nested.py",
+        "scripts/story_project.py",
+        "tests/test_render_reader.py"
+      ],
+      "id": "F-17",
+      "status": "fixed",
+      "summary": "render --reader writes a reading copy with chapter headings and no audit markers while keeping the default checked text unchanged"
     }
   ],
   "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
@@ -126,6 +145,8 @@
         "target": 900
       }
     },
+    "reader_path": "experiments/2026-10-dogfood-01/manuscript.reader.md",
+    "reader_sha256": "b57a6495a2d0ce8f0b4ce7548873dec74e64d0f429e4c6f6a8ec8241104e1c35",
     "sha256": "09727401b2ae98cef68b72cfc8a1199043560d28a23930165e617cac93af952c"
   },
   "next_candidates": [

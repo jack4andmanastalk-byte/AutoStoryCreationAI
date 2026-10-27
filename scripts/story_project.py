@@ -60,6 +60,7 @@ from asc.pipeline import (  # noqa: E402
 )
 from asc.project import (  # noqa: E402
     DEFAULT_STAGES,
+    ArtifactRef,
     CanonScope,
     ProjectComposer,
     ProjectError,
@@ -252,6 +253,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     render.add_argument("project_id")
     render.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     render.add_argument("--out", help="optional external UTF-8 markdown output")
+    render.add_argument(
+        "--reader", action="store_true",
+        help="reading copy: chapter headings and no audit markers "
+             "(the default output keeps the checked text unchanged)",
+    )
     render.add_argument("--json", dest="json_output", action="store_true")
 
     compose = subparsers.add_parser(
@@ -577,6 +583,30 @@ def _stage_rank(purpose: str | None) -> tuple[int, str]:
     return (_PURPOSE_STAGE.get(stage, 9), str(purpose or ""))
 
 
+def _draft_warnings(store: ProjectStore, status: dict) -> list[str]:
+    """Warnings the draft stage recorded for the current revision.
+
+    The draft stage already warns about chapter length against the project's
+    target ("ch01: 647 字（目安 900〜900 字の外）") and about markers it had to
+    inject from canon, but the warning only lived in the run's ``draft.json``.
+    A round is where a person reads the work, so the round says it too.
+    """
+    artifacts = (status.get("checkpoints") or {}).get("draft", {}).get("artifacts") or []
+    reference = next(
+        (row for row in artifacts if str(row.get("path", "")).endswith("/draft.json")),
+        None,
+    )
+    if reference is None:
+        return []
+    try:
+        artifact = ArtifactRef.from_dict(reference)
+        payload = json.loads(store.read_artifact(status["project_id"], artifact))
+    except (KeyError, ValueError, ProjectError):
+        return []
+    warnings = payload.get("warnings_ja") if isinstance(payload, dict) else None
+    return [str(item) for item in warnings] if isinstance(warnings, list) else []
+
+
 def _relay_round(
     store: ProjectStore, project_id: str, directory: Path, *,
     node_id: str | None = None,
@@ -651,6 +681,7 @@ def _relay_round(
             if manuscript is not None else None
         ),
         "actions": list(status.get("next_actions") or ()),
+        "warnings": _draft_warnings(store, status),
     }
 
 
@@ -673,6 +704,13 @@ def _print_round(report: dict) -> None:
         print(f"  response: {row['response_path']}")
         if row["response_ready"]:
             print("  the response file already exists; submit it to continue")
+    warnings = report.get("warnings") or []
+    if warnings:
+        print(f"Warnings: {len(warnings)} from the draft stage (not failures)")
+        for item in warnings[:3]:
+            print(f"  {item}")
+        if len(warnings) > 3:
+            print(f"  … and {len(warnings) - 3} more")
     manuscript = report.get("manuscript")
     if manuscript is not None:
         label = "" if manuscript["written"] else " (not written yet)"
@@ -1292,7 +1330,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command in {"render", "compose"}:
             composer = ProjectComposer(store)
             result = (
-                composer.render(args.project_id, args.node_id)
+                composer.render(
+                    args.project_id, args.node_id,
+                    reader=getattr(args, "reader", False),
+                )
                 if args.command == "render"
                 else composer.compose(
                     args.project_id, args.node_id,
@@ -1303,6 +1344,12 @@ def main(argv: list[str] | None = None) -> int:
                 output = Path(args.out).expanduser()
                 output.parent.mkdir(parents=True, exist_ok=True)
                 output.write_text(result.text, encoding="utf-8")
+            if getattr(args, "reader", False) and not args.json_output:
+                # Nothing but JSON on stdout when --json is asked for.
+                print(
+                    "Reader copy: chapter headings added and audit markers dropped. "
+                    "The checked text (markers included) is the default render output."
+                )
             if args.json_output:
                 report = result.to_dict()
                 report["text"] = result.text

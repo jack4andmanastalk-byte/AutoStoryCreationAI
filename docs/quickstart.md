@@ -123,16 +123,23 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 ## 5. 原稿を読む
 
 ```bash
+# 検査対象と同じ本文（{{time: …}} などのマーカーを含む正本）
 .venv/bin/python scripts/story_project.py --root works render prj-seaside \
   --out works/prj-seaside/manuscript.md
+
+# 読書用のコピー（章見出しを付け、検査用マーカーを外す）
+.venv/bin/python scripts/story_project.py --root works render prj-seaside \
+  --reader --out works/prj-seaside/manuscript.reader.md
 ```
 
-- 出力は章見出し・作品情報・検査用マーカーを含む結合 markdown。ここが最終成果物。
+- 既定の `render` は検査対象と同じ本文（マーカー込み）をそのまま出し、そのハッシュが原稿の正本になる。
+- `--reader` は読書用コピー（`## 第1章` の章見出しを付け、`{{…}}` の検査マーカーを落とした本文）。
 - `--json` を付けると、原稿本文とハッシュを機械可読な形でも返す。
 - 読後の感想（長さ、説明過多、反復、会話、場面転換、伏線回収、文体）は、
   次の改善の材料として残す（摩擦ログとして `experiments/<id>/note.md` に残す）。
-- 章ごとの「目安 ◯◯ 字」は助言で、長さの機械検査はしない（検査は矛盾とマーカーを見る）。
-  目安に対して短い・長いと感じたら、その章だけ `revise --chapter` で書き直す（手順6）。
+- 章ごとの「目安 ◯◯ 字」は助言で、不合格にはならない（検査は矛盾とマーカーを見る）。
+  目安から外れた章があるときは、完成後の `relay status` / `relay submit` が `Warnings:` にその旨を出す。
+  短い・長いと感じたら、その章だけ `revise --chapter` で書き直す（手順6）。
 
 ## 6. 続き・改訂・分岐・編纂へ進む
 

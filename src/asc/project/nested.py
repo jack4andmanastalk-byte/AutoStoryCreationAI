@@ -15,6 +15,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from .model import ArtifactRef, WorkLink, WorkNode, WorkNodeRevision
+from ..story.text import without_markers
 from .schema import SCHEMA_VERSION, canonical_json
 from .store import ProjectError, ProjectStore
 
@@ -116,7 +117,8 @@ class ProjectComposer:
         return snapshot.root_node, snapshot.revision, artifacts
 
     def _chapters(
-        self, project_id: str, artifacts: tuple[ArtifactRef, ...],
+        self, project_id: str, artifacts: tuple[ArtifactRef, ...], *,
+        reader: bool = False,
     ) -> str:
         by_path = {artifact.path: artifact for artifact in artifacts}
         draft_ref = next(
@@ -155,6 +157,17 @@ class ProjectComposer:
             except UnicodeDecodeError as exc:
                 raise NestedError(f"chapter is not UTF-8: {reference.path}") from exc
             texts.append(text.rstrip("\n"))
+        if reader:
+            # A reading copy: one heading per chapter and no audit markers.
+            # The chapter ID stays visible in an HTML comment so a reader can
+            # still tell which chapter a passage came from.
+            texts = [
+                f"## 第{index}章\n\n<!-- asc-chapter: {chapter_id} -->\n\n"
+                f"{without_markers(text)}"
+                for index, (chapter_id, text) in enumerate(
+                    zip(chapter_ids, texts), start=1,
+                )
+            ]
         if not texts:
             raise NestedError("pinned draft has no chapter text")
         return "\n\n".join(texts)
@@ -172,13 +185,22 @@ class ProjectComposer:
             "",
         ]
 
-    def render(self, project_id: str, node_id: str | None = None) -> CompositionResult:
-        """Render only the selected node's current completed draft."""
+    def render(
+        self, project_id: str, node_id: str | None = None, *,
+        reader: bool = False,
+    ) -> CompositionResult:
+        """Render only the selected node's current completed draft.
+
+        ``reader=True`` writes a reading copy: chapter headings and no audit
+        markers.  The default keeps the checked text byte for byte, because the
+        markers are what the audit reads and the SHA-256 of that text is the
+        recorded identity of the draft.
+        """
         snapshot = self.store.load_node_snapshot(project_id, node_id)
         selected_id = snapshot.root_node.id
         with self.store.execution_lock(project_id):
             node, revision, artifacts = self._current_draft(project_id, selected_id)
-            body = self._chapters(project_id, artifacts)
+            body = self._chapters(project_id, artifacts, reader=reader)
         text = "\n".join([*self._heading(node, revision), body]).rstrip() + "\n"
         digest = hashlib.sha256(text.encode("utf-8")).hexdigest()
         return CompositionResult(

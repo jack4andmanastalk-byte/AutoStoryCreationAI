@@ -70,20 +70,22 @@ def load_prereg() -> dict:
 
 
 def prereg_with_live_history_pin(tmp_path: Path) -> Path:
-    """Copy of batch B's registration carrying the live design-history pin.
+    """Copy of batch B's registration carrying the live prompt pins.
 
-    Batch B's frozen pins predate the B2 prompt change (design-history 1.1),
-    while the scripted fixture run is generated with live templates. Measuring
-    that fresh scripted run against the frozen pin must, correctly, report a
-    condition violation -- so the scripted arithmetic tests measure against
-    this copy instead. The bundle's own registration is never rewritten.
+    Batch B's frozen pins predate later prompt changes (design-history 1.1,
+    design-scene 1.1), while the scripted fixture run is generated with live
+    templates. Measuring that fresh scripted run against the frozen pin must,
+    correctly, report a condition violation -- so the scripted arithmetic tests
+    measure against this copy instead. The bundle's own registration is never
+    rewritten.
     """
     from asc.pipeline.prompts import load_prompt
 
     data = load_prereg()
-    prompt = load_prompt("design-history")
-    data["condition"]["prompt_set"]["pins"]["design-history"] = {
-        "version": str(prompt.version), "digest": prompt.digest}
+    for name in ("design-history", "design-scene"):
+        prompt = load_prompt(name)
+        data["condition"]["prompt_set"]["pins"][name] = {
+            "version": str(prompt.version), "digest": prompt.digest}
     path = tmp_path / "preregistration-live.json"
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n",
                     encoding="utf-8")
