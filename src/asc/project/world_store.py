@@ -275,7 +275,14 @@ class WorldStore:
                 ArtifactRef.from_dict(row)
                 for row in status["checkpoints"]["plan"]["artifacts"]
             ]
-            matches = [item for item in artifacts if item.path == source_artifact_path]
+            matches = [
+                item for item in artifacts
+                if item.path == source_artifact_path
+                or (
+                    not source_artifact_path.startswith("runs/")
+                    and item.path.endswith(f"/{source_artifact_path.lstrip('/')}")
+                )
+            ]
             if len(matches) != 1:
                 raise ProjectValidationError(
                     "source_artifact_path must identify one pinned plan artifact"

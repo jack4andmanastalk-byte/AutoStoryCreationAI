@@ -170,13 +170,13 @@ canon で既知の事実を unknown と主張しない。
      ],
      "disclosure": {"disclosed": ["開示する事実ID"],
                     "withheld": [{"fact": "事実ID", "reason": "伏せる理由"}]},
-     "foreshadows": {"planted": [{"id": "新規の布石ID", "payoff": "回収予定の章"}],
+     "foreshadows": {"planted": [{"id": "canon にない新規の布石ID（なければ planted は []）", "payoff": "回収予定の章"}],
                      "paid": ["回収する canon の布石ID"]}
     }
   ]
 }
 全章に場面を置く。得た事実は開示か保留のどちらかに置く。
-回収は実在の布石を指し、仕掛けより前に置かない。""",
+回収は canon の布石を指し、仕掛けより前に置かない。planted には canon の布石 ID を書かない（新規がなければ []）。""",
     "voice": """\
 {
   "viewpoint": {"person": "first / third", "character": "視点人物の名",

@@ -1,0 +1,98 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "d25c811480c91547bb10ad682fd8342eb70e15eada2578e8e57e34c8f1789812"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/brief.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "375e5ef521c45b7b19ff140339d81cb12cc041234faa381afe1c4af335aaed29"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/character.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "6b08f2099aa980021eaea346e76d7c39b5ef3b69f60c03c130ae0b156b68f4dd"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/history.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "cdb3d02a1b23a81451a8626b969465aec870d877c10ec7660af190860385d8ef"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/plot.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "f471f1d305a6c9c50902b6fca312994dc6026df517291ae9835e46a4908d3421"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/relation.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "611f3afbdea1eea2c4f2c323d12a39de2c9c7ac38006db19783d7212abb7c26e"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/scene.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "f72ca4ebc3ce39d114d0d6aea5c1d79e22e634ffe4b3eb07e1ed3d00a2938f01"
+    },
+    {
+      "artifact_id": "design-design-scene.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/scene.report.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "389051c87f0c2972134cf6e3cbb21a6999be5e340f5a841f86df4ac4348137ef"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/voice.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "d2246905f879f1483f1f048a25062050f94986214916e9f61731d8a288f85a5a"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/design/world.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "9b08d1f4d676fae488db80d25453e78b750c51e205adfcbfc43728c3d5e756f9"
+    },
+    {
+      "artifact_id": "design-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/revise.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+      "sha256": "47e73e3c8ad17de4ff53276c79f47452ca8a812e5cfdff40008287d6064442ce"
+    }
+  ],
+  "attempt_id": "att-08815b0b73c447a89b074b8df3c557fe",
+  "created_at": "2026-10-27T11:06:09.312397Z",
+  "error": null,
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "pending": null,
+  "project_id": "prj-mine",
+  "record_type": "stage_checkpoint",
+  "resume_of": null,
+  "retry_of": null,
+  "revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
+  "run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "design",
+  "status": "done",
+  "temperature": 0.6,
+  "updated_at": "2026-10-27T11:06:09.324140Z"
+}

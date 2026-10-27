@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"axioms\": [\n    \"死者はこの世で行為しない。残るのは紙と、覚えている者の記憶だけである。\",\n    \"町の公式記録は閉山の年に確定し、以後は書き換えられない。\"\n  ],\n  \"rules\": [\n    {\"id\": \"rule-1\", \"statement\": \"宛名のない郵便物は、局で三年保管したのち焼却する。\",\n     \"cost\": \"保管棚と焼却の手間が局に残り、局員の仕事が増える。\",\n     \"constraint\": \"三年を過ぎたものは原則として残せない。\",\n     \"exception\": \"局長の判断で保管を延ばせる。\",\n     \"exception_condition\": \"差出人か宛先の手がかりが新たに分かったとき。\"},\n    {\"id\": \"rule-2\", \"statement\": \"記録の閲覧には閲覧簿への記名が要る。\",\n     \"cost\": \"誰が何を見たかが町内に残り、隠しごとができなくなる。\",\n     \"constraint\": \"閲覧は平日の日中に限る。\",\n     \"exception\": \"記録係の同行があれば休日も閲覧できる。\",\n     \"exception_condition\": \"記録係が業務として認めたとき。\"},\n    {\"id\": \"rule-3\", \"statement\": \"閉鎖した坑道へは町の許可なく入らない。\",\n     \"cost\": \"許可は掲示板に公示され、近所に知られる。\",\n     \"constraint\": \"単独での立ち入りは認めない。\",\n     \"exception\": \"点検に限り、元坑夫の同行で入れる。\",\n     \"exception_condition\": \"町が点検の必要を認めたとき。\"}\n  ],\n  \"institutions\": [\n    {\"name\": \"尾根野郵便局\", \"role\": \"郵便物の保管と配達。職員は二人\"},\n    {\"name\": \"沢渡町役場支所\", \"role\": \"住民記録と閉山記録の保管\"},\n    {\"name\": \"尾根野銅山記念会\", \"role\": \"坑道の点検と、語り部の集まり\"}\n  ],\n  \"geography\": [\"尾根野\", \"沢渡\"],\n  \"disclosure\": [\n    {\"info\": \"三通の手紙は差出人が同じで、宛名がない\", \"chapter\": \"ch01\"},\n    {\"info\": \"公式記録の死者の欄が零である\", \"chapter\": \"ch02\"},\n    {\"info\": \"トオルは事故の日に坑内へ入っていない\", \"chapter\": \"ch03\"}\n  ],\n  \"notes\": \"\"\n}",
+  "prompt_hash": "9fedbb5ce256a83d",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

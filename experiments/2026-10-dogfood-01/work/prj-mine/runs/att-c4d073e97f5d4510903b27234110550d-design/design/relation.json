@@ -1,0 +1,51 @@
+{
+  "pairs": [
+    {
+      "a": "yoriko",
+      "b": "kuroda",
+      "public": "支所長と記録係の上下関係",
+      "stakes": "頼子の雇用と、黒田の本庁への復任",
+      "conflict": "黒田は下書きを消して零だけを残したいが、頼子は下書きの頁を同じ帳面の裏に残したい"
+    }
+  ],
+  "knowledge": [
+    {
+      "character": "yoriko",
+      "fact": "F-11",
+      "state": "knows"
+    },
+    {
+      "character": "yoriko",
+      "fact": "F-12",
+      "state": "knows"
+    },
+    {
+      "character": "kuroda",
+      "fact": "F-11",
+      "state": "knows"
+    },
+    {
+      "character": "kuroda",
+      "fact": "F-12",
+      "state": "unknown"
+    }
+  ],
+  "changes": [
+    {
+      "pair": [
+        "yoriko",
+        "kuroda"
+      ],
+      "chapter": "ch01",
+      "trigger": "頼子が零の清書を渡して検印を受け、黒田が帰ったあとに下書きを切り取って裏表紙の袋へ挟む。",
+      "after": "表向きは従順な部下のまま、帳面の中にだけ黒田の知らない控えが残る。"
+    }
+  ],
+  "silences": [
+    {
+      "chapter": "ch01",
+      "who": "yoriko",
+      "unsaid_ja": "火鉢で燃やしたのは白紙の端だけで、下書きの本紙は裏表紙の袋にあること"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "before_span_ids": [
+    "span-heizan"
+  ],
+  "created_at": "2026-10-27T11:06:46.140204Z",
+  "end": 1965,
+  "id": "span-15yrs",
+  "label": "閉山から十五年後（1965年）",
+  "precision": "exact",
+  "project_id": "prj-mine",
+  "record_type": "time_span",
+  "schema_version": 1,
+  "start": 1965,
+  "timeframe_id": "tf-showa"
+}

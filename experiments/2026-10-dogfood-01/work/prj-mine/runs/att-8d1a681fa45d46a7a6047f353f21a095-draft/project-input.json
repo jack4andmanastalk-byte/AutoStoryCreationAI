@@ -1,0 +1,157 @@
+{
+  "attempt_id": "att-8d1a681fa45d46a7a6047f353f21a095",
+  "continuation": null,
+  "input_artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/brief.md",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "54a5b5d31912b05db8619f5495d3ced10193f46dddae644abf5c10e877b56e35"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/plan.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "0ac3335e7255492c623f49ef7e47f2362b350b8b5301ca1ae4b6c515004f17c7"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/characters.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "3f77a1a55b675889a1607cbcb4b089c03846382f56288bdd7e8fe2c675fe86c2"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/facts.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "73de8657403b73dbfe0ae381d12b820e6204f119039542c927f0237740b4b939"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "f76177ae528eae9fbc2f91a1959121d70a7a8e276efef5729942bd28a65f07dc"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/locations.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "2c6474c19d08168f4b1b0dd6eb41c4df428bd5c05ba789665656481a1f6f3440"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/suppressions.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/canon/timeline.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "000a2ba06477703efea76da4fca463160be3185d08ce874256648fcefb07440b"
+    },
+    {
+      "artifact_id": "plan-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-plan/revise.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan",
+      "sha256": "2c6d4469cc0ac79151675437328254068c7b98801c6a645d0d2cb8ec963d6d67"
+    },
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "59f4b3e895e177db4bd06ced14f711fec90b4a25c7bfa48be7a0a4b24a7faf9d"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/brief.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "375e5ef521c45b7b19ff140339d81cb12cc041234faa381afe1c4af335aaed29"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/character.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "6b08f2099aa980021eaea346e76d7c39b5ef3b69f60c03c130ae0b156b68f4dd"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/history.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "cdb3d02a1b23a81451a8626b969465aec870d877c10ec7660af190860385d8ef"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/plot.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "ace2e82dd94a4021df0a38345cace15f110dc5db2f0c7f881af2db88ea2d69ef"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/relation.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "8fcdb81553d862ce0ebf3000878552c6012d66c924ee0d020219b42ae7b2a564"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/scene.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "273234ab213acde2ed0261a26b1a31d1820bc3ae85fc4e4043fa87978b8d341a"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/voice.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "d2246905f879f1483f1f048a25062050f94986214916e9f61731d8a288f85a5a"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/design/world.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "bb7107cf02317db8fd7c89d16ae80a24d31f50912316735569e43b31375148a9"
+    },
+    {
+      "artifact_id": "design-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-c0ba3d7f1ee04b0f956bba591d29acb4-design/revise.json",
+      "producer_run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "sha256": "5f8c66cc222f30c7ecb750a52ee9bc33e7057c8c284dac0a8b1493d525948412"
+    }
+  ],
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "project_id": "prj-mine",
+  "resume_of": null,
+  "resume_source_responses_sha256": null,
+  "retry_of": null,
+  "revision_id": "rev-36f3674476494f79940e620b4d0acb7d",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 3,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉山した銅山の町。最後の坑道に残された、宛名のない手紙を届ける郵便配達員の話。手紙は三通あり、差出人はいずれも同じ人物。町の公式記録と、年寄りたちの記憶は食い違っている。",
+    "target_chars_per_chapter": 900,
+    "title": "宛名のない手紙"
+  },
+  "spec_sha256": "5fcf82478e477264ef6ee2814af61f34dbcfd959bf8056523d7f39f4ab59da31",
+  "stage": "draft"
+}

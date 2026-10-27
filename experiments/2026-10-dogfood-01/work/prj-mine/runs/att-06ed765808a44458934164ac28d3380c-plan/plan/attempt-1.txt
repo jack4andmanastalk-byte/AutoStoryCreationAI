@@ -1,0 +1,48 @@
+{
+  "brief": {
+    "theme_ja": "記録に残らないものを、誰が覚えているのか。",
+    "protagonist_ja": "郵便配達員の佐伯スミ（34）。届け先のないものを届けたい。町の記録が書き換えられるのを恐れている。",
+    "setting_ja": "閉山から十五年たった銅山の町・尾根野と、麓の駅町・沢渡。昭和の半ばすぎ。",
+    "tone_ja": "乾いた静けさ。感情は説明せず、手紙と記録の細部に預ける。",
+    "turn_ja": "公式記録では死者が零なのに、手紙の差出人は十五年前に死んだ男だと分かる。",
+    "ending_ja": "記録は直らない。スミが三通目を届けた相手だけが、事実を覚えている。"
+  },
+  "characters": [
+    {"id": "sumi", "name": "佐伯スミ", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "尾根野", "age_at_start": 34,
+     "birthday_day": 40, "knows": ["F-01"], "notes": "郵便配達員。町の郵便局は一軒しかない"},
+    {"id": "gen", "name": "大庭源太郎", "aliases": ["源じい"], "status": "alive",
+     "status_since": "ch01", "location": "尾根野", "age_at_start": 78,
+     "birthday_day": 12, "knows": [], "notes": "元坑夫。坑道の最後を知る数少ない一人"},
+    {"id": "aoi", "name": "野々宮あおい", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "沢渡", "age_at_start": 26,
+     "birthday_day": 200, "knows": [], "notes": "沢渡の町役場支所の記録係"},
+    {"id": "toru", "name": "三村トオル", "aliases": ["トオル"], "status": "dead",
+     "status_since": "ch01", "location": "尾根野", "age_at_start": 30,
+     "birthday_day": 90, "knows": [], "notes": "三通の手紙の差出人。十五年前に死んだ"}
+  ],
+  "facts": [
+    {"id": "F-01", "summary": "三通の手紙はどれも差出人が同じで、宛名がない",
+     "terms": ["差出人"], "setup": "ch01"},
+    {"id": "F-02", "summary": "公式記録は閉山時の事故死者を零と書いている",
+     "terms": ["零"], "setup": "ch02"},
+    {"id": "F-03", "summary": "トオルは事故の日に坑道へ入っていない",
+     "terms": ["入坑記録"], "setup": "ch03"}
+  ],
+  "locations": [
+    {"id": "尾根野", "travel_days": {"沢渡": 2}},
+    {"id": "沢渡", "travel_days": {"尾根野": 2}}
+  ],
+  "timeline": {
+    "chapters": [
+      {"id": "ch01", "day": 1, "location": "尾根野"},
+      {"id": "ch02", "day": 3, "location": "沢渡"},
+      {"id": "ch03", "day": 5, "location": "尾根野"}
+    ]
+  },
+  "foreshadowing": [
+    {"id": "fs-001", "description": "切手の貼られていない手紙", "setup": "ch01", "payoff": "ch03"},
+    {"id": "fs-002", "description": "源じいが言いよどむ理由", "setup": "ch01", "payoff": "ch02"},
+    {"id": "fs-003", "description": "零と書かれた死者の欄", "setup": "ch02", "payoff": "ch03"}
+  ]
+}

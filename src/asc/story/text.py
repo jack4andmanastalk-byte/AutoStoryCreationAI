@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 MARKER_RE = re.compile(r"\{\{\s*([a-z_]+)\s*:\s*([^}]*)\}\}")
+#: Any ``{{...}}`` block, for the reading copy where markers are not prose.
+MARKER_BLOCK_RE = re.compile(r"\{\{[^{}]*\}\}")
 DIALOGUE_RE = re.compile(r"「([^」]*)」")
 QUOTED_RE = re.compile(r"「[^」]*」|『[^』]*』")
 
@@ -203,3 +205,15 @@ def load_chapters(paths: list[tuple[str, Path]], names: dict[str, str]) -> list[
         chapter.mentions = find_mentions(text, cid, names)
         chapters.append(chapter)
     return chapters
+
+def without_markers(text: str) -> str:
+    """Return the prose only: markers dropped, paragraphs left empty removed.
+
+    Markers sit inside sentences (``白いままだった。{{learn: a fact=F-01}}``) and
+    on their own line at the top of a chapter.  Removing them must not leave a
+    blank paragraph behind, because a reading copy is read, not audited.  The
+    audited text keeps its markers; this is only for display.
+    """
+    stripped = MARKER_BLOCK_RE.sub("", text)
+    paragraphs = [part.strip() for part in stripped.split("\n\n")]
+    return "\n\n".join(part for part in paragraphs if part)

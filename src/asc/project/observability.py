@@ -159,14 +159,17 @@ def build_actions(
         if pending_ready:
             actions.append(_action(
                 f"{base} resume {project_id}",
-                "a response file exists; resume to continue",
+                "a response file exists; resume (or relay submit) to continue",
                 name="resume", stage=waiting_stages[0],
             ))
         else:
+            # The standard flow is the relay: export the waiting prompt, answer
+            # it, then `relay submit` (ingest + resume) in one step.
             actions.append(_action(
-                f"{base} pending {project_id}",
-                "write the pending response file, then resume",
-                name="pending", stage=waiting_stages[0],
+                f"{base} relay export {project_id}",
+                "a prompt is waiting for an operator answer; export it, then "
+                "submit the answer (ingest + resume)",
+                name="relay export", stage=waiting_stages[0],
             ))
     if stale_bindings:
         command = f"{base} world bind {project_id}"
@@ -224,8 +227,9 @@ def build_actions(
             ))
     if state == "not_started":
         actions.append(_action(
-            f"{base} run {project_id} --provider command --command <provider command>",
-            "no stage has started yet",
+            f"{base} run {project_id}",
+            "no stage has started yet; the default provider records the prompt "
+            "in the project relay directory",
             name="run",
         ))
     return actions

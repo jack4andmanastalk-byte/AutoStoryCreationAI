@@ -6,7 +6,7 @@ WORK    ?= 120
 # skills/harness need PyYAML: prefer the virtualenv when it exists
 RUN     := $(shell [ -x $(BIN)/python ] && echo $(BIN)/python || echo $(PYTHON))
 
-.PHONY: help setup test data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate gamelog-check two-stage probe-gamelog skills-check protocol-check ci clean distclean
+.PHONY: help setup test quickstart-check data data-aozora data-narou pull-datasets report controls-propose research research-check audit evaluate experiment pilot-model blind-pairs plan design story story-s2 story-s3 baseline brief world history character relation plot scene voice revise branch adaptation calibrate gamelog-check two-stage probe-gamelog skills-check protocol-check ci clean distclean
 
 help: ## show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -194,6 +194,9 @@ ci: ## run exactly what `research-check` runs (catalog, tests, demo artifacts)
 		--baseline harness/cases/demo-baseline/text --canon harness/cases/demo/canon \
 		--rubric harness/rubrics/story-quality-v0.yaml --patterns harness/patterns.yaml \
 		--judge-fixture harness/fixtures/judgements-demo.json --out build/ci/eval --report-only >/dev/null
+
+quickstart-check: ## verify the standard flow and the relay round with the scripted fixture
+	$(RUN) -m pytest tests/test_standard_flow.py tests/test_relay_round.py tests/test_render_reader.py -q
 
 gamelog-check: ## check the scripted Stage A game log against canon/plot/scenes
 	$(RUN) scripts/check_gamelog.py \

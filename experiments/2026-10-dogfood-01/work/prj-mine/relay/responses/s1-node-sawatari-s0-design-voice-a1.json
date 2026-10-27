@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"viewpoint\": {\n    \"person\": \"third\",\n    \"character\": \"梶原頼子\",\n    \"aliases\": [\n      \"頼子\"\n    ],\n    \"pronouns\": []\n  },\n  \"narrator\": {\n    \"knows_ja\": \"梶原頼子が夜の支所で見聞きしたことと、手の動きだけを知る。十五年後に誰がその袋を開けるかは知らない。\"\n  },\n  \"sample\": \"竹の定規を綴じ代に当てると、乾いた紙が短い音を立てた。火鉢の炭はもう白くなりかけている。\",\n  \"banned\": [\n    {\n      \"id\": \"b1\",\n      \"pattern\": \"きっと未来の誰かが\",\n      \"message_ja\": \"後年の回収を語り手が先回りして説明しないため。\"\n    }\n  ],\n  \"notes\": \"\"\n}",
+  "prompt_hash": "46644d3ba993b6a9",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

@@ -1,0 +1,93 @@
+{
+  "attempt_id": "att-e70230e37375489b9569cea27ed5b5d5",
+  "continuation": {
+    "parent_chapter_count": 3,
+    "parent_revision_id": "rev-36f3674476494f79940e620b4d0acb7d",
+    "parent_runs": {
+      "design": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+      "draft": "att-8d1a681fa45d46a7a6047f353f21a095-draft",
+      "plan": "att-c0ba3d7f1ee04b0f956bba591d29acb4-plan"
+    },
+    "reused_chapters": [
+      "ch01",
+      "ch02",
+      "ch03"
+    ]
+  },
+  "input_artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/brief.md",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "36f4d9607b63e1adec93a9744b6c658f36ccd1ff9fa91f00b2efb42a3419d96d"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/plan.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "661c4253ee2afd25ccc09331579218a5e77fbe4380434b9e3835dff1d13cbb06"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/characters.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "3f77a1a55b675889a1607cbcb4b089c03846382f56288bdd7e8fe2c675fe86c2"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/facts.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "530742691fdc945cd474756b382d56eeccc76239b6ff695698912249aca930a4"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "6050f67c6061f046605b0843d1fde5144072ed98ab5203f7d281ca3c55ce0249"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/locations.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "2c6474c19d08168f4b1b0dd6eb41c4df428bd5c05ba789665656481a1f6f3440"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/suppressions.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-767820a70d7e4258ba715535ce020b7b-plan/canon/timeline.json",
+      "producer_run_id": "att-767820a70d7e4258ba715535ce020b7b-plan",
+      "sha256": "3b71ffebb83761267456d032e5ed3374a5a2c845df77c08033e03c329d871566"
+    }
+  ],
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "project_id": "prj-mine",
+  "resume_of": null,
+  "resume_source_responses_sha256": null,
+  "retry_of": null,
+  "revision_id": "rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 4,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉山した銅山の町。最後の坑道に残された、宛名のない手紙を届ける郵便配達員の話。手紙は三通あり、差出人はいずれも同じ人物。町の公式記録と、年寄りたちの記憶は食い違っている。",
+    "target_chars_per_chapter": 900,
+    "title": "宛名のない手紙"
+  },
+  "spec_sha256": "1c756e9620e93f437079c8233bb7dfad59df21f1fbed841623c9b8cc2a31cb79",
+  "stage": "design"
+}

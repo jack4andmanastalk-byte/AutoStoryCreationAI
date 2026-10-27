@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"axioms\": [\n    \"一度綴じた閉山記録の本欄は後から書き換えられない。\",\n    \"帳面の裏表紙の袋は備品管理の外にあり、引き継ぎの職員だけが開ける。\"\n  ],\n  \"rules\": [\n    {\n      \"id\": \"rule-s1\",\n      \"statement\": \"本庁へ送る閉山記録は支所長の検印で確定する。\",\n      \"cost\": \"検印の後は訂正印も許されない。\",\n      \"constraint\": \"提出期限の翌朝には控えを残さず綴じる。\",\n      \"exception\": \"製本の当て紙として裏表紙の袋に入れる紙は検印の対象外になる。\",\n      \"exception_condition\": \"記録係が自分の判断で袋に収めたとき。\"\n    }\n  ],\n  \"institutions\": [\n    {\n      \"name\": \"沢渡町役場支所\",\n      \"role\": \"閉山記録の清書と保管\"\n    }\n  ],\n  \"geography\": [\n    \"沢渡\",\n    \"尾根野\"\n  ],\n  \"disclosure\": [\n    {\n      \"info\": \"閉山時の事故死者欄は零と清書し直された\",\n      \"chapter\": \"ch01\"\n    },\n    {\n      \"info\": \"切り取られた下書きの控えが閲覧簿の裏表紙の袋に挟まれている\",\n      \"chapter\": \"ch01\"\n    }\n  ],\n  \"notes\": \"\"\n}",
+  "prompt_hash": "376be98c5107a363",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

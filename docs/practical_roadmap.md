@@ -122,3 +122,73 @@
 
 新しいArenaチャットで実作業を始める場合は、
 [`practical_start_prompt.md`](practical_start_prompt.md) の開始プロンプトを使う。
+
+## 7. 実施記録
+
+### U-01 標準自動創作フローを一つに決め、quickstart を作る（2026-10-27）
+
+- 決定: 標準入口は `scripts/story_project.py`（創作project）。provider の省略時は
+  Arena relay（`<project>/relay`）。`run_pipeline.py` と `run_twostage.py` は
+  凍結した実験条件の再実行経路として残す。
+- 文書: [`standard_flow.md`](standard_flow.md)（決定）、[`quickstart.md`](quickstart.md)（手順）。
+- 実装: `--provider arena`（および既定化）、`relay export|status|ingest`、
+  応答待ち時の PROMPTS.md 自動更新、完成時の `Manuscript:` 表示、
+  relay タグの 8 hex 化（4 hex が実際に衝突し、応答が別 request に付いた）。
+- 回帰: `tests/test_standard_flow.py`、`tests/test_relay_prompts.py` の衝突テスト、
+  `make quickstart-check`。
+- 確認: 固定台本で premise → 3章 → render まで通した（実応答ではない）。
+  記録と摩擦は [`experiments/2026-10-u01-standard-flow-t01/`](../experiments/2026-10-u01-standard-flow-t01/note.md)。
+- 残り: 実応答での dogfood（U-03）。relay の一括書き出しと pending 表示の統一（U-02）。
+  原稿の章見出しとマーカー表示（U-08）。L2/L3 は `frozen_not_measured` のまま。
+
+### U-02 Arena relay の一巡支援を整える（2026-10-27）
+
+- 追加: `relay submit`（取り込み + 再開）、`relay status` の1巡報告（`asc-relay-round-v1`）、
+  終了コード `0` 完了 / `3` 応答待ち / `2` 失敗、`status` の `Relay:` 行。
+- 変更: 待機中の next action を `relay export` に統一（`status` / `doctor` 共通）。
+- 安全側: 完成済み・失敗済みの作品への `submit` は取り込まない（完成→`continue`/`revise`、
+  失敗→`--retry-failed`）。回答済み要求は書き出さず、保存済み応答は書き換えない。
+- 回帰: `tests/test_relay_round.py`、`make quickstart-check`。
+- 確認: 固定台本で12ラウンド（各1コマンド）で完成。要求数12・応答数12のまま。
+  記録は [`experiments/2026-10-u02-relay-round-t01/`](../experiments/2026-10-u02-relay-round-t01/note.md)。
+- 残り: 往復回数そのもの（12）は減っていない。1応答で複数成果物を返す契約変更は、
+  検査の粒度が変わるため実運用で必要性が出てから扱う。実応答の確認は U-03。
+
+### U-03 実応答 dogfood と上位摩擦の解消（2026-10-27）
+
+- 実施: 『宛名のない手紙』（3章・目安900字）を題材と条件だけ人間が与え、
+  世界・歴史・人物・関係・物語構造・場面・文体・本文の14件を Arena セッション内の
+  実応答で生成し、relay で逐語的に取り込んだ（台本ではない）。14ラウンドで complete、
+  `doctor` findings 0。記録は [`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)
+  （摩擦ログ F-18〜F-26）。
+- 解消した摩擦:
+  - **F-18**（導線）: `Next request` の stage 二重表示（`draft: draft:ch02`）を修正。
+  - **F-19**（導線）: `relay/index.json` は export 時点の控えで、待ちの正は `relay status` と明記。
+  - **F-23**（本文/プロンプト）: 場面設計で修復1往復の原因になった `foreshadows.planted` の条件
+    （「canon の布石 ID は書かない、新規がなければ `[]`」）を `prompts/design-scene.md`
+    （v1.0 → **v1.1**）と schema に明記。人物の「口調サンプル30字以上」は既に依頼文にあったため変更せず。
+  - **F-22**（本文/表示）: `draft.json` に記録されていた字数目安からの外れ（`warnings_ja`）を、
+    完成後の `relay status` / `relay submit` に `Warnings:` として表示（失敗にはしない）。
+  - **F-17 / U-08**（編集/読書）: `render --reader` を追加。既定の `render`（検査マーカー込みの正本）は
+    1バイトも変えず、`--reader` のときだけ章見出し（`## 第1章`）を付け `{{…}}` マーカーを外す。
+- 残り: 単体3章は実応答で完走したが、continuation（第4章追加）と入れ子/世界の実応答 dogfood、
+  および設計1文書・1章単位の失敗回復（U-04）が次。L2/L3 は `frozen_not_measured` のまま。
+
+### U-04 / U-05 部分改訂・設計1文書回復・第4章追加の実応答 dogfood（2026-10-27）
+
+- 修正（**F-27**）: `revise` / `branch` で再生成があるとき、`--provider` 省略で既定の Arena relay を使うように統一（従来は `--provider scripted/command` を要求して終了コード 2）。
+- 修正（**F-28**）: 設計が fail-open で `unresolved` のまま完走したとき、`relay status` / `relay submit` の `Warnings:` に文書名と `revise <id> --design <doc>` の回復コマンドを表示。
+- 実応答での確認（[`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)、計27応答）:
+  1. `revise prj-mine --chapter ch01`: 1ラウンドで ch01 だけ再生成（簡体字「开」→「開」、647→807字）。ch02/ch03 の SHA-256 は不変。
+  2. `continue prj-mine --add-chapters 1`: 第4章（沢渡の支所での欄外注記）を追加し、ch01〜ch03 はバイト単位で持ち越し。
+  3. `revise prj-mine --design scene`: `unresolved` だった `scene` 1文書だけを1ラウンドで再生成し、全4章の本文を保ったまま `doctor` findings 0 に回復（[`manuscript.4ch.reader.md`](../experiments/2026-10-dogfood-01/manuscript.4ch.reader.md)）。
+- 残り: 入れ子（親子 `compose`）と共有 world の実応答確認（U-06 / U-07）、`continue` で章数に依存しない設計書を持ち越す改善（F-29）。
+
+### U-06 入れ子作品（子作品の追加・生成・採用・編纂）の実応答 dogfood（2026-10-27）
+
+- 修正（**F-30**）: `relay status` に `--node` を追加し、子ノードの待ち状態と次のコマンドを親と区別して確認できるようにした。
+- 修正（**F-31**）: 子ノードを改訂したあと親リンクが旧版を指しているとき、子の round 報告の `Warnings:` に `adopt-child <project> <link>` を案内。
+- 修正（**F-32**）: `compose --reader` を追加。親は `## 第N章`、子は `### 第N章` の階層見出しを付け、全作品の `{{…}}` 監査マーカーを外した読書用の編纂原稿を出力（既定の `compose` と `artifacts/` の正本は不変）。
+- 実応答での確認（[`experiments/2026-10-dogfood-01/collection.reader.md`](../experiments/2026-10-dogfood-01/collection.reader.md)、計39応答・2ノード）:
+  - 親『宛名のない手紙』（4章）の下に、子『切り取られた頁』（1章・713字、閉山当夜の沢渡支所）を `add-child` → 実応答12ラウンドで完走 → `adopt-child` → `compose` / `compose --reader`。
+  - 祖先の canon 要約（`asc-context-packet-pre1`）だけが子の依頼文に入り、親の本文全文が混入しないことを確認。`doctor` findings 0。

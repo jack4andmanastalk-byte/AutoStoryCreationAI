@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "practice": "宛名のない保管郵便は三年で焼却、閲覧簿の写しには欄外注記のみ許される"
+  },
+  "content_version": "8448f262d6eea0899ee8495be26b542f1246fe25d20bcc55bce3c63e1cbc5f47",
+  "created_at": "2026-10-27T11:06:47.085490Z",
+  "culture_id": "cul-post",
+  "id": "cs-15yrs",
+  "previous_state_id": "cs-heizan",
+  "project_id": "prj-mine",
+  "record_type": "culture_state",
+  "region_ids": [
+    "reg-oneno",
+    "reg-sawatari"
+  ],
+  "schema_version": 1,
+  "valid_span_id": "span-15yrs"
+}

@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-10-27T11:06:46.269390Z",
+  "description": "尾根野と沢渡を含む山間の郡。",
+  "id": "reg-gun",
+  "name": "銅山郡",
+  "parent_region_id": null,
+  "project_id": "prj-mine",
+  "record_type": "region",
+  "schema_version": 1,
+  "valid_span_id": null
+}

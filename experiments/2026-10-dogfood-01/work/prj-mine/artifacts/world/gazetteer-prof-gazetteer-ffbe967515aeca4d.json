@@ -1,0 +1,80 @@
+{
+  "content_version": "ffbe967515aeca4de65a237836e1a9071b6eda3ec21dded5b9b699794266d284",
+  "kind": "gazetteer",
+  "output": "artifacts/world/gazetteer-prof-gazetteer-ffbe967515aeca4d.md",
+  "profile": {
+    "content_version": "54ae349bf5defac54a51e8d560784d4c3daf731d7a6c24e692bdfcb4912805b6",
+    "culture_id": null,
+    "id": "prof-gazetteer",
+    "kind": "gazetteer",
+    "node_id": null,
+    "project_id": "prj-mine",
+    "record_type": "compilation_profile",
+    "region_id": "reg-gun",
+    "schema_version": 1,
+    "timeframe_id": null,
+    "title": "銅山郡地誌（尾根野・沢渡）"
+  },
+  "profile_id": "prof-gazetteer",
+  "project_id": "prj-mine",
+  "record_type": "asc_world_compilation",
+  "schema_version": 1,
+  "source_references": [
+    {
+      "content_version": "361b74cd49fea31a19a25444e3cc610a4f46f3cd9ae9df051d7dd965b8b39731",
+      "id": "cul-post",
+      "record_type": "culture"
+    },
+    {
+      "content_version": "8448f262d6eea0899ee8495be26b542f1246fe25d20bcc55bce3c63e1cbc5f47",
+      "id": "cs-15yrs",
+      "record_type": "culture_state"
+    },
+    {
+      "content_version": "9fb289f55a683a857466bf6cb9f05a933808028ff30f0721018267c3c4422e2b",
+      "id": "cs-heizan",
+      "record_type": "culture_state"
+    },
+    {
+      "content_version": "26917781acb96cda2dd8adec9882acd9800eaacc804f14a5285c6aab0e61f3e0",
+      "id": "reg-gun",
+      "record_type": "region"
+    },
+    {
+      "content_version": "f779801e9e379c8dc29e98606c368227cdd5fbcb602e09d9cf0d6665283a4d2f",
+      "id": "reg-oneno",
+      "record_type": "region"
+    },
+    {
+      "content_version": "5f735a762dff782371913c301a8c4f66c6ed83c3e7daf8eaab8a14f5dc166d02",
+      "id": "reg-sawatari",
+      "record_type": "region"
+    },
+    {
+      "content_version": "39a496c67c126e0a4eb2ead37c8e03d92cf33710d89be6091ad9e0771ab37c9f",
+      "id": "sp-toge",
+      "record_type": "spatial_relation"
+    },
+    {
+      "content_version": "e42466d4b56ad137f3e202efe3282c885841db7171394e197b876d4290b114ac",
+      "id": "tf-showa",
+      "record_type": "time_frame"
+    },
+    {
+      "content_version": "8e83d58f50bfd5ed43003c326528d1560bb4c0dd3d03d39eaeda7a25a87164c4",
+      "id": "span-15yrs",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "c797472ee4bfad58ebb803703d0ce1a0b7cb02c4d70b1c1f5c3ed5453cc61412",
+      "id": "span-heizan",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "103a2458e83ae8ca6c25cff3001965583785caaf432b503be30c23b1f5674c86",
+      "id": "wcanon-letters",
+      "record_type": "world_canon_entry"
+    }
+  ],
+  "text_sha256": "f14ff514cd615846a0f8a47f9e96909434337b3b5ad6cdf645e3c9b353d33efa"
+}

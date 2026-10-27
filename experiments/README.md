@@ -32,6 +32,12 @@ experiments/<id>/
   コミットします。実行時にできる `bundle/` は run 出力なのでコミットしません。
   将来 Arena リレーで実応答を保存する場合は、同じ `experiments/<id>/` の `relay/` に
   置き、gitignored な `runs/` / `build/` に依存させないでください。
+* 例外: [`2026-10-dogfood-01/`](2026-10-dogfood-01/) は標準フロー
+  （`scripts/story_project.py`）を**実応答**で1作品ぶん回した dogfood です。作品ディレクトリ
+  `work/prj-mine/`（`project.json`・`nodes/`・`relay/`）と `manuscript.md` をコミットし、
+  `runs/` は gitignore のままにします。応答は `work/prj-mine/relay/responses/` に逐語で残り、
+  `runs/` に依存しません。台本（`scripted`）ではないので、`note.md` の「限界」に
+  品質を主張しない旨を明記しています。
 * 同じ `id` を再利用しないでください。条件を変えたら新しい `id` にします
   （例: `2026-10-s1-vs-s0-a`、`2026-10-s1-vs-s0-b`）。
 

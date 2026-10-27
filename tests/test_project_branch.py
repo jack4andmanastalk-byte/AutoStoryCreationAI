@@ -303,14 +303,14 @@ def test_revise_and_branch_cli(tmp_path: Path):
     assert bad.returncode == 2
     assert "unknown chapter" in bad.stderr
 
-    # Regenerating something needs a provider; a pure copy does not.
-    missing_provider = subprocess.run(
+    # A pure copy does not touch any provider.
+    missing_script = subprocess.run(
         [sys.executable, str(SCRIPT), "--root", str(tmp_path), "revise", "prj-cli",
-         "--chapter", "ch01"],
+         "--chapter", "ch01", "--provider", "scripted"],
         capture_output=True, text=True, check=False,
     )
-    assert missing_provider.returncode == 2
-    assert "pass --provider" in missing_provider.stderr
+    assert missing_script.returncode == 2
+    assert "--script" in missing_script.stderr
     copied = subprocess.run(
         [sys.executable, str(SCRIPT), "--root", str(tmp_path), "revise", "prj-cli"],
         capture_output=True, text=True, check=False,

@@ -1,0 +1,19 @@
+{
+  "content_version": "ec171c70078271fddaa9eb7d8dcfa0a5d847d5f5ffe2fe6d6efd8ce32489efe3",
+  "created_at": "2026-10-27T11:06:47.481311Z",
+  "culture_state_ids": [
+    "cs-heizan"
+  ],
+  "id": "bind-sawatari",
+  "node_id": "node-sawatari",
+  "project_id": "prj-mine",
+  "record_type": "work_world_binding",
+  "region_ids": [
+    "reg-sawatari"
+  ],
+  "revision_id": "rev-60a71ed1795342f091ed718fc773e986",
+  "schema_version": 1,
+  "time_span_ids": [
+    "span-heizan"
+  ]
+}

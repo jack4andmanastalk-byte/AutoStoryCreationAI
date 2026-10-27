@@ -1,0 +1,34 @@
+{
+  "copied": [
+    "design/brief.json",
+    "design/character.json",
+    "design/history.json",
+    "design/plot.json",
+    "design/relation.json",
+    "design/voice.json",
+    "design/world.json"
+  ],
+  "kind": "revise",
+  "regenerated": [
+    "design/scene.json"
+  ],
+  "schema": "project-revise-v1",
+  "source_node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "source_revision_id": "rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1",
+  "source_runs": {
+    "design": "att-e70230e37375489b9569cea27ed5b5d5-design",
+    "draft": "att-bfd9558e4ab0468baae4fabc4b158747-draft",
+    "plan": "att-767820a70d7e4258ba715535ce020b7b-plan"
+  },
+  "source_sha256": {
+    "design/brief.json": "375e5ef521c45b7b19ff140339d81cb12cc041234faa381afe1c4af335aaed29",
+    "design/character.json": "6b08f2099aa980021eaea346e76d7c39b5ef3b69f60c03c130ae0b156b68f4dd",
+    "design/history.json": "cdb3d02a1b23a81451a8626b969465aec870d877c10ec7660af190860385d8ef",
+    "design/plot.json": "f471f1d305a6c9c50902b6fca312994dc6026df517291ae9835e46a4908d3421",
+    "design/relation.json": "611f3afbdea1eea2c4f2c323d12a39de2c9c7ac38006db19783d7212abb7c26e",
+    "design/voice.json": "d2246905f879f1483f1f048a25062050f94986214916e9f61731d8a288f85a5a",
+    "design/world.json": "9b08d1f4d676fae488db80d25453e78b750c51e205adfcbfc43728c3d5e756f9"
+  },
+  "stage": "design",
+  "unchanged_bytes": true
+}

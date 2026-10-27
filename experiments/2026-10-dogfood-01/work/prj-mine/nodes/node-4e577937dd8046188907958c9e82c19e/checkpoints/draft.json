@@ -1,0 +1,63 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "draft-draft.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/draft.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "b9c14c4929377b13fafd4850bb6524062a9f6c8e76f3dce4d8204aaa006090b2"
+    },
+    {
+      "artifact_id": "draft-text-ch01.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/text/ch01.md",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "b8cfbb3be4dd33e79d40a768d96d1a37e2d01be02b71ad8e4021c528d2e16118"
+    },
+    {
+      "artifact_id": "draft-text-ch02.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/text/ch02.md",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "ed424726d65afbc4a123ff4856c7832e1cc492333a499a30c17171a3e0ec07c3"
+    },
+    {
+      "artifact_id": "draft-text-ch03.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/text/ch03.md",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "0a8273208b016f0a03c04b7c9810f86c314fda0bd0e87de5fb51aaeff7f913e2"
+    },
+    {
+      "artifact_id": "draft-text-ch04.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/text/ch04.md",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "7634359e52c6d89df58738e114939dc5213bd1dc42083bb113174f12ddcb831a"
+    },
+    {
+      "artifact_id": "draft-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-draft/revise.json",
+      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+      "sha256": "fe26ad583219c4ba6a4ddbbfb474e24091b95a3ee7d5fddc00014c61c4e3e641"
+    }
+  ],
+  "attempt_id": "att-08815b0b73c447a89b074b8df3c557fe",
+  "created_at": "2026-10-27T11:06:09.325937Z",
+  "error": null,
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "pending": null,
+  "project_id": "prj-mine",
+  "record_type": "stage_checkpoint",
+  "resume_of": null,
+  "retry_of": null,
+  "revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
+  "run_id": "att-08815b0b73c447a89b074b8df3c557fe-draft",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "draft",
+  "status": "done",
+  "temperature": 0.8,
+  "updated_at": "2026-10-27T11:06:09.335632Z"
+}

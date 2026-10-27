@@ -1,0 +1,35 @@
+{
+  "content": {
+    "id": "F-01",
+    "setup": "ch01",
+    "summary": "三通の手紙はどれも差出人が同じで、宛名がない",
+    "terms": [
+      "差出人"
+    ]
+  },
+  "content_version": "103a2458e83ae8ca6c25cff3001965583785caaf432b503be30c23b1f5674c86",
+  "created_at": "2026-10-27T11:07:23.961382Z",
+  "id": "wcanon-letters",
+  "project_id": "prj-mine",
+  "record_type": "world_canon_entry",
+  "schema_version": 1,
+  "scope": {
+    "kind": "region",
+    "reference_id": "reg-oneno"
+  },
+  "source": {
+    "artifact": {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-5eb3ffd445f2404ca3ffa65742c06539-plan/canon/facts.json",
+      "producer_run_id": "att-5eb3ffd445f2404ca3ffa65742c06539-plan",
+      "sha256": "530742691fdc945cd474756b382d56eeccc76239b6ff695698912249aca930a4"
+    },
+    "json_pointer": "/facts/0",
+    "node_id": "node-4e577937dd8046188907958c9e82c19e",
+    "revision_id": "rev-5f5c678e61054d6193be2f09716d3466"
+  },
+  "subject": "宛名のない三通の手紙",
+  "supersedes_id": null,
+  "valid_span_id": "span-15yrs"
+}

@@ -1,0 +1,30 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "character",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "character_ref": "characters:gen",
+        "check": "voice_fixed",
+        "message_ja": "口調サンプルが短い（30 字以上）。会話を書き写す。",
+        "severity": "medium"
+      },
+      {
+        "character_ref": "characters:toru",
+        "check": "voice_fixed",
+        "message_ja": "口調サンプルが短い（30 字以上）。会話を書き写す。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

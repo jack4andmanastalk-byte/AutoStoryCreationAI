@@ -1,0 +1,111 @@
+{
+  "attempts": 9,
+  "by_severity": {
+    "low": 1,
+    "medium": 3
+  },
+  "docs": {
+    "brief": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "character": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "history": {
+      "attempts": 2,
+      "by_severity": {
+        "low": 1,
+        "medium": 3
+      },
+      "checks_failed": 2,
+      "findings": 4,
+      "first_attempt_by_severity": {
+        "low": 1,
+        "medium": 3
+      },
+      "first_attempt_checks_failed": 2,
+      "first_attempt_findings": 4,
+      "repairs": 1,
+      "status": "unresolved"
+    },
+    "plot": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "relation": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "scene": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "voice": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "world": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    }
+  },
+  "findings": 4,
+  "first_attempt_findings": 4,
+  "missing": [],
+  "repairs": 1,
+  "task": "node-sawatari",
+  "unresolved": [
+    "history"
+  ]
+}

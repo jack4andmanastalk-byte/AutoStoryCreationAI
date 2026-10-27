@@ -1,0 +1,480 @@
+{
+  "answers_file": "experiments/2026-10-dogfood-01/answers.txt (last round only; earlier rounds were overwritten)",
+  "child_node": {
+    "adopted_revision_id": "rev-60a71ed1795342f091ed718fc773e986",
+    "chapters": 1,
+    "chars_body": 713,
+    "link_id": "link-sawatari",
+    "node_id": "node-sawatari",
+    "rounds": 12,
+    "title": "切り取られた頁"
+  },
+  "claims_not_made": [
+    "quality",
+    "interest",
+    "L2/L3",
+    "rates",
+    "recurrence rate",
+    "causal effect"
+  ],
+  "collection": {
+    "path": "experiments/2026-10-dogfood-01/collection.md",
+    "reader_path": "experiments/2026-10-dogfood-01/collection.reader.md",
+    "reader_sha256": "47e44cfc086e18c2d5a422b1437e1eacbbdab0bb7f9c5483b0e992c3294621fd",
+    "sha256": "2a0d839c2fa36f95e2985d280134ad9b1a5294f68f40776dc482ebf993da4623"
+  },
+  "date": "2026-10-27",
+  "doctor": {
+    "errors": 0,
+    "findings": 0,
+    "info": 0,
+    "interrupted": 0,
+    "nodes": 2,
+    "runs": 18,
+    "warnings": 0
+  },
+  "entry_point": "scripts/story_project.py init|run|relay status|relay submit|render|doctor",
+  "experiment": "2026-10-dogfood-01",
+  "final": {
+    "answered": 39,
+    "exit": 0,
+    "next_command": "python3 scripts/story_project.py --root <root> render prj-mine --out <root>/prj-mine/manuscript.md",
+    "pending": 0,
+    "requests": 39,
+    "stages": {
+      "design": "done",
+      "draft": "done",
+      "plan": "done"
+    },
+    "state": "complete"
+  },
+  "friction": [
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
+        "docs/quickstart.md",
+        "docs/standard_flow.md"
+      ],
+      "id": "F-18",
+      "status": "fixed",
+      "summary": "the stage name was printed twice in Next request (draft: draft:ch02)"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "docs/quickstart.md",
+        "docs/standard_flow.md",
+        "docs/project.md"
+      ],
+      "id": "F-19",
+      "status": "documented",
+      "summary": "relay/index.json keeps the last request in pending after it is answered; the live answer is relay status"
+    },
+    {
+      "area": "flow",
+      "id": "F-20",
+      "status": "observed",
+      "summary": "each round needs the full request prompt (3-5KB for design rounds)"
+    },
+    {
+      "area": "flow",
+      "id": "F-21",
+      "status": "no change needed",
+      "summary": "one overwritten paste file per round is enough; submit is idempotent"
+    },
+    {
+      "area": "text",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
+        "docs/quickstart.md"
+      ],
+      "id": "F-22",
+      "status": "fixed",
+      "summary": "chapter length targets are advisory: 647/668/795 body chars against 900, findings 0"
+    },
+    {
+      "area": "text",
+      "files": [
+        "prompts/design-scene.md",
+        "src/asc/pipeline/design.py",
+        "tests/test_design_prompt_contracts.py"
+      ],
+      "id": "F-23",
+      "status": "fixed (design-scene v1.1; design-character already stated >= 30 chars)",
+      "summary": "check minima (speech.sample >= 30 chars, planted must not use canon IDs) are not stated in the request prompt; caused both repairs"
+    },
+    {
+      "area": "text",
+      "id": "F-24",
+      "status": "open",
+      "summary": "a simplified-Chinese character slipped into ch01 and no check caught it; kept verbatim, a fix would be a revise"
+    },
+    {
+      "area": "editing",
+      "id": "F-25",
+      "status": "observed",
+      "summary": "relay status only looks at the default manuscript path, so render --out elsewhere leaves it saying not written yet"
+    },
+    {
+      "area": "operations",
+      "id": "F-26",
+      "status": "documented",
+      "summary": "design artifacts live under runs/ (gitignored); relay responses are the committed verbatim record"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "src/asc/story/text.py",
+        "src/asc/project/nested.py",
+        "scripts/story_project.py",
+        "tests/test_render_reader.py"
+      ],
+      "id": "F-17",
+      "status": "fixed",
+      "summary": "render --reader writes a reading copy with chapter headings and no audit markers while keeping the default checked text unchanged"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
+        "tests/test_project_branch.py"
+      ],
+      "id": "F-27",
+      "status": "fixed",
+      "summary": "revise and branch rejected an omitted --provider even though quickstart documented them without one"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-28",
+      "status": "fixed",
+      "summary": "fail-open unresolved design documents were only visible in doctor; round warnings now name the doc and the revise --design command"
+    },
+    {
+      "area": "flow",
+      "id": "F-29",
+      "status": "observed",
+      "summary": "continue re-asks all 8 design docs even when only chapter-dependent docs (world/relation/plot/scene) need an update"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-30",
+      "status": "fixed",
+      "summary": "relay status lacked --node, so a child node could be submitted but not inspected via relay status"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-31",
+      "status": "fixed",
+      "summary": "after revising a child node, the parent link stays on the older revision until adopt-child; child round warnings now name the adopt-child command"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "src/asc/project/nested.py",
+        "scripts/story_project.py",
+        "tests/test_render_reader.py"
+      ],
+      "id": "F-32",
+      "status": "fixed",
+      "summary": "compose lacked --reader; added hierarchical chapter headings and marker stripping for composed parent+child works without changing default compose bytes"
+    },
+    {
+      "area": "operations",
+      "files": [
+        ".gitignore",
+        "experiments/2026-10-dogfood-01/work/prj-mine/runs/"
+      ],
+      "id": "F-33",
+      "status": "fixed",
+      "summary": "unanchored runs/ in .gitignore ignored nested project runs/, causing doctor run.missing after clone; anchored to /runs/ and committed completed project runs"
+    },
+    {
+      "area": "world",
+      "files": [
+        "src/asc/project/world_store.py",
+        "scripts/story_project.py",
+        "tests/test_project_world.py"
+      ],
+      "id": "F-34",
+      "status": "fixed",
+      "summary": "world adopt-canon --artifact required the full runs/<run_id>/... path; now also resolves unique plan artifact relative suffixes such as canon/facts.json"
+    },
+    {
+      "area": "world",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_project_world.py"
+      ],
+      "id": "F-35",
+      "status": "fixed",
+      "summary": "world status text output now lists the bound world IDs and each current canon entry with its scope and subject"
+    }
+  ],
+  "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
+  "l2_l3": "frozen_not_measured",
+  "manuscript": {
+    "chapters": 3,
+    "chars_body_total": 2110,
+    "chars_with_markers_total": 2531,
+    "path": "experiments/2026-10-dogfood-01/manuscript.md",
+    "per_chapter": {
+      "ch01": {
+        "chars_body": 647,
+        "chars_with_markers": 778,
+        "target": 900
+      },
+      "ch02": {
+        "chars_body": 668,
+        "chars_with_markers": 811,
+        "target": 900
+      },
+      "ch03": {
+        "chars_body": 795,
+        "chars_with_markers": 942,
+        "target": 900
+      }
+    },
+    "reader_path": "experiments/2026-10-dogfood-01/manuscript.reader.md",
+    "reader_sha256": "b57a6495a2d0ce8f0b4ce7548873dec74e64d0f429e4c6f6a8ec8241104e1c35",
+    "sha256": "09727401b2ae98cef68b72cfc8a1199043560d28a23930165e617cac93af952c"
+  },
+  "next_candidates": [
+    "state the check minima in the request prompt (F-23) after checking the prompt_hash impact",
+    "report a length delta against the per-chapter target without failing (F-22)",
+    "let relay status learn where render wrote its output (F-25)",
+    "measure the prompt reading volume before shrinking prompts (F-20)"
+  ],
+  "not_model_output": false,
+  "project_id": "prj-mine",
+  "repair_causes": {
+    "design:character:repair": "speech.sample shorter than 30 characters (voice_fixed)",
+    "design:scene:repair": "foreshadows.planted carried canon IDs; canon cues belong in paid (foreshadow_tagged)"
+  },
+  "repairs": 2,
+  "revisions": [
+    {
+      "chapters": 3,
+      "id": "rev-3a23302eaef74437a2464da0d714b647",
+      "kind": "initial",
+      "manuscript": "experiments/2026-10-dogfood-01/manuscript.md",
+      "reader": "experiments/2026-10-dogfood-01/manuscript.reader.md",
+      "rounds": 14
+    },
+    {
+      "chapters": 3,
+      "id": "rev-36f3674476494f79940e620b4d0acb7d",
+      "kind": "revise --chapter ch01",
+      "rounds": 1
+    },
+    {
+      "chapters": 4,
+      "id": "rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1",
+      "kind": "continue --add-chapters 1",
+      "rounds": 11
+    },
+    {
+      "chapters": 4,
+      "id": "rev-5f5c678e61054d6193be2f09716d3466",
+      "kind": "revise --design scene",
+      "manuscript": "experiments/2026-10-dogfood-01/manuscript.4ch.md",
+      "manuscript_sha256": "740539f4422b727678b588a63775526634d011c797b5a0ebe044595da392edfb",
+      "reader": "experiments/2026-10-dogfood-01/manuscript.4ch.reader.md",
+      "reader_sha256": "80a811479e15cd7097e4f98febae057d7572c0c6b947f7f7a9d8533427b458a2",
+      "rounds": 1
+    }
+  ],
+  "round_count": 39,
+  "rounds": [
+    {
+      "answered": 1,
+      "exit": 3,
+      "purpose": "plan",
+      "purpose_group": "plan",
+      "repair": false,
+      "round": 1,
+      "tag": "AA177E3C"
+    },
+    {
+      "answered": 2,
+      "exit": 3,
+      "purpose": "design:brief",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 2,
+      "tag": "7F1A1B59"
+    },
+    {
+      "answered": 3,
+      "exit": 3,
+      "purpose": "design:world",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 3,
+      "tag": "9CCE16F7"
+    },
+    {
+      "answered": 4,
+      "exit": 3,
+      "purpose": "design:history",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 4,
+      "tag": "C1243E87"
+    },
+    {
+      "answered": 5,
+      "exit": 3,
+      "purpose": "design:character",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 5,
+      "tag": "3C036510"
+    },
+    {
+      "answered": 6,
+      "exit": 3,
+      "purpose": "design:character:repair",
+      "purpose_group": "design",
+      "repair": true,
+      "round": 6,
+      "tag": "71D64E0E"
+    },
+    {
+      "answered": 7,
+      "exit": 3,
+      "purpose": "design:relation",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 7,
+      "tag": "9AD03B2B"
+    },
+    {
+      "answered": 8,
+      "exit": 3,
+      "purpose": "design:plot",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 8,
+      "tag": "67C0038D"
+    },
+    {
+      "answered": 9,
+      "exit": 3,
+      "purpose": "design:scene",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 9,
+      "tag": "E0BABEF0"
+    },
+    {
+      "answered": 10,
+      "exit": 3,
+      "purpose": "design:scene:repair",
+      "purpose_group": "design",
+      "repair": true,
+      "round": 10,
+      "tag": "E284E2A3"
+    },
+    {
+      "answered": 11,
+      "exit": 3,
+      "purpose": "design:voice",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 11,
+      "tag": "01BFBFCF"
+    },
+    {
+      "answered": 12,
+      "exit": 3,
+      "purpose": "draft:ch01",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 12,
+      "tag": "EAFDAF65"
+    },
+    {
+      "answered": 13,
+      "exit": 3,
+      "purpose": "draft:ch02",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 13,
+      "tag": "A4DC8CA4"
+    },
+    {
+      "answered": 14,
+      "exit": 0,
+      "purpose": "draft:ch03",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 14,
+      "tag": "B484AF7A"
+    }
+  ],
+  "rounds_of_one_loop": [
+    "relay status",
+    "write answer",
+    "relay submit"
+  ],
+  "title": "宛名のない手紙",
+  "untouched": [
+    "pre-registrations",
+    "results.json",
+    "completed runs",
+    "existing relays"
+  ],
+  "verbatim_answers": "experiments/2026-10-dogfood-01/work/prj-mine/relay/responses/",
+  "world": {
+    "compilations": {
+      "chronicle": {
+        "path": "experiments/2026-10-dogfood-01/chronicle.md",
+        "profile_id": "prof-chronicle",
+        "sha256": "dcca2a942b0d3c2b1cff01b7acc2fae347ef64faf07d194a7b599ea9595cd0ba"
+      },
+      "collection": {
+        "path": "experiments/2026-10-dogfood-01/world-collection.md",
+        "profile_id": "prof-collection",
+        "sha256": "940d06cbedfa17c30dc9c183c548e1042c58c33f5c68eb951624875721413f47"
+      },
+      "culture": {
+        "path": "experiments/2026-10-dogfood-01/culture.md",
+        "profile_id": "prof-culture",
+        "sha256": "4e0957c79269c1d9af989573d138e06323b9351c244d4fb8a6ef9038d7e2945e"
+      },
+      "gazetteer": {
+        "path": "experiments/2026-10-dogfood-01/gazetteer.md",
+        "profile_id": "prof-gazetteer",
+        "sha256": "f14ff514cd615846a0f8a47f9e96909434337b3b5ad6cdf645e3c9b353d33efa"
+      }
+    },
+    "counts": {
+      "bindings": 2,
+      "canon_entries": 4,
+      "culture_state_relations": 1,
+      "culture_states": 2,
+      "cultures": 1,
+      "regions": 3,
+      "spatial_relations": 1,
+      "time_conversions": 0,
+      "time_spans": 2,
+      "timeframes": 1
+    }
+  }
+}

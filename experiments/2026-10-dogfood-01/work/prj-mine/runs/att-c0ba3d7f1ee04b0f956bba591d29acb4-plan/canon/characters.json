@@ -1,0 +1,58 @@
+{
+  "characters": [
+    {
+      "id": "sumi",
+      "name": "佐伯スミ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "尾根野",
+      "age_at_start": 34,
+      "birthday_day": 40,
+      "knows": [
+        "F-01"
+      ],
+      "notes": "郵便配達員。町の郵便局は一軒しかない"
+    },
+    {
+      "id": "gen",
+      "name": "大庭源太郎",
+      "aliases": [
+        "源じい"
+      ],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "尾根野",
+      "age_at_start": 78,
+      "birthday_day": 12,
+      "knows": [],
+      "notes": "元坑夫。坑道の最後を知る数少ない一人"
+    },
+    {
+      "id": "aoi",
+      "name": "野々宮あおい",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢渡",
+      "age_at_start": 26,
+      "birthday_day": 200,
+      "knows": [],
+      "notes": "沢渡の町役場支所の記録係"
+    },
+    {
+      "id": "toru",
+      "name": "三村トオル",
+      "aliases": [
+        "トオル"
+      ],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "尾根野",
+      "age_at_start": 30,
+      "birthday_day": 90,
+      "knows": [],
+      "notes": "三通の手紙の差出人。十五年前に死んだ"
+    }
+  ]
+}

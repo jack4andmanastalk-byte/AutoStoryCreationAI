@@ -1,0 +1,28 @@
+{
+  "artifacts": [
+    "draft.json",
+    "manifest.json",
+    "project-input.json",
+    "text/ch01.md"
+  ],
+  "error": null,
+  "finished_at": "2026-10-27T11:06:09Z",
+  "git_commit": "6c6c16c4b0a0b4feb0163aeea1ad71166479ba0a",
+  "model": "arena-agent-mode",
+  "model_version": null,
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 0,
+  "responses_sha256": null,
+  "run_id": "att-086e70bd25144aca85d43f2fc05fc4e0-draft",
+  "seed": 0,
+  "started_at": "2026-10-27T11:06:09Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-sawatari",
+  "temperature": 0.8,
+  "usage": {}
+}

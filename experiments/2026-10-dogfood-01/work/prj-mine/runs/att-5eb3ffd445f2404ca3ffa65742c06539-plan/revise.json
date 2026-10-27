@@ -1,0 +1,23 @@
+{
+  "copied": [
+    "canon/characters.json",
+    "canon/facts.json",
+    "canon/foreshadowing.json",
+    "canon/locations.json",
+    "canon/suppressions.json",
+    "canon/timeline.json"
+  ],
+  "kind": "revise",
+  "regenerated": [],
+  "schema": "project-revise-v1",
+  "source_node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "source_revision_id": "rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1",
+  "source_runs": {
+    "design": "att-e70230e37375489b9569cea27ed5b5d5-design",
+    "draft": "att-bfd9558e4ab0468baae4fabc4b158747-draft",
+    "plan": "att-767820a70d7e4258ba715535ce020b7b-plan"
+  },
+  "source_sha256": {},
+  "stage": "plan",
+  "unchanged_bytes": true
+}

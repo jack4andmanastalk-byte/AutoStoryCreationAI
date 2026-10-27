@@ -1,0 +1,50 @@
+{
+  "content_version": "e5fb31b74557cd32938b12670b55ff40c10201da250bbd209f1590a94bdf3ccf",
+  "kind": "chronicle",
+  "output": "artifacts/world/chronicle-prof-chronicle-e5fb31b74557cd32.md",
+  "profile": {
+    "content_version": "b1136665718f44eeb5cb0224d1f1f5245c57a0a54b19f45d8500eb61464aaa02",
+    "culture_id": null,
+    "id": "prof-chronicle",
+    "kind": "chronicle",
+    "node_id": null,
+    "project_id": "prj-mine",
+    "record_type": "compilation_profile",
+    "region_id": null,
+    "schema_version": 1,
+    "timeframe_id": "tf-showa",
+    "title": "銅山郡・閉山と郵便の年代記"
+  },
+  "profile_id": "prof-chronicle",
+  "project_id": "prj-mine",
+  "record_type": "asc_world_compilation",
+  "schema_version": 1,
+  "source_references": [
+    {
+      "content_version": "e42466d4b56ad137f3e202efe3282c885841db7171394e197b876d4290b114ac",
+      "id": "tf-showa",
+      "record_type": "time_frame"
+    },
+    {
+      "content_version": "8e83d58f50bfd5ed43003c326528d1560bb4c0dd3d03d39eaeda7a25a87164c4",
+      "id": "span-15yrs",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "c797472ee4bfad58ebb803703d0ce1a0b7cb02c4d70b1c1f5c3ed5453cc61412",
+      "id": "span-heizan",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "d3fbce57d44d10138e88f0daac892b3e9d961c09685b0acdeb125e9fc6bea88e",
+      "id": "wcanon-cutpage",
+      "record_type": "world_canon_entry"
+    },
+    {
+      "content_version": "d1eaf15397e9d5491945a702422dd6435e7346038376c35be5e5bde75a152341",
+      "id": "wcanon-margin",
+      "record_type": "world_canon_entry"
+    }
+  ],
+  "text_sha256": "dcca2a942b0d3c2b1cff01b7acc2fae347ef64faf07d194a7b599ea9595cd0ba"
+}

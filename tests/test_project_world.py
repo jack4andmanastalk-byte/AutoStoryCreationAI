@@ -419,3 +419,33 @@ def test_world_cli_add_bind_and_status(tmp_path: Path):
         "culture_states": 0, "culture_state_relations": 0,
         "canon_entries": 0, "bindings": 1,
     }
+
+
+def test_world_cli_adopt_canon_short_artifact_and_status_text(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    snapshot = store.create_project(spec(), project_id="prj-world-short")
+    ProjectRunner(store).run(
+        snapshot.project.id, ScriptedProvider(project_responses()),
+    )
+    timeframe = tmp_path / "timeframe.json"
+    timeframe.write_text(json.dumps({
+        "id": "tf-short", "name": "短縮暦", "calendar": "solar", "epoch": "元年",
+    }), encoding="utf-8")
+
+    def command(*args: str) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [sys.executable, str(SCRIPT), "--root", str(tmp_path), "world", *args],
+            check=True, capture_output=True, text=True,
+        )
+
+    command("add", snapshot.project.id, "timeframe", "--file", str(timeframe))
+    command(
+        "adopt-canon", snapshot.project.id,
+        "--entry-id", "wcanon-short",
+        "--artifact", "canon/facts.json",
+        "--pointer", "/facts/0",
+        "--scope", "timeframe", "--scope-id", "tf-short",
+        "--subject", "短縮パス採用の正史",
+    )
+    status_text = command("status", snapshot.project.id).stdout
+    assert "wcanon-short [timeframe:tf-short] 短縮パス採用の正史 (current)" in status_text

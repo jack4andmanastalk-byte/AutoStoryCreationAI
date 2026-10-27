@@ -218,11 +218,12 @@ def test_pending_and_stale_states_produce_matching_actions(tmp_path: Path):
         "count": 1, "ready": 0, "waiting_for_reply": 1,
     }
     action = status["next_actions"][0]
-    assert action["action"] == "pending"
-    assert action["command"].endswith("pending prj-obs")
-    assert "write the pending response file" in action["reason"]
+    # The waiting hint names the standard flow (U-02): export, answer, submit.
+    assert action["action"] == "relay export"
+    assert action["command"].endswith("relay export prj-obs")
+    assert "then submit the answer" in action["reason"]
     report = inspect_project(store, root.project.id).to_dict()
-    assert [row["action"] for row in report["next_actions"]] == ["pending"]
+    assert [row["action"] for row in report["next_actions"]] == ["relay export"]
 
     # Writing the response turns the hint into a plain resume.
     pending_path.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"pairs\": [\n    {\n      \"a\": \"yoriko\",\n      \"b\": \"kuroda\",\n      \"public\": \"支所長と記録係の上下関係\",\n      \"stakes\": \"頼子の雇用と、黒田の本庁への復任\",\n      \"conflict\": \"黒田は下書きを消して零だけを残したいが、頼子は下書きの頁を同じ帳面の裏に残したい\"\n    }\n  ],\n  \"knowledge\": [\n    {\n      \"character\": \"yoriko\",\n      \"fact\": \"F-11\",\n      \"state\": \"knows\"\n    },\n    {\n      \"character\": \"yoriko\",\n      \"fact\": \"F-12\",\n      \"state\": \"knows\"\n    },\n    {\n      \"character\": \"kuroda\",\n      \"fact\": \"F-11\",\n      \"state\": \"knows\"\n    },\n    {\n      \"character\": \"kuroda\",\n      \"fact\": \"F-12\",\n      \"state\": \"unknown\"\n    }\n  ],\n  \"changes\": [\n    {\n      \"pair\": [\n        \"yoriko\",\n        \"kuroda\"\n      ],\n      \"chapter\": \"ch01\",\n      \"trigger\": \"頼子が零の清書を渡して検印を受け、黒田が帰ったあとに下書きを切り取って裏表紙の袋へ挟む。\",\n      \"after\": \"表向きは従順な部下のまま、帳面の中にだけ黒田の知らない控えが残る。\"\n    }\n  ],\n  \"silences\": [\n    {\n      \"chapter\": \"ch01\",\n      \"who\": \"yoriko\",\n      \"unsaid_ja\": \"火鉢で燃やしたのは白紙の端だけで、下書きの本紙は裏表紙の袋にあること\"\n    }\n  ]\n}",
+  "prompt_hash": "3541e23ffee8091e",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

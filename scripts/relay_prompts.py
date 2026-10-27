@@ -29,6 +29,13 @@ another backup. Do not treat an ignored cache as the only copy.
 The tag is derived from the request key, so the same request keeps the same tag
 across exports. ``ingest`` pins each answer to the prompt hash it answers, so the
 provider's stale check still protects the run.
+
+The tag is 8 hex characters. It used to be 4, until one creative project had two
+requests share a tag: the design-history key and the plan key of the same node
+differ only in ``purpose``, and their first four hex characters both happened to
+be ``D982``. ``ingest`` then attached the history document to the already
+answered plan request and reported success. Short, opaque tags are only safe if
+they cannot collide, so the tag is longer and the length is one constant.
 """
 from __future__ import annotations
 
@@ -40,8 +47,16 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ANSWER = re.compile(r"<<<ANSWER\s+([0-9A-Za-z]{4})>>>\s*\n?(.*?)\n?\s*<<<END\s+\1>>>", re.S)
-ERROR = re.compile(r"<<<ERROR\s+([0-9A-Za-z]{4})>>>\s*\n?(.*?)\n?\s*<<<END\s+\1>>>", re.S)
+#: Length of the opaque tag. 4 hex characters (65k) collided in practice; see
+#: the module docstring. Longer tags stay readable and do not repeat.
+TAG_LENGTH = 8
+
+# The pattern still accepts the old 4-character tags so a stored answer file can
+# be parsed; a tag that no longer exists is rejected by name, never guessed.
+ANSWER = re.compile(
+    r"<<<ANSWER\s+([0-9A-Za-z]{4,16})>>>\s*\n?(.*?)\n?\s*<<<END\s+\1>>>", re.S)
+ERROR = re.compile(
+    r"<<<ERROR\s+([0-9A-Za-z]{4,16})>>>\s*\n?(.*?)\n?\s*<<<END\s+\1>>>", re.S)
 
 PREAMBLE = """\
 あなたは生成ハーネスの「モデル役」です。次の規則だけを守ってください。
@@ -67,7 +82,7 @@ PREAMBLE = """\
 
 
 def tag_for(key: str) -> str:
-    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:4].upper()
+    return hashlib.sha256(key.encode("utf-8")).hexdigest()[:TAG_LENGTH].upper()
 
 
 def load_request(path: Path) -> dict:
@@ -116,7 +131,7 @@ def render_prompt_markdown(items: list[dict], total: int, done: int) -> str:
             item["prompt"].rstrip(),
             "```",
             "",
-            f"タグは必ずこの 4 文字 **`{item['tag']}`** を使ってください"
+            f"タグは必ずこの {len(item['tag'])} 文字 **`{item['tag']}`** を使ってください"
             "（`ch01` やファイル名を使わないでください）。",
             "",
             "回答はこの形で返ってきます（そのまま貼り返してください）。",

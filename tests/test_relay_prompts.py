@@ -66,6 +66,39 @@ def test_tags_are_stable_across_exports(tmp_path):
     assert len(set(tags.values())) == len(tags), "two requests must not share a tag"
 
 
+def test_two_requests_that_shared_a_four_character_tag_stay_apart(tmp_path):
+    """U-01 regression: the tag used to be 4 hex characters and collided.
+
+    In a creative project every request key shares the node ID and differs only
+    in ``purpose``. These two keys both began ``D982``; the history answer was
+    stored under the plan request and ``ingest`` reported success.
+    """
+    keys = (
+        "s1-node-d3f4a584464f45c68ed058da8af5ab4c-s0-design-history-a1",
+        "s1-node-d3f4a584464f45c68ed058da8af5ab4c-s0-plan-a1",
+    )
+    root = make_operator(tmp_path, keys=keys)
+    export(root)
+    index = json.loads((root / "relay" / "index.json").read_text(encoding="utf-8"))
+    tags = {item["key"]: item["tag"] for item in index["pending"]}
+    assert len(set(tags.values())) == 2, "two requests must never share a tag"
+    assert all(len(tag) >= 8 for tag in tags.values())
+
+    history_key, plan_key = keys
+    history_tag = tags[history_key]
+    answers = tmp_path / "answers.txt"
+    answers.write_text(
+        f"<<<ANSWER {history_tag}>>>\n歴史の設計。\n<<<END {history_tag}>>>\n",
+        encoding="utf-8",
+    )
+    result = cli("ingest", "--dir", str(root), "--file", str(answers))
+    assert result.returncode == 0, result.stderr
+    responses = root / "responses"
+    assert (responses / f"{history_key}.json").is_file()
+    assert not (responses / f"{plan_key}.json").exists()
+    assert json.loads(result.stdout)["written"] == [history_key]
+
+
 def test_ingest_writes_the_answer_under_the_pinned_hash(tmp_path):
     root = make_operator(tmp_path)
     export(root)
