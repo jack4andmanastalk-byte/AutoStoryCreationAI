@@ -114,9 +114,13 @@
     },
     {
       "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
       "id": "F-25",
-      "status": "observed",
-      "summary": "relay status only looks at the default manuscript path, so render --out elsewhere leaves it saying not written yet"
+      "status": "fixed",
+      "summary": "render --out now records the rendered manuscript path per node and revision, and relay status (--out) / status report that path and whether it is written for the current revision"
     },
     {
       "area": "operations",
@@ -159,9 +163,18 @@
     },
     {
       "area": "flow",
+      "files": [
+        "src/asc/pipeline/design.py",
+        "src/asc/project/continuation.py",
+        "src/asc/project/model.py",
+        "src/asc/project/schema.py",
+        "src/asc/project/runner.py",
+        "scripts/story_project.py",
+        "tests/test_project_continuation.py"
+      ],
       "id": "F-29",
-      "status": "observed",
-      "summary": "continue re-asks all 8 design docs even when only chapter-dependent docs (world/relation/plot/scene) need an update"
+      "status": "fixed",
+      "summary": "continue now carries chapter-independent design docs (brief, history, character, voice) from the parent revision by default and accepts --design DOC or --all-design"
     },
     {
       "area": "flow",

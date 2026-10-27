@@ -9,7 +9,11 @@ from .bundle import (
     restore_bundle,
     verify_bundle,
 )
-from .continuation import ContinuationContext
+from .continuation import (
+    CHAPTER_DEPENDENT_DESIGN_DOCS,
+    CHAPTER_INDEPENDENT_DESIGN_DOCS,
+    ContinuationContext,
+)
 from .context import AncestorContext, ContextPacket, build_context_packet
 from .context_view import (
     CONTEXT_VIEW_SCHEMA,

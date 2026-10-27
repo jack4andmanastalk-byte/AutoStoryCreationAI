@@ -190,10 +190,12 @@ def test_continuation_runs_support_strict_offline_replay(tmp_path: Path):
         if stage == "plan":
             value = runner._plan(attempt, ledger, provider, source_manifest["seed"])
         elif stage == "design":
-            value = build_design(
-                attempt.pipeline.task, provider, ledger, replayed["plan"],
-                temperature=source_manifest["temperature"],
-                seed=source_manifest["seed"],
+            value = runner._design(
+                attempt, ledger, replayed["plan"], provider,
+                SimpleNamespace(
+                    seed=source_manifest["seed"],
+                    temperature=source_manifest["temperature"],
+                ),
             )
         else:
             value = runner._draft(
@@ -342,3 +344,116 @@ def test_bundle_cli_export_verify_restore(tmp_path: Path):
     )
     assert restored.returncode == 0, restored.stderr
     assert json.loads(restored.stdout)["status"]["state"] == "complete"
+
+
+def test_continuation_carries_chapter_independent_design_docs_by_default(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    snapshot = make_project(store)
+    base = run_base(store, snapshot)
+    provider = ScriptedProvider(continuation_responses())
+    continued = ProjectRunner(store).continue_project(snapshot.project.id, provider)
+
+    assert [request.purpose for request in provider.calls] == [
+        "plan",
+        "design:world",
+        "design:relation",
+        "design:plot",
+        "design:plot:repair",
+        "design:scene",
+        "design:scene:repair",
+        "draft:ch04",
+    ]
+    current = store.load_snapshot(snapshot.project.id)
+    assert current.revision.continuation_design == (
+        "world", "relation", "plot", "scene",
+    )
+    old_design = (
+        store.project_dir(snapshot.project.id) / "runs" / base.stage_runs["design"] / "design"
+    )
+    new_design = (
+        store.project_dir(snapshot.project.id)
+        / "runs" / continued.stage_runs["design"] / "design"
+    )
+    for carried in ("brief", "history", "character", "voice"):
+        assert (new_design / f"{carried}.json").read_bytes() == (
+            old_design / f"{carried}.json"
+        ).read_bytes()
+    design_summary = json.loads(
+        (new_design.parent / "design.json").read_text(encoding="utf-8")
+    )
+    assert design_summary["carried"] == ["brief", "history", "character", "voice"]
+    for carried in ("brief", "history", "character", "voice"):
+        assert design_summary["docs"][carried]["status"] == "carried"
+    for generated in ("world", "relation"):
+        assert design_summary["docs"][generated]["status"] == "clean"
+
+
+def test_continuation_can_select_specific_design_docs_or_regenerate_all(tmp_path: Path):
+    store = ProjectStore(tmp_path)
+    snapshot = make_project(store)
+    run_base(store, snapshot)
+
+    selective_provider = ScriptedProvider(continuation_responses())
+    selective = ProjectRunner(store).continue_project(
+        snapshot.project.id, selective_provider, design=("plot", "scene"),
+    )
+    assert [request.purpose for request in selective_provider.calls] == [
+        "plan",
+        "design:plot",
+        "design:plot:repair",
+        "design:scene",
+        "design:scene:repair",
+        "draft:ch04",
+    ]
+    current = store.load_snapshot(snapshot.project.id)
+    assert current.revision.continuation_design == ("plot", "scene")
+
+    store_all = ProjectStore(tmp_path / "all-design")
+    snap_all = make_project(store_all)
+    run_base(store_all, snap_all)
+    full_provider = ScriptedProvider(continuation_responses())
+    ProjectRunner(store_all).continue_project(
+        snap_all.project.id, full_provider, carry_design=False,
+    )
+    assert [request.purpose for request in full_provider.calls] == [
+        "plan",
+        "design:brief",
+        "design:world",
+        "design:history",
+        "design:character",
+        "design:relation",
+        "design:plot",
+        "design:plot:repair",
+        "design:scene",
+        "design:scene:repair",
+        "design:voice",
+        "draft:ch04",
+    ]
+    assert store_all.load_snapshot(snap_all.project.id).revision.continuation_design is None
+    assert selective.status["state"] == "complete"
+
+
+def test_continuation_cli_supports_design_and_all_design_flags(tmp_path: Path):
+    store = ProjectStore(tmp_path / "projects")
+    snapshot = make_project(store, project_id="prj-cont-cli")
+    run_base(store, snapshot)
+    script_path = tmp_path / "continuation-script.json"
+    script_path.write_text(
+        json.dumps({"responses": continuation_responses()}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    completed = subprocess.run(
+        [
+            sys.executable, str(SCRIPT), "--root", str(store.root), "continue",
+            snapshot.project.id, "--add-chapters", "1",
+            "--design", "plot", "--design", "scene",
+            "--provider", "scripted", "--script", str(script_path), "--json",
+        ],
+        check=False, capture_output=True, text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert json.loads(completed.stdout)["state"] == "complete"
+    assert store.load_snapshot(snapshot.project.id).revision.continuation_design == (
+        "plot", "scene",
+    )
+

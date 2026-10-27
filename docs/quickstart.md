@@ -145,6 +145,8 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 
 ```bash
 # 章を足す（新しい revision を作る。旧版は残る）
+# 既定では章一覧に依存しない設計書（brief / history / character / voice）を前版から持ち越し、
+# world / relation / plot / scene だけを再生成する（--design DOC で対象指定、--all-design で全8文書再生成）
 .venv/bin/python scripts/story_project.py --root works continue prj-seaside --add-chapters 1
 
 # 特定の章だけを書き直す（他の章はバイト単位でコピーされる）

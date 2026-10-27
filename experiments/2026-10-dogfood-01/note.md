@@ -123,11 +123,12 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
 
 ### 編集・運用
 
-- **F-25 `Manuscript:` は既定パスしか見ない**（記録のみ）。`relay status` は
-  `work/prj-mine/manuscript.md` を見て「(not written yet)」と出す。今回は experiment 直下に
-  `render --out` したので、完成後も status の表示は「未書き出し」のまま。`Next:` の
-  `render` をそのまま実行すれば既定パスに書けるが、置き場所を選ぶと表示が追従しない。
-  `--out` の履歴を持つか、status に `--manuscript PATH` を受けるのが候補。
+- **F-25 `Manuscript:` は既定パスしか見なかった**（修正済み）。`relay status` は従来
+  `work/prj-mine/manuscript.md` しか見ず、別パスへ `render --out` したときも「(not written yet)」
+  と表示していた。`render --out <path>` 実行時にノード・リビジョン単位で出力先（および `--reader`
+  の出力先）を `<node_dir>/rendered.json` に記録し、`status` / `relay status` がそのパスと現リビジョン
+  での書き出し有無を表示するようにした。また `relay status --out <path>` / `relay submit --out <path>`
+  で任意の出力先を直接指定して確認できるようにもした。
 - **F-26 design 成果物はコミットに残らない**（運用として明記）。`runs/` は `.gitignore` 対象
   なので、世界・歴史・人物・関係・物語構造・場面・文体の実体（`runs/*-design/design/*.json`）
   はリポジトリに入らない。残るのは `relay/requests`（プロンプト）と `relay/responses`（応答の
@@ -165,10 +166,13 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
   `complete` になる。`doctor` を叩くまで気づけなかったため、round 報告の `Warnings:` に
   `design (scene): checker findings remained after repair; regenerate with ... revise prj-mine --design scene`
   を出すようにした。実際にこの1コマンド・1ラウンドで全4章の本文を保ったまま `scene` だけ直せた。
-- **F-29 `continue` は設計8文書を毎回すべて再要求する**（記録のみ）。
-  台帳に `ch04` が増えるため、現行は `brief`〜`voice` の8文書すべてを新しい要求として出す
-  （1章足すのに 1 + 8 + 1 = 10〜11 ラウンド）。章一覧に依存しない文書（`brief` / `character` /
-  `history` / `voice`）は前版から持ち越せる余地がある。
+- **F-29 `continue` は設計8文書を毎回すべて再要求していた**（修正済み）。
+  台帳に `ch04` が増えるため、従来は `brief`〜`voice` の8文書すべてを新しい要求として出していた
+  （1章足すのに 1 + 8 + 1 = 10〜11 ラウンド）。章一覧に依存しない設計書（`brief` / `history` /
+  `character` / `voice`）は既定で前版の完了済み design run から SHA-256 検証付きで持ち越し、
+  `world` / `relation` / `plot` / `scene` だけを再生成するようにした（1章追加の基本ラウンドが
+  10 → 6 に減少）。`--design DOC` で再生成対象を個別に指定することも、`--all-design` で全8文書を
+  再生成することもできる。
 
 ## 入れ子作品（U-06 子作品の追加・生成・採用・編纂）
 
@@ -226,9 +230,8 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
 
 ## 次にやるなら（優先順）
 
-1. **F-29 continuation の設計持ち越し**: 章数に依存しない設計書を `continue` で再要求しない選択。
-2. **F-25**: `relay status` が `--out` の出力先を知る（引数か最後に render したパス）。
-3. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
+1. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
+2. **F-24**: `revise --chapter ch01` で簡体字混入を直した改訂版を必要に応じ採用する（現状は第2版 `rev-36f36744…` 以降で解消済み）。
 
 ## 再現と検証
 

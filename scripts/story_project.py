@@ -155,6 +155,15 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     continuation.add_argument("--title")
     continuation.add_argument("--premise")
     continuation.add_argument(
+        "--design", dest="design", action="append", default=[],
+        metavar="DOC",
+        help="design document to regenerate (repeatable; default: world, relation, plot, scene)",
+    )
+    continuation.add_argument(
+        "--all-design", action="store_true",
+        help="regenerate all 8 design documents instead of carrying brief, history, character, and voice",
+    )
+    continuation.add_argument(
         "--world-binding",
         help="explicitly reuse this parent-revision world binding for the new revision",
     )
@@ -299,6 +308,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     relay_status.add_argument("project_id")
     relay_status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
+    relay_status.add_argument(
+        "--out", help="rendered manuscript path to check (default: last render --out or <project>/manuscript.md)",
+    )
     relay_status.add_argument("--json", dest="json_output", action="store_true")
     relay_ingest = relay_commands.add_parser(
         "ingest", help="read pasted <<<ANSWER tag>>> blocks into responses/",
@@ -319,6 +331,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     relay_submit.add_argument("project_id")
     relay_submit.add_argument("--file", required=True, help="UTF-8 text file with the answers")
     relay_submit.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
+    relay_submit.add_argument(
+        "--out", help="rendered manuscript path to check (default: last render --out or <project>/manuscript.md)",
+    )
     relay_submit.add_argument("--model-version", help="default: unversioned-<today>")
     relay_submit.add_argument(
         "--map", action="append", default=[], metavar="FROM=TO",
@@ -676,7 +691,7 @@ def _round_warnings(store: ProjectStore, status: dict) -> list[str]:
 
 def _relay_round(
     store: ProjectStore, project_id: str, directory: Path, *,
-    node_id: str | None = None,
+    node_id: str | None = None, out: str | Path | None = None,
 ) -> dict:
     """Where one relay round stands, and the one next thing to do.
 
@@ -713,7 +728,7 @@ def _relay_round(
             "response_ready": response_path.is_file(),
         }
 
-    manuscript = _manuscript_hint(status)
+    manuscript = _manuscript_info(status, out=out)
     work_state = status.get("work", {}).get("state")
     if work_state == "failed":
         next_command = f"{base} resume {project_id}{node_option} --retry-failed"
@@ -726,7 +741,7 @@ def _relay_round(
         # resume finds out, it never makes up an answer.
         next_command = f"{base} resume {project_id}{node_option}"
     elif manuscript is not None:
-        next_command = manuscript[0]
+        next_command = manuscript["command"]
     else:
         next_command = f"{base} status {project_id}{node_option}"
 
@@ -742,11 +757,7 @@ def _relay_round(
         "pending_count": len(pending),
         "next": next_request,
         "next_command": next_command,
-        "manuscript": (
-            {"path": manuscript[1], "command": manuscript[0],
-             "written": Path(manuscript[1]).is_file()}
-            if manuscript is not None else None
-        ),
+        "manuscript": manuscript,
         "actions": list(status.get("next_actions") or ()),
         "warnings": _round_warnings(store, status),
     }
@@ -803,13 +814,73 @@ def _relay_line(status: dict) -> str | None:
     return f"Relay: {answered} answered / 0 pending ({directory})"
 
 
-def _manuscript_hint(status: dict) -> tuple[str, str] | None:
-    """The rendered-manuscript path and the command that writes it."""
+def _rendered_record_path(project_dir: Path, node_id: str) -> Path:
+    return project_dir / "nodes" / node_id / "rendered.json"
+
+
+def _read_rendered(project_dir: Path, node_id: str) -> dict | None:
+    path = _rendered_record_path(project_dir, node_id)
+    if not path.is_file():
+        return None
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    return data if isinstance(data, dict) else None
+
+
+def _record_rendered(
+    project_dir: Path, node_id: str, revision_id: str, out: Path, *,
+    reader: bool = False,
+) -> None:
+    existing = _read_rendered(project_dir, node_id)
+    payload: dict = (
+        dict(existing)
+        if existing and existing.get("revision_id") == revision_id
+        else {"node_id": node_id, "revision_id": revision_id}
+    )
+    if reader:
+        payload["reader_path"] = str(out)
+        payload.setdefault("path", str(out))
+    else:
+        payload["path"] = str(out)
+    record_path = _rendered_record_path(project_dir, node_id)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _manuscript_info(
+    status: dict, *, out: str | Path | None = None,
+) -> dict | None:
+    """The rendered-manuscript path, whether it is written for the current revision, and the render command."""
     draft = (status.get("checkpoints") or {}).get("draft")
     if not draft or draft.get("status") != "done":
         return None
     directory = Path(status["project_dir"])
-    path = directory / "manuscript.md"
+    node_id = str(status.get("node_id") or status.get("root_node_id"))
+    revision_id = status.get("current_revision_id")
+    rendered = _read_rendered(directory, node_id)
+    if out is not None:
+        path = Path(out).expanduser()
+        if (
+            rendered is not None
+            and rendered.get("path") == str(path)
+            and rendered.get("revision_id") != revision_id
+        ):
+            written = False
+        else:
+            written = path.is_file()
+    elif rendered is not None and rendered.get("path"):
+        path = Path(str(rendered["path"]))
+        written = bool(
+            rendered.get("revision_id") == revision_id and path.is_file()
+        )
+    else:
+        path = directory / "manuscript.md"
+        written = path.is_file()
     node_option = ""
     if status.get("node_id") != status.get("root_node_id"):
         node_option = f" --node {status['node_id']}"
@@ -817,7 +888,27 @@ def _manuscript_hint(status: dict) -> tuple[str, str] | None:
         f"python3 scripts/story_project.py --root {directory.parent} "
         f"render {status['project_id']}{node_option} --out {path}"
     )
-    return command, str(path)
+    info = {
+        "path": str(path),
+        "command": command,
+        "written": written,
+    }
+    if (
+        rendered is not None
+        and rendered.get("revision_id") == revision_id
+        and rendered.get("reader_path")
+        and Path(str(rendered["reader_path"])).is_file()
+    ):
+        info["reader_path"] = str(rendered["reader_path"])
+    return info
+
+
+def _manuscript_hint(status: dict) -> tuple[str, str] | None:
+    """The rendered-manuscript path and the command that writes it."""
+    info = _manuscript_info(status)
+    if info is None:
+        return None
+    return info["command"], info["path"]
 
 
 def _print_human(status: dict, *, created: bool) -> None:
@@ -856,14 +947,13 @@ def _print_human(status: dict, *, created: bool) -> None:
     if relay is not None:
         print(relay)
     _print_actions(list(status.get("next_actions") or ()))
-    hint = _manuscript_hint(status)
-    if hint is not None:
-        command, path = hint
-        if Path(path).is_file():
-            print(f"Manuscript: {path}")
+    info = _manuscript_info(status)
+    if info is not None:
+        if info["written"]:
+            print(f"Manuscript: {info['path']}")
         else:
             print("Manuscript: not written yet")
-        print(f"  write it: {command}")
+        print(f"  write it: {info['command']}")
     if status.get("links"):
         print(f"Child links: {len(status['links'])}")
     print(f"Directory: {status['project_dir']}")
@@ -1214,7 +1304,10 @@ def _relay_command(args: argparse.Namespace, store: ProjectStore) -> int:
     payload: dict = {}
 
     def current() -> dict:
-        return _relay_round(store, args.project_id, directory, node_id=node_id)
+        return _relay_round(
+            store, args.project_id, directory,
+            node_id=node_id, out=getattr(args, "out", None),
+        )
 
     def finish(
         *, ingest: bool = False, pending: BaseException | None = None,
@@ -1432,6 +1525,14 @@ def main(argv: list[str] | None = None) -> int:
                 output = Path(args.out).expanduser()
                 output.parent.mkdir(parents=True, exist_ok=True)
                 output.write_text(result.text, encoding="utf-8")
+                if args.command == "render":
+                    _record_rendered(
+                        store.project_dir(args.project_id),
+                        result.node_id,
+                        result.revision_id,
+                        output,
+                        reader=getattr(args, "reader", False),
+                    )
             if getattr(args, "reader", False) and not args.json_output:
                 # Nothing but JSON on stdout when --json is asked for.
                 print(
@@ -1579,6 +1680,8 @@ def main(argv: list[str] | None = None) -> int:
                     seed=args.seed, temperature=args.temperature,
                     title=args.title, premise=args.premise, node_id=args.node_id,
                     world_binding_id=args.world_binding,
+                    carry_design=not args.all_design,
+                    design=tuple(args.design),
                 )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id
