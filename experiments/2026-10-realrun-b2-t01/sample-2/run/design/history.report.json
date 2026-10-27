@@ -1,0 +1,17 @@
+{
+  "attempts": 1,
+  "checks_failed": 0,
+  "doc": "history",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "prompt": {
+    "digest": "845a20e30993bc51",
+    "name": "design-history",
+    "version": "1.1"
+  },
+  "repairs": 0,
+  "status": "clean"
+}

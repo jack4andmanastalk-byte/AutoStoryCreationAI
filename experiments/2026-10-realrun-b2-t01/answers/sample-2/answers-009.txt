@@ -1,0 +1,12 @@
+<<<ANSWER F050>>>
+{
+  "viewpoint": {"person": "third", "character": "澪", "aliases": [], "pronouns": []},
+  "narrator": {"knows_ja": "澪が見聞きし、他者から聞いた範囲だけを語る。死んだ汐の内心は語らない。"},
+  "sample": "嵐の夜、澪は灯室の窓に額を寄せた。入り江の向こうで、船の灯りが一つ、揺れながら近づいてくる。鍵はまだ、戻っていなかった。",
+  "banned": [
+    {"id": "b1", "pattern": "選ばれし者", "message_ja": "使ってはいけない定型のため使わない"},
+    {"id": "b2", "pattern": "古代の予言", "message_ja": "使ってはいけない定型のため使わない"}
+  ],
+  "notes": ""
+}
+<<<END F050>>>

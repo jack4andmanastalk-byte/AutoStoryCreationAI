@@ -1,0 +1,34 @@
+{
+  "logline": "嵐の入り江の灯台で、灯台守の娘・澪は姉の死にまつわる鍵の行方を知ろうとするが、灯りを離れるあいだ船が危うくなるため、追うか守るかの選択を迫られる。",
+  "acts": [
+    {"id": "setup", "chapters": ["ch01"], "question": "澪は人命のために鍵を貸すのか"},
+    {"id": "confrontation", "chapters": ["ch02"], "question": "鍵の行方を追うことは、灯りを離れることに値するのか"},
+    {"id": "resolution", "chapters": ["ch03"], "question": "真相を知った澪は、自分の意志で灯りを守れるのか"}
+  ],
+  "turns": [
+    {"id": "t1", "chapter": "ch01",
+     "choice_ja": "嵐の夜、人命のためにトキへ鍵を貸すことを選ぶ",
+     "point_of_no_return": "鍵が澪の手を離れる"},
+    {"id": "t2", "chapter": "ch02",
+     "choice_ja": "灯りを父に託し、鍵を追って港町へ行くことを選ぶ",
+     "point_of_no_return": "灯台を離れ、戻るまで灯りは父に委ねられる"},
+    {"id": "t3", "chapter": "ch02",
+     "choice_ja": "トキを疑うのをやめ、鍵の経緯を最後まで聞くことを選ぶ",
+     "point_of_no_return": "姉の死の真相を受け入れる"},
+    {"id": "t4", "chapter": "ch03",
+     "choice_ja": "鍵を持ち帰り、自分の意志で灯りを守ることを選ぶ",
+     "point_of_no_return": "務めを姉の遺志ではなく自分の選択として引き受ける"}
+  ],
+  "subplots": [
+    {"id": "father", "beats": ["鍵の話になると黙る", "留守の灯りを守る", "沈黙の理由を話す"],
+     "converges": "最終章で父の告白が、澪が灯りを守る選択を支える"}
+  ],
+  "ending": {
+    "kind": "resolved",
+    "summary": "澪は鍵を取り戻して灯台へ戻り、再びの嵐の夜に灯りを守り抜く",
+    "aftertaste_ja": "務めは受け継ぐだけのものではなく、選び直すものだという静かな余韻"
+  },
+  "unresolved": [
+    {"item": "汐の死の夜の細部までは明かされない", "foreshadowing": "fs-002", "intentional": true}
+  ]
+}

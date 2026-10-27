@@ -1,0 +1,60 @@
+{
+  "characters": [
+    {
+      "id": "mio",
+      "name": "澪",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 20,
+      "birthday_day": 300,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "灯台守の娘。父に代わって灯りを守ることが増えた"
+    },
+    {
+      "id": "heisaku",
+      "name": "平作",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 56,
+      "birthday_day": 306,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "灯台守。澪の父。腰を痛めて階段の上り下りがつらい"
+    },
+    {
+      "id": "shio",
+      "name": "汐",
+      "aliases": [],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "港町",
+      "age_at_start": 23,
+      "birthday_day": 312,
+      "knows": [],
+      "notes": "澪の姉。三年前に海で死んだ"
+    },
+    {
+      "id": "toki",
+      "name": "トキ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 38,
+      "birthday_day": 318,
+      "knows": [
+        "F-03"
+      ],
+      "notes": "港町の船頭。嵐で灯台の入り江に避難している"
+    }
+  ]
+}

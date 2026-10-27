@@ -1,0 +1,101 @@
+{
+  "pairs": [
+    {
+      "a": "mio",
+      "b": "heisaku",
+      "public": "灯台守の父と娘",
+      "stakes": "娘は姉の死の真相を知りたがり、父は沈黙で娘を守ろうとする",
+      "conflict": "真相を知りたい娘の目的と、娘を真相から遠ざけたい父の目的は両立しない"
+    },
+    {
+      "a": "mio",
+      "b": "toki",
+      "public": "鍵を貸した側と借りた側",
+      "stakes": "トキは汐との約束を果たす機会を探り、澪は貸した鍵の行方を問う",
+      "conflict": "澪は今すぐ答えを求めるが、トキは汐の墓のある港町でなければ真実を話せないため、急ぐ目的と場を選ぶ目的が両立しない"
+    },
+    {
+      "a": "heisaku",
+      "b": "toki",
+      "public": "灯台守と港町の船頭",
+      "stakes": "二人とも三年前の夜の経緯を知りながら、澪には話していない",
+      "conflict": "平作は過去を伏せ続けたいが、トキは約束を果たして過去を返したいため両立しない"
+    },
+    {
+      "a": "mio",
+      "b": "shio",
+      "public": "姉妹",
+      "stakes": "姉の遺した鍵が、妹の選択を左右する",
+      "conflict": "澪は姉本人から答えを聞きたいが、死者は答えられないため、その望みは果たしようがない"
+    }
+  ],
+  "knowledge": [
+    {
+      "character": "mio",
+      "fact": "F-01",
+      "state": "knows"
+    },
+    {
+      "character": "mio",
+      "fact": "F-02",
+      "state": "knows"
+    },
+    {
+      "character": "mio",
+      "fact": "F-03",
+      "state": "unknown"
+    },
+    {
+      "character": "heisaku",
+      "fact": "F-01",
+      "state": "knows"
+    },
+    {
+      "character": "heisaku",
+      "fact": "F-02",
+      "state": "knows"
+    },
+    {
+      "character": "heisaku",
+      "fact": "F-03",
+      "state": "suspects"
+    },
+    {
+      "character": "toki",
+      "fact": "F-03",
+      "state": "knows"
+    }
+  ],
+  "changes": [
+    {
+      "pair": [
+        "mio",
+        "toki"
+      ],
+      "chapter": "ch02",
+      "trigger": "澪が港町まで鍵を追うことを選び、トキが鍵の経緯をすべて話すことを選ぶ",
+      "after": "疑いの間柄から、汐との約束を共有する間柄になる"
+    },
+    {
+      "pair": [
+        "mio",
+        "heisaku"
+      ],
+      "chapter": "ch03",
+      "trigger": "平作が沈黙を破って三年前の夜を話し、澪がそれを受け止めて灯室に立つ",
+      "after": "務めを託す父と、自分の意志で引き受ける娘になる"
+    }
+  ],
+  "silences": [
+    {
+      "chapter": "ch01",
+      "who": "heisaku",
+      "unsaid_ja": "汐が鍵をトキに託したのではないかと感づいていること"
+    },
+    {
+      "chapter": "ch01",
+      "who": "toki",
+      "unsaid_ja": "汐から託された鍵をまだ持っていること"
+    }
+  ]
+}

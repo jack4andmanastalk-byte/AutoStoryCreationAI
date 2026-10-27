@@ -2,7 +2,7 @@
 
 - 日付: 2026-10-27
 - 種類: 事前登録に基づく介入 1 標本（Arena Agent Mode 内で実行する）
-- 状態: **未走行**（`results.json` は `not_run` の予定）
+- 状態: **完走**（2026-10-27、`sample-2`、status=`pass`）。事前登録と介入は走行前に commit `f7957c6` で固定した。
 - 事前登録: [`preregistration.md`](preregistration.md) / [`preregistration.json`](preregistration.json)
 - 手順: [`runbook.md`](runbook.md)
 - 計測: [`results.json`](results.json)（`schema: realrun-b-v1`、事前登録の `sha256` を記録）
@@ -41,19 +41,45 @@ B2 は、その制約をプロンプトに明記した `design-history` v1.1 で
 | --- | --- |
 | `preregistration.json` / `preregistration.md` | 走らせる前に固定した条件・判定・prompt digest |
 | `runbook.md` | Arena 内でエージェントが relay を使って回す 1 標本の手順 |
-| `results.json` | 計測スクリプトの空の出力（未走行） |
-| `relay/sample-2/.gitkeep` | 実行時に要求・応答が入る場所。現時点では空 |
+| `results.json` | 計測結果（B0〜B4 と H の verdict、事前登録の `sha256` を記録） |
+| `relay/sample-2/` | 実行時の要求・応答の記録（prompt hash で対応が追える） |
 
-## 結果（走行後にここへ書く）
+## 結果（2026-10-27、1 標本）
 
-まだ無い。走行したら `results.json` の verdict を読み替えずに引用し、次を書く。
+`results.json` の verdict を読み替えずに引用する。
 
-- B0〜B4 と H の verdict、run の status と gates。
-- history の初回 findings（check 別。特に対象 `canon_separated`）と最終 findings。
-- 他の 7 設計も含めた初回・最終 findings、修復で消えた件数。
-- 章ごとの字数、attempts、補完マーカー、必須語率。
-- 監査の内訳と CED（参考値）。
-- バッチ B との記述的対照（合算した率は出さない）。
+| 判定 | verdict |
+| --- | --- |
+| B0 条件 | `condition_ok` |
+| B1 完走 | `complete_pass` |
+| B2 初回所見 | `first_attempt_clean` |
+| B3 長さ | `length_ok` |
+| B4 監査 | `audit_no_high_all_checks_ran` |
+| H（history の `canon_separated` 初回所見） | `target_findings_absent` |
+
+- **run 全体**: status=`pass`、gates はすべて true（必須語 3/3、合計 3,311 字、high 違反なし、
+  全検査実行）。コードは事前登録・介入コミット `f7957c6`、model は `arena-agent-mode` /
+  `unversioned-2026-10-27`。応答は **12 件**（plan 1・設計 8・draft 3、修復・再試行なし）で、
+  すべてこの Arena セッションのエージェントが生成し逐語で取り込んだ。
+  `provenance.origin` は全件 `unspecified`（ingest が origin を書かないため）で、
+  新規生成とは主張しない。独立性も保証されない。
+- **plan / canon**: 初回で受理（attempts=1）。生成 canon は人物 4・事実 3・場所 2・章 3・伏線 2、
+  checks_covered 6/6。6 ファイルの sha256 は `results.json` に記録した。
+- **設計**: 8 件すべて初回で `clean`（attempts=8、repairs=0）。**初回 findings は合計 0 件**
+  （最終も 0 件、`disappeared_exact=0`）。介入対象の history も初回 findings 0 件で、
+  `canon_separated` は出なかった（H=`target_findings_absent`）。
+- **draft**: 3 章すべて初回受理（再試行・補完マーカーなし）。字数は ch01=1,097、ch02=1,048、
+  ch03=1,166 で **全章が目安内**、合計 3,311 字。
+- **監査**: violations=2（すべて medium `dead_character_reappears`、ch02・ch03 での汐への言及）、
+  high=0、checks_run=6 / checks_skipped=0、CED=5.672/1万字（参考値）。
+  バッチ B と同じく「回想・言及の可能性」を監査器自身が注記する類であり、
+  本文では死者は行為者になっていない。
+- **バッチ B との記述的対照**（率にはしない）: 初回 findings は B の 5 件に対して B2 は 0 件、
+  応答数は B の 14 件に対して B2 は 12 件（修復ぶんが無い）。字数は B の 3,042 字（目安内 2/3 章）
+  に対して B2 は 3,311 字（3/3 章）。この差を **v1.1 の効果とは主張しない**。同一担い手が
+  バッチ B で同じ指摘（history の契約、scene の新規 ID、最終章の短さ）を経験済みであり、
+  プロンプト明記と担い手の学習は分離できない。H が示すのは「明記した条件で対象所見が
+  出なかった」という記録までである。
 
 ## 限界
 
@@ -65,7 +91,8 @@ B2 は、その制約をプロンプトに明記した `design-history` v1.1 で
 
 ## 次にすること
 
-1. [runbook.md](runbook.md) の手順で sample-2 を Arena 内で回す。
-2. 完走または終端失敗後に `scripts/measure_realrun_b.py --bundle experiments/2026-10-realrun-b2-t01` で測る。
-3. verdict をこのノートへ引用し、初回所見の出方を記録する。
-4. さらに足す場合は B3 として走らせる前に登録する。
+1. 標本をさらに足す場合は B3 として走らせる前に登録する。同一担い手の学習という交絡を
+   どう扱うか（条件として固定するか、別担い手を用意できるか）も登録事項にする。
+2. 監査の `dead_character_reappears`（medium）は 2 バッチ連続で言及を拾っている。
+   検査の意図（行為者としての再登場の検出）と実挙動（言及の検出）の切り分けが次の候補だが、
+   変える場合はプロンプトか検査かを先に登録で決める。
