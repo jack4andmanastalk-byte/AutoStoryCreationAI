@@ -399,3 +399,70 @@ def test_a_child_node_can_be_inspected_and_driven_and_reminds_about_adopt_child(
     )
     assert not any("adopt-child" in w for w in after_adopt["warnings"])
 
+
+def test_render_out_records_custom_manuscript_path_and_revision_for_relay_status(tmp_path: Path):
+    """F-25: ``render --out`` is remembered per node/revision by ``relay status`` and ``status``."""
+    init_project(tmp_path)
+    answers = answers_by_purpose()
+    drive(tmp_path, "prj-round", answers)
+
+    before = round_status(tmp_path, "prj-round")
+    assert before["manuscript"]["written"] is False
+    assert before["manuscript"]["path"] == str(tmp_path / "prj-round" / "manuscript.md")
+
+    custom_out = tmp_path / "exports" / "manuscript-v1.md"
+    reader_out = tmp_path / "exports" / "manuscript-v1.reader.md"
+    explicit_out = tmp_path / "exports" / "manuscript-v2.md"
+
+    explicit_before = json.loads(
+        cli(
+            "--root", str(tmp_path), "relay", "status", "prj-round",
+            "--out", str(custom_out), "--json",
+        ).stdout
+    )
+    assert explicit_before["manuscript"]["path"] == str(custom_out)
+    assert explicit_before["manuscript"]["written"] is False
+
+    rendered = cli(
+        "--root", str(tmp_path), "render", "prj-round", "--out", str(custom_out),
+    )
+    assert rendered.returncode == 0, rendered.stderr
+    assert custom_out.is_file()
+
+    rendered_reader = cli(
+        "--root", str(tmp_path), "render", "prj-round",
+        "--reader", "--out", str(reader_out),
+    )
+    assert rendered_reader.returncode == 0, rendered_reader.stderr
+    assert reader_out.is_file()
+
+    after = round_status(tmp_path, "prj-round")
+    assert after["manuscript"]["path"] == str(custom_out)
+    assert after["manuscript"]["written"] is True
+    assert after["manuscript"]["reader_path"] == str(reader_out)
+
+    human_relay = cli("--root", str(tmp_path), "relay", "status", "prj-round").stdout
+    assert f"Manuscript: {custom_out}" in human_relay
+    assert "(not written yet)" not in human_relay
+
+    human_status = cli("--root", str(tmp_path), "status", "prj-round").stdout
+    assert f"Manuscript: {custom_out}" in human_status
+    assert "Manuscript: not written yet" not in human_status
+
+    # Creating a newer revision marks the prior revision's custom file as not yet written
+    # for the current revision until rendered again.
+    assert cli("--root", str(tmp_path), "revise", "prj-round").returncode == 0
+    revised = round_status(tmp_path, "prj-round")
+    assert revised["manuscript"]["path"] == str(custom_out)
+    assert revised["manuscript"]["written"] is False
+
+    explicit_next = json.loads(
+        cli(
+            "--root", str(tmp_path), "relay", "status", "prj-round",
+            "--out", str(explicit_out), "--json",
+        ).stdout
+    )
+    assert explicit_next["manuscript"]["path"] == str(explicit_out)
+    assert explicit_next["manuscript"]["written"] is False
+
+

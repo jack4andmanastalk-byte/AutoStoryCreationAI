@@ -23,7 +23,7 @@ import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 from ..story.canon import Canon
 from .draft import canon_brief
@@ -326,14 +326,16 @@ def _needs_repair(findings: list[dict]) -> bool:
     return any(item["severity"] in REPAIR_SEVERITIES for item in findings)
 
 
-def _render_prior(accepted: dict[str, str]) -> str:
+def _render_prior(accepted: dict[str, str], *, before: str | None = None) -> str:
     if not accepted:
         return "（先行する設計書なし）"
     parts = []
     for name in DOCS:
+        if name == before:
+            break
         if name in accepted:
             parts.append(f"### {name}\n```json\n{accepted[name]}\n```")
-    return "\n\n".join(parts)
+    return "\n\n".join(parts) if parts else "（先行する設計書なし）"
 
 
 def build_design(task: Task, provider: Provider, ledger: RunLedger,
@@ -341,19 +343,32 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                  prompt_dir: str | Path | None = None,
                  temperature: float = 0.6, max_tokens: int = 2000,
                  seed: int = 0, max_attempts: int = 2,
-                 docs: tuple[str, ...] = DOCS) -> Design:
+                 docs: tuple[str, ...] = DOCS,
+                 carried_docs: Mapping[str, str] | None = None) -> Design:
     """Generate and validate the design documents, in dependency order."""
     for name in docs:
         if name not in DOCS:
             raise DesignError(f"unknown design document: {name}")
     templates = {name: load_prompt(f"design-{name}", prompt_dir) for name in docs}
     repair = load_prompt("design-repair", prompt_dir)
-    for template in list(templates.values()) + [repair]:
-        ledger.prompt_hashes[template.name] = template.digest
+    if docs:
+        for template in list(templates.values()) + [repair]:
+            ledger.prompt_hashes[template.name] = template.digest
 
     design_dir = ledger.path / "design"
     design_dir.mkdir(parents=True, exist_ok=True)
     accepted: dict[str, str] = {}
+    carried_names: list[str] = []
+    if carried_docs:
+        for name in DOCS:
+            if name in carried_docs and name not in docs:
+                (design_dir / f"{name}.json").write_text(
+                    carried_docs[name], encoding="utf-8",
+                )
+                carried_names.append(name)
+                accepted[name] = carried_docs[name]
+        if carried_names:
+            ledger.track([f"design/{name}.json" for name in carried_names])
     results: list[DocResult] = []
 
     for name in docs:
@@ -374,7 +389,7 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                     "avoid": "、".join(task.avoid),
                     "chapters": str(len(canon.chapters)),
                     "canon": canon_brief(canon),
-                    "prior": _render_prior(accepted),
+                    "prior": _render_prior(accepted, before=name),
                     "schema": DESIGN_SCHEMAS[name],
                 })
                 purpose = f"design:{name}"
@@ -461,7 +476,15 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
         })
 
     design = Design(task_id=task.id, docs=tuple(results))
-    ledger.write_json("design.json", design.as_dict())
+    design_payload = design.as_dict()
+    if carried_names:
+        design_payload["carried"] = carried_names
+        for name in carried_names:
+            design_payload["docs"][name] = {
+                "status": "carried", "attempts": 0, "repairs": 0,
+                "findings": 0,
+            }
+    ledger.write_json("design.json", design_payload)
     ledger.finish("ok")
     return design
 

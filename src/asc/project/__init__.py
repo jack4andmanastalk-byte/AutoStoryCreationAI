@@ -9,7 +9,11 @@ from .bundle import (
     restore_bundle,
     verify_bundle,
 )
-from .continuation import ContinuationContext
+from .continuation import (
+    CHAPTER_DEPENDENT_DESIGN_DOCS,
+    CHAPTER_INDEPENDENT_DESIGN_DOCS,
+    ContinuationContext,
+)
 from .context import AncestorContext, ContextPacket, build_context_packet
 from .context_view import (
     CONTEXT_VIEW_SCHEMA,
@@ -42,6 +46,13 @@ from .observability import (
     WORK_SUMMARY_SCHEMA,
     build_actions,
     summarize,
+)
+from .summary import (
+    PROJECT_SUMMARY_SCHEMA,
+    SUMMARY_SECTIONS,
+    ProjectSummary,
+    ProjectSummaryResult,
+    SummaryError,
 )
 from .resume import ResumeError, ResumeProvider
 from .revise import ReviseContext, ReviseError
@@ -166,6 +177,11 @@ __all__ = [
     "WorldStore",
     "WORLD_CONTEXT_KIND",
     "WORK_SUMMARY_SCHEMA",
+    "PROJECT_SUMMARY_SCHEMA",
+    "SUMMARY_SECTIONS",
+    "ProjectSummary",
+    "ProjectSummaryResult",
+    "SummaryError",
     "build_actions",
     "summarize",
     "build_context_packet",

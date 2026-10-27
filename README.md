@@ -76,11 +76,18 @@ make report
 #   exit 3 = 次の1件 / 0 = 完成 / 2 = 失敗。待機中は submit を繰り返す（3章で12回）
 .venv/bin/python scripts/story_project.py --root works render prj-seaside \
   --out works/prj-seaside/manuscript.md
+.venv/bin/python scripts/story_project.py --root works render prj-seaside --reader \
+  --out works/prj-seaside/manuscript.reader.md
+.venv/bin/python scripts/story_project.py --root works summary prj-seaside \
+  --out works/prj-seaside/summary.md
 ```
 
 `relay submit` は取り込みと再開を1コマンドにまとめた1ラウンドの単位です。完成・失敗・
 未回答のどれも同じ書式で報告し、終了コードがその状態になります（`0` / `3` / `2`）。
 回答済みの要求は再生成せず、完成済みの作品には取り込みません。
+`render --reader` は章見出しを付け監査マーカーを除いた読書用原稿を、`summary` は JSON を
+開かずに作品情報・設定台帳（canon）・8設計書・検査要約（Blocker / Warning / Observation と
+次に直すコマンド）を Markdown で出力します。
 
 `run_pipeline.py` と `run_twostage.py` は、凍結した実験条件を再実行するための
 固定経路で、標準フローではありません（[`docs/standard_flow.md`](docs/standard_flow.md) §1）。
@@ -168,7 +175,8 @@ gh release download datasets-narou-commercialized
 │   └── curation/               # 選別報告・ギャップ分析・追加調査
 ├── samples/                    # リポジトリに同梱する小さなサンプル
 ├── scripts/
-│   ├── setup_dataset.py        # データセットアップ CLI（主要エントリポイント）
+│   ├── story_project.py        # AI自動創作の標準エントリポイント（創作project・relay・要約・編纂）
+│   ├── setup_dataset.py        # データセットアップ CLI
 │   ├── fetch_narou_api.py      # 公式API生JSONの保存
 │   └── dataset_report.py       # 統計・欠損チェック
 ├── src/asc/                    # ライブラリ本体
@@ -178,7 +186,8 @@ gh release download datasets-narou-commercialized
 │   ├── render/pdf.py fonts.py
 │   ├── story/                  # canon・台帳・継続性監査（continuity-ledger）
 │   ├── evaluation/             # 指標・ルーブリック・判定器・ハーネス
-│   └── pipeline/               # 生成（現在は Plan: 企画 → canon）
+│   ├── pipeline/               # 生成パイプライン（Plan / Design 8種 / Draft / Replay）
+│   └── project/                # 永続創作プロジェクト（再開・continuation・改訂・分岐・入れ子・共有world・要約）
 └── tests/                      # pytest
 ```
 
@@ -399,6 +408,14 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
   長さは 1/3・3/3・3/3 で `mixed`（外れたのは修復後の 2 章だけ）。繰り返す失敗は、最終報告で
   数えると 0 ですが、**修復前**には「三年前」（3 標本すべての ch02）と死者の媒体不足（2 標本）が
   出ており、登録文がその数え方を決めていませんでした（両方の読みを記録）。
+* **S1 全体（plan → 8 設計 → draft → 監査）の事前登録 1 標本実走り**は
+  [`experiments/2026-10-realrun-b-t01/`](experiments/2026-10-realrun-b-t01/note.md)（バッチ B）と
+  [`experiments/2026-10-realrun-b2-t01/`](experiments/2026-10-realrun-b2-t01/note.md)（バッチ B2、
+  `design-history` v1.1）です（`docs/two_stage_slice.md` §23・§24）。また継続性監査の
+  `dead_character_reappears` は、死者の行為・発話（`high`）と、参照文脈（引用内・記録/回想の手掛かり・
+  非主語形）の言及を分け、参照言及を `observations`（`dead_character_reference`）に残すようにしています
+  （同 §25）。任意 premise の標準創作フロー（単体・部分改訂・continuation・入れ子・共有 world）の
+  実応答 dogfood は [`experiments/2026-10-dogfood-01/`](experiments/2026-10-dogfood-01/note.md) に記録しています。
 * `--strict-timeline` は誤った日数を**修復対象**にします（既定は警告のみ。v1.1 の試走で
   「四日ぶり」→ 修復 1 回を確認）。
 * 二段階方式と**直接生成**（同じ canon・同じ設計で draft 段のみ）の L1 参考比較は

@@ -130,10 +130,15 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 # 読書用のコピー（章見出しを付け、検査用マーカーを外す）
 .venv/bin/python scripts/story_project.py --root works render prj-seaside \
   --reader --out works/prj-seaside/manuscript.reader.md
+
+# JSON を開かずに、作品情報・設定台帳（canon）・8設計書・検査要約（Blocker/Warning/Observation と次に直すコマンド）を読む
+.venv/bin/python scripts/story_project.py --root works summary prj-seaside \
+  --out works/prj-seaside/summary.md
 ```
 
 - 既定の `render` は検査対象と同じ本文（マーカー込み）をそのまま出し、そのハッシュが原稿の正本になる。
 - `--reader` は読書用コピー（`## 第1章` の章見出しを付け、`{{…}}` の検査マーカーを落とした本文）。
+- `summary` は作品情報・設定台帳（人物・場所・事実・章立て・伏線）・8設計書の要点・編集支援検査要約（Blocker / Warning / Observation と選択的再生成コマンド）を1つの Markdown にまとめる（`--section info|canon|design|checks` で部分出力も可）。`runs/` が無い場合も `relay/responses` から復元する。
 - `--json` を付けると、原稿本文とハッシュを機械可読な形でも返す。
 - 読後の感想（長さ、説明過多、反復、会話、場面転換、伏線回収、文体）は、
   次の改善の材料として残す（摩擦ログとして `experiments/<id>/note.md` に残す）。
@@ -145,6 +150,8 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 
 ```bash
 # 章を足す（新しい revision を作る。旧版は残る）
+# 既定では章一覧に依存しない設計書（brief / history / character / voice）を前版から持ち越し、
+# world / relation / plot / scene だけを再生成する（--design DOC で対象指定、--all-design で全8文書再生成）
 .venv/bin/python scripts/story_project.py --root works continue prj-seaside --add-chapters 1
 
 # 特定の章だけを書き直す（他の章はバイト単位でコピーされる）

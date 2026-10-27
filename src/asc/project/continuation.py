@@ -1,10 +1,24 @@
 """Context and invariants for an append-only creative-work continuation."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from pathlib import Path
 
+from ..pipeline.design import DOCS
 from ..pipeline.draft import ChapterDraft, canon_brief
 from ..story.canon import Canon
+
+#: Design documents that do not depend on the chapter list and can be carried
+#: forward from the parent revision during a continuation.
+CHAPTER_INDEPENDENT_DESIGN_DOCS: tuple[str, ...] = (
+    "brief", "history", "character", "voice",
+)
+
+#: Design documents that reference chapter IDs and must be regenerated when a
+#: continuation adds chapters.
+CHAPTER_DEPENDENT_DESIGN_DOCS: tuple[str, ...] = (
+    "world", "relation", "plot", "scene",
+)
 
 
 @dataclass(frozen=True)
@@ -16,6 +30,10 @@ class ContinuationContext:
     parent_chapter_count: int
     canon: Canon
     drafts: tuple[ChapterDraft, ...]
+    design: tuple[str, ...] = DOCS
+    carried_design: tuple[str, ...] = ()
+    source_design_paths: dict[str, Path] = field(default_factory=dict)
+    source_design_sha256: dict[str, str] = field(default_factory=dict)
 
     @property
     def prompt_suffix(self) -> str:
@@ -30,12 +48,17 @@ class ContinuationContext:
         ])
 
     def as_dict(self) -> dict:
-        return {
+        data = {
             "parent_revision_id": self.parent_revision_id,
             "parent_runs": dict(sorted(self.parent_runs.items())),
             "parent_chapter_count": self.parent_chapter_count,
             "reused_chapters": [chapter.id for chapter in self.drafts],
         }
+        if self.carried_design or self.design != DOCS:
+            data["carried_design"] = list(self.carried_design)
+            data["regenerated_design"] = list(self.design)
+            data["source_design_sha256"] = dict(sorted(self.source_design_sha256.items()))
+        return data
 
 
 def validate_continuation_canon(context: ContinuationContext, canon: Canon) -> None:

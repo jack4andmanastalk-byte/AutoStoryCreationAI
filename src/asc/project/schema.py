@@ -187,6 +187,24 @@ def validate_revision(data: Any) -> None:
         raise ProjectValidationError("revision.spec_sha256 does not match revision.spec")
     if data.get("derived") is not None:
         validate_derived(data["derived"], "revision.derived")
+    if data.get("continuation_design") is not None:
+        if parent_revision_id is None:
+            raise ProjectValidationError(
+                "revision.continuation_design requires parent_revision_id"
+            )
+        design_values = data["continuation_design"]
+        if not isinstance(design_values, list):
+            raise ProjectValidationError(
+                "revision.continuation_design must be a list"
+            )
+        seen_design: set[str] = set()
+        for index, value in enumerate(design_values):
+            validate_id(value, f"revision.continuation_design[{index}]")
+            if value in seen_design:
+                raise ProjectValidationError(
+                    f"revision.continuation_design repeats {value}"
+                )
+            seen_design.add(value)
     artifacts = data.get("artifacts")
     if not isinstance(artifacts, list):
         raise ProjectValidationError("revision.artifacts must be a list")

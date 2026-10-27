@@ -29,9 +29,14 @@ from ..pipeline import (
     build_plan,
     build_story,
 )
+from ..pipeline.design import DOCS
 from ..story.canon import Canon, load_canon
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
-from .continuation import ContinuationContext, validate_continuation_canon
+from .continuation import (
+    CHAPTER_INDEPENDENT_DESIGN_DOCS,
+    ContinuationContext,
+    validate_continuation_canon,
+)
 from .context import ContextPacket, build_context_packet
 from .model import (
     ArtifactRef, ProjectSnapshot, StageCheckpoint, WorkNodeRevision, new_id, utc_now,
@@ -249,6 +254,8 @@ class ProjectRunner:
         seed: int = 0, temperature: float | None = None,
         title: str | None = None, premise: str | None = None,
         node_id: str | None = None, world_binding_id: str | None = None,
+        carry_design: bool = True,
+        design: tuple[str, ...] = (),
     ) -> ProjectRunResult:
         """Append a new revision while retaining the parent runs and chapter text."""
         with self.store.execution_lock(project_id):
@@ -306,6 +313,10 @@ class ProjectRunner:
                 raise ProjectRunError(
                     "complete revision has a stage without a run", project_id=project_id,
                 )
+            selected_design = self._continuation_design_selection(
+                project_id, parent_runs["design"],
+                carry_design=carry_design, design=tuple(design),
+            )
             new_spec = replace(
                 old_revision.spec,
                 title=old_revision.spec.title if title is None else title,
@@ -320,6 +331,9 @@ class ProjectRunner:
                 created_at=utc_now(),
                 parent_revision_id=old_revision.id,
                 parent_runs=parent_runs,
+                continuation_design=(
+                    selected_design if selected_design != DOCS else None
+                ),
             )
             self.store.save_revision(new_revision)
             if parent_world_binding is not None:
@@ -933,6 +947,43 @@ class ProjectRunner:
             revise=revise,
         )
 
+    def _continuation_design_selection(
+        self, project_id: str, design_run_id: str, *,
+        carry_design: bool, design: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        unknown = [name for name in design if name not in DOCS]
+        if unknown:
+            raise ProjectRunError(
+                f"unknown design document(s) {', '.join(unknown)}; "
+                f"choose from {', '.join(DOCS)}",
+                project_id=project_id,
+            )
+        if design:
+            wanted = set(design)
+            return tuple(name for name in DOCS if name in wanted)
+        if not carry_design:
+            return DOCS
+        run_dir = self.store.project_dir(project_id) / "runs" / design_run_id
+        design_dir = run_dir / "design"
+        unresolved: set[str] = set()
+        report_path = run_dir / "design.json"
+        if report_path.is_file():
+            try:
+                report = self._read_run_json(report_path)
+                unresolved.update(
+                    str(name) for name in (report.get("unresolved") or ())
+                )
+                unresolved.update(
+                    str(name) for name in (report.get("missing") or ())
+                )
+            except ProjectRunError:
+                pass
+        carried = {
+            name for name in CHAPTER_INDEPENDENT_DESIGN_DOCS
+            if (design_dir / f"{name}.json").is_file() and name not in unresolved
+        }
+        return tuple(name for name in DOCS if name not in carried)
+
     def _continuation_for_snapshot(
         self, snapshot: ProjectSnapshot,
     ) -> ContinuationContext | None:
@@ -990,12 +1041,39 @@ class ProjectRunner:
                 location=chapter.location,
                 preserve_text=True,
             ))
+        if revision.continuation_design is not None:
+            wanted = set(revision.continuation_design)
+            regenerated_design = tuple(name for name in DOCS if name in wanted)
+        else:
+            regenerated_design = DOCS
+        carried_design: list[str] = []
+        source_design_paths: dict[str, Path] = {}
+        source_design_sha256: dict[str, str] = {}
+        design_dir = run_dirs["design"] / "design"
+        for name in DOCS:
+            if name in regenerated_design:
+                continue
+            path = design_dir / f"{name}.json"
+            if not path.is_file():
+                regenerated_design = tuple(
+                    item for item in DOCS
+                    if item in set(regenerated_design) | {name}
+                )
+                continue
+            carried_design.append(name)
+            relative = f"design/{name}.json"
+            source_design_paths[relative] = path
+            source_design_sha256[relative] = _sha256(path.read_bytes())
         return ContinuationContext(
             parent_revision_id=parent.id,
             parent_runs=dict(revision.parent_runs),
             parent_chapter_count=parent.spec.chapter_count,
             canon=canon,
             drafts=tuple(drafts),
+            design=regenerated_design,
+            carried_design=tuple(carried_design),
+            source_design_paths=source_design_paths,
+            source_design_sha256=source_design_sha256,
         )
 
     @staticmethod
@@ -1073,14 +1151,16 @@ class ProjectRunner:
                     attempt, ledger, stage_provider, configs[stage].seed,
                 )
             elif stage == "design" and attempt.revise is not None:
+                if not attempt.revise.design:
+                    stage_provider = _CARRIED
                 operation = lambda ledger: self._revise_design(
                     attempt, ledger, results["plan"].value, stage_provider, configs[stage],
                 )
             elif stage == "design":
-                operation = lambda ledger: build_design(
-                    attempt.pipeline.task, stage_provider, ledger, results["plan"].value,
-                    temperature=configs[stage].temperature,
-                    seed=configs[stage].seed,
+                if attempt.continuation is not None and not attempt.continuation.design:
+                    stage_provider = _CARRIED
+                operation = lambda ledger: self._design(
+                    attempt, ledger, results["plan"].value, stage_provider, configs[stage],
                 )
             else:
                 operation = lambda ledger: self._draft(
@@ -1303,6 +1383,36 @@ class ProjectRunner:
                 project_id=project_id,
             )
         return canon
+
+    def _design(
+        self, attempt: _Attempt, ledger: RunLedger, canon: Canon,
+        provider: Provider, config: _StageConfig,
+    ) -> Design:
+        if attempt.revise is not None:
+            return self._revise_design(attempt, ledger, canon, provider, config)
+        context = attempt.continuation
+        if context is not None and (context.carried_design or context.design != DOCS):
+            project_id = attempt.snapshot.project.id
+            carried_docs: dict[str, str] = {}
+            for name in context.carried_design:
+                relative = f"design/{name}.json"
+                source = context.source_design_paths[relative]
+                raw = source.read_bytes()
+                if _sha256(raw) != context.source_design_sha256[relative]:
+                    raise ProjectRunError(
+                        f"carried design document changed while copying: {relative}",
+                        project_id=project_id,
+                    )
+                carried_docs[name] = raw.decode("utf-8")
+            return build_design(
+                attempt.pipeline.task, provider, ledger, canon,
+                temperature=config.temperature, seed=config.seed,
+                docs=context.design, carried_docs=carried_docs,
+            )
+        return build_design(
+            attempt.pipeline.task, provider, ledger, canon,
+            temperature=config.temperature, seed=config.seed,
+        )
 
     def _revise_design(
         self, attempt: _Attempt, ledger: RunLedger, canon: Canon,

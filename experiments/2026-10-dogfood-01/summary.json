@@ -114,15 +114,26 @@
     },
     {
       "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
       "id": "F-25",
-      "status": "observed",
-      "summary": "relay status only looks at the default manuscript path, so render --out elsewhere leaves it saying not written yet"
+      "status": "fixed",
+      "summary": "render --out now records the rendered manuscript path per node and revision, and relay status (--out) / status report that path and whether it is written for the current revision"
     },
     {
       "area": "operations",
+      "files": [
+        "src/asc/project/summary.py",
+        "scripts/story_project.py",
+        "tests/test_project_summary.py",
+        "experiments/2026-10-dogfood-01/project_summary.md",
+        "experiments/2026-10-dogfood-01/child_summary.md"
+      ],
       "id": "F-26",
-      "status": "documented",
-      "summary": "design artifacts live under runs/ (gitignored); relay responses are the committed verbatim record"
+      "status": "fixed",
+      "summary": "story_project.py summary now renders work info, canon, all 8 design documents, and editorial check triage (blockers/warnings/observations + next commands) as Markdown without opening JSON, falling back to relay/responses if runs/ is absent"
     },
     {
       "area": "editing",
@@ -159,9 +170,18 @@
     },
     {
       "area": "flow",
+      "files": [
+        "src/asc/pipeline/design.py",
+        "src/asc/project/continuation.py",
+        "src/asc/project/model.py",
+        "src/asc/project/schema.py",
+        "src/asc/project/runner.py",
+        "scripts/story_project.py",
+        "tests/test_project_continuation.py"
+      ],
       "id": "F-29",
-      "status": "observed",
-      "summary": "continue re-asks all 8 design docs even when only chapter-dependent docs (world/relation/plot/scene) need an update"
+      "status": "fixed",
+      "summary": "continue now carries chapter-independent design docs (brief, history, character, voice) from the parent revision by default and accepts --design DOC or --all-design"
     },
     {
       "area": "flow",

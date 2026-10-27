@@ -54,14 +54,10 @@
 ## 3. 現在地
 
 - S1全体（plan → 8設計 → draft → 監査）は実応答で通った記録がある（バッチB/B2）。
-- `design-history` は、検査だけが知っていた契約をプロンプトへ明記した v1.1 になっている。
-- 継続性監査は、死者の行為・発話と、参照としての言及を分けて記録できる。
-- 創作projectの再開、continuation、改訂、分岐、入れ子、世界文脈、編纂、bundle は
-  CLIから扱える（`docs/project.md`）。
-- 一方で、入口は実験用 `run_pipeline.py`、二段階方式、創作projectへ分かれており、
-  「標準で1本作る」導線はまだ一つに定まっていない。
-- Arena relay の往復と状態確認には、まだ手作業の台帳管理が残っている。
-- 本文の読み味は、個別の試走では見ているが、摩擦の分類として継続的には回っていない。
+- `design-history`（v1.1）と `design-scene`（v1.1）は、検査だけが知っていた契約をプロンプトへ明記済み。
+- 継続性監査は、死者の行為・発話（`high`）と、参照としての言及（`observations` の `dead_character_reference`）を分けて記録できる。
+- 標準自動創作フローは `scripts/story_project.py`（既定 provider = Arena relay）に一本化され、`relay status` / `relay submit` による1ラウンド単位の往復、`render --reader` / `compose --reader` による読書用原稿、`summary` による作品情報・設定台帳・8設計書・検査要約（Blocker / Warning / Observation と次に直すコマンド）の Markdown 出力が揃っている。
+- 実応答 dogfood（[`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)）で、単体3章・1章改訂・第4章追加（continuation）・設計1文書回復・子作品の追加と親子編纂・共有 `world` 台帳登録と4種編纂（年代記・地誌・文化誌・作品集）まで一通り実応答で完走済み。
 
 ## 4. タスク整理
 
@@ -192,3 +188,24 @@
 - 実応答での確認（[`experiments/2026-10-dogfood-01/collection.reader.md`](../experiments/2026-10-dogfood-01/collection.reader.md)、計39応答・2ノード）:
   - 親『宛名のない手紙』（4章）の下に、子『切り取られた頁』（1章・713字、閉山当夜の沢渡支所）を `add-child` → 実応答12ラウンドで完走 → `adopt-child` → `compose` / `compose --reader`。
   - 祖先の canon 要約（`asc-context-packet-pre1`）だけが子の依頼文に入り、親の本文全文が混入しないことを確認。`doctor` findings 0。
+
+### 共有 world 台帳・世界編纂の実応答 dogfood と摩擦解消（2026-10-27）
+
+- 実施: 親『宛名のない手紙』（1965年・尾根野/沢渡）と子『切り取られた頁』（1950年・沢渡）の2作品を共有 `world` 台帳（時代 `tf-showa` / `span-heizan` / `span-15yrs`、地域 `reg-gun` / `reg-oneno` / `reg-sawatari` / `sp-toge`、文化 `cul-post` / `cs-heizan` / `cs-15yrs` / `crel-1`）に `world bind` し、両作品の完了済み plan から計4件の正史（`world adopt-canon`）を採用して、年代記（[`chronicle.md`](../experiments/2026-10-dogfood-01/chronicle.md)）・地誌（[`gazetteer.md`](../experiments/2026-10-dogfood-01/gazetteer.md)）・文化誌（[`culture.md`](../experiments/2026-10-dogfood-01/culture.md)）・作品集（[`world-collection.md`](../experiments/2026-10-dogfood-01/world-collection.md)）を編纂した。
+- 解消した摩擦:
+  - **F-33**: `.gitignore` の `runs/` をルート直下の `/runs/` に限定し、実験プロジェクト内の完了済み `runs/` を Git 追跡に含めて別コンテナでも `doctor`（findings 0）が再現できるようにした。
+  - **F-34**: `world adopt-canon --artifact` で `canon/facts.json` のような短縮相対パスを解決できるようにした。
+  - **F-35**: `world status` のテキスト出力にバインディング先 ID と採用済み canon 一覧を表示するようにした。
+
+### F-29 / F-25 continuation の設計持ち越しと `relay status` の出力先パス認識（2026-10-27）
+
+- **F-29**: `continue` 実行時、既定では章一覧に依存しない4文書（`brief` / `history` / `character` / `voice`）を前版の完了済み design run から SHA-256 検証付きで持ち越し、章構成に依存する4文書（`world` / `relation` / `plot` / `scene`）のみを再生成するようにした（1章追加の基本ラウンドが 10 → 6 に減少）。`--design DOC` で対象指定、`--all-design` で全8文書再生成も可能。
+- **F-25**: `render --out <path>`（および `--reader --out <path>`）実行時に `<node_dir>/rendered.json` へノード・リビジョン単位の出力先を記録し、`status` / `relay status`（および `relay status --out <path>`）が現リビジョンでの書き出し有無と出力先パスを表示するようにした。
+
+### U-06 / U-07 / U-08（F-26）作品情報・canon・8設計書・検査要約の Markdown 出力と M-01 状態表同期（2026-10-27）
+
+- **U-06 / U-07 / U-08 / F-26**: `scripts/story_project.py summary <project_id> [--node <node_id>] [--revision <rev_id>] [--section info|canon|design|checks|all] [--out <path>] [--json]`（`src/asc/project/summary.py`）を追加。
+  - JSON を直接開かずに、①作品情報と章別文字数（`info`）、②設定台帳（人物・場所・事実・章立て・伏線、`canon`）、③8設計書の要点と状態（`design`）、④編集支援の検査要約（`checks`：標準経路を止める **Blocker**、部分改訂候補の **Warning**、死者への参照言及など標準経路を止めない **Observation**、および選択的再生成コマンド `revise --design` / `revise --chapter` / `adopt-child`）を1つの Markdown として読めるようにした。
+  - `runs/` が存在しない環境でも `<project>/relay/responses/` の受理応答から canon と8設計書を復元して要約を表示できるようにした（F-26）。
+  - 実応答 dogfood の親作品・子作品の要約を [`experiments/2026-10-dogfood-01/project_summary.md`](../experiments/2026-10-dogfood-01/project_summary.md) と [`child_summary.md`](../experiments/2026-10-dogfood-01/child_summary.md) に出力した。
+- **M-01**: [`README.md`](../README.md) と [`docs/protocol.md`](protocol.md) §10 の状態表に、バッチ B / B2（S1 全体の事前登録 1 標本実走り 2 件）、継続性監査の死者言及分離（`dead_character_reference` を `observations` に記録）、および標準創作フロー（`story_project.py`）を反映した（研究上の主張範囲・L2/L3 凍結は不変）。

@@ -198,6 +198,8 @@ class WorkNodeRevision:
     parent_runs: dict[str, str] = field(default_factory=dict)
     #: Set when the revision carries an older revision's content forward.
     derived: dict[str, Any] | None = None
+    #: Design documents to regenerate in a continuation; None means all DOCS.
+    continuation_design: tuple[str, ...] | None = None
 
     @classmethod
     def create(
@@ -212,6 +214,7 @@ class WorkNodeRevision:
         artifacts: tuple[ArtifactRef, ...] = (),
         parent_runs: dict[str, str] | None = None,
         derived: dict[str, Any] | None = None,
+        continuation_design: tuple[str, ...] | None = None,
     ) -> "WorkNodeRevision":
         revision = cls(
             id=revision_id,
@@ -224,12 +227,16 @@ class WorkNodeRevision:
             artifacts=artifacts,
             parent_runs=dict(parent_runs or {}),
             derived=dict(derived) if derived is not None else None,
+            continuation_design=(
+                tuple(continuation_design)
+                if continuation_design is not None else None
+            ),
         )
         validate_revision(revision.to_dict())
         return revision
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        data = {
             "record_type": REVISION_RECORD,
             "schema_version": SCHEMA_VERSION,
             "id": self.id,
@@ -243,6 +250,9 @@ class WorkNodeRevision:
             "derived": self.derived,
             "created_at": self.created_at,
         }
+        if self.continuation_design is not None:
+            data["continuation_design"] = list(self.continuation_design)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "WorkNodeRevision":
@@ -257,6 +267,10 @@ class WorkNodeRevision:
             artifacts=tuple(ArtifactRef.from_dict(row) for row in data["artifacts"]),
             parent_runs=dict(data.get("parent_runs") or {}),
             derived=dict(data["derived"]) if data.get("derived") is not None else None,
+            continuation_design=(
+                tuple(data["continuation_design"])
+                if data.get("continuation_design") is not None else None
+            ),
             created_at=data["created_at"],
         )
 

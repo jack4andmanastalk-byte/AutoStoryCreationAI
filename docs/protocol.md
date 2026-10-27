@@ -156,7 +156,7 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 スキルの追加・改良、プロンプトの改善、モデルの更新は**版を上げない**（それが測る対象）。
 ただしモデルを変えた比較は、同一モデル内の比較と分けて報告する。
 
-## 10. 現状（2026-10-26 時点）
+## 10. 現状（2026-10-27 時点）
 
 **運用範囲**: 利用者の決定により、Arena.ai × L1 を継続対象とし、L2/L3 の実証・較正・
 追加開発を凍結した（[`evaluation_scope.md`](evaluation_scope.md)）。これは §0–9 の
@@ -167,15 +167,15 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 | 項目 | 状態 |
 | --- | --- |
 | タスクセット 10 題 | 作成済み（`benchmarks/protocol-v1/tasks.yaml`） |
-| L1 | 実装済み（継続性監査・指標・禁止パターン） |
+| L1 | 実装済み（継続性監査・指標・禁止パターン）。`dead_character_reappears` は死者の行為・発話と、参照文脈（引用内・記録/回想の手掛かり・非主語形）の言及を分け、参照言及を `observations`（`dead_character_reference`）に残す（[`two_stage_slice.md`](two_stage_slice.md) §25） |
 | L2 | 既存実装を凍結資産として保存。**実証・較正・追加開発は 2026-10-24 に凍結** |
 | L3 | ラベル形式・κ・判定器一致率の計算を保存。**評定・較正・追加開発は 2026-10-24 に凍結** |
-| 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S1 以降は plan → design → draft の順で、8 種の設計書を検査器で検証する（台本での配線検証のみ、`tests/test_pipeline_design.py`）。実モデル未接続 |
+| 生成（S0–S3） | **S0 / S1 / S2 / S3 実装済み**（`scripts/run_pipeline.py`）。S1 以降は plan → design → draft の順で、8 種の設計書を検査器で検証する。台本での配線検証（`tests/test_pipeline_design.py`）に加え、Arena relay による S1 全体の事前登録 1 標本実走りを 2 件完走済み（バッチ B: [`../experiments/2026-10-realrun-b-t01/note.md`](../experiments/2026-10-realrun-b-t01/note.md)、バッチ B2（`design-history` v1.1）: [`../experiments/2026-10-realrun-b2-t01/note.md`](../experiments/2026-10-realrun-b2-t01/note.md)）。任意 premise の標準自動創作フローは `scripts/story_project.py`（[`standard_flow.md`](standard_flow.md)、実応答 dogfood: [`../experiments/2026-10-dogfood-01/note.md`](../experiments/2026-10-dogfood-01/note.md)） |
 | スキル（13 種） | seed-01〜13 すべて実装済み（構造検査のみ）。意味の判定は L2/L3 凍結のため評価しない |
 | L3 較正の道具 | 実装済み（`scripts/judge_pairs.py`、`scripts/calibrate_judge.py`、κ の fixture 検証）。固定デモの再生のみ。新規評定・較正は凍結 |
 | 実験ランナー | 実装済み（`scripts/run_experiment.py`）。台本での配線検証のみ |
-| 二段階方式（Stage A → B） | **Phase 1–2 実装済み＋P0/P1 修正済み**（`src/asc/gamelog/`、`scripts/check_gamelog.py`、`scripts/run_twostage.py`、`docs/two_stage_slice.md`）。`game_log.json` スキーマと 8 種の決定論的検査、確定マーカー導出、Stage B の 5 検査、fail-closed 配線。**固定台本（`scripted`）での配線・回帰確認のみ。実モデル応答・L1 ペア比較（Phase 3）は未実施**。protocol-v1 の系・指標・閾値は変更しない。第1段階の独立点検で、契約文より検査範囲が狭い箇所（現在地の連続性、死者言及の章スコープ、`--resume` の記録保全など）を再現例つきで記録した: [`two_stage_stage1_audit_2026-10-26.md`](../research/curation/two_stage_stage1_audit_2026-10-26.md)。P0（再開・記録保全 5 件、死者言及の文スコープ化、`--stage b` 単独実行）と P1（同一場面 learn→use、未知キー報告、現在時 `subject`、死者の `used_facts`、章 ID と章順、現在地の連続性、必須語ゲート、`--min-chars`、`PROMPTS.md`）は同日修正済み（同文書 §9・§11）。Stage B 単独の実応答 1 件を実施（`experiments/2026-10-stageb-solo-t01/`）。全工程試走を 1 件実施（`experiments/2026-10-full-t01/`）。日数・場所・時系列は canon とログから導出して Stage B に渡す（`timeline.json`）方式にし、本文側の `timeline_consistency` は**既定で警告のみ**（`--strict-timeline` で修復対象）なので L1 の指標・閾値は変えていない（`docs/two_stage_slice.md` §14）。v1.1 プロンプトでの再生成を 1 件実施（`experiments/2026-10-stageb-v11-t01/`、`clean`・修復 1 回）。S1 直接生成との L1 参考比較は draft 段のみ 1 件実施（同一 canon・同一設計、`experiments/2026-10-l1-pair-t01/`）。plan・設計を含む S1 全体との比較は未実施。検出できなかった 2 種（ログ外の場所・数量）については、地名は L1 の候補検査として clean 9 章・言い換え 6/6・紛らわしい文 12/12 まで測り、数量は検査にせず報告に留めた（`docs/two_stage_slice.md` §18・§19）。候補検査は契約外で、`run_twostage.py --observe-surface` の観測としてのみ走りに残る（§20。既定は無効）。次の一手は実モデル 3 標本のバッチ A で、走らせる前に判定規則を固定した（§21・`experiments/2026-10-realrun-a-t01/preregistration.json`）。バッチ A は 3 標本走行済みで 9 章すべて `clean`（§21.1）。走行で見つかった「検査だけが知る規則」をプロンプト v1.2 に明示した（§22。判定・閾値・重大度は不変） |
-| 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`tests/test_chat_operator.py`）。pilot 1 件（下記） |
+| 二段階方式（Stage A → B） | **Phase 1–2 実装済み＋P0/P1 修正済み**（`src/asc/gamelog/`、`scripts/check_gamelog.py`、`scripts/run_twostage.py`、`docs/two_stage_slice.md`）。`game_log.json` スキーマと 8 種の決定論的検査、確定マーカー導出、Stage B の 5 検査、fail-closed 配線。protocol-v1 の系・指標・閾値は変更しない。第1段階の独立点検で、契約文より検査範囲が狭い箇所（現在地の連続性、死者言及の章スコープ、`--resume` の記録保全など）を再現例つきで記録した: [`two_stage_stage1_audit_2026-10-26.md`](../research/curation/two_stage_stage1_audit_2026-10-26.md)。P0（再開・記録保全 5 件、死者言及の文スコープ化、`--stage b` 単独実行）と P1（同一場面 learn→use、未知キー報告、現在時 `subject`、死者の `used_facts`、章 ID と章順、現在地の連続性、必須語ゲート、`--min-chars`、`PROMPTS.md`）は同日修正済み（同文書 §9・§11）。Stage B 単独の実応答 1 件を実施（`experiments/2026-10-stageb-solo-t01/`）。全工程試走を 1 件実施（`experiments/2026-10-full-t01/`）。日数・場所・時系列は canon とログから導出して Stage B に渡す（`timeline.json`）方式にし、本文側の `timeline_consistency` は**既定で警告のみ**（`--strict-timeline` で修復対象）なので L1 の指標・閾値は変えていない（`docs/two_stage_slice.md` §14）。v1.1 プロンプトでの再生成を 1 件実施（`experiments/2026-10-stageb-v11-t01/`、`clean`・修復 1 回）。S1 直接生成との L1 参考比較は draft 段のみ 1 件実施（同一 canon・同一設計、`experiments/2026-10-l1-pair-t01/`）。plan・設計を含む S1 全体の実応答 1 標本はバッチ B / B2（§23・§24）として実施済み。検出できなかった 2 種（ログ外の場所・数量）については、地名は L1 の候補検査として clean 9 章・言い換え 6/6・紛らわしい文 12/12 まで測り、数量は検査にせず報告に留めた（`docs/two_stage_slice.md` §18・§19）。候補検査は契約外で、`run_twostage.py --observe-surface` の観測としてのみ走りに残る（§20。既定は無効）。実モデル 3 標本のバッチ A は走らせる前に判定規則を固定し（§21・`experiments/2026-10-realrun-a-t01/preregistration.json`）、3 標本走行済みで 9 章すべて `clean`（§21.1）。走行で見つかった「検査だけが知る規則」をプロンプト v1.2 に明示した（§22。判定・閾値・重大度は不変） |
+| 鍵なしの生成経路 | 実装済み（`scripts/chat_operator.py`、`scripts/relay_prompts.py`、`tests/test_chat_operator.py`）。pilot・バッチ A/B/B2・創作 project dogfood を実施（下記） |
 | 実モデル経路 | 実装済み（`scripts/model_adapter.py`、`tests/test_model_adapter.py`）。**実 API での実行は未実施**（鍵を置かない方針のため、ローカルのスタブでのみ検証） |
 | L2 判定器 | アダプタ実装済み（`scripts/judge_adapter.py`）。固定デモの再生のみ。**実モデルでの較正・追加開発は凍結** |
 | 対照群 30 作品 | **選定承認・凍結済み**（2026-10-24）。[`controls.approved.json`](../benchmarks/protocol-v1/controls.approved.json) に利用者の明示的な選定承認を記録し、[`controls.json`](../benchmarks/protocol-v1/controls.json) を生成。30 作品・重複なし・権利/NDC/本文/3,000〜4,200 字を機械検査済み（full 3・excerpt 27）。[`controls.proposed.md`](../benchmarks/protocol-v1/controls.proposed.md) に承認記録と作品一覧を保存。L2/L3 や品質評定の再開ではない |
@@ -188,3 +188,13 @@ G5 が満たせない場合、G1–G4 の数値は**参考値**としてのみ�
 t01 × seed 0–2 × S0/S1（6 run）。担い手は対話セッションのオペレータで、
 **モデルと版を固定できないため G5 は未達**。§5 により、この run の L1 の値は
 **参考値**であり、L2/L3 は測っていない。公開作品との比較（G3/G4）には使えない。
+
+### バッチ B / B2（`experiments/2026-10-realrun-b-t01/`、`experiments/2026-10-realrun-b2-t01/`）
+
+S1 全体（plan が canon を生成し、8 設計と draft がその単一 canon を読む一続きの経路）を
+事前登録に基づいて Arena セッション内の実応答で 1 標本ずつ通した記録（[`two_stage_slice.md`](two_stage_slice.md) §23・§24）。
+バッチ B（[`../experiments/2026-10-realrun-b-t01/note.md`](../experiments/2026-10-realrun-b-t01/note.md)）では
+初回設計所見 5 件が修復で解消して完走し、そこで見つかった未記載制約を明記した
+`design-history` v1.1 でのバッチ B2（[`../experiments/2026-10-realrun-b2-t01/note.md`](../experiments/2026-10-realrun-b2-t01/note.md)）では
+初回設計所見 0 件で完走した。いずれも N=1 の記述的記録であり、率・再発率・因果効果は主張せず、
+G3/G4 は `frozen_not_measured`、G5 は主張しない。
