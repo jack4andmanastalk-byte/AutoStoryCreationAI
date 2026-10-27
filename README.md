@@ -2,8 +2,8 @@
 
 **初めて読む方へ:** [一般向け現状レポート（2026-10-25）](docs/overview_report_ja.md) に、スキル・評価ハーネス・生成工程・データの「できること／できないこと」をまとめています。技法や既存資料の実装・接続状況は[資料の棚卸し](research/curation/materials_inventory_2026-10-25.md)を参照してください。
 
-AI による自動創作活動（ストーリー・キャラクター・世界観・歴史など）を研究するためのリポジトリです。
-本リポジトリは **研究素材のデータセットアップ** を主眼に置き、
+AI による自動創作活動（ストーリー・キャラクター・世界観・歴史など）のためのリポジトリです。
+AIが作品を作り続けられるよう、その基盤として **研究素材のデータセットアップ** を含み、
 
 1. 公開ドメインの日本語文学（青空文庫）
 2. Web 小説（小説家になろう）
@@ -17,6 +17,11 @@ AI による自動創作活動（ストーリー・キャラクター・世界�
 > **現在の実験範囲は Arena.ai × L1**。L2/L3 の実証・較正・追加開発は 2026-10-24 に凍結しました
 > （[`docs/evaluation_scope.md`](docs/evaluation_scope.md)）。次は対照群の確定と L1 の探索的実験です。
 > `research/` に、外部コーパスの選別・統一カタログ・スキル種を収録しています。
+>
+> **今後の開発方針（2026-10-29）**: AIによる自動創作そのものの実用改善を優先します。
+> 厳密な検証より、作品を作り、読み、摩擦を直す循環を標準とし、研究用プロトコルと
+> 過去の実験記録は基盤・履歴として保持します。タスク整理は
+> [`docs/practical_roadmap.md`](docs/practical_roadmap.md) を参照してください。
 
 ---
 
@@ -167,6 +172,7 @@ gh release download datasets-narou-commercialized
 | [`docs/protocol.md`](docs/protocol.md) | **評価プロトコル v1（凍結）**。タスク 10 題・系 S0–S3・指標・合格閾値 G1–G5 |
 | [`docs/evaluation_scope.md`](docs/evaluation_scope.md) | **現在の運用範囲**。Arena × L1 を継続し、L2/L3 を凍結する決定と報告制約 |
 | [`docs/arena_operation.md`](docs/arena_operation.md) | **実行前提の運用モデル**。Arena Agent Mode × GitHub で完結する実行・生成・永続化・再検証の役割分担（分析・検証・再設計） |
+| [`docs/practical_roadmap.md`](docs/practical_roadmap.md) | **実用改善ロードマップ**。AI自動創作を前提に、作品を作って直す循環と今後の優先タスク |
 | [`docs/replay.md`](docs/replay.md) | 記録済み応答を外部providerなしで再実行し、prompt・response・成果物の一致を監査する方法 |
 | [`docs/continuous_creation_roadmap.md`](docs/continuous_creation_roadmap.md) | 単一作品の再開から、続編・入れ子作品・世界スケール親作品までの設計と実装順序 |
 | [`docs/project.md`](docs/project.md) | 任意premiseの創作projectを作成し、S1のplan/design/draftを実行・中断再開・continuation・多段入れ子作品の依存順実行とpinned再帰編纂・複数時間軸/地域/文化状態/世界canonの保存と選択ContextPacket・年代記/地誌/文化圏/作品集の編纂・外部replay bundleのexport/verify/restoreを行う方法 |
