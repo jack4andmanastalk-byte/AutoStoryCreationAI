@@ -119,3 +119,6 @@
 
 北極星は「正しく測れたか」ではなく、**AIが次の作品と次の章を、少ない手戻りで
 作り続けられるか**である。
+
+新しいArenaチャットで実作業を始める場合は、
+[`practical_start_prompt.md`](practical_start_prompt.md) の開始プロンプトを使う。
