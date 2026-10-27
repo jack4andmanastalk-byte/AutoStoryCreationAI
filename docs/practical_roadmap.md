@@ -122,3 +122,22 @@
 
 新しいArenaチャットで実作業を始める場合は、
 [`practical_start_prompt.md`](practical_start_prompt.md) の開始プロンプトを使う。
+
+## 7. 実施記録
+
+### U-01 標準自動創作フローを一つに決め、quickstart を作る（2026-10-27）
+
+- 決定: 標準入口は `scripts/story_project.py`（創作project）。provider の省略時は
+  Arena relay（`<project>/relay`）。`run_pipeline.py` と `run_twostage.py` は
+  凍結した実験条件の再実行経路として残す。
+- 文書: [`standard_flow.md`](standard_flow.md)（決定）、[`quickstart.md`](quickstart.md)（手順）。
+- 実装: `--provider arena`（および既定化）、`relay export|status|ingest`、
+  応答待ち時の PROMPTS.md 自動更新、完成時の `Manuscript:` 表示、
+  relay タグの 8 hex 化（4 hex が実際に衝突し、応答が別 request に付いた）。
+- 回帰: `tests/test_standard_flow.py`、`tests/test_relay_prompts.py` の衝突テスト、
+  `make quickstart-check`。
+- 確認: 固定台本で premise → 3章 → render まで通した（実応答ではない）。
+  記録と摩擦は [`experiments/2026-10-u01-standard-flow-t01/`](../experiments/2026-10-u01-standard-flow-t01/note.md)。
+- 残り: 実応答での dogfood（U-03）。relay の一括書き出しと pending 表示の統一（U-02）。
+  原稿の章見出しとマーカー表示（U-08）。L2/L3 は `frozen_not_measured` のまま。
+

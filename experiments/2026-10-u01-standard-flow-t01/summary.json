@@ -1,0 +1,42 @@
+{
+  "artifact_refs": 32,
+  "chapters_requested": 3,
+  "claims_not_made": [
+    "quality",
+    "interest",
+    "L2/L3",
+    "rates",
+    "recurrence",
+    "causal effect"
+  ],
+  "date": "2026-10-27",
+  "entry_point": "scripts/story_project.py",
+  "experiment": "2026-10-u01-standard-flow-t01",
+  "fixture": "benchmarks/protocol-v1/fixtures/project-demo.json",
+  "kind": "scripted wiring check (no model output)",
+  "l2_l3": "frozen_not_measured",
+  "manuscript": {
+    "headings": [
+      "# 潮の記録者"
+    ],
+    "marker_count": 11,
+    "path": "manuscript.md",
+    "sha256": "efbc5e129ff91012653f20d812aa2ccedf1252ca83365ecb51225ccbe0359c79"
+  },
+  "not_model_output": true,
+  "premise": "港町で失われた潮位記録を追う。記録を守る者と、書き換えたい者がいる。",
+  "provider": "arena-relay (chat_operator.py in <project>/relay)",
+  "relay": {
+    "pending": 0,
+    "requests": 12,
+    "responses": 12,
+    "resume_cycles": 12
+  },
+  "runs": 15,
+  "stages": {
+    "design": "done",
+    "draft": "done",
+    "plan": "done"
+  },
+  "state": "complete"
+}

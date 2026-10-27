@@ -58,6 +58,30 @@ make data
 make report
 ```
 
+### 2.1 AIに作品を作らせる（標準フロー）
+
+題材と条件から**3章の原稿**までを、Arena のセッション内で進める標準手順です。
+
+- 手順: [`docs/quickstart.md`](docs/quickstart.md)
+- 決定（入口・provider・状態の置き場所・検査の位置づけ）: [`docs/standard_flow.md`](docs/standard_flow.md)
+
+```bash
+.venv/bin/python scripts/story_project.py --root works init \
+  --project-id prj-seaside --title "潮の記録者" \
+  --premise "港町で失われた潮位記録を追う。" --chapters 3 --target-chars 1200
+.venv/bin/python scripts/story_project.py --root works run prj-seaside      # 応答待ちで exit 3
+.venv/bin/python scripts/story_project.py --root works relay export prj-seaside
+# 生成した応答を tag 付きで answers.txt に書く
+.venv/bin/python scripts/story_project.py --root works relay ingest prj-seaside --file answers.txt
+.venv/bin/python scripts/story_project.py --root works resume prj-seaside   # 未回答の数だけ繰り返す
+.venv/bin/python scripts/story_project.py --root works render prj-seaside \
+  --out works/prj-seaside/manuscript.md
+```
+
+`run_pipeline.py` と `run_twostage.py` は、凍結した実験条件を再実行するための
+固定経路で、標準フローではありません（[`docs/standard_flow.md`](docs/standard_flow.md) §1）。
+導線は `make quickstart-check`（`tests/test_standard_flow.py`）で回帰対象にしています。
+
 個別に実行する場合:
 
 ```bash

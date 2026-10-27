@@ -224,8 +224,9 @@ def build_actions(
             ))
     if state == "not_started":
         actions.append(_action(
-            f"{base} run {project_id} --provider command --command <provider command>",
-            "no stage has started yet",
+            f"{base} run {project_id}",
+            "no stage has started yet; the default provider records the prompt "
+            "in the project relay directory",
             name="run",
         ))
     return actions

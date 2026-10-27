@@ -7,12 +7,25 @@ Examples::
         --title "潮の記録者" --premise "港町で失われた潮位記録を追う。"
     python3 scripts/story_project.py status PROJECT_ID --json
 
+This is the standard entry point for AI automatic authorship: a premise and its
+constraints go in, three inspected chapters come out, and the same project can
+then be continued, revised, branched, and compiled.  The contract with the rest
+of the repository is [`docs/standard_flow.md`](../docs/standard_flow.md), and the
+step-by-step procedure is [`docs/quickstart.md`](../docs/quickstart.md).
+
 By default, projects live below ``runs/projects/``.  Use ``--root`` before the
-subcommand to select another store.  ``run`` executes the single-work S1
-vertical slice, and ``resume`` continues an interrupted revision without
-regenerating its completed response prefix.  ``continue`` creates a new
-revision for a completed work, and ``bundle export|verify|restore`` moves its
-replay materials to an external directory.  ``add-child`` creates an independent
+subcommand to select another store; committed works use ``--root works``.
+``run`` executes the single-work S1 vertical slice, and ``resume`` continues an
+interrupted revision without regenerating its completed response prefix.
+
+Generation defaults to ``--provider arena``: ``scripts/chat_operator.py`` keeps
+each prompt in ``<project>/relay/requests`` and reads the answer back from
+``<project>/relay/responses``, so an Arena session can stop at the exact prompt
+that has no text yet and continue in a later turn.  ``relay export`` writes the
+paste-ready ``PROMPTS.md`` and ``relay ingest`` reads the answers back.
+``continue`` creates a new revision for a completed work, and
+``bundle export|verify|restore`` moves its replay materials to an external
+directory.  ``add-child`` creates an independent
 child below any node; ``run-tree`` uses parent-first dependency order;
 ``render`` and ``compose`` provide single-work and recursive pinned outputs.
 ``world`` persists multiple timeframes, regions, culture states, revision-pinned
@@ -29,11 +42,18 @@ from __future__ import annotations
 
 import argparse
 import json
+import shlex
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
+# The relay file format (tags, PROMPTS.md, ingest rules) lives in the sibling
+# script `relay_prompts.py`; reusing it keeps one definition of the handoff.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import relay_prompts  # noqa: E402
 
 from asc.pipeline import (  # noqa: E402
     CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
@@ -84,15 +104,35 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     init.add_argument("--json", dest="json_output", action="store_true")
 
+    def _provider_arguments(parser) -> None:
+        """The provider options shared by every generation entry point.
+
+        ``arena`` is the standard flow: prompts and answers stay in the
+        project's ``relay/`` directory (``scripts/chat_operator.py``), so the
+        work resumes across Arena sessions.  It is also the default when
+        neither ``--provider`` nor a provider option is given.
+        """
+        parser.add_argument(
+            "--provider", choices=sorted(PROVIDERS), default=None,
+            help="model provider (default: arena = the project's relay directory)",
+        )
+        parser.add_argument("--script", help="scripted response JSON (with --provider scripted)")
+        parser.add_argument("--command", dest="provider_command", help="external provider command")
+        parser.add_argument(
+            "--relay-dir",
+            help="operator directory for --provider arena (default: <project>/relay)",
+        )
+        parser.add_argument("--model")
+
+    def _generation_arguments(parser) -> None:
+        _provider_arguments(parser)
+        parser.add_argument("--seed", type=int, default=0)
+        parser.add_argument("--temperature", type=float)
+
     run = subparsers.add_parser("run", help="run plan, design, and draft for a new revision")
     run.add_argument("project_id")
     run.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
-    run.add_argument("--provider", choices=["scripted", "command"], default="command")
-    run.add_argument("--script", help="scripted response JSON (with --provider scripted)")
-    run.add_argument("--command", dest="provider_command", help="external provider command")
-    run.add_argument("--model")
-    run.add_argument("--seed", type=int, default=0)
-    run.add_argument("--temperature", type=float)
+    _generation_arguments(run)
     run.add_argument("--json", dest="json_output", action="store_true")
 
     tree = subparsers.add_parser(
@@ -100,12 +140,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     tree.add_argument("project_id")
     tree.add_argument("--node", dest="node_id", help="subtree root (default: project root)")
-    tree.add_argument("--provider", choices=["scripted", "command"], default="command")
-    tree.add_argument("--script", help="scripted response JSON (with --provider scripted)")
-    tree.add_argument("--command", dest="provider_command", help="external provider command")
-    tree.add_argument("--model")
-    tree.add_argument("--seed", type=int, default=0)
-    tree.add_argument("--temperature", type=float)
+    _generation_arguments(tree)
     tree.add_argument("--json", dest="json_output", action="store_true")
 
     continuation = subparsers.add_parser(
@@ -118,16 +153,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     chapter_change.add_argument("--chapters", type=int, help="new total chapter count")
     continuation.add_argument("--title")
     continuation.add_argument("--premise")
-    continuation.add_argument("--provider", choices=["scripted", "command"], default="command")
-    continuation.add_argument("--script", help="scripted response JSON (with --provider scripted)")
-    continuation.add_argument("--command", dest="provider_command", help="external provider command")
-    continuation.add_argument("--model")
     continuation.add_argument(
         "--world-binding",
         help="explicitly reuse this parent-revision world binding for the new revision",
     )
-    continuation.add_argument("--seed", type=int, default=0)
-    continuation.add_argument("--temperature", type=float)
+    _generation_arguments(continuation)
     continuation.add_argument("--json", dest="json_output", action="store_true")
 
     def _derived_arguments(parser) -> None:
@@ -146,15 +176,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             "--world-binding",
             help="explicitly copy this source-revision world binding to the new revision",
         )
-        parser.add_argument(
-            "--provider", choices=["scripted", "command"], default=None,
-            help="model provider; omit when nothing is regenerated",
-        )
-        parser.add_argument("--script", help="scripted response JSON (with --provider scripted)")
-        parser.add_argument("--command", dest="provider_command", help="external provider command")
-        parser.add_argument("--model")
-        parser.add_argument("--seed", type=int, default=0)
-        parser.add_argument("--temperature", type=float)
+        _generation_arguments(parser)
         parser.add_argument("--json", dest="json_output", action="store_true")
 
     revise = subparsers.add_parser(
@@ -191,10 +213,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     resume = subparsers.add_parser("resume", help="resume an interrupted project revision")
     resume.add_argument("project_id")
     resume.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
-    resume.add_argument("--provider", choices=["scripted", "command"], default="command")
-    resume.add_argument("--script", help="scripted response JSON (with --provider scripted)")
-    resume.add_argument("--command", dest="provider_command", help="external provider command")
-    resume.add_argument("--model")
+    _provider_arguments(resume)
     resume.add_argument(
         "--retry-failed",
         action="store_true",
@@ -251,6 +270,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     pending.add_argument("project_id")
     pending.add_argument("--node", dest="node_id", help="subtree root (default: root and all descendants)")
     pending.add_argument("--json", dest="json_output", action="store_true")
+
+    relay = subparsers.add_parser(
+        "relay", help="hand prompts to a chat session and take the answers back",
+    )
+    relay_commands = relay.add_subparsers(dest="relay_command", required=True)
+    relay_export = relay_commands.add_parser(
+        "export", help="write PROMPTS.md and one file per unanswered request",
+    )
+    relay_export.add_argument("project_id")
+    relay_export.add_argument(
+        "--out", help="default: the project's relay directory itself (PROMPTS.md, index.json)",
+    )
+    relay_export.add_argument("--json", dest="json_output", action="store_true")
+    relay_status = relay_commands.add_parser(
+        "status", help="show how many prompts are answered and which are pending",
+    )
+    relay_status.add_argument("project_id")
+    relay_status.add_argument("--json", dest="json_output", action="store_true")
+    relay_ingest = relay_commands.add_parser(
+        "ingest", help="read pasted <<<ANSWER tag>>> blocks into responses/",
+    )
+    relay_ingest.add_argument("project_id")
+    relay_ingest.add_argument("--file", required=True, help="UTF-8 text file with the answers")
+    relay_ingest.add_argument("--model", default="arena-agent-mode")
+    relay_ingest.add_argument("--model-version", help="default: unversioned-<today>")
+    relay_ingest.add_argument(
+        "--map", action="append", default=[], metavar="FROM=TO",
+        help="accept a mistyped tag explicitly, e.g. --map ch02=1F3A9C2D",
+    )
+    relay_ingest.add_argument("--json", dest="json_output", action="store_true")
 
     bundle = subparsers.add_parser("bundle", help="export, verify, or restore replay sources")
     bundle_commands = bundle.add_subparsers(dest="bundle_command", required=True)
@@ -391,18 +440,130 @@ class _UnusedProvider:
         )
 
 
-def _make_provider(args: argparse.Namespace, *, allow_none: bool = False):
-    if allow_none and args.provider is None:
+PROVIDERS = ("arena", "command", "scripted")
+
+#: Directory below a project that holds the Arena relay (requests/responses).
+RELAY_SUBDIR = "relay"
+
+
+class _ArenaRelayProvider(CommandProvider):
+    """``chat_operator.py`` bound to one project's relay directory.
+
+    The provider name is recorded in each run manifest, so a later reader can
+    tell a relayed response from a scripted fixture or an external model.
+    """
+
+    name = "arena-relay"
+
+
+def _relay_directory(store: ProjectStore, project_id: str, args) -> Path:
+    override = getattr(args, "relay_dir", None)
+    if override:
+        return Path(override).expanduser()
+    return store.project_dir(project_id) / RELAY_SUBDIR
+
+
+def _inferred_provider(args: argparse.Namespace) -> str | None:
+    """The provider an omitted ``--provider`` means.
+
+    ``--script`` and ``--command`` still select their provider on their own, so
+    a command line written before the relay existed keeps working.  Otherwise
+    the standard flow applies: the project's relay directory.
+    """
+    if getattr(args, "provider", None):
+        return args.provider
+    if getattr(args, "script", None):
+        return "scripted"
+    if getattr(args, "provider_command", None):
+        return "command"
+    return None
+
+
+def _make_provider(
+    args: argparse.Namespace, store: ProjectStore | None = None, *,
+    allow_none: bool = False,
+):
+    name = _inferred_provider(args)
+    if allow_none and name is None:
         return _UnusedProvider()
-    if args.provider == "scripted":
+    name = name or "arena"
+    if name == "scripted":
         if not args.script:
             raise ProviderError("--provider scripted requires --script")
         return ScriptedProvider(
             load_scripted_responses(args.script), model=args.model or "scripted-fixture",
         )
+    if name == "arena":
+        if store is None:
+            raise ProviderError("--provider arena needs the project store")
+        directory = _relay_directory(store, args.project_id, args)
+        command = shlex.join([
+            sys.executable, str(REPO_ROOT / "scripts" / "chat_operator.py"),
+            "--dir", str(directory),
+        ])
+        return _ArenaRelayProvider(command, model=args.model or "arena-agent-mode")
     if not args.provider_command:
         raise ProviderError("--provider command requires --command")
     return CommandProvider(args.provider_command, model=args.model or "external")
+
+
+def _export_relay(project_id: str, directory: Path, out: Path | None = None) -> dict:
+    """Write PROMPTS.md for the unanswered requests of one project."""
+    summary = relay_prompts.export(directory, out or directory)
+    summary["project_id"] = project_id
+    summary["directory"] = str(directory)
+    return summary
+
+
+def _relay_summary(project_id: str, directory: Path) -> dict:
+    requests_dir = directory / "requests"
+    responses_dir = directory / "responses"
+    pending = relay_prompts.pending(directory) if requests_dir.is_dir() else []
+    answered = (
+        len(list(responses_dir.glob("*.json"))) if responses_dir.is_dir() else 0
+    )
+    return {
+        "project_id": project_id,
+        "directory": str(directory),
+        "requests": len(relay_prompts.all_requests(directory)) if requests_dir.is_dir() else 0,
+        "answered": answered,
+        "pending": [
+            {"tag": row["tag"], "key": row["key"], "purpose": row["purpose"]}
+            for row in pending
+        ],
+    }
+
+
+def _print_relay(report: dict) -> None:
+    print(f"Project: {report['project_id']}")
+    print(f"Relay directory: {report['directory']}")
+    if not report.get("requests"):
+        print("Requests: none (no prompt has been recorded yet)")
+        return
+    print(f"Requests: {report['requests']}; answered: {report['answered']}")
+    if not report["pending"]:
+        print("Nothing pending: resume to continue.")
+        return
+    print(f"Pending: {len(report['pending'])}")
+    for row in report["pending"]:
+        print(f"  tag {row['tag']}  purpose {row['purpose']}  key {row['key']}")
+
+
+def _manuscript_hint(status: dict) -> tuple[str, str] | None:
+    """The rendered-manuscript path and the command that writes it."""
+    draft = (status.get("checkpoints") or {}).get("draft")
+    if not draft or draft.get("status") != "done":
+        return None
+    directory = Path(status["project_dir"])
+    path = directory / "manuscript.md"
+    node_option = ""
+    if status.get("node_id") != status.get("root_node_id"):
+        node_option = f" --node {status['node_id']}"
+    command = (
+        f"python3 scripts/story_project.py --root {directory.parent} "
+        f"render {status['project_id']}{node_option} --out {path}"
+    )
+    return command, str(path)
 
 
 def _print_human(status: dict, *, created: bool) -> None:
@@ -438,6 +599,14 @@ def _print_human(status: dict, *, created: bool) -> None:
     else:
         print(f"Pending responses: {len(status.get('pending', []))}")
     _print_actions(list(status.get("next_actions") or ()))
+    hint = _manuscript_hint(status)
+    if hint is not None:
+        command, path = hint
+        if Path(path).is_file():
+            print(f"Manuscript: {path}")
+        else:
+            print("Manuscript: not written yet")
+        print(f"  write it: {command}")
     if status.get("links"):
         print(f"Child links: {len(status['links'])}")
     print(f"Directory: {status['project_dir']}")
@@ -456,6 +625,10 @@ def _print_pending(status: dict) -> None:
         print(f"  response: {row['response_path']}")
         if row.get("request_path"):
             print(f"  request: {row['request_path']}")
+    print(
+        "  export the prompts: python3 scripts/story_project.py "
+        f"relay export {status['project_id']}"
+    )
 
 
 def _print_bundle(report: dict) -> None:
@@ -868,7 +1041,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command == "run-tree":
-            provider = _make_provider(args)
+            provider = _make_provider(args, store)
             result = ProjectRunner(store).run_tree(
                 args.project_id, provider, node_id=args.node_id,
                 seed=args.seed, temperature=args.temperature,
@@ -893,7 +1066,7 @@ def main(argv: list[str] | None = None) -> int:
             return 0
 
         if args.command in {"run", "resume", "continue"}:
-            provider = _make_provider(args)
+            provider = _make_provider(args, store)
             runner = ProjectRunner(store)
             if args.command == "run":
                 result = runner.run(
@@ -929,7 +1102,7 @@ def main(argv: list[str] | None = None) -> int:
                     f"{args.command} regenerates {', '.join(args.chapters + args.design)}; "
                     "pass --provider scripted --script ... or --provider command --command ..."
                 )
-            provider = _make_provider(args, allow_none=True)
+            provider = _make_provider(args, store, allow_none=True)
             runner = ProjectRunner(store)
             if args.command == "revise":
                 result = runner.revise(
@@ -1044,6 +1217,68 @@ def main(argv: list[str] | None = None) -> int:
                 _print_bundle(report)
             return 0
 
+        if args.command == "relay":
+            directory = _relay_directory(store, args.project_id, args)
+            if not (directory / "requests").is_dir():
+                report = _relay_summary(args.project_id, directory)
+            elif args.relay_command == "export":
+                report = _export_relay(
+                    args.project_id, directory,
+                    Path(args.out).expanduser() if getattr(args, "out", None) else None,
+                )
+            elif args.relay_command == "ingest":
+                path = Path(args.file).expanduser()
+                if not path.is_file():
+                    raise ProjectError(f"no such answer file: {path}")
+                tag_map: dict[str, str] = {}
+                for entry in args.map:
+                    if "=" not in entry:
+                        raise ProjectError(f"--map expects FROM=TO, got {entry!r}")
+                    source, target = entry.split("=", 1)
+                    tag_map[source.strip()] = target.strip()
+                version = args.model_version or datetime.now(
+                    timezone.utc
+                ).strftime("unversioned-%Y-%m-%d")
+                report = relay_prompts.ingest(
+                    directory, path.read_text(encoding="utf-8"), model=args.model,
+                    model_version=version, tag_map=tag_map,
+                )
+                report["project_id"] = args.project_id
+                report["directory"] = str(directory)
+            else:
+                report = _relay_summary(args.project_id, directory)
+            if args.json_output:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            elif "written" in report:
+                print(f"Project: {report['project_id']}")
+                print(f"Answers written: {len(report['written'])}")
+                for key in report["written"]:
+                    print(f"  {key}")
+                for row in report["errors"]:
+                    print(f"error block (tag {row['tag']}): {row['reason']}")
+                for row in report["rejected"]:
+                    print(f"rejected (tag {row['tag']}): {row['reason']}")
+                print(f"Still pending: {report['still_pending']}")
+                if report["written"] and not report["still_pending"]:
+                    print(
+                        "next: python3 scripts/story_project.py "
+                        f"resume {report['project_id']}"
+                    )
+            elif "pending" in report and isinstance(report["pending"], list):
+                _print_relay(report)
+                if report["pending"]:
+                    print(
+                        "next: python3 scripts/story_project.py "
+                        f"relay export {report['project_id']}"
+                    )
+            else:
+                print(f"Project: {report['project_id']}")
+                print(f"Prompts: {report['pending']} pending / {report['done']} answered")
+                print(f"Outbox: {report['out']}")
+                if report["pending"]:
+                    print(f"  {Path(report['out']) / 'PROMPTS.md'}")
+            return 0
+
         status = store.status(args.project_id, args.node_id)
         if args.command == "pending":
             report = {
@@ -1063,11 +1298,31 @@ def main(argv: list[str] | None = None) -> int:
             _print_human(status, created=False)
         return 0
     except ProjectRunPending as exc:
+        # One waiting state, one place to look: refresh the paste-ready prompts
+        # so the next operator turn never has to guess which file to open.
+        exported = None
+        try:
+            directory = _relay_directory(store, exc.project_id, args)
+            if (directory / "requests").is_dir():
+                exported = _export_relay(exc.project_id, directory)
+        except (OSError, ProjectError, ProviderError):
+            exported = None
         if getattr(args, "json_output", False):
             print(json.dumps(exc.status, ensure_ascii=False, sort_keys=True))
         else:
             print(f"pending: {exc}", file=sys.stderr)
             print(f"response: {exc.pending.get('response_path')}", file=sys.stderr)
+            if exported is not None:
+                print(
+                    f"prompts: {exported['pending']} pending / {exported['done']} answered",
+                    file=sys.stderr,
+                )
+                print(f"  {Path(exported['out']) / 'PROMPTS.md'}", file=sys.stderr)
+                print(
+                    "ingest the answers: python3 scripts/story_project.py "
+                    f"relay ingest {exc.project_id} --file <answers.txt>",
+                    file=sys.stderr,
+                )
             node_option = ""
             if exc.status.get("node_id") != exc.status.get("root_node_id"):
                 node_option = f" --node {exc.status['node_id']}"

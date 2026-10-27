@@ -481,8 +481,9 @@ project/node/stage、request/response path、response fileの有無が集約さ�
   編纂や採用の版ずれ → `world bind` / `world adopt-canon`、記録との差 → `diff`）。
   commandは表示専用で、自動実行はしません。
 
-既定の保存先は `runs/projects/` です。testや外部保存では、**subcommandの前**に
-`--root` を指定できます。
+既定の保存先は `runs/projects/` です。`runs/` は git 管理外なので、セッションを
+越えて残す作品は `--root works`（リポジトリ内・版管理）に置きます。testや外部保存では、
+**subcommandの前**に `--root` を指定できます。
 
 ```bash
 python3 scripts/story_project.py --root /path/to/projects status prj-seaside
@@ -492,18 +493,28 @@ python3 scripts/story_project.py --root /path/to/projects status prj-seaside
 
 この基盤は、**モデルをArena.aiのチャットに置き、生成の開始だけ人間が行う**運用を前提にします。
 APIキーはrepositoryに置かず、`scripts/chat_operator.py` が「モデル＝人間（またはチャット）」の
-providerになります。
+providerになります。これが**標準フロー**で、providerを省略すると
+`<project>/relay` を使う `arena` が既定になります
+（決定と手順は [`standard_flow.md`](standard_flow.md) / [`quickstart.md`](quickstart.md)）。
 
 ```bash
 # 1回の生成を人間が開始する（応答が無ければexit 3でその場に止まる）
-python3 scripts/story_project.py run prj-seaside \
-  --provider command --command "python3 scripts/chat_operator.py --dir runs/operator/pilot"
+python3 scripts/story_project.py --root works run prj-seaside
 
-# 何が足りないか / 次に何をするか / 続きから
-python3 scripts/chat_operator.py --dir runs/operator/pilot --status
-python3 scripts/story_project.py status prj-seaside     # Next: に次の1コマンド
-python3 scripts/story_project.py resume prj-seaside --provider command --command "…"
+# 未回答のプロンプトを書き出し、応答を取り込み、続きから再開する
+python3 scripts/story_project.py --root works relay export prj-seaside
+python3 scripts/story_project.py --root works relay ingest prj-seaside --file answers.txt
+python3 scripts/story_project.py --root works resume prj-seaside
+
+# 何が足りないか / 次に何をするか / 原稿の場所
+python3 scripts/story_project.py --root works status prj-seaside   # Next: と Manuscript:
 ```
+
+- `--provider command --command "python3 scripts/chat_operator.py --dir <任意のdir>"` は
+  従来どおり使えます。relay の置き場所を project の外にしたい場合や、
+  `run_pipeline.py` と共有したい場合の経路です。
+- `--provider arena` の run manifest には `provider: arena-relay` が記録されます。
+  台本（`scripted`）や外部コマンド（`command`）と後から区別するためです。
 
 - **常駐ワーカー・スケジューラ・依存queueの自動消化・失敗時の自動リトライは持ちません。**
   これらは非目標です。`run-tree` も人間が起動し、未完のnodeがあれば飛ばさずに停止します。
@@ -777,6 +788,11 @@ runs/projects/<project_id>/
 - `checkpoints/<stage>.json`: current revisionのstage状態、attempt、run、版付きartifact参照。
 - `links/<link_id>.json`: 任意の親から子への順序・pinned revision・content version・draft artifact参照。
   子の本文は含めず、新版の採用は`adopt-child`だけが変更する。linkは全階層で探索できる。
+- `relay/`: 標準フローの Arena relay。`requests/<key>.json`（prompt 全文と
+  `prompt_hash`）、`responses/<key>.json`（応答と `prompt_hash`・`model`）、
+  `relay export` の出力（`PROMPTS.md`・`index.json`・`outbox/`）が入る。タグは
+  8 hex で、タグ→key の対応は index と request ファイルが台帳になる。
+- `manuscript.md`: `render --out` の出力。JSON を開かずに読むための原稿。
 - `runs/`: 各stageのmanifest、prompt/response、project-input、生成物。再開runには
   `resume-audit.json`、改訂・分岐runには `revise.json`（コピー元のhashと生成し直した対象）も
   あり、旧runは別directoryに残る。
