@@ -118,7 +118,7 @@ class ProjectComposer:
 
     def _chapters(
         self, project_id: str, artifacts: tuple[ArtifactRef, ...], *,
-        reader: bool = False,
+        reader: bool = False, heading_level: int = 2,
     ) -> str:
         by_path = {artifact.path: artifact for artifact in artifacts}
         draft_ref = next(
@@ -161,8 +161,9 @@ class ProjectComposer:
             # A reading copy: one heading per chapter and no audit markers.
             # The chapter ID stays visible in an HTML comment so a reader can
             # still tell which chapter a passage came from.
+            marks = "#" * max(1, heading_level)
             texts = [
-                f"## 第{index}章\n\n<!-- asc-chapter: {chapter_id} -->\n\n"
+                f"{marks} 第{index}章\n\n<!-- asc-chapter: {chapter_id} -->\n\n"
                 f"{without_markers(text)}"
                 for index, (chapter_id, text) in enumerate(
                     zip(chapter_ids, texts), start=1,
@@ -220,7 +221,8 @@ class ProjectComposer:
         return revision.spec.title or node.id
 
     def compose(
-        self, project_id: str, node_id: str | None = None, *, partial: bool = False,
+        self, project_id: str, node_id: str | None = None, *,
+        partial: bool = False, reader: bool = False,
     ) -> CompositionResult:
         """Compile one current draft and all pinned descendants recursively.
 
@@ -243,7 +245,9 @@ class ProjectComposer:
             parent, parent_revision, parent_artifacts = self._current_draft(
                 project_id, parent_id,
             )
-            parent_body = self._chapters(project_id, parent_artifacts)
+            parent_body = self._chapters(
+                project_id, parent_artifacts, reader=reader, heading_level=2,
+            )
             sections = [*self._heading(parent, parent_revision), parent_body]
             visiting: set[str] = {parent_id}
             omitted: list[dict[str, Any]] = []
@@ -285,7 +289,10 @@ class ProjectComposer:
                     child_revision = self.store.load_revision(
                         project_id, child.id, link.child_revision_id,
                     )
-                    child_body = self._chapters(project_id, link.artifacts)
+                    child_body = self._chapters(
+                        project_id, link.artifacts,
+                        reader=reader, heading_level=level + 2,
+                    )
                     payload = _pinned_link_dict(link)
                     sections.extend([
                         "",

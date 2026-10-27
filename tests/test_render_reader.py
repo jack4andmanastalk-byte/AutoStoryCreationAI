@@ -107,3 +107,36 @@ def test_the_cli_writes_the_reader_copy_and_says_what_it_is(tmp_path: Path):
     assert payload["sha256"]
     text = out.read_text(encoding="utf-8")
     assert "## 第1章" in text and "{{" not in text
+
+
+def test_compose_reader_adds_nested_headings_and_drops_markers_from_all_works(tmp_path: Path):
+    """U-06 / U-08: ``compose --reader`` formats the parent and every child."""
+    store = completed_store(tmp_path)
+    link = store.create_child(
+        "prj-reader",
+        WorkSpec(
+            title="王都の預かり物",
+            premise="鍵屋がアリアの父から予備の鍵を預かった日。",
+            chapter_count=3,
+            target_chars_per_chapter=1200,
+        ),
+        child_node_id="node-child",
+        link_id="link-child",
+    )
+    ProjectRunner(store).run(
+        "prj-reader", ScriptedProvider(project_responses()), node_id="node-child",
+    )
+    store.adopt_child("prj-reader", link.id)
+
+    composer = ProjectComposer(store)
+    checked = composer.compose("prj-reader").text
+    reader = composer.compose("prj-reader", reader=True).text
+
+    assert "{{time:" in checked
+    assert "{{" not in reader and "}}" not in reader
+    # Parent is H1 with H2 chapters; child is H2 with H3 chapters.
+    assert "# 灯台の鍵" in reader
+    assert "## 第1章" in reader
+    assert "## 王都の預かり物" in reader
+    assert "### 第1章" in reader
+

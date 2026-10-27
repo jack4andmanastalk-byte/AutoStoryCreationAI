@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-10-27T09:22:13Z",
+  "generated_at": "2026-10-27T09:38:45Z",
   "pending": [
     {
-      "tag": "57C2364D",
-      "key": "s1-node-4e577937dd8046188907958c9e82c19e-rev-5f5c678e61054d6193be2f09716d3466-s0-design-scene-a1",
-      "purpose": "design:scene",
-      "prompt_hash": "d2d0406490f0d84e"
+      "tag": "2D9C4D23",
+      "key": "s1-node-sawatari-rev-60a71ed1795342f091ed718fc773e986-s0-design-history-a1",
+      "purpose": "design:history",
+      "prompt_hash": "6e5f97a584c71c7d"
     }
   ]
 }

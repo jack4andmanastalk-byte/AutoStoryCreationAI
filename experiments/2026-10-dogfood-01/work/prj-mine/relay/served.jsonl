@@ -25,3 +25,15 @@
 {"key": "s1-node-4e577937dd8046188907958c9e82c19e-rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1-s0-design-voice-a1", "prompt_hash": "56b1ab2311e5eedc", "served_at": "2026-10-27T09:20:13Z"}
 {"key": "s1-node-4e577937dd8046188907958c9e82c19e-rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1-s4-draft-ch04-a1", "prompt_hash": "01eb96e37d737630", "served_at": "2026-10-27T09:21:51Z"}
 {"key": "s1-node-4e577937dd8046188907958c9e82c19e-rev-5f5c678e61054d6193be2f09716d3466-s0-design-scene-a1", "prompt_hash": "d2d0406490f0d84e", "served_at": "2026-10-27T09:22:23Z"}
+{"key": "s1-node-sawatari-s0-plan-a1", "prompt_hash": "a7cb88f4268688f9", "served_at": "2026-10-27T09:36:57Z"}
+{"key": "s1-node-sawatari-s0-design-brief-a1", "prompt_hash": "130928b8fb2690f5", "served_at": "2026-10-27T09:38:09Z"}
+{"key": "s1-node-sawatari-s0-design-world-a1", "prompt_hash": "376be98c5107a363", "served_at": "2026-10-27T09:38:09Z"}
+{"key": "s1-node-sawatari-s0-design-history-a1", "prompt_hash": "c5859fa617588615", "served_at": "2026-10-27T09:38:09Z"}
+{"key": "s1-node-sawatari-s0-design-history-repair-a2", "prompt_hash": "7516a6c62052d565", "served_at": "2026-10-27T09:38:10Z"}
+{"key": "s1-node-sawatari-s0-design-character-a1", "prompt_hash": "3173643bbe451904", "served_at": "2026-10-27T09:38:10Z"}
+{"key": "s1-node-sawatari-s0-design-relation-a1", "prompt_hash": "3541e23ffee8091e", "served_at": "2026-10-27T09:38:10Z"}
+{"key": "s1-node-sawatari-s0-design-plot-a1", "prompt_hash": "aee191371616e4db", "served_at": "2026-10-27T09:38:11Z"}
+{"key": "s1-node-sawatari-s0-design-scene-a1", "prompt_hash": "252d99de6568ce14", "served_at": "2026-10-27T09:38:11Z"}
+{"key": "s1-node-sawatari-s0-design-voice-a1", "prompt_hash": "46644d3ba993b6a9", "served_at": "2026-10-27T09:38:11Z"}
+{"key": "s1-node-sawatari-s1-draft-ch01-a1", "prompt_hash": "b32c5f33c1518972", "served_at": "2026-10-27T09:38:34Z"}
+{"key": "s1-node-sawatari-rev-60a71ed1795342f091ed718fc773e986-s0-design-history-a1", "prompt_hash": "6e5f97a584c71c7d", "served_at": "2026-10-27T09:38:45Z"}

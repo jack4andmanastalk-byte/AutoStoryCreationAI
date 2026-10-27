@@ -1,0 +1,39 @@
+{
+  "artifacts": [],
+  "created_at": "2026-10-27T09:38:45.059085Z",
+  "derived": {
+    "chapters": [],
+    "design": [
+      "history"
+    ],
+    "kind": "revise",
+    "source_node_id": "node-sawatari",
+    "source_revision_id": "rev-7f0c5e5e52c84018aa1481d072e27eff",
+    "source_runs": {
+      "design": "att-c4d073e97f5d4510903b27234110550d-design",
+      "draft": "att-e47279dec0e34261a21970970237f70b-draft",
+      "plan": "att-9e3f1404a371446599db7377f1a89772-plan"
+    }
+  },
+  "id": "rev-60a71ed1795342f091ed718fc773e986",
+  "node_id": "node-sawatari",
+  "parent_revision_id": "rev-7f0c5e5e52c84018aa1481d072e27eff",
+  "parent_runs": {
+    "design": "att-c4d073e97f5d4510903b27234110550d-design",
+    "draft": "att-e47279dec0e34261a21970970237f70b-draft",
+    "plan": "att-9e3f1404a371446599db7377f1a89772-plan"
+  },
+  "project_id": "prj-mine",
+  "record_type": "work_node_revision",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 1,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉山の年、沢渡町役場支所の記録係だった前任者が、事故死者欄に零と書くよう命じられた夜。のちに野々宮あおいが引き継ぐ閲覧簿の裏に、切り取った頁の控えを挟む。",
+    "target_chars_per_chapter": 700,
+    "title": "切り取られた頁"
+  },
+  "spec_sha256": "dc6c191baacbd81c38045d479817397fb68ca110be962337a18fad7f4173c922"
+}

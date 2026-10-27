@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"events\": [\n    {\n      \"id\": \"ev-s1\",\n      \"year\": 1950,\n      \"name\": \"銅山の閉山決定\",\n      \"cause\": \"\",\n      \"effect\": \"支所で閉山記録の清書が始まる。\",\n      \"trace\": \"綴じ込みの表紙の年号\"\n    },\n    {\n      \"id\": \"ev-s2\",\n      \"year\": 1950,\n      \"name\": \"死者欄の清書と切り取り\",\n      \"cause\": \"ev-s1\",\n      \"effect\": \"本欄は零となり、下書きの頁が裏表紙の袋に残る。\",\n      \"trace\": \"定規で切られた紙の端と裏表紙の袋\"\n    }\n  ],\n  \"sources\": [\n    {\n      \"id\": \"src-s1\",\n      \"title\": \"閉山記録清書簿\",\n      \"bias\": \"本庁提出用に死者欄を零に統一している。\",\n      \"origin\": \"invented\",\n      \"citation\": \"\"\n    }\n  ],\n  \"apocrypha\": [\n    \"死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話\"\n  ],\n  \"knowledge\": {\n    \"yoriko\": {\n      \"knows\": [\n        \"ev-s1\",\n        \"ev-s2\"\n      ],\n      \"unknown\": []\n    },\n    \"kuroda\": {\n      \"knows\": [\n        \"ev-s1\"\n      ],\n      \"unknown\": [\n        \"ev-s2\"\n      ]\n    }\n  },\n  \"notes\": \"\"\n}",
+  "prompt_hash": "7516a6c62052d565",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

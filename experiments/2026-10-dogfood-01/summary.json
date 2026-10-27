@@ -1,5 +1,14 @@
 {
   "answers_file": "experiments/2026-10-dogfood-01/answers.txt (last round only; earlier rounds were overwritten)",
+  "child_node": {
+    "adopted_revision_id": "rev-60a71ed1795342f091ed718fc773e986",
+    "chapters": 1,
+    "chars_body": 713,
+    "link_id": "link-sawatari",
+    "node_id": "node-sawatari",
+    "rounds": 12,
+    "title": "切り取られた頁"
+  },
   "claims_not_made": [
     "quality",
     "interest",
@@ -8,23 +17,30 @@
     "recurrence rate",
     "causal effect"
   ],
+  "collection": {
+    "path": "experiments/2026-10-dogfood-01/collection.md",
+    "reader_path": "experiments/2026-10-dogfood-01/collection.reader.md",
+    "reader_sha256": "47e44cfc086e18c2d5a422b1437e1eacbbdab0bb7f9c5483b0e992c3294621fd",
+    "sha256": "2a0d839c2fa36f95e2985d280134ad9b1a5294f68f40776dc482ebf993da4623"
+  },
   "date": "2026-10-27",
   "doctor": {
     "errors": 0,
     "findings": 0,
     "info": 0,
     "interrupted": 0,
-    "runs": 39,
+    "nodes": 2,
+    "runs": 57,
     "warnings": 0
   },
   "entry_point": "scripts/story_project.py init|run|relay status|relay submit|render|doctor",
   "experiment": "2026-10-dogfood-01",
   "final": {
-    "answered": 27,
+    "answered": 39,
     "exit": 0,
     "next_command": "python3 scripts/story_project.py --root <root> render prj-mine --out <root>/prj-mine/manuscript.md",
     "pending": 0,
-    "requests": 27,
+    "requests": 39,
     "stages": {
       "design": "done",
       "draft": "done",
@@ -146,6 +162,37 @@
       "id": "F-29",
       "status": "observed",
       "summary": "continue re-asks all 8 design docs even when only chapter-dependent docs (world/relation/plot/scene) need an update"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-30",
+      "status": "fixed",
+      "summary": "relay status lacked --node, so a child node could be submitted but not inspected via relay status"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-31",
+      "status": "fixed",
+      "summary": "after revising a child node, the parent link stays on the older revision until adopt-child; child round warnings now name the adopt-child command"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "src/asc/project/nested.py",
+        "scripts/story_project.py",
+        "tests/test_render_reader.py"
+      ],
+      "id": "F-32",
+      "status": "fixed",
+      "summary": "compose lacked --reader; added hierarchical chapter headings and marker stripping for composed parent+child works without changing default compose bytes"
     }
   ],
   "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
@@ -221,7 +268,7 @@
       "rounds": 1
     }
   ],
-  "round_count": 27,
+  "round_count": 39,
   "rounds": [
     {
       "answered": 1,

@@ -1,169 +1,53 @@
-<<<ANSWER 57C2364D>>>
+<<<ANSWER 2D9C4D23>>>
 {
-  "scenes": [
+  "events": [
     {
-      "id": "s01",
-      "chapter": "ch01",
-      "purpose": "保管期限を過ぎた三通の手紙を、焼くか残すか決める。",
-      "conflict": "局の規則は焼却を求め、差出人の名を見たスミは動けない。",
-      "change": "スミは手紙を棚から自分の鞄へ移し、町へ出る。",
-      "tension": "curiosity",
-      "knowledge": [
-        {
-          "character": "sumi",
-          "entry": [],
-          "gained": [
-            "F-01"
-          ]
-        }
-      ],
-      "disclosure": {
-        "disclosed": [
-          "F-01"
-        ],
-        "withheld": [
-          {
-            "fact": "F-02",
-            "reason": "死者の欄は役場の支所にしかなく、この章では見られない。"
-          },
-          {
-            "fact": "F-03",
-            "reason": "坑内のことを話す者は町に一人もいない。"
-          }
-        ]
-      },
-      "foreshadows": {
-        "planted": [],
-        "paid": []
-      }
+      "id": "ev-s1",
+      "year": 1950,
+      "title": "銅山の閉山決定",
+      "cause": "",
+      "outcome": "支所で閉山記録の清書が始まる。",
+      "trace": "綴じ込みの表紙の年号"
     },
     {
-      "id": "s02",
-      "chapter": "ch02",
-      "purpose": "差出人が死者だと確かめるため、閉山の記録を閲覧する。",
-      "conflict": "記録を汚したくないあおいと、記録の外を知りたいスミが向かい合う。",
-      "change": "スミは訂正を求めず、頁の写しを取る手続きを選ぶ。",
-      "tension": "suspense",
-      "knowledge": [
-        {
-          "character": "sumi",
-          "entry": [
-            "F-01"
-          ],
-          "gained": [
-            "F-02"
-          ]
-        },
-        {
-          "character": "aoi",
-          "entry": [
-            "F-02"
-          ],
-          "gained": []
-        }
-      ],
-      "disclosure": {
-        "disclosed": [
-          "F-02"
-        ],
-        "withheld": [
-          {
-            "fact": "F-03",
-            "reason": "記録係のあおいも、事故の日の坑内の記録は持っていない。"
-          }
-        ]
-      },
-      "foreshadows": {
-        "planted": [],
-        "paid": [
-          "fs-002"
-        ]
-      }
-    },
-    {
-      "id": "s03",
-      "chapter": "ch03",
-      "purpose": "三通目を、書いた者の意図に沿う相手へ渡す。",
-      "conflict": "記録に残すことを求めるあおいと、渡すことだけを選ぶスミが食い違う。",
-      "change": "スミは源じいに手紙を渡し、源じいは見送った日のことを話す。",
-      "tension": "quiet",
-      "knowledge": [
-        {
-          "character": "sumi",
-          "entry": [
-            "F-01",
-            "F-02"
-          ],
-          "gained": [
-            "F-03"
-          ]
-        },
-        {
-          "character": "gen",
-          "entry": [
-            "F-03"
-          ],
-          "gained": []
-        }
-      ],
-      "disclosure": {
-        "disclosed": [
-          "F-03"
-        ],
-        "withheld": []
-      },
-      "foreshadows": {
-        "planted": [],
-        "paid": [
-          "fs-001",
-          "fs-003"
-        ]
-      }
-    },
-    {
-      "id": "s04",
-      "chapter": "ch04",
-      "purpose": "源じいから聞いた話を沢渡へ持ち帰り、写しの控えの欄外に聞き取りとして残す。",
-      "conflict": "本欄は一字も直せないあおいと、直せないまま名を残したいスミが欄外の書式を探す。",
-      "change": "あおいは写しの欄外に差出人の名とスミの名を書き、控えを綴じ込みに戻す。",
-      "tension": "quiet",
-      "knowledge": [
-        {
-          "character": "sumi",
-          "entry": [
-            "F-01",
-            "F-02",
-            "F-03"
-          ],
-          "gained": [
-            "F-04"
-          ]
-        },
-        {
-          "character": "aoi",
-          "entry": [
-            "F-02"
-          ],
-          "gained": [
-            "F-03",
-            "F-04"
-          ]
-        }
-      ],
-      "disclosure": {
-        "disclosed": [
-          "F-03",
-          "F-04"
-        ],
-        "withheld": []
-      },
-      "foreshadows": {
-        "planted": [],
-        "paid": [
-          "fs-004"
-        ]
-      }
+      "id": "ev-s2",
+      "year": 1950,
+      "title": "死者欄の清書と切り取り",
+      "cause": "ev-s1",
+      "outcome": "本欄は零となり、下書きの頁が裏表紙の袋に残る。",
+      "trace": "定規で切られた紙の端と裏表紙の袋"
     }
-  ]
+  ],
+  "sources": [
+    {
+      "id": "src-s1",
+      "title": "閉山記録清書簿",
+      "holder": "沢渡町役場支所",
+      "bias": "本庁提出用に死者欄を零に統一している。",
+      "origin": "invented",
+      "citation": ""
+    }
+  ],
+  "apocrypha": [
+    "死者欄の清書と切り取り"
+  ],
+  "knowledge": {
+    "yoriko": {
+      "knows": [
+        "ev-s1",
+        "ev-s2"
+      ],
+      "unknown": []
+    },
+    "kuroda": {
+      "knows": [
+        "ev-s1"
+      ],
+      "unknown": [
+        "ev-s2"
+      ]
+    }
+  },
+  "notes": ""
 }
-<<<END 57C2364D>>>
+<<<END 2D9C4D23>>>

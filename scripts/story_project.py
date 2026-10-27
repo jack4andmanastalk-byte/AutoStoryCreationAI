@@ -270,6 +270,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--partial", action="store_true",
         help="keep compiling when a child has no pinned draft (omitted explicitly)",
     )
+    compose.add_argument(
+        "--reader", action="store_true",
+        help="reading copy: chapter headings and no audit markers "
+             "(the default output keeps the checked text unchanged)",
+    )
     compose.add_argument("--json", dest="json_output", action="store_true")
 
     pending = subparsers.add_parser("pending", help="list operator responses still needed")
@@ -293,6 +298,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "status", help="show how many prompts are answered and which are pending",
     )
     relay_status.add_argument("project_id")
+    relay_status.add_argument("--node", dest="node_id", help="descendant node ID (default: root)")
     relay_status.add_argument("--json", dest="json_output", action="store_true")
     relay_ingest = relay_commands.add_parser(
         "ingest", help="read pasted <<<ANSWER tag>>> blocks into responses/",
@@ -640,6 +646,25 @@ def _round_warnings(store: ProjectStore, status: dict) -> list[str]:
     draft = read_stage_json("draft", "/draft.json")
     if draft is not None and isinstance(draft.get("warnings_ja"), list):
         out.extend(str(item) for item in draft["warnings_ja"])
+
+    # When a child node finishes, its parent link still points at the un-run
+    # revision created by `add-child` (or an older revision after `revise`).
+    # Say how to pin this revision into the parent so `compose` can use it.
+    parent_id = status.get("parent_node_id")
+    if parent_id and status.get("state") == "complete":
+        current_revision = status.get("current_revision_id")
+        try:
+            links = store.list_links(project_id, parent_id)
+        except ProjectError:
+            links = []
+        for link in links:
+            if link.child_node_id != status.get("node_id"):
+                continue
+            if not link.artifacts or link.child_revision_id != current_revision:
+                out.append(
+                    f"parent link {link.id}: not pinned to this revision yet; "
+                    f"run `{base} adopt-child {project_id} {link.id}` before `compose`"
+                )
     return out
 
 
@@ -1374,6 +1399,7 @@ def main(argv: list[str] | None = None) -> int:
                 else composer.compose(
                     args.project_id, args.node_id,
                     partial=getattr(args, "partial", False),
+                    reader=getattr(args, "reader", False),
                 )
             )
             if args.out:

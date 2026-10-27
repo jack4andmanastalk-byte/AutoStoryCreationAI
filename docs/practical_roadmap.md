@@ -183,3 +183,12 @@
   2. `continue prj-mine --add-chapters 1`: 第4章（沢渡の支所での欄外注記）を追加し、ch01〜ch03 はバイト単位で持ち越し。
   3. `revise prj-mine --design scene`: `unresolved` だった `scene` 1文書だけを1ラウンドで再生成し、全4章の本文を保ったまま `doctor` findings 0 に回復（[`manuscript.4ch.reader.md`](../experiments/2026-10-dogfood-01/manuscript.4ch.reader.md)）。
 - 残り: 入れ子（親子 `compose`）と共有 world の実応答確認（U-06 / U-07）、`continue` で章数に依存しない設計書を持ち越す改善（F-29）。
+
+### U-06 入れ子作品（子作品の追加・生成・採用・編纂）の実応答 dogfood（2026-10-27）
+
+- 修正（**F-30**）: `relay status` に `--node` を追加し、子ノードの待ち状態と次のコマンドを親と区別して確認できるようにした。
+- 修正（**F-31**）: 子ノードを改訂したあと親リンクが旧版を指しているとき、子の round 報告の `Warnings:` に `adopt-child <project> <link>` を案内。
+- 修正（**F-32**）: `compose --reader` を追加。親は `## 第N章`、子は `### 第N章` の階層見出しを付け、全作品の `{{…}}` 監査マーカーを外した読書用の編纂原稿を出力（既定の `compose` と `artifacts/` の正本は不変）。
+- 実応答での確認（[`experiments/2026-10-dogfood-01/collection.reader.md`](../experiments/2026-10-dogfood-01/collection.reader.md)、計39応答・2ノード）:
+  - 親『宛名のない手紙』（4章）の下に、子『切り取られた頁』（1章・713字、閉山当夜の沢渡支所）を `add-child` → 実応答12ラウンドで完走 → `adopt-child` → `compose` / `compose --reader`。
+  - 祖先の canon 要約（`asc-context-packet-pre1`）だけが子の依頼文に入り、親の本文全文が混入しないことを確認。`doctor` findings 0。

@@ -343,3 +343,59 @@ def test_an_unresolved_design_doc_is_reported_and_points_at_revise_design(tmp_pa
         for item in final["warnings"]
     )
 
+
+def test_a_child_node_can_be_inspected_and_driven_and_reminds_about_adopt_child(tmp_path: Path):
+    """U-06: ``relay status --node <child>`` and the ``adopt-child`` reminder."""
+    init_project(tmp_path)
+    answers = answers_by_purpose()
+    drive(tmp_path, "prj-round", answers)
+
+    added = cli(
+        "--root", str(tmp_path), "add-child", "prj-round",
+        "--node-id", "node-sub", "--link-id", "link-sub",
+        "--title", "外伝", "--premise", "外伝の記録。",
+        "--chapters", "3", "--target-chars", "1200",
+    )
+    assert added.returncode == 0, added.stderr
+
+    # Root is still complete; `--node node-sub` inspects the child, not the root.
+    assert round_status(tmp_path, "prj-round")["state"] == "complete"
+    child_before = json.loads(
+        cli("--root", str(tmp_path), "relay", "status", "prj-round", "--node", "node-sub", "--json").stdout
+    )
+    assert child_before["node_id"] == "node-sub"
+    assert child_before["state"] == "not_started"
+
+    assert cli("--root", str(tmp_path), "run", "prj-round", "--node", "node-sub").returncode == 3
+    for _ in range(20):
+        st = json.loads(
+            cli("--root", str(tmp_path), "relay", "status", "prj-round", "--node", "node-sub", "--json").stdout
+        )
+        if st["next"] is None:
+            break
+        file = write_answers(tmp_path, st["next"]["tag"], st["next"]["purpose"], answers)
+        res = cli(
+            "--root", str(tmp_path), "relay", "submit", "prj-round",
+            "--node", "node-sub", "--file", str(file), "--json",
+        )
+        assert res.returncode in {0, 3}, res.stdout
+
+    child_done = json.loads(
+        cli("--root", str(tmp_path), "relay", "status", "prj-round", "--node", "node-sub", "--json").stdout
+    )
+    assert child_done["state"] == "complete"
+    # The initial revision is synced into link-sub automatically; a Pure copy
+    # revise makes a newer child revision, so the link is now stale and the
+    # round names `adopt-child` before `compose`.
+    assert cli("--root", str(tmp_path), "revise", "prj-round", "--node", "node-sub").returncode == 0
+    stale = json.loads(
+        cli("--root", str(tmp_path), "relay", "status", "prj-round", "--node", "node-sub", "--json").stdout
+    )
+    assert any("adopt-child prj-round link-sub" in w for w in stale["warnings"])
+
+    assert cli("--root", str(tmp_path), "adopt-child", "prj-round", "link-sub").returncode == 0
+    after_adopt = json.loads(
+        cli("--root", str(tmp_path), "relay", "status", "prj-round", "--node", "node-sub", "--json").stdout
+    )
+    assert not any("adopt-child" in w for w in after_adopt["warnings"])
+

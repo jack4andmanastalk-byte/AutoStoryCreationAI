@@ -1,0 +1,7 @@
+{
+  "text": "{\n  \"scenes\": [\n    {\n      \"id\": \"s01\",\n      \"chapter\": \"ch01\",\n      \"purpose\": \"死者欄を零と清書し直しながら、下書きの頁を捨てずに閲覧簿の裏へ残す。\",\n      \"conflict\": \"古い紙を火鉢で焼くよう命じる黒田と、本欄には従いつつ下書きを残したい頼子が夜の支所で向かい合う。\",\n      \"change\": \"頼子は零の清書に検印を受けたあと、下書きを定規で切り取って閲覧簿の裏表紙の袋へ挟む。\",\n      \"tension\": \"suspense\",\n      \"knowledge\": [\n        {\n          \"character\": \"yoriko\",\n          \"entry\": [\n            \"F-11\"\n          ],\n          \"gained\": [\n            \"F-12\"\n          ]\n        },\n        {\n          \"character\": \"kuroda\",\n          \"entry\": [\n            \"F-11\"\n          ],\n          \"gained\": []\n        }\n      ],\n      \"disclosure\": {\n        \"disclosed\": [\n          \"F-11\",\n          \"F-12\"\n        ],\n        \"withheld\": []\n      },\n      \"foreshadows\": {\n        \"planted\": [],\n        \"paid\": [\n          \"fs-101\"\n        ]\n      }\n    }\n  ]\n}",
+  "prompt_hash": "252d99de6568ce14",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "operator_note": "relayed from a chat session (G5 unmet)"
+}

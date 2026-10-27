@@ -170,10 +170,42 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
   （1章足すのに 1 + 8 + 1 = 10〜11 ラウンド）。章一覧に依存しない文書（`brief` / `character` /
   `history` / `voice`）は前版から持ち越せる余地がある。
 
+## 入れ子作品（U-06 子作品の追加・生成・採用・編纂）
+
+本編『宛名のない手紙』（4章、`node-4e577937…`）の下に、閉山当夜の沢渡町役場支所を描く
+1章の外伝『切り取られた頁』（`node-sawatari`、`link-sawatari`）を `add-child` で追加し、
+実応答の relay で完走させて `compose` で1冊の編纂原稿にした。
+
+| 操作 | コマンド / ラウンド | 結果 |
+| --- | --- | --- |
+| 子作品の追加 | `add-child prj-mine --node-id node-sawatari --link-id link-sawatari --title 切り取られた頁 --chapters 1 --target-chars 700` | 親の完成版は不変のまま子ノードを作成 |
+| 子作品の生成 | `run prj-mine --node node-sawatari` → `relay submit --node node-sawatari` × 11（plan `BE1F7416` / brief `BAEE621E` / world `D0BA1616` / history `EA958608`→repair `AEBB28FB` / character `27008C26` / relation `225112AD` / plot `4AD1D0F5` / scene `B4180A81` / voice `E0200C29` / draft:ch01 `CB8E3D72`、713字） | 子作品 complete（祖先の canon 要約が `asc-context-packet-pre1` として子の依頼文に自動で渡り、親の本文全文は渡らないことを確認） |
+| 設計1文書の回復 | `revise prj-mine --node node-sawatari --design history`（tag `2D9C4D23`、1ラウンド） | `events[].title` / `sources[].holder` を揃えて `history` だけ再生成、子の `ch01` 本文（713字）はバイト単位で持ち越し |
+| 親リンクへの採用 | `adopt-child prj-mine link-sawatari` | 改訂後の子版 `rev-60a71ed1…` を親リンクに固定（`doctor` findings 0、Nodes: 2） |
+| 編纂（正本 / 読書用） | `compose prj-mine --out .../collection.md` / `compose prj-mine --reader --out .../collection.reader.md` | 親4章（`# 宛名のない手紙` + `## 第1章`〜`## 第4章`）の後ろに子1章（`## 切り取られた頁` + `### 第1章`）が結合された編纂原稿（[`collection.reader.md`](collection.reader.md)） |
+
+合計 **39 応答 / 0 pending**、2ノード（親4版＋子2版）、`doctor` findings 0。
+
+### 入れ子で見つかり直した摩擦（F-30〜F-32）
+
+- **F-30 `relay status` に `--node` が無かった**（修正済み）。
+  `relay submit` には `--node` があったのに `relay status` には無く、親が完成済みの状態で
+  子ノードの待ちを見ようとすると親の `complete` だけが表示されていた。`relay status --node`
+  を追加して親子どちらの round も同じコマンドで見られるようにした。
+- **F-31 子ノードを `revise` したあと `adopt-child` が必要なことが round 報告に出ない**（修正済み）。
+  初版の完了時は `sync_child_links` が自動でリンクを埋めるが、子を `revise` して新しい版を
+  作ったあとは親リンクが旧版を指したままになる。子の `relay status --node` の `Warnings:` に
+  `parent link <id>: not pinned to this revision yet; run ... adopt-child <project> <link> before compose`
+  を出すようにした。
+- **F-32 `compose` に `--reader` が無かった**（修正済み）。
+  単体作品の `render --reader` と同じく、`compose --reader` でも親（`## 第N章`）と子（`### 第N章`）
+  に階層見出しを付け、全作品の `{{…}}` 監査マーカーを外した読書用編纂原稿を出せるようにした
+  （既定の `compose` と `artifacts/` の正本は1バイトも変えない）。
+
 ## 次にやるなら（優先順）
 
-1. **入れ子・世界の dogfood（U-06 / U-07）**: 単体3章・1章改訂・4章化 continuation・設計1文書回復まで
-   実応答で通ったので、次は親子作品の `compose` または `world` 台帳。
+1. **共有 world 台帳の導線確認（U-07）**: 単体3章・改訂・4章化・入れ子編纂まで実応答で通ったので、
+   次は `world add` / `world bind` / `world compile` の摩擦確認。
 2. **F-29 continuation の設計持ち越し**: 章数に依存しない設計書を `continue` で再要求しない選択。
 3. **F-25**: `relay status` が `--out` の出力先を知る（引数か最後に render したパス）。
 4. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
