@@ -26,7 +26,7 @@ CI は依然としてその後ろで待たされる。`docs/ci.md` の 1〜3 節
 アカウント単位の上限がある（Free: 20 ジョブ）。`dataset-refresh` は
 `prepare` 1 + シャード 20 + `publish` 1 を同時に起動するため、上限を埋め尽くしていた。
 
-その結果、15 秒で終わるはずの `research-check` が、30〜60 分の PDF ビルドの後ろで
+その結果、15 秒で終わるはずの `research-check` が、30〜60 分のデータ生成の後ろで
 数十分待たされた。テストが遅いのではなく、**順番待ちが遅い**。
 
 ```
@@ -106,7 +106,7 @@ Free プランのプライベートリポジトリは **2,000 分/月**。デー
 ## 5. データ公開（Release）の失敗と再発防止 — 2026-10-23
 
 `dataset-refresh` は 20 シャードすべて成功し、`datasets` ブランチへの反映も成功したのに、
-**Release への添付だけが失敗**して PDF バンドル（`narou_rank_*_pdfs.tar.gz`）が消えた。
+**Release への添付だけが失敗**してテキストアーカイブ（`narou_rank_*_texts.tar.gz`）が消えた。
 
 | 項目 | 内容 |
 | --- | --- |
@@ -136,7 +136,7 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 | ワークフロー | トリガー | 時間 | 役割 |
 | --- | --- | --- | --- |
 | `research-check` | 全 push・全 PR・手動 | 30〜60 秒 | カタログ整合、全テスト、デモ監査、デモ評価 |
-| `dataset-refresh` | データ関連のパスへの push・月次・手動 | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化・PDF完全削除、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
+| `dataset-refresh` | データ関連のパスへの push・月次・手動 | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
 
 `research-check` は**デモの監査と評価も実行**する。テストが緑でも、デモの期待値が
 ずれていれば落ちる（`harness/cases/demo/EXPECTED.md` が契約）。
@@ -146,7 +146,7 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 * `dataset-refresh` のシャード数を増やすなら `max-parallel` も見直す。
   `シャード数 - max-parallel + 2` が常時使う枠。**8 以上は空ける**こと。
 * `publish` の `if` は `(!cancelled()) && needs.prepare.result == 'success' && needs.render-narou.result != 'cancelled'` を維持する（`always()` を使うと Web UI の Cancel が効かなくなるため `!cancelled()` とする）。
-  キャンセルされた実行の部分的な PDF で `datasets` ブランチを上書きしてしまう。
+  キャンセルされた実行の部分的なテキストで `datasets` ブランチを上書きしてしまう。
 * `dataset-refresh` の頻度を週次に戻すなら、分数を計算し直すこと（1 回 700 分）。
 * `research-check` に path フィルタを戻さない。**列挙漏れで CI が走らない**のが
   いちばん危ない失敗の仕方だから。実行時間は 1 分未満なので、絞る理由がない。

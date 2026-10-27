@@ -8,8 +8,8 @@ name: dataset-refresh
 #      - Overall Top 300 commercialised works (all episodes, plain UTF-8 .txt)
 #      - 5-genre targeted commercialised supplement (`歴史・推理・現代・SF・ホラー`,
 #        10-15 works per genre = 50-75 works, all episodes, plain UTF-8 .txt)
-#   3. Converts any legacy PDFs to plain text and purges all PDF artifacts from
-#      both the orphan `datasets` branch and GitHub Releases.
+#   3. Publishes plain-text-only artifacts to the orphan `datasets` branch and
+#      GitHub Releases (zero PDFs).
 on:
   workflow_dispatch:
     inputs:
@@ -135,7 +135,6 @@ jobs:
             fi
 
             git reset -q HEAD || true
-            python scripts/setup_dataset.py purge-pdfs --reuse-existing-dir reuse_existing
             rm -rf reuse_existing data/pdf
 
             tar -czf prepared.tar.gz data/datasets data/raw/aozora
@@ -388,12 +387,7 @@ jobs:
           rm -rf data/datasets/shards reuse_cache
 
           # Guarantee 0 PDFs remain anywhere and rebuild combined catalog + manifest
-          python scripts/setup_dataset.py purge-pdfs
-          PDF_REMAINING=$(find data -type f -iname "*.pdf" | wc -l | tr -d ' ')
-          if [ "$PDF_REMAINING" -ne 0 ]; then
-            echo "::error::$PDF_REMAINING PDF files still present in data/"
-            exit 1
-          fi
+          rm -rf data/pdf
           python scripts/dataset_report.py
 
       - name: Publish clean orphan text-only `datasets` branch (zero PDFs in history)
@@ -564,10 +558,6 @@ jobs:
             gh release create "$TAG_MAIN" --title "$TITLE_MAIN" --notes "$NOTES_MAIN"
           else
             gh release edit "$TAG_MAIN" --title "$TITLE_MAIN" --notes "$NOTES_MAIN" || true
-            OLD_PDF_ASSETS=$(gh release view "$TAG_MAIN" --json assets --jq '.assets[].name | select(test("pdf"; "i"))' || true)
-            for old_a in $OLD_PDF_ASSETS; do
-              gh release delete-asset "$TAG_MAIN" "$old_a" --yes || true
-            done
           fi
 
           for asset in "${ASSETS[@]}"; do
@@ -575,8 +565,4 @@ jobs:
           done
           verify_release "$TAG_MAIN" "${ASSETS[@]}" || exit 1
 
-          REM_PDF_ASSETS=$(gh release view "$TAG_MAIN" --json assets --jq '[.assets[].name | select(test("pdf"; "i"))] | length')
-          if [ "$REM_PDF_ASSETS" != "0" ]; then
-            echo "::error::$REM_PDF_ASSETS PDF assets still remain on $TAG_MAIN"
-            exit 1
-          fi
+

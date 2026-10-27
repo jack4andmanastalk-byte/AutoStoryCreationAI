@@ -3,24 +3,21 @@
 
 The full datasets are too large for git, therefore ``samples/`` contains
 
-* ``*.sample.jsonl``  a deterministic subset of the bibliographic metadata,
-* ``pdf/``            a few rendered public-domain Aozora PDF files (together
-                      with their metadata records in ``aozora_works.sample.jsonl``).
+* ``*.sample.jsonl``  a deterministic subset of the bibliographic metadata
 
-Note: Full texts/PDFs of Syosetsuka ni Narou works remain the copyright of
+Note: Full texts of Syosetsuka ni Narou works remain the copyright of
 their respective authors and are therefore kept in git-ignored ``data/`` only
 (see ``docs/legal_and_ethics.md``).
 
 Usage::
 
-    python scripts/make_samples.py [--records 200] [--pdfs 4]
+    python scripts/make_samples.py [--records 200]
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import shutil
 import sys
 from pathlib import Path
 from typing import Any, Dict, List
@@ -58,38 +55,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=None)
     parser.add_argument("--records", type=int, default=200)
-    parser.add_argument("--pdfs", type=int, default=4)
-    parser.add_argument("--max-pdf-bytes", type=int, default=400_000)
     args = parser.parse_args()
 
     cfg = load_config(args.config)
     sample_dir = REPO_ROOT / "samples"
-    sample_pdf_dir = sample_dir / "pdf"
-    sample_pdf_dir.mkdir(parents=True, exist_ok=True)
-    for old_pdf in sample_pdf_dir.glob("*.pdf"):
-        old_pdf.unlink()
-
-    # Copy compact public-domain Aozora PDFs first so their IDs are guaranteed
-    # to appear in aozora_works.sample.jsonl.
-    aozora_pdf_ids: set[str] = set()
-    aozora_path = cfg.paths.dataset_dir / "aozora_works.jsonl"
-    if aozora_path.exists():
-        copied = 0
-        for row in read_jsonl(aozora_path):
-            if copied >= args.pdfs:
-                break
-            if (row.get("rights") or {}).get("copyright_flag") is True:
-                continue
-            pdf_path = row.get("pdf_path")
-            if not pdf_path:
-                continue
-            source_pdf = REPO_ROOT / pdf_path
-            if not source_pdf.exists() or source_pdf.stat().st_size > args.max_pdf_bytes:
-                continue
-            shutil.copy2(source_pdf, sample_pdf_dir / source_pdf.name)
-            aozora_pdf_ids.add(row["id"])
-            copied += 1
-        print(f"pdf/aozora: {copied} files")
 
     for source, target in SAMPLE_FILES.items():
         path = cfg.paths.dataset_dir / source
@@ -98,9 +67,7 @@ def main() -> int:
             continue
         rows = list(read_jsonl(path))
         priority: set[str] = set()
-        if source == "aozora_works.jsonl":
-            priority = aozora_pdf_ids
-        elif source == "narou_novels.jsonl":
+        if source == "narou_novels.jsonl":
             comm_rows = [
                 r for r in rows if (r.get("rights") or {}).get("commercialized") is True
             ]
@@ -113,20 +80,19 @@ def main() -> int:
         print(f"{target}: {len(subset)} records")
 
     manifest = {
-        "note": "Sample subset of the datasets, see docs/data_setup.md for the full pipeline.",
+        "note": "Sample subset of the datasets.",
         "generated_by": "scripts/make_samples.py",
     }
+    (sample_dir / "manifest.json").write_text(
+        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
     (sample_dir / "README.md").write_text(
         "# samples\n\n"
         "このディレクトリはリポジトリに同梱する小さなサンプルです。\n"
-        "全件データ・本文・PDF は `make data`（または `make pull-datasets`）で `data/` 配下に生成されます（Git には含めません）。\n\n"
+        "全件データ・本文は `make data`（または `make pull-datasets`）で `data/` 配下に生成されます（Git には含めません）。\n\n"
         "* `aozora_works.sample.jsonl` / `aozora_authors.sample.jsonl` … 青空文庫メタデータの部分集合\n"
-        "* `narou_novels.sample.jsonl` … 小説家になろうメタデータ（商業化フラグ付き作品を含む）の部分集合\n"
-        "* `pdf/` … 青空文庫（著作権消滅作品）から組版した A5 PDF サンプル\n",
+        "* `narou_novels.sample.jsonl` … 小説家になろうメタデータ（商業化フラグ付き作品を含む）の部分集合\n",
         encoding="utf-8",
-    )
-    (sample_dir / "manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8"
     )
     return 0
 

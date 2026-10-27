@@ -21,8 +21,7 @@
 | `license` | str\|null | ライセンスの短い説明 |
 | `rights` | obj | 権利情報（下記） |
 | `stats` | obj | 統計値（下記） |
-| `text_path` | str\|null | リポジトリ相対の本文テキストパス |
-| `pdf_path` | str\|null | リポジトリ相対の PDF パス |
+| `text_path` | str|null | リポジトリ相対の本文テキストパス |
 | `extra` | obj | ソース固有のフィールド（下記） |
 
 ### `rights`
@@ -114,7 +113,7 @@
   "generated_at": "2026-10-22T06:40:00Z",
   "steps": {
     "aozora_metadata": {"origin": "...", "works": 16330, "authors": 1064},
-    "aozora_texts": {"works": 120, "pdf_dir": "data/pdf/aozora"},
+    "aozora_texts": {"works": 120},
     "narou_metadata": {"works": 1534},
     "narou_texts": {"works": 12}
   }

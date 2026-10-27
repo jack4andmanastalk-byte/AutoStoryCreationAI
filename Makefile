@@ -32,7 +32,6 @@ data-narou: ## Syosetsuka ni Narou: metadata, Top-300 + 5-genre supplement full-
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-rank --top 300 --scan-limit 1100
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-texts --works 300 --max-episodes 0 --rank-order
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-genre-supplement --per-genre 15 --min-per-genre 10
-	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) purge-pdfs
 
 pull-datasets: ## fetch prebuilt datasets and plain texts from the 'datasets' branch
 	git fetch origin +refs/heads/datasets:refs/remotes/origin/datasets
@@ -232,8 +231,8 @@ skills-check: ## validate SKILL.md files and run every skill's tests
 		tests/test_adaptation.py tests/test_pipeline_s2s3.py tests/test_pipeline_design.py \
 		tests/test_calibration.py -q
 
-clean: ## remove the generated texts and PDFs
-	rm -rf data/raw data/pdf
+clean: ## remove the generated texts
+	rm -rf data/raw
 
 distclean: clean ## also remove the download cache
 	rm -rf data/cache

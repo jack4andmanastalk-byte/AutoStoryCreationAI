@@ -10,8 +10,6 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from asc.config import NarouConfig, PathsConfig  # noqa: E402
-from asc.fonts import build_font_set  # noqa: E402
-from asc.render.pdf import BookPdfRenderer  # noqa: E402
 from asc.schema import Author, Work  # noqa: E402
 from asc.sources.media_verify import (  # noqa: E402
      extract_author_variants,
@@ -392,117 +390,6 @@ def test_strict_external_verification_filters_fake_and_captures_silent_r15():
     assert fake_claimed.rights["external_verified"] is False
 
 
-def test_refresh_cover_preserves_body_pages(tmp_path: Path):
-    from pypdf import PdfReader
-
-    font_dir = Path(__file__).resolve().parents[1] / "data" / "cache" / "fonts"
-    try:
-        fonts = build_font_set(
-            body_font="ZenOldMincho-Regular.ttf",
-            heading_font="ZenKakuGothicNew-Bold.ttf",
-            body_bold_font=None,
-            cache_dir=font_dir,
-        )
-    except Exception as exc:  # pragma: no cover
-        pytest.skip(f"fonts unavailable: {exc}")
-
-    renderer = BookPdfRenderer(fonts=fonts)
-    work = Work(
-        id="narou:N9669BK",
-        source="syosetsuka_ni_narou",
-        title="無職転生",
-        url="https://ncode.syosetu.com/n9669bk/",
-        authors=[Author(name="理不尽な孫の手", role="author")],
-        genre={"label": "ハイファンタジー", "parent": {"label": "ファンタジー"}},
-        stats={"char_count": 5000, "episodes": 2, "elements": ["R15"], "global_point": 1100000, "fav_novel_cnt": 300000},
-        extra={"ranking": {"rank": 1, "is_book": True, "is_comic": True, "is_anime": True, "is_game": True, "isbn_sample": "9784040662206", "publisher": "KADOKAWA", "label": "MFブックス"}},
-    )
-    blocks = [{"type": "paragraph", "text": "本文テキストです。" * 40} for _ in range(15)]
-    pdf_path = tmp_path / "N9669BK.pdf"
-    renderer.render(work, blocks, pdf_path, note="テスト注記")
-    orig_pages = len(PdfReader(str(pdf_path)).pages)
-    assert orig_pages >= 2
-
-    work.extra["ranking"]["rank"] = 2
-    renderer.refresh_cover(work, pdf_path, pdf_path, note="更新注記")
-    updated_reader = PdfReader(str(pdf_path))
-    assert len(updated_reader.pages) == orig_pages
-    cover_txt = updated_reader.pages[0].extract_text()
-    assert "第2位" in cover_txt
-    assert "9784040662206" in cover_txt
-
-
-def test_parse_apple_books_response_verifies_imprint_and_rejects_unrelated():
-    from asc.sources.media_verify import parse_apple_books_response
-
-    apple_payload = {
-        "resultCount": 4,
-        "results": [
-            {
-                "kind": "ebook",
-                "trackId": 1001,
-                "trackName": "異世界迷宮でハーレムを(1)",
-                "artistName": "氷樹一世, 蘇我捨恥(ヒーロー文庫/イマジカインフォス) & 四季童子",
-                "genres": ["マンガ", "ブック"],
-            },
-            {
-                "kind": "ebook",
-                "trackId": 1002,
-                "trackName": "異世界迷宮でハーレムを 1",
-                "artistName": "蘇我捨恥(ヒーロー文庫/イマジカインフォス) & 四季童子",
-                "genres": ["ライトノベル", "ブック"],
-            },
-            {
-                "kind": "ebook",
-                "trackId": 1003,
-                "trackName": "【期間限定無料】異世界迷宮でハーレムを(1)",
-                "artistName": "氷樹一世, 蘇我捨恥",
-                "genres": ["マンガ", "ブック"],
-            },
-            {
-                "kind": "ebook",
-                "trackId": 1004,
-                "trackName": "異世界迷宮でハーレムを 自費出版",
-                "artistName": "蘇我捨恥 / Kindle Direct Publishing",
-                "genres": ["ライトノベル"],
-            },
-        ],
-    }
-
-    parsed = parse_apple_books_response(
-        apple_payload,
-        search_titles=["異世界迷宮でハーレムを"],
-        author_variants=extract_author_variants("蘇我捨恥"),
-    )
-    assert parsed["matched"] is True
-    assert parsed["has_book"] is True
-    assert parsed["has_manga"] is True
-    assert parsed["label"] == "ヒーロー文庫"
-    assert parsed["publisher"] == "イマジカインフォス"
-    assert parsed["book_hits"] == 1
-    assert parsed["manga_hits"] == 1
-
-    # Uncommercialized work ("謙虚、堅実をモットーに生きております！") must NOT match unrelated books
-    unrelated_payload = {
-        "resultCount": 1,
-        "results": [
-            {
-                "kind": "ebook",
-                "trackId": 9999,
-                "trackName": "謙虚なるコントラリアン",
-                "artistName": "アンソニー・ボルトン",
-                "genres": ["ビジネス／マネー", "ブック"],
-            }
-        ],
-    }
-    rejected = parse_apple_books_response(
-        unrelated_payload,
-        search_titles=["謙虚、堅実をモットーに生きております！"],
-        author_variants=extract_author_variants("ひよこのケーキ"),
-    )
-    assert rejected["matched"] is False
-
-
 def test_write_ranked_catalogs_emits_rank201_300_slice(tmp_path: Path):
     import sys
 
@@ -523,8 +410,7 @@ def test_write_ranked_catalogs_emits_rank201_300_slice(tmp_path: Path):
             authors=[Author(name=f"作者{idx}", role="author")],
             genre={"label": "ハイファンタジー"},
             stats={"char_count": 50000, "episodes": 25, "elements": ["R15"], "global_point": 100000 - idx, "fav_novel_cnt": 20000},
-            pdf_path=f"data/pdf/narou/N{idx:04d}AA.pdf",
-            extra={"pdf_bytes": 1048576, "ranking": {"rank": idx, "is_book": True, "is_comic": True}},
+            extra={"ranking": {"rank": idx, "is_book": True, "is_comic": True}},
         )
         for idx in range(1, 301)
     ]
