@@ -1,0 +1,27 @@
+{
+  "chapters": [
+    {
+      "chars": 713,
+      "day": 1,
+      "id": "ch01",
+      "injected": [],
+      "location": "沢渡",
+      "markers": 6
+    }
+  ],
+  "chars": 713,
+  "must_include": {
+    "hits": {},
+    "rate": 1.0
+  },
+  "task": {
+    "avoid": [],
+    "control": "creative-project",
+    "genre": "novel",
+    "id": "node-sawatari",
+    "logline": "閉山の年、沢渡町役場支所の記録係だった前任者が、事故死者欄に零と書くよう命じられた夜。のちに野々宮あおいが引き継ぐ閲覧簿の裏に、切り取った頁の控えを挟む。",
+    "must_include": [],
+    "title_ja": "切り取られた頁"
+  },
+  "warnings_ja": []
+}

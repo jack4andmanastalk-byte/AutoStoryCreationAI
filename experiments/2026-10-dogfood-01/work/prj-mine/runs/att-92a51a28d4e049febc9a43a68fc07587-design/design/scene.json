@@ -1,0 +1,123 @@
+{
+  "scenes": [
+    {
+      "id": "s01",
+      "chapter": "ch01",
+      "purpose": "保管期限を過ぎた三通の手紙を、焼くか残すか決める。",
+      "conflict": "局の規則は焼却を求め、差出人の名を見たスミは動けない。",
+      "change": "スミは手紙を棚から自分の鞄へ移し、町へ出る。",
+      "tension": "curiosity",
+      "knowledge": [
+        {
+          "character": "sumi",
+          "entry": [],
+          "gained": [
+            "F-01"
+          ]
+        }
+      ],
+      "disclosure": {
+        "disclosed": [
+          "F-01"
+        ],
+        "withheld": [
+          {
+            "fact": "F-02",
+            "reason": "死者の欄は役場の支所にしかなく、この章では見られない。"
+          },
+          {
+            "fact": "F-03",
+            "reason": "坑内のことを話す者は町に一人もいない。"
+          }
+        ]
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": []
+      }
+    },
+    {
+      "id": "s02",
+      "chapter": "ch02",
+      "purpose": "差出人が死者だと確かめるため、閉山の記録を閲覧する。",
+      "conflict": "記録を汚したくないあおいと、記録の外を知りたいスミが向かい合う。",
+      "change": "スミは訂正を求めず、頁の写しを取る手続きを選ぶ。",
+      "tension": "suspense",
+      "knowledge": [
+        {
+          "character": "sumi",
+          "entry": [
+            "F-01"
+          ],
+          "gained": [
+            "F-02"
+          ]
+        },
+        {
+          "character": "aoi",
+          "entry": [
+            "F-02"
+          ],
+          "gained": []
+        }
+      ],
+      "disclosure": {
+        "disclosed": [
+          "F-02"
+        ],
+        "withheld": [
+          {
+            "fact": "F-03",
+            "reason": "記録係のあおいも、事故の日の坑内の記録は持っていない。"
+          }
+        ]
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": [
+          "fs-002"
+        ]
+      }
+    },
+    {
+      "id": "s03",
+      "chapter": "ch03",
+      "purpose": "三通目を、書いた者の意図に沿う相手へ渡す。",
+      "conflict": "記録に残すことを求めるあおいと、渡すことだけを選ぶスミが食い違う。",
+      "change": "スミは源じいに手紙を渡し、源じいは見送った日のことを話す。",
+      "tension": "quiet",
+      "knowledge": [
+        {
+          "character": "sumi",
+          "entry": [
+            "F-01",
+            "F-02"
+          ],
+          "gained": [
+            "F-03"
+          ]
+        },
+        {
+          "character": "gen",
+          "entry": [
+            "F-03"
+          ],
+          "gained": []
+        }
+      ],
+      "disclosure": {
+        "disclosed": [
+          "F-03"
+        ],
+        "withheld": []
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": [
+          "fs-001",
+          "fs-003"
+        ]
+      }
+    }
+  ]
+}

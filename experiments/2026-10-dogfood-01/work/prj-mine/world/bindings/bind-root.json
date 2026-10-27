@@ -1,0 +1,20 @@
+{
+  "content_version": "eae0ba8c8d9e17f529153803bc203091da3e0598588b5889761a8997b04c831e",
+  "created_at": "2026-10-27T11:06:47.351461Z",
+  "culture_state_ids": [
+    "cs-15yrs"
+  ],
+  "id": "bind-root",
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "project_id": "prj-mine",
+  "record_type": "work_world_binding",
+  "region_ids": [
+    "reg-oneno",
+    "reg-sawatari"
+  ],
+  "revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
+  "schema_version": 1,
+  "time_span_ids": [
+    "span-15yrs"
+  ]
+}

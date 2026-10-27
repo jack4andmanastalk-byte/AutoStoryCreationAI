@@ -1,0 +1,19 @@
+{
+  "chapters": [
+    {
+      "id": "ch01",
+      "day": 1,
+      "location": "尾根野"
+    },
+    {
+      "id": "ch02",
+      "day": 3,
+      "location": "沢渡"
+    },
+    {
+      "id": "ch03",
+      "day": 5,
+      "location": "尾根野"
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "brief": {
+    "theme_ja": "命じられて書いた零と、自分の手で残した控えのどちらが後の読者に届くか。",
+    "protagonist_ja": "沢渡町役場支所の前任記録係・梶原頼子（42）。職を失いたくないが、死者欄に零とだけ書いて帳面を閉じることを恐れている。",
+    "setting_ja": "閉山の年（親作品の十五年前）の沢渡町役場支所の宿直室と書庫。",
+    "tone_ja": "夜の事務室の静けさと、紙と糊の乾いた感触。",
+    "turn_ja": "頼子は本欄には命じられた通り零と清書しつつ、切り取った下書きの頁を焼かずに閲覧簿の裏表紙の袋へ挟む。",
+    "ending_ja": "帳面は零のまま閉じられるが、裏表紙の袋に控えが残る。"
+  },
+  "characters": [
+    {
+      "id": "yoriko",
+      "name": "梶原頼子",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢渡",
+      "age_at_start": 42,
+      "birthday_day": 80,
+      "knows": [
+        "F-11"
+      ],
+      "notes": "沢渡町役場支所の前任記録係"
+    },
+    {
+      "id": "kuroda",
+      "name": "黒田支所長",
+      "aliases": [
+        "支所長"
+      ],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢渡",
+      "age_at_start": 55,
+      "birthday_day": 30,
+      "knows": [
+        "F-11"
+      ],
+      "notes": "閉山記録の確定を命じる上役"
+    }
+  ],
+  "facts": [
+    {
+      "id": "F-11",
+      "summary": "閉山時の事故死者欄は本庁への提出前に零と清書し直された",
+      "terms": [
+        "清書"
+      ],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-12",
+      "summary": "切り取られた下書きの頁の控えが閲覧簿の裏表紙の袋に挟まれている",
+      "terms": [
+        "裏表紙"
+      ],
+      "setup": "ch01"
+    }
+  ],
+  "locations": [
+    {
+      "id": "沢渡",
+      "travel_days": {
+        "尾根野": 2
+      }
+    },
+    {
+      "id": "尾根野",
+      "travel_days": {
+        "沢渡": 2
+      }
+    }
+  ],
+  "timeline": {
+    "chapters": [
+      {
+        "id": "ch01",
+        "day": 1,
+        "location": "沢渡"
+      }
+    ]
+  },
+  "foreshadowing": [
+    {
+      "id": "fs-101",
+      "description": "定規を当てて切り取った下書きの頁",
+      "setup": "ch01",
+      "payoff": "ch01"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "attempt_id": "att-5eb3ffd445f2404ca3ffa65742c06539",
+  "continuation": null,
+  "input_artifacts": [],
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "project_id": "prj-mine",
+  "resume_of": null,
+  "resume_source_responses_sha256": null,
+  "retry_of": null,
+  "revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 4,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉山した銅山の町。最後の坑道に残された、宛名のない手紙を届ける郵便配達員の話。手紙は三通あり、差出人はいずれも同じ人物。町の公式記録と、年寄りたちの記憶は食い違っている。",
+    "target_chars_per_chapter": 900,
+    "title": "宛名のない手紙"
+  },
+  "spec_sha256": "1c756e9620e93f437079c8233bb7dfad59df21f1fbed841623c9b8cc2a31cb79",
+  "stage": "plan"
+}

@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    "design.json",
+    "design/attempts/scene-attempt-1.txt",
+    "design/scene.json",
+    "design/scene.report.json",
+    "manifest.json",
+    "project-input.json",
+    "responses.jsonl"
+  ],
+  "error": null,
+  "finished_at": "2026-10-27T11:06:09Z",
+  "git_commit": "6c6c16c4b0a0b4feb0163aeea1ad71166479ba0a",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-27",
+  "prompt_hashes": {
+    "design-repair": "24400eb90fe44e64",
+    "design-scene": "86416625d09d31a8",
+    "design:scene": "c3d1bad180cac3a6"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 1,
+  "responses_sha256": "118cc55b92bb7b07c9a958a687610f4969aa5275072db6a82001abeb7441a613",
+  "run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
+  "seed": 0,
+  "started_at": "2026-10-27T11:06:09Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-4e577937dd8046188907958c9e82c19e",
+  "temperature": 0.6,
+  "usage": {}
+}

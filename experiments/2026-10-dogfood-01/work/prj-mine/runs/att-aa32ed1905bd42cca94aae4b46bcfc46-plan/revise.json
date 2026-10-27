@@ -1,0 +1,23 @@
+{
+  "copied": [
+    "canon/characters.json",
+    "canon/facts.json",
+    "canon/foreshadowing.json",
+    "canon/locations.json",
+    "canon/suppressions.json",
+    "canon/timeline.json"
+  ],
+  "kind": "revise",
+  "regenerated": [],
+  "schema": "project-revise-v1",
+  "source_node_id": "node-sawatari",
+  "source_revision_id": "rev-7f0c5e5e52c84018aa1481d072e27eff",
+  "source_runs": {
+    "design": "att-c4d073e97f5d4510903b27234110550d-design",
+    "draft": "att-e47279dec0e34261a21970970237f70b-draft",
+    "plan": "att-9e3f1404a371446599db7377f1a89772-plan"
+  },
+  "source_sha256": {},
+  "stage": "plan",
+  "unchanged_bytes": true
+}

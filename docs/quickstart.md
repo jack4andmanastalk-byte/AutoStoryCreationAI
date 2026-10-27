@@ -153,8 +153,17 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 # 完成版から分岐して別案の node を作る
 .venv/bin/python scripts/story_project.py --root works branch prj-seaside --node-id node-alt
 
-# 子作品をまとめて編纂する
+# 子作品をまとめて編纂する（--reader で階層見出し付きの読書用原稿）
 .venv/bin/python scripts/story_project.py --root works compose prj-seaside --out works/prj-seaside/collection.md
+.venv/bin/python scripts/story_project.py --root works compose prj-seaside --reader --out works/prj-seaside/collection.reader.md
+
+# 共有 world 台帳に時代・地域・文化・正史（canon）を登録し、年代記・地誌・文化誌を編纂する
+.venv/bin/python scripts/story_project.py --root works world adopt-canon prj-seaside \
+  --artifact canon/facts.json --pointer /facts/0 --scope region --scope-id reg-seaside \
+  --subject "防波堤の灯台の記録"
+.venv/bin/python scripts/story_project.py --root works world status prj-seaside
+.venv/bin/python scripts/story_project.py --root works world compile prj-seaside prof-chronicle \
+  --out works/prj-seaside/chronicle.md
 ```
 
 これらも provider を省略すれば relay になる。応答が足りない場合は手順3と同じく

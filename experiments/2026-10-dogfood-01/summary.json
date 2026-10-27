@@ -30,7 +30,7 @@
     "info": 0,
     "interrupted": 0,
     "nodes": 2,
-    "runs": 57,
+    "runs": 18,
     "warnings": 0
   },
   "entry_point": "scripts/story_project.py init|run|relay status|relay submit|render|doctor",
@@ -193,6 +193,37 @@
       "id": "F-32",
       "status": "fixed",
       "summary": "compose lacked --reader; added hierarchical chapter headings and marker stripping for composed parent+child works without changing default compose bytes"
+    },
+    {
+      "area": "operations",
+      "files": [
+        ".gitignore",
+        "experiments/2026-10-dogfood-01/work/prj-mine/runs/"
+      ],
+      "id": "F-33",
+      "status": "fixed",
+      "summary": "unanchored runs/ in .gitignore ignored nested project runs/, causing doctor run.missing after clone; anchored to /runs/ and committed completed project runs"
+    },
+    {
+      "area": "world",
+      "files": [
+        "src/asc/project/world_store.py",
+        "scripts/story_project.py",
+        "tests/test_project_world.py"
+      ],
+      "id": "F-34",
+      "status": "fixed",
+      "summary": "world adopt-canon --artifact required the full runs/<run_id>/... path; now also resolves unique plan artifact relative suffixes such as canon/facts.json"
+    },
+    {
+      "area": "world",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_project_world.py"
+      ],
+      "id": "F-35",
+      "status": "fixed",
+      "summary": "world status text output now lists the bound world IDs and each current canon entry with its scope and subject"
     }
   ],
   "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
@@ -409,5 +440,41 @@
     "completed runs",
     "existing relays"
   ],
-  "verbatim_answers": "experiments/2026-10-dogfood-01/work/prj-mine/relay/responses/"
+  "verbatim_answers": "experiments/2026-10-dogfood-01/work/prj-mine/relay/responses/",
+  "world": {
+    "compilations": {
+      "chronicle": {
+        "path": "experiments/2026-10-dogfood-01/chronicle.md",
+        "profile_id": "prof-chronicle",
+        "sha256": "dcca2a942b0d3c2b1cff01b7acc2fae347ef64faf07d194a7b599ea9595cd0ba"
+      },
+      "collection": {
+        "path": "experiments/2026-10-dogfood-01/world-collection.md",
+        "profile_id": "prof-collection",
+        "sha256": "940d06cbedfa17c30dc9c183c548e1042c58c33f5c68eb951624875721413f47"
+      },
+      "culture": {
+        "path": "experiments/2026-10-dogfood-01/culture.md",
+        "profile_id": "prof-culture",
+        "sha256": "4e0957c79269c1d9af989573d138e06323b9351c244d4fb8a6ef9038d7e2945e"
+      },
+      "gazetteer": {
+        "path": "experiments/2026-10-dogfood-01/gazetteer.md",
+        "profile_id": "prof-gazetteer",
+        "sha256": "f14ff514cd615846a0f8a47f9e96909434337b3b5ad6cdf645e3c9b353d33efa"
+      }
+    },
+    "counts": {
+      "bindings": 2,
+      "canon_entries": 4,
+      "culture_state_relations": 1,
+      "culture_states": 2,
+      "cultures": 1,
+      "regions": 3,
+      "spatial_relations": 1,
+      "time_conversions": 0,
+      "time_spans": 2,
+      "timeframes": 1
+    }
+  }
 }

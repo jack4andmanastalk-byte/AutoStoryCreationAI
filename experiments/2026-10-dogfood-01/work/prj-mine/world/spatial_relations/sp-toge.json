@@ -1,0 +1,12 @@
+{
+  "created_at": "2026-10-27T11:06:46.691549Z",
+  "id": "sp-toge",
+  "kind": "mountain_pass",
+  "project_id": "prj-mine",
+  "record_type": "spatial_relation",
+  "schema_version": 1,
+  "source_region_id": "reg-oneno",
+  "target_region_id": "reg-sawatari",
+  "travel_days": null,
+  "valid_span_id": "span-15yrs"
+}

@@ -71,13 +71,6 @@
       "sha256": "9b08d1f4d676fae488db80d25453e78b750c51e205adfcbfc43728c3d5e756f9"
     },
     {
-      "artifact_id": "design-resume-audit.json",
-      "media_type": "application/json",
-      "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/resume-audit.json",
-      "producer_run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
-      "sha256": "3829513bfc6348edda403a85727deb0f8d355d0d3acdece2639ca9e0c20d4cda"
-    },
-    {
       "artifact_id": "design-revise.json",
       "media_type": "application/json",
       "path": "runs/att-08815b0b73c447a89b074b8df3c557fe-design/revise.json",
@@ -86,13 +79,13 @@
     }
   ],
   "attempt_id": "att-08815b0b73c447a89b074b8df3c557fe",
-  "created_at": "2026-10-27T09:22:23.662841Z",
+  "created_at": "2026-10-27T11:06:09.312397Z",
   "error": null,
   "node_id": "node-4e577937dd8046188907958c9e82c19e",
   "pending": null,
   "project_id": "prj-mine",
   "record_type": "stage_checkpoint",
-  "resume_of": "att-5eb3ffd445f2404ca3ffa65742c06539-design",
+  "resume_of": null,
   "retry_of": null,
   "revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
   "run_id": "att-08815b0b73c447a89b074b8df3c557fe-design",
@@ -101,5 +94,5 @@
   "stage": "design",
   "status": "done",
   "temperature": 0.6,
-  "updated_at": "2026-10-27T09:22:23.721930Z"
+  "updated_at": "2026-10-27T11:06:09.324140Z"
 }

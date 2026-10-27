@@ -1,0 +1,67 @@
+{
+  "attempts": 2,
+  "checks_failed": 2,
+  "doc": "history",
+  "findings": [
+    {
+      "check": "causality_linked",
+      "history_ref": "events:ev-s1",
+      "message_ja": "出来事の題が空欄。",
+      "severity": "medium"
+    },
+    {
+      "check": "causality_linked",
+      "history_ref": "events:ev-s2",
+      "message_ja": "出来事の題が空欄。",
+      "severity": "medium"
+    },
+    {
+      "check": "canon_separated",
+      "history_ref": "apocrypha:死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話",
+      "message_ja": "異説「死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話」が年表にない。",
+      "severity": "medium"
+    },
+    {
+      "check": "canon_separated",
+      "history_ref": "sources:src-s1",
+      "message_ja": "史料の保持者（holder）が空欄。誰が持ち、誰が消したかを書く。",
+      "severity": "low"
+    }
+  ],
+  "first_attempt": {
+    "checks_failed": 2,
+    "findings": [
+      {
+        "check": "causality_linked",
+        "history_ref": "events:ev-s1",
+        "message_ja": "出来事の題が空欄。",
+        "severity": "medium"
+      },
+      {
+        "check": "causality_linked",
+        "history_ref": "events:ev-s2",
+        "message_ja": "出来事の題が空欄。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話",
+        "message_ja": "異説「死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-s1",
+        "message_ja": "史料の保持者（holder）が空欄。誰が持ち、誰が消したかを書く。",
+        "severity": "low"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "unresolved"
+}

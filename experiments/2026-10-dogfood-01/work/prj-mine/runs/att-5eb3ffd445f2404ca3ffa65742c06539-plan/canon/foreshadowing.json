@@ -1,0 +1,28 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "切手の貼られていない手紙",
+      "setup": "ch01",
+      "payoff": "ch03"
+    },
+    {
+      "id": "fs-002",
+      "description": "源じいが言いよどむ理由",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-003",
+      "description": "零と書かれた死者の欄",
+      "setup": "ch02",
+      "payoff": "ch03"
+    },
+    {
+      "id": "fs-004",
+      "description": "写しの手続きに添える聞き取り欄",
+      "setup": "ch02",
+      "payoff": "ch04"
+    }
+  ]
+}

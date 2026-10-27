@@ -1,0 +1,43 @@
+{
+  "scenes": [
+    {
+      "id": "s01",
+      "chapter": "ch01",
+      "purpose": "死者欄を零と清書し直しながら、下書きの頁を捨てずに閲覧簿の裏へ残す。",
+      "conflict": "古い紙を火鉢で焼くよう命じる黒田と、本欄には従いつつ下書きを残したい頼子が夜の支所で向かい合う。",
+      "change": "頼子は零の清書に検印を受けたあと、下書きを定規で切り取って閲覧簿の裏表紙の袋へ挟む。",
+      "tension": "suspense",
+      "knowledge": [
+        {
+          "character": "yoriko",
+          "entry": [
+            "F-11"
+          ],
+          "gained": [
+            "F-12"
+          ]
+        },
+        {
+          "character": "kuroda",
+          "entry": [
+            "F-11"
+          ],
+          "gained": []
+        }
+      ],
+      "disclosure": {
+        "disclosed": [
+          "F-11",
+          "F-12"
+        ],
+        "withheld": []
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": [
+          "fs-101"
+        ]
+      }
+    }
+  ]
+}

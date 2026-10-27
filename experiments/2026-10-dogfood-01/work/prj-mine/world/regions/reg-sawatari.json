@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-10-27T11:06:46.539989Z",
+  "description": "麓の駅町。町役場支所と書庫がある。",
+  "id": "reg-sawatari",
+  "name": "沢渡",
+  "parent_region_id": "reg-gun",
+  "project_id": "prj-mine",
+  "record_type": "region",
+  "schema_version": 1,
+  "valid_span_id": null
+}

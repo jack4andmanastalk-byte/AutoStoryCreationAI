@@ -1,0 +1,50 @@
+{
+  "events": [
+    {
+      "id": "ev-s1",
+      "year": 1950,
+      "name": "銅山の閉山決定",
+      "cause": "",
+      "effect": "支所で閉山記録の清書が始まる。",
+      "trace": "綴じ込みの表紙の年号"
+    },
+    {
+      "id": "ev-s2",
+      "year": 1950,
+      "name": "死者欄の清書と切り取り",
+      "cause": "ev-s1",
+      "effect": "本欄は零となり、下書きの頁が裏表紙の袋に残る。",
+      "trace": "定規で切られた紙の端と裏表紙の袋"
+    }
+  ],
+  "sources": [
+    {
+      "id": "src-s1",
+      "title": "閉山記録清書簿",
+      "bias": "本庁提出用に死者欄を零に統一している。",
+      "origin": "invented",
+      "citation": ""
+    }
+  ],
+  "apocrypha": [
+    "死者欄の清書と切り取りには、焼かれずに残った下書きが一枚あるという話"
+  ],
+  "knowledge": {
+    "yoriko": {
+      "knows": [
+        "ev-s1",
+        "ev-s2"
+      ],
+      "unknown": []
+    },
+    "kuroda": {
+      "knows": [
+        "ev-s1"
+      ],
+      "unknown": [
+        "ev-s2"
+      ]
+    }
+  },
+  "notes": ""
+}

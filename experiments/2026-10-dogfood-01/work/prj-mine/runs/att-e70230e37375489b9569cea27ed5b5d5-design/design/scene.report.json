@@ -1,0 +1,31 @@
+{
+  "attempts": 2,
+  "checks_failed": 1,
+  "doc": "scene",
+  "findings": [
+    {
+      "check": "knowledge_tracked",
+      "message_ja": "aoi が得る F-03 が開示計画にない。開示か保留のどちらかに書く。",
+      "scene_ref": "scenes:s04",
+      "severity": "medium"
+    }
+  ],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "knowledge_tracked",
+        "message_ja": "aoi が得る F-03 が開示計画にない。開示か保留のどちらかに書く。",
+        "scene_ref": "scenes:s04",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "unresolved"
+}

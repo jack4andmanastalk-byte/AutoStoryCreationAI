@@ -1,0 +1,65 @@
+{
+  "content_version": "8e1ec97c20fbf2cfcc9b012ce15e4bb9b5fd91505186154dcaf6bece0c14a5b2",
+  "kind": "culture",
+  "output": "artifacts/world/culture-prof-culture-8e1ec97c20fbf2cf.md",
+  "profile": {
+    "content_version": "34ec9726d7890a9a4ee569c2474d4c58c333cf26cfc40e653681001a4bac53f8",
+    "culture_id": "cul-post",
+    "id": "prof-culture",
+    "kind": "culture",
+    "node_id": null,
+    "project_id": "prj-mine",
+    "record_type": "compilation_profile",
+    "region_id": null,
+    "schema_version": 1,
+    "timeframe_id": null,
+    "title": "銅山町の郵便と記録の慣行（文化誌）"
+  },
+  "profile_id": "prof-culture",
+  "project_id": "prj-mine",
+  "record_type": "asc_world_compilation",
+  "schema_version": 1,
+  "source_references": [
+    {
+      "content_version": "361b74cd49fea31a19a25444e3cc610a4f46f3cd9ae9df051d7dd965b8b39731",
+      "id": "cul-post",
+      "record_type": "culture"
+    },
+    {
+      "content_version": "8448f262d6eea0899ee8495be26b542f1246fe25d20bcc55bce3c63e1cbc5f47",
+      "id": "cs-15yrs",
+      "record_type": "culture_state"
+    },
+    {
+      "content_version": "9fb289f55a683a857466bf6cb9f05a933808028ff30f0721018267c3c4422e2b",
+      "id": "cs-heizan",
+      "record_type": "culture_state"
+    },
+    {
+      "content_version": "e7610cbefad324e7c1ab6f950235e821f25b0744aba076c217916a51db9557a2",
+      "id": "crel-1",
+      "record_type": "culture_state_relation"
+    },
+    {
+      "content_version": "e42466d4b56ad137f3e202efe3282c885841db7171394e197b876d4290b114ac",
+      "id": "tf-showa",
+      "record_type": "time_frame"
+    },
+    {
+      "content_version": "8e83d58f50bfd5ed43003c326528d1560bb4c0dd3d03d39eaeda7a25a87164c4",
+      "id": "span-15yrs",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "c797472ee4bfad58ebb803703d0ce1a0b7cb02c4d70b1c1f5c3ed5453cc61412",
+      "id": "span-heizan",
+      "record_type": "time_span"
+    },
+    {
+      "content_version": "0565f60c2e95dae9ecd83213eaae51f4df6445d1694e488d0406a4008b2bd434",
+      "id": "wcanon-seisho",
+      "record_type": "world_canon_entry"
+    }
+  ],
+  "text_sha256": "4e0957c79269c1d9af989573d138e06323b9351c244d4fb8a6ef9038d7e2945e"
+}

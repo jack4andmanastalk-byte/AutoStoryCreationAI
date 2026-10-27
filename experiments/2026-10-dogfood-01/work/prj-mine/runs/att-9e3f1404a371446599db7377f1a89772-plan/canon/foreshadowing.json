@@ -1,0 +1,10 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-101",
+      "description": "定規を当てて切り取った下書きの頁",
+      "setup": "ch01",
+      "payoff": "ch01"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    "design.json",
+    "design/brief.json",
+    "design/character.json",
+    "design/history.json",
+    "design/plot.json",
+    "design/relation.json",
+    "design/scene.json",
+    "design/voice.json",
+    "design/world.json",
+    "manifest.json",
+    "project-input.json"
+  ],
+  "error": null,
+  "finished_at": "2026-10-27T11:06:09Z",
+  "git_commit": "6c6c16c4b0a0b4feb0163aeea1ad71166479ba0a",
+  "model": "arena-agent-mode",
+  "model_version": null,
+  "prompt_hashes": {},
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 0,
+  "responses_sha256": null,
+  "run_id": "att-c0ba3d7f1ee04b0f956bba591d29acb4-design",
+  "seed": 0,
+  "started_at": "2026-10-27T11:06:09Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-4e577937dd8046188907958c9e82c19e",
+  "temperature": 0.6,
+  "usage": {}
+}

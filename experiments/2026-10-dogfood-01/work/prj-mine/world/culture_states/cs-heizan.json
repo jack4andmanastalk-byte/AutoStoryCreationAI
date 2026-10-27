@@ -1,0 +1,18 @@
+{
+  "attributes": {
+    "practice": "閉山記録の本欄は支所長検印で確定し、坑夫間の手紙は切手を貼らずに託す"
+  },
+  "content_version": "9fb289f55a683a857466bf6cb9f05a933808028ff30f0721018267c3c4422e2b",
+  "created_at": "2026-10-27T11:06:46.954530Z",
+  "culture_id": "cul-post",
+  "id": "cs-heizan",
+  "previous_state_id": null,
+  "project_id": "prj-mine",
+  "record_type": "culture_state",
+  "region_ids": [
+    "reg-oneno",
+    "reg-sawatari"
+  ],
+  "schema_version": 1,
+  "valid_span_id": "span-heizan"
+}

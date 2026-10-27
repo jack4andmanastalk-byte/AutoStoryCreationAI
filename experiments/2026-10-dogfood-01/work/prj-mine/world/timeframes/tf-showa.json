@@ -1,0 +1,11 @@
+{
+  "calendar": "solar",
+  "created_at": "2026-10-27T11:06:45.869838Z",
+  "description": "",
+  "epoch": "閉山年=1950",
+  "id": "tf-showa",
+  "name": "昭和（銅山暦）",
+  "project_id": "prj-mine",
+  "record_type": "time_frame",
+  "schema_version": 1
+}

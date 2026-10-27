@@ -1,0 +1,34 @@
+{
+  "characters": [
+    {
+      "id": "yoriko",
+      "name": "梶原頼子",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢渡",
+      "age_at_start": 42,
+      "birthday_day": 80,
+      "knows": [
+        "F-11"
+      ],
+      "notes": "沢渡町役場支所の前任記録係"
+    },
+    {
+      "id": "kuroda",
+      "name": "黒田支所長",
+      "aliases": [
+        "支所長"
+      ],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢渡",
+      "age_at_start": 55,
+      "birthday_day": 30,
+      "knows": [
+        "F-11"
+      ],
+      "notes": "閉山記録の確定を命じる上役"
+    }
+  ]
+}

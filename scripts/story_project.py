@@ -373,8 +373,14 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     world_adopt.add_argument("project_id")
     world_adopt.add_argument("--node", dest="node_id", help="source node (default: root)")
-    world_adopt.add_argument("--artifact", required=True, help="project-relative pinned plan JSON path")
-    world_adopt.add_argument("--pointer", default="", help="RFC 6901 JSON pointer (default: whole document)")
+    world_adopt.add_argument(
+        "--artifact", required=True,
+        help="pinned plan JSON path (e.g. canon/facts.json or runs/<run_id>/canon/facts.json)",
+    )
+    world_adopt.add_argument(
+        "--pointer", default="",
+        help="RFC 6901 JSON pointer (e.g. /facts/0; default: whole document)",
+    )
     world_adopt.add_argument("--scope", required=True, choices=[
         "global", "timeframe", "region", "culture", "work", "node",
     ])
@@ -1109,10 +1115,30 @@ def _print_world(status: dict) -> None:
     print("World records: " + ", ".join(
         f"{kind}={count}" for kind, count in status["counts"].items()
     ))
-    print(f"Current node binding: {'yes' if status['selected_binding'] else 'no'}")
+    binding = status["selected_binding"]
+    if binding:
+        parts = [f"id={binding['id']}"]
+        for key, label in (
+            ("time_span_ids", "time_spans"),
+            ("region_ids", "regions"),
+            ("culture_state_ids", "culture_states"),
+        ):
+            if binding.get(key):
+                parts.append(f"{label}={','.join(binding[key])}")
+        print(f"Current node binding: yes ({'; '.join(parts)})")
+    else:
+        print("Current node binding: no")
     current = [row for row in status["canon_entries"] if row["current"]]
     stale = sum(1 for row in current if row["stale"])
     print(f"Current canon: {len(current)}; stale: {stale}")
+    for row in current:
+        scope = row["scope"]
+        scope_text = (
+            scope["kind"] if not scope.get("reference_id")
+            else f"{scope['kind']}:{scope['reference_id']}"
+        )
+        state = "stale" if row["stale"] else "current"
+        print(f"  {row['id']} [{scope_text}] {row['subject']} ({state})")
 
 
 def _parse_tag_map(entries: list[str]) -> dict[str, str]:

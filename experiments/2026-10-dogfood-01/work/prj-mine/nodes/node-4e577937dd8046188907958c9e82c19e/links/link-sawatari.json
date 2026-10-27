@@ -25,12 +25,12 @@
   "child_node_id": "node-sawatari",
   "child_revision_id": "rev-60a71ed1795342f091ed718fc773e986",
   "content_version": "e10400bc50220ecafa4da9898c0332c6cd60207c1aecbee58a3a7be3309de790",
-  "created_at": "2026-10-27T09:36:13.189603Z",
+  "created_at": "2026-10-27T11:06:09.351346Z",
   "id": "link-sawatari",
   "order": 1,
   "parent_node_id": "node-4e577937dd8046188907958c9e82c19e",
   "project_id": "prj-mine",
   "record_type": "work_link",
   "schema_version": 1,
-  "updated_at": "2026-10-27T09:38:53.513170Z"
+  "updated_at": "2026-10-27T11:06:09.541110Z"
 }

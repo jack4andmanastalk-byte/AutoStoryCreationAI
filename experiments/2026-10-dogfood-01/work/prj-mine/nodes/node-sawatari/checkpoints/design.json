@@ -71,13 +71,6 @@
       "sha256": "74576cb56e7cdf3e768d81b03bc81045f43858c13ab7986f83e3d6650e3fb463"
     },
     {
-      "artifact_id": "design-resume-audit.json",
-      "media_type": "application/json",
-      "path": "runs/att-086e70bd25144aca85d43f2fc05fc4e0-design/resume-audit.json",
-      "producer_run_id": "att-086e70bd25144aca85d43f2fc05fc4e0-design",
-      "sha256": "28a02de75fcb5d6cc16e9235cf28e6db542d049423d021efaea8e5ed8327d1ac"
-    },
-    {
       "artifact_id": "design-revise.json",
       "media_type": "application/json",
       "path": "runs/att-086e70bd25144aca85d43f2fc05fc4e0-design/revise.json",
@@ -86,13 +79,13 @@
     }
   ],
   "attempt_id": "att-086e70bd25144aca85d43f2fc05fc4e0",
-  "created_at": "2026-10-27T09:38:45.501335Z",
+  "created_at": "2026-10-27T11:06:09.495853Z",
   "error": null,
   "node_id": "node-sawatari",
   "pending": null,
   "project_id": "prj-mine",
   "record_type": "stage_checkpoint",
-  "resume_of": "att-aa32ed1905bd42cca94aae4b46bcfc46-design",
+  "resume_of": null,
   "retry_of": null,
   "revision_id": "rev-60a71ed1795342f091ed718fc773e986",
   "run_id": "att-086e70bd25144aca85d43f2fc05fc4e0-design",
@@ -101,5 +94,5 @@
   "stage": "design",
   "status": "done",
   "temperature": 0.6,
-  "updated_at": "2026-10-27T09:38:45.559339Z"
+  "updated_at": "2026-10-27T11:06:09.510727Z"
 }

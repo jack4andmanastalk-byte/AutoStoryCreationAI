@@ -1,0 +1,23 @@
+{
+  "attempts": 1,
+  "by_severity": {},
+  "docs": {
+    "history": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    }
+  },
+  "findings": 0,
+  "first_attempt_findings": 0,
+  "missing": [],
+  "repairs": 0,
+  "task": "node-sawatari",
+  "unresolved": []
+}

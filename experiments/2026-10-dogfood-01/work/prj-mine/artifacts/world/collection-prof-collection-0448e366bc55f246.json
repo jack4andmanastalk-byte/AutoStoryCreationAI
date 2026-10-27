@@ -1,0 +1,30 @@
+{
+  "content_version": "0448e366bc55f2465a493ff1895bfffa8406da092b4ef91ee818b8b058cd32c1",
+  "kind": "collection",
+  "output": "artifacts/world/collection-prof-collection-0448e366bc55f246.md",
+  "profile": {
+    "content_version": "02fb63afe7543b0f2eff108c324b2c71d12b94ce6542814159ebc1f1ae0edef3",
+    "culture_id": null,
+    "id": "prof-collection",
+    "kind": "collection",
+    "node_id": "node-4e577937dd8046188907958c9e82c19e",
+    "project_id": "prj-mine",
+    "record_type": "compilation_profile",
+    "region_id": null,
+    "schema_version": 1,
+    "timeframe_id": null,
+    "title": "宛名のない手紙（作品集・編纂プロファイル）"
+  },
+  "profile_id": "prof-collection",
+  "project_id": "prj-mine",
+  "record_type": "asc_world_compilation",
+  "schema_version": 1,
+  "source_references": [
+    {
+      "content_version": "5e4428917315cc0ecff24dd1c8ad687515927a9f704499eacec6be50333370df",
+      "id": "5e4428917315cc0ecff24dd1c8ad687515927a9f704499eacec6be50333370df",
+      "record_type": "asc_composition"
+    }
+  ],
+  "text_sha256": "940d06cbedfa17c30dc9c183c548e1042c58c33f5c68eb951624875721413f47"
+}

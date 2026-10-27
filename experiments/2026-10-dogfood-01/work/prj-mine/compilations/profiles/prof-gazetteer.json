@@ -1,0 +1,14 @@
+{
+  "content_version": "54ae349bf5defac54a51e8d560784d4c3daf731d7a6c24e692bdfcb4912805b6",
+  "created_at": "2026-10-27T11:07:24.514674Z",
+  "culture_id": null,
+  "id": "prof-gazetteer",
+  "kind": "gazetteer",
+  "node_id": null,
+  "project_id": "prj-mine",
+  "record_type": "compilation_profile",
+  "region_id": "reg-gun",
+  "schema_version": 1,
+  "timeframe_id": null,
+  "title": "銅山郡地誌（尾根野・沢渡）"
+}

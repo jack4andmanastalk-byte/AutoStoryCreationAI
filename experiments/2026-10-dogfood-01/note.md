@@ -202,13 +202,33 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
   に階層見出しを付け、全作品の `{{…}}` 監査マーカーを外した読書用編纂原稿を出せるようにした
   （既定の `compose` と `artifacts/` の正本は1バイトも変えない）。
 
+## 共有 world 台帳と世界編纂（U-07 年代記・地誌・文化誌・作品集の編纂）
+
+親『宛名のない手紙』（閉山から15年後＝1965年・尾根野と沢渡）と子『切り取られた頁』（閉山の年＝1950年・沢渡）の2作品に対して、共有 `world` 台帳（時代・地域・文化・作品バインディング・明示的 canon 採用）を登録し、4種の編纂プロファイル（`chronicle` / `gazetteer` / `culture` / `collection`）から決定論的な編纂文書を出力した。
+
+| 種別 | 登録・編纂したレコード / 出力 | 結果 |
+| --- | --- | --- |
+| 時代（`timeframe` / `time-span`） | `tf-showa`（昭和（銅山暦）、閉山年=1950）、`span-heizan`（1950年）、`span-15yrs`（1965年、`before_span_ids=["span-heizan"]`） | 親子2作品の15年の時間差を DAG で固定 |
+| 地域（`region` / `spatial-relation`） | `reg-gun`（銅山郡）配下に `reg-oneno`（尾根野）と `reg-sawatari`（沢渡）、峠道 `sp-toge`（`mountain_pass`） | 地域包含木と空間関係を固定 |
+| 文化（`culture` / `culture-state` / `culture-relation`） | `cul-post`（銅山町の郵便と記録の慣行）、`cs-heizan`（1950年）→ `cs-15yrs`（1965年、`crel-1` 継承） | 時代ごとの郵便・記録慣行の変遷を固定 |
+| 作品バインディング（`world bind`） | 親 `bind-root`（`span-15yrs`, `reg-oneno`, `reg-sawatari`, `cs-15yrs`）、子 `bind-sawatari`（`span-heizan`, `reg-sawatari`, `cs-heizan`） | `context show` で `asc-context-packet-world1`（親 6,608 bytes / 子 7,222 bytes）を確認 |
+| 正史の明示採用（`world adopt-canon`） | 親から `wcanon-letters`（`region:reg-oneno`, `/facts/0`）・`wcanon-margin`（`timeframe:tf-showa`, `/facts/3`）、子から `wcanon-cutpage`（`timeframe:tf-showa`, `/facts/1`）・`wcanon-seisho`（`culture:cul-post`, `/facts/0`）の計4件 | 完了済み plan の `canon/facts.json` から JSON Pointer でピン留め採用（`stale=0`） |
+| 編纂出力（`world compile`） | [`chronicle.md`](chronicle.md)（年代記）、[`gazetteer.md`](gazetteer.md)（地誌）、[`culture.md`](culture.md)（文化誌）、[`world-collection.md`](world-collection.md)（作品集） | 4種すべて決定論的ハッシュ付きで出力、`doctor prj-mine` findings 0 |
+
+### 共有 world 台帳で見つかり直した摩擦（F-33〜F-35）
+
+- **F-33 `.gitignore` の `runs/` が全階層の `runs/` にマッチし、Git 共有後の実験プロジェクトで `doctor` が `run.missing` を出していた**（修正済み）。
+  `.gitignore` の `runs/` をルート直下の `/runs/` に限定し、`experiments/2026-10-dogfood-01/work/prj-mine/runs/`（完了済み 18 run）を Git 追跡に含めることで、別コンテナや clone 後でも `doctor prj-mine`（findings 0）と `world adopt-canon` がそのまま再現できるようにした。
+- **F-34 `world adopt-canon --artifact` が `runs/att-...-plan/canon/facts.json` のフルパスしか受け付けなかった**（修正済み）。
+  対象ノードの現在の完了済み plan チェックポイントにピン留めされた成果物であれば、`--artifact canon/facts.json` のような短縮相対パスでも一意に解決できるようにした（フルパスも従来どおり有効）。あわせて `--pointer /facts/0` の例を `--help` に明記した。
+- **F-35 `world status` のテキスト出力にバインディング先 ID と採用済み canon 一覧が出なかった**（修正済み）。
+  `Current node binding: yes (id=...; time_spans=...; regions=...; culture_states=...)` と、各 canon エントリの `id [scope] subject (current|stale)` を一覧表示するようにした。
+
 ## 次にやるなら（優先順）
 
-1. **共有 world 台帳の導線確認（U-07）**: 単体3章・改訂・4章化・入れ子編纂まで実応答で通ったので、
-   次は `world add` / `world bind` / `world compile` の摩擦確認。
-2. **F-29 continuation の設計持ち越し**: 章数に依存しない設計書を `continue` で再要求しない選択。
-3. **F-25**: `relay status` が `--out` の出力先を知る（引数か最後に render したパス）。
-4. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
+1. **F-29 continuation の設計持ち越し**: 章数に依存しない設計書を `continue` で再要求しない選択。
+2. **F-25**: `relay status` が `--out` の出力先を知る（引数か最後に render したパス）。
+3. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
 
 ## 再現と検証
 
