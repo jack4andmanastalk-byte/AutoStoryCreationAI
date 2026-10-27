@@ -85,13 +85,15 @@ Project: prj-seaside (waiting_response)
 Stages: plan=done, design=waiting_response, draft=pending
 Relay: 1 answered / 1 pending / 2 request(s) recorded
 Relay directory: works/prj-seaside/relay
-Next request: tag 1F3A9C2D (design: brief)
+Next request: tag 1F3A9C2D (design:brief)
   request:  works/prj-seaside/relay/requests/<key>.json
   response: works/prj-seaside/relay/responses/<key>.json
 Next: python3 scripts/story_project.py --root works relay submit prj-seaside --file <answers.txt>
 ```
 
 - 待っている要求は**パイプライン順**（plan → design → draft）で1件だけ示す。
+- 括弧内は要求の `purpose`（`design:brief`、`draft:ch02` のように stage を含む）。
+  `relay/index.json` は export 時点の控えなので、待ちの正は `relay status`。
 - 完成なら `Next:` が原稿の書き出しコマンドになる。失敗なら `--retry-failed` になる。
 - 同じ内容が `status` / `doctor` の `next_actions` にも出る（`relay export`）。
 - 終了コードは「作業単位の状態」そのもの: `0` 完了・待機なし、`3` 応答待ち、`2` 失敗。

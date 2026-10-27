@@ -1,0 +1,286 @@
+{
+  "answers_file": "experiments/2026-10-dogfood-01/answers.txt (last round only; earlier rounds were overwritten)",
+  "claims_not_made": [
+    "quality",
+    "interest",
+    "L2/L3",
+    "rates",
+    "recurrence rate",
+    "causal effect"
+  ],
+  "date": "2026-10-27",
+  "doctor": {
+    "errors": 0,
+    "findings": 0,
+    "info": 0,
+    "interrupted": 0,
+    "runs": 17,
+    "warnings": 0
+  },
+  "entry_point": "scripts/story_project.py init|run|relay status|relay submit|render|doctor",
+  "experiment": "2026-10-dogfood-01",
+  "final": {
+    "answered": 14,
+    "exit": 0,
+    "next_command": "python3 scripts/story_project.py --root <root> render prj-mine --out <root>/prj-mine/manuscript.md",
+    "pending": 0,
+    "requests": 14,
+    "stages": {
+      "design": "done",
+      "draft": "done",
+      "plan": "done"
+    },
+    "state": "complete"
+  },
+  "friction": [
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
+        "docs/quickstart.md",
+        "docs/standard_flow.md"
+      ],
+      "id": "F-18",
+      "status": "fixed",
+      "summary": "the stage name was printed twice in Next request (draft: draft:ch02)"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "docs/quickstart.md",
+        "docs/standard_flow.md",
+        "docs/project.md"
+      ],
+      "id": "F-19",
+      "status": "documented",
+      "summary": "relay/index.json keeps the last request in pending after it is answered; the live answer is relay status"
+    },
+    {
+      "area": "flow",
+      "id": "F-20",
+      "status": "observed",
+      "summary": "each round needs the full request prompt (3-5KB for design rounds)"
+    },
+    {
+      "area": "flow",
+      "id": "F-21",
+      "status": "no change needed",
+      "summary": "one overwritten paste file per round is enough; submit is idempotent"
+    },
+    {
+      "area": "text",
+      "files": [
+        "docs/quickstart.md"
+      ],
+      "id": "F-22",
+      "status": "documented",
+      "summary": "chapter length targets are advisory: 647/668/795 body chars against 900, findings 0"
+    },
+    {
+      "area": "text",
+      "id": "F-23",
+      "status": "open",
+      "summary": "check minima (speech.sample >= 30 chars, planted must not use canon IDs) are not stated in the request prompt; caused both repairs"
+    },
+    {
+      "area": "text",
+      "id": "F-24",
+      "status": "open",
+      "summary": "a simplified-Chinese character slipped into ch01 and no check caught it; kept verbatim, a fix would be a revise"
+    },
+    {
+      "area": "editing",
+      "id": "F-25",
+      "status": "observed",
+      "summary": "relay status only looks at the default manuscript path, so render --out elsewhere leaves it saying not written yet"
+    },
+    {
+      "area": "operations",
+      "id": "F-26",
+      "status": "documented",
+      "summary": "design artifacts live under runs/ (gitignored); relay responses are the committed verbatim record"
+    }
+  ],
+  "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
+  "l2_l3": "frozen_not_measured",
+  "manuscript": {
+    "chapters": 3,
+    "chars_body_total": 2110,
+    "chars_with_markers_total": 2531,
+    "path": "experiments/2026-10-dogfood-01/manuscript.md",
+    "per_chapter": {
+      "ch01": {
+        "chars_body": 647,
+        "chars_with_markers": 778,
+        "target": 900
+      },
+      "ch02": {
+        "chars_body": 668,
+        "chars_with_markers": 811,
+        "target": 900
+      },
+      "ch03": {
+        "chars_body": 795,
+        "chars_with_markers": 942,
+        "target": 900
+      }
+    },
+    "sha256": "09727401b2ae98cef68b72cfc8a1199043560d28a23930165e617cac93af952c"
+  },
+  "next_candidates": [
+    "state the check minima in the request prompt (F-23) after checking the prompt_hash impact",
+    "report a length delta against the per-chapter target without failing (F-22)",
+    "let relay status learn where render wrote its output (F-25)",
+    "measure the prompt reading volume before shrinking prompts (F-20)"
+  ],
+  "not_model_output": false,
+  "project_id": "prj-mine",
+  "repair_causes": {
+    "design:character:repair": "speech.sample shorter than 30 characters (voice_fixed)",
+    "design:scene:repair": "foreshadows.planted carried canon IDs; canon cues belong in paid (foreshadow_tagged)"
+  },
+  "repairs": 2,
+  "round_count": 14,
+  "rounds": [
+    {
+      "answered": 1,
+      "exit": 3,
+      "purpose": "plan",
+      "purpose_group": "plan",
+      "repair": false,
+      "round": 1,
+      "tag": "AA177E3C"
+    },
+    {
+      "answered": 2,
+      "exit": 3,
+      "purpose": "design:brief",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 2,
+      "tag": "7F1A1B59"
+    },
+    {
+      "answered": 3,
+      "exit": 3,
+      "purpose": "design:world",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 3,
+      "tag": "9CCE16F7"
+    },
+    {
+      "answered": 4,
+      "exit": 3,
+      "purpose": "design:history",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 4,
+      "tag": "C1243E87"
+    },
+    {
+      "answered": 5,
+      "exit": 3,
+      "purpose": "design:character",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 5,
+      "tag": "3C036510"
+    },
+    {
+      "answered": 6,
+      "exit": 3,
+      "purpose": "design:character:repair",
+      "purpose_group": "design",
+      "repair": true,
+      "round": 6,
+      "tag": "71D64E0E"
+    },
+    {
+      "answered": 7,
+      "exit": 3,
+      "purpose": "design:relation",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 7,
+      "tag": "9AD03B2B"
+    },
+    {
+      "answered": 8,
+      "exit": 3,
+      "purpose": "design:plot",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 8,
+      "tag": "67C0038D"
+    },
+    {
+      "answered": 9,
+      "exit": 3,
+      "purpose": "design:scene",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 9,
+      "tag": "E0BABEF0"
+    },
+    {
+      "answered": 10,
+      "exit": 3,
+      "purpose": "design:scene:repair",
+      "purpose_group": "design",
+      "repair": true,
+      "round": 10,
+      "tag": "E284E2A3"
+    },
+    {
+      "answered": 11,
+      "exit": 3,
+      "purpose": "design:voice",
+      "purpose_group": "design",
+      "repair": false,
+      "round": 11,
+      "tag": "01BFBFCF"
+    },
+    {
+      "answered": 12,
+      "exit": 3,
+      "purpose": "draft:ch01",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 12,
+      "tag": "EAFDAF65"
+    },
+    {
+      "answered": 13,
+      "exit": 3,
+      "purpose": "draft:ch02",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 13,
+      "tag": "A4DC8CA4"
+    },
+    {
+      "answered": 14,
+      "exit": 0,
+      "purpose": "draft:ch03",
+      "purpose_group": "draft",
+      "repair": false,
+      "round": 14,
+      "tag": "B484AF7A"
+    }
+  ],
+  "rounds_of_one_loop": [
+    "relay status",
+    "write answer",
+    "relay submit"
+  ],
+  "title": "宛名のない手紙",
+  "untouched": [
+    "pre-registrations",
+    "results.json",
+    "completed runs",
+    "existing relays"
+  ],
+  "verbatim_answers": "experiments/2026-10-dogfood-01/work/prj-mine/relay/responses/"
+}

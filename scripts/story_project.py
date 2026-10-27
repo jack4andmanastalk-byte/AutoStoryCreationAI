@@ -666,7 +666,9 @@ def _print_round(report: dict) -> None:
     print(f"Relay directory: {report['directory']}")
     if report["next"] is not None:
         row = report["next"]
-        print(f"Next request: tag {row['tag']} ({row['stage']}: {row['purpose']})")
+        # ``purpose`` already carries its stage (``draft:ch02``); repeating the
+        # stage here printed "draft: draft:ch02" during the U-03 dogfood run.
+        print(f"Next request: tag {row['tag']} ({row['purpose']})")
         print(f"  request:  {row['request_path']}")
         print(f"  response: {row['response_path']}")
         if row["response_ready"]:

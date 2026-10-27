@@ -64,7 +64,7 @@ resume after writing the response: story_project.py resume prj-seaside
 ```bash
 # ① 何が待っているか（生成しない）。run が exit 3 のときは自動で書き出されている
 .venv/bin/python scripts/story_project.py --root works relay status prj-seaside
-#    → Next request: tag 1F3A9C2D (design: brief)
+#    → Next request: tag 1F3A9C2D (design:brief)
 #    → works/prj-seaside/relay/PROMPTS.md / outbox/request-01-1F3A9C2D.md
 
 # ② 生成した本文を answers.txt に書く（タグは PROMPTS.md の8文字をそのまま）
@@ -98,6 +98,8 @@ resume after writing the response: story_project.py resume prj-seaside
   各ラウンドの `submit` は記録済み応答を再生成せず、次の未回答から続ける。
 - 待っている要求はパイプライン順（plan → design → draft）に1件だけ示される。先の要求は
   前段の結果に依存するため、プロンプトを先に作らない（推測生成をしない）。
+- `relay/index.json` は `relay export` を実行した時点の控えで、取り込み後も更新されない。
+  「いま何が待っているか」は必ず `relay status` で見る。
 - 完成済み・失敗済みの作品への `submit` は取り込まない。完成なら `continue` / `revise`、
   失敗なら `--retry-failed` を案内する。
 
@@ -128,7 +130,9 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 - 出力は章見出し・作品情報・検査用マーカーを含む結合 markdown。ここが最終成果物。
 - `--json` を付けると、原稿本文とハッシュを機械可読な形でも返す。
 - 読後の感想（長さ、説明過多、反復、会話、場面転換、伏線回収、文体）は、
-  次の改善の材料として残す。U-03 の摩擦ログで分類する。
+  次の改善の材料として残す（摩擦ログとして `experiments/<id>/note.md` に残す）。
+- 章ごとの「目安 ◯◯ 字」は助言で、長さの機械検査はしない（検査は矛盾とマーカーを見る）。
+  目安に対して短い・長いと感じたら、その章だけ `revise --chapter` で書き直す（手順6）。
 
 ## 6. 続き・改訂・分岐・編纂へ進む
 

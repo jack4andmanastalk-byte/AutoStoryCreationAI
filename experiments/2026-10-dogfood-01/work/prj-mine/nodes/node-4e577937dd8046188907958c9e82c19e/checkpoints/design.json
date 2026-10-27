@@ -1,0 +1,147 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "02af4699415a390d9e6f9a4c2c2bcdba6dced2c78ec2da2fc7cf26b838320544"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/brief.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "375e5ef521c45b7b19ff140339d81cb12cc041234faa381afe1c4af335aaed29"
+    },
+    {
+      "artifact_id": "design-design-brief.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/brief.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "07263c97e57d6a9cd610468fc596e3df930e438a393c8e7fcf716aae5020861c"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/character.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "6b08f2099aa980021eaea346e76d7c39b5ef3b69f60c03c130ae0b156b68f4dd"
+    },
+    {
+      "artifact_id": "design-design-character.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/character.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "c31ec7cfc3f3f87a53f3547353e4ec2bf3facdbb9dda871b686cf737704a4b35"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/history.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "cdb3d02a1b23a81451a8626b969465aec870d877c10ec7660af190860385d8ef"
+    },
+    {
+      "artifact_id": "design-design-history.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/history.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "8d711d8d11bae3e63f1335b2b99e94c30801c966cf5ec2b71ec542ebc4d0ca05"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/plot.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "ace2e82dd94a4021df0a38345cace15f110dc5db2f0c7f881af2db88ea2d69ef"
+    },
+    {
+      "artifact_id": "design-design-plot.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/plot.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/relation.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "8fcdb81553d862ce0ebf3000878552c6012d66c924ee0d020219b42ae7b2a564"
+    },
+    {
+      "artifact_id": "design-design-relation.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/relation.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/scene.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "273234ab213acde2ed0261a26b1a31d1820bc3ae85fc4e4043fa87978b8d341a"
+    },
+    {
+      "artifact_id": "design-design-scene.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/scene.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "c1738244018d71aa67dc555d7e2ec22c10cef211f2304d7bf68caee582e17b17"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/voice.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "d2246905f879f1483f1f048a25062050f94986214916e9f61731d8a288f85a5a"
+    },
+    {
+      "artifact_id": "design-design-voice.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/voice.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/world.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "bb7107cf02317db8fd7c89d16ae80a24d31f50912316735569e43b31375148a9"
+    },
+    {
+      "artifact_id": "design-design-world.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/design/world.report.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+    },
+    {
+      "artifact_id": "design-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-92a51a28d4e049febc9a43a68fc07587-design/resume-audit.json",
+      "producer_run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+      "sha256": "10a047125608f09e7f65203a314f53f5e7cc2cc5495ca61bc36652803ebdf6ed"
+    }
+  ],
+  "attempt_id": "att-92a51a28d4e049febc9a43a68fc07587",
+  "created_at": "2026-10-27T08:42:15.855626Z",
+  "error": null,
+  "node_id": "node-4e577937dd8046188907958c9e82c19e",
+  "pending": null,
+  "project_id": "prj-mine",
+  "record_type": "stage_checkpoint",
+  "resume_of": "att-1a5ae848006b4a11b1dc81c384968e2b-design",
+  "retry_of": null,
+  "revision_id": "rev-3a23302eaef74437a2464da0d714b647",
+  "run_id": "att-92a51a28d4e049febc9a43a68fc07587-design",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "design",
+  "status": "done",
+  "temperature": 0.6,
+  "updated_at": "2026-10-27T08:42:15.960585Z"
+}

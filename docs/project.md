@@ -797,6 +797,7 @@ runs/projects/<project_id>/
   `prompt_hash`）、`responses/<key>.json`（応答と `prompt_hash`・`model`）、
   `relay export` の出力（`PROMPTS.md`・`index.json`・`outbox/`）が入る。タグは
   8 hex で、タグ→key の対応は index と request ファイルが台帳になる。
+  `index.json` は export 時点の控えなので、待ちの正は `relay status` の報告。
   `relay status` / `relay submit` の報告は `asc-relay-round-v1` で、状態・次の1件・
   次のコマンドを返す。回答済みの要求は書き出さず、完成済み・失敗済みの作品には
   取り込まない。

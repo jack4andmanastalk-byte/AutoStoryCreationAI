@@ -217,6 +217,9 @@ def test_relay_status_exit_codes_describe_the_round(tmp_path: Path):
     result = cli("--root", str(tmp_path), "relay", "status", "prj-round")
     assert result.returncode == 3
     assert "Next request: tag" in result.stdout
+    # The stage prefix must not repeat itself ("draft: draft:ch02").
+    assert "draft: draft:" not in result.stdout
+    assert "design: design:" not in result.stdout
 
     drive_answers = answers_by_purpose()
     status = round_status(tmp_path, "prj-round")
