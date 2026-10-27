@@ -87,17 +87,17 @@ def run_doc(name: str, payload: dict | str, task, canon, tmp_path: Path,
     return design.as_dict()["docs"][name], report, provider
 
 
-@pytest.mark.parametrize(("name", "required"), [
-    ("world", "地名は設定台帳の場所 ID と一致させる"),
-    ("history", "出来事は年代順に並べ"),
-    ("character", "主要人物は全員書く"),
-    ("relation", "設定台帳で既知の事実を unknown と主張しない"),
-    ("plot", "転換点を 3〜5 件置き"),
-    ("scene", "開示か保留のどちらかに置く"),
-    ("voice", "一人称なら自称を宣言する"),
+@pytest.mark.parametrize(("name", "required", "version"), [
+    ("world", "地名は設定台帳の場所 ID と一致させる", "1.0"),
+    ("history", "出来事は年代順に並べ", "1.1"),
+    ("character", "主要人物は全員書く", "1.0"),
+    ("relation", "設定台帳で既知の事実を unknown と主張しない", "1.0"),
+    ("plot", "転換点を 3〜5 件置き", "1.0"),
+    ("scene", "開示か保留のどちらかに置く", "1.0"),
+    ("voice", "一人称なら自称を宣言する", "1.0"),
 ])
 def test_prompt_states_the_mechanical_contract(
-        name, required, task, canon, responses, tmp_path):
+        name, required, version, task, canon, responses, tmp_path):
     result, report, provider = run_doc(
         name, valid_doc(name, responses), task, canon, tmp_path, max_attempts=1)
     assert result["status"] == "clean"
@@ -107,7 +107,7 @@ def test_prompt_states_the_mechanical_contract(
     assert "先行する設計書" in prompt
     assert "JSON のみを返してください" in prompt
     assert report["prompt"]["name"] == f"design-{name}"
-    assert report["prompt"]["version"] == "1.0"
+    assert report["prompt"]["version"] == version
 
 
 @pytest.mark.parametrize("name", DOC_NAMES)
