@@ -139,11 +139,42 @@ F-17 までは U-02 の記録（`experiments/2026-10-u02-relay-round-t01/note.md
   追加し、既定の `render`（検査対象と同じマーカー込みの正本）は変えずに、読書用のコピー
   （[`manuscript.reader.md`](manuscript.reader.md)、`## 第1章` 付き・`{{…}}` なし）を出せるようにした。
 
+## 続き（U-04 改訂・U-05 第4章の追加・設計1文書の回復）
+
+初版（`rev-3a23302eaef74437a2464da0d714b647`、3章・14ラウンド）のあと、同じ作品で
+「1章だけ改訂」「第4章を足す continuation」「設計1文書だけ再生成」をすべて実応答の relay で通した。
+
+| 版 | 種類 | 往復 | 内容 | 結果 |
+| --- | --- | ---: | --- | --- |
+| `rev-3a23302e…` | 初版（3章） | 14 | plan 1 + 設計 11（修復2） + 本文 3 | complete（[`manuscript.md`](manuscript.md) / [`manuscript.reader.md`](manuscript.reader.md)） |
+| `rev-36f36744…` | `revise --chapter ch01` | 1 | ch01 だけ再生成（簡体字「开」→「開」、本文 647 → 807字）。plan・8設計・ch02・ch03 はバイト単位で持ち越し | complete、ch02/ch03 の SHA-256 不変 |
+| `rev-2ebe138c…` | `continue --add-chapters 1` | 11 | 4章化の plan（`ch04` day=7 沢渡、`F-04`、`fs-004`）+ 8設計（scene 修復1）+ `draft:ch04`（646字）。ch01〜ch03 はバイト単位で持ち越し | complete（scene 1件が `unresolved` で残る） |
+| `rev-5f5c678e…` | `revise --design scene` | 1 | `design:scene` 1文書だけ再生成（`s04` の `disclosed` に `F-03` を追加）。plan・他7設計・ch01〜ch04 全4章はバイト単位で持ち越し | complete、`doctor` findings 0（[`manuscript.4ch.md`](manuscript.4ch.md) / [`manuscript.4ch.reader.md`](manuscript.4ch.reader.md)） |
+
+合計 **27 応答 / 0 pending**、4版すべてが `nodes/.../revisions/` に残り、旧版の本文と応答は1バイトも書き換えていない。
+
+### 追加で見つかり直した摩擦（F-27〜F-29）
+
+- **F-27 `revise` / `branch` だけ `--provider` 省略時に拒否していた**（修正済み）。
+  `quickstart.md` は `--provider` なしで `revise --chapter ch02` を案内していたが、実装は
+  `--provider scripted ... or --provider command ...` を要求して終了コード 2 で落ちていた。
+  再生成があるときは `run` / `continue` と同じく既定で Arena relay を使うように統一した
+  （純粋なコピーのときは従来どおり provider を使わない）。
+- **F-28 `design` の `unresolved` が `relay status` / `relay submit` に出ない**（修正済み）。
+  設計段階は fail-open のため、修復後も所見が残った設計書（`unresolved`）があっても `draft` まで進み
+  `complete` になる。`doctor` を叩くまで気づけなかったため、round 報告の `Warnings:` に
+  `design (scene): checker findings remained after repair; regenerate with ... revise prj-mine --design scene`
+  を出すようにした。実際にこの1コマンド・1ラウンドで全4章の本文を保ったまま `scene` だけ直せた。
+- **F-29 `continue` は設計8文書を毎回すべて再要求する**（記録のみ）。
+  台帳に `ch04` が増えるため、現行は `brief`〜`voice` の8文書すべてを新しい要求として出す
+  （1章足すのに 1 + 8 + 1 = 10〜11 ラウンド）。章一覧に依存しない文書（`brief` / `character` /
+  `history` / `voice`）は前版から持ち越せる余地がある。
+
 ## 次にやるなら（優先順）
 
-1. **continuation / 入れ子の実応答 dogfood**: 単体3章は通ったので、`continue --add-chapters 1` と
-   親子作品の `compose` を実応答で1回ずつ通す。
-2. **U-04 失敗回復**: 設計1文書・1章単位の再試行と案内。
+1. **入れ子・世界の dogfood（U-06 / U-07）**: 単体3章・1章改訂・4章化 continuation・設計1文書回復まで
+   実応答で通ったので、次は親子作品の `compose` または `world` 台帳。
+2. **F-29 continuation の設計持ち越し**: 章数に依存しない設計書を `continue` で再要求しない選択。
 3. **F-25**: `relay status` が `--out` の出力先を知る（引数か最後に render したパス）。
 4. **F-20**: 依頼プロンプトの要約版を併記するかは、まず読み込み量の実測をとってから。
 

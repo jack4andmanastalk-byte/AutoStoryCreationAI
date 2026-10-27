@@ -173,3 +173,13 @@
     1バイトも変えず、`--reader` のときだけ章見出し（`## 第1章`）を付け `{{…}}` マーカーを外す。
 - 残り: 単体3章は実応答で完走したが、continuation（第4章追加）と入れ子/世界の実応答 dogfood、
   および設計1文書・1章単位の失敗回復（U-04）が次。L2/L3 は `frozen_not_measured` のまま。
+
+### U-04 / U-05 部分改訂・設計1文書回復・第4章追加の実応答 dogfood（2026-10-27）
+
+- 修正（**F-27**）: `revise` / `branch` で再生成があるとき、`--provider` 省略で既定の Arena relay を使うように統一（従来は `--provider scripted/command` を要求して終了コード 2）。
+- 修正（**F-28**）: 設計が fail-open で `unresolved` のまま完走したとき、`relay status` / `relay submit` の `Warnings:` に文書名と `revise <id> --design <doc>` の回復コマンドを表示。
+- 実応答での確認（[`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)、計27応答）:
+  1. `revise prj-mine --chapter ch01`: 1ラウンドで ch01 だけ再生成（簡体字「开」→「開」、647→807字）。ch02/ch03 の SHA-256 は不変。
+  2. `continue prj-mine --add-chapters 1`: 第4章（沢渡の支所での欄外注記）を追加し、ch01〜ch03 はバイト単位で持ち越し。
+  3. `revise prj-mine --design scene`: `unresolved` だった `scene` 1文書だけを1ラウンドで再生成し、全4章の本文を保ったまま `doctor` findings 0 に回復（[`manuscript.4ch.reader.md`](../experiments/2026-10-dogfood-01/manuscript.4ch.reader.md)）。
+- 残り: 入れ子（親子 `compose`）と共有 world の実応答確認（U-06 / U-07）、`continue` で章数に依存しない設計書を持ち越す改善（F-29）。

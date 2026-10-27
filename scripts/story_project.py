@@ -583,28 +583,64 @@ def _stage_rank(purpose: str | None) -> tuple[int, str]:
     return (_PURPOSE_STAGE.get(stage, 9), str(purpose or ""))
 
 
-def _draft_warnings(store: ProjectStore, status: dict) -> list[str]:
-    """Warnings the draft stage recorded for the current revision.
+def _round_warnings(store: ProjectStore, status: dict) -> list[str]:
+    """Non-fatal warnings the finished stages recorded for this revision.
 
-    The draft stage already warns about chapter length against the project's
-    target ("ch01: 647 字（目安 900〜900 字の外）") and about markers it had to
-    inject from canon, but the warning only lived in the run's ``draft.json``.
-    A round is where a person reads the work, so the round says it too.
+    Two kinds of problem do not stop a run:
+
+    * a design document that stayed ``unresolved`` / ``missing`` after its
+      repair attempts (the design stage is fail-open by design);
+    * a chapter whose length fell outside the project's target or needed a
+      canonical marker injected (recorded in ``draft.json``).
+
+    Both used to be invisible until ``doctor`` or ``runs/`` was opened.  A
+    relay round is where a person decides whether to ``revise``, so the round
+    says both and names the command that regenerates just the affected piece.
     """
-    artifacts = (status.get("checkpoints") or {}).get("draft", {}).get("artifacts") or []
-    reference = next(
-        (row for row in artifacts if str(row.get("path", "")).endswith("/draft.json")),
-        None,
+    out: list[str] = []
+    project_id = status["project_id"]
+    base = _cli_base(store)
+    node_option = (
+        f" --node {status['node_id']}"
+        if status.get("node_id") != status.get("root_node_id") else ""
     )
-    if reference is None:
-        return []
-    try:
-        artifact = ArtifactRef.from_dict(reference)
-        payload = json.loads(store.read_artifact(status["project_id"], artifact))
-    except (KeyError, ValueError, ProjectError):
-        return []
-    warnings = payload.get("warnings_ja") if isinstance(payload, dict) else None
-    return [str(item) for item in warnings] if isinstance(warnings, list) else []
+
+    def read_stage_json(stage: str, suffix: str) -> dict | None:
+        artifacts = (
+            (status.get("checkpoints") or {}).get(stage, {}).get("artifacts") or []
+        )
+        reference = next(
+            (row for row in artifacts if str(row.get("path", "")).endswith(suffix)),
+            None,
+        )
+        if reference is None:
+            return None
+        try:
+            artifact = ArtifactRef.from_dict(reference)
+            payload = json.loads(store.read_artifact(project_id, artifact))
+        except (KeyError, ValueError, ProjectError):
+            return None
+        return payload if isinstance(payload, dict) else None
+
+    design = read_stage_json("design", "/design.json")
+    if design is not None:
+        names = [
+            str(item)
+            for key in ("unresolved", "missing")
+            for item in (design.get(key) or [])
+            if isinstance(item, str) and item
+        ]
+        if names:
+            flags = " ".join(f"--design {name}" for name in names)
+            out.append(
+                f"design ({', '.join(names)}): checker findings remained after "
+                f"repair; regenerate with `{base} revise {project_id}{node_option} {flags}`"
+            )
+
+    draft = read_stage_json("draft", "/draft.json")
+    if draft is not None and isinstance(draft.get("warnings_ja"), list):
+        out.extend(str(item) for item in draft["warnings_ja"])
+    return out
 
 
 def _relay_round(
@@ -681,7 +717,7 @@ def _relay_round(
             if manuscript is not None else None
         ),
         "actions": list(status.get("next_actions") or ()),
-        "warnings": _draft_warnings(store, status),
+        "warnings": _round_warnings(store, status),
     }
 
 
@@ -706,7 +742,7 @@ def _print_round(report: dict) -> None:
             print("  the response file already exists; submit it to continue")
     warnings = report.get("warnings") or []
     if warnings:
-        print(f"Warnings: {len(warnings)} from the draft stage (not failures)")
+        print(f"Warnings: {len(warnings)} (not failures)")
         for item in warnings[:3]:
             print(f"  {item}")
         if len(warnings) > 3:
@@ -1502,12 +1538,9 @@ def main(argv: list[str] | None = None) -> int:
 
         if args.command in {"revise", "branch"}:
             regenerate = bool(args.chapters or args.design)
-            if regenerate and args.provider is None:
-                raise ProviderError(
-                    f"{args.command} regenerates {', '.join(args.chapters + args.design)}; "
-                    "pass --provider scripted --script ... or --provider command --command ..."
-                )
-            provider = _make_provider(args, store, allow_none=True)
+            # A pure copy touches no model; regenerating chapters or design
+            # documents uses the same standard relay default as run/resume/continue.
+            provider = _make_provider(args, store, allow_none=not regenerate)
             runner = ProjectRunner(store)
             if args.command == "revise":
                 result = runner.revise(

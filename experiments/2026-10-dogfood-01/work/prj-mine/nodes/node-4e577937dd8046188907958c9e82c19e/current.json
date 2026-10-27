@@ -1,11 +1,11 @@
 {
   "created_at": "2026-10-27T08:39:30.003017Z",
-  "current_revision_id": "rev-3a23302eaef74437a2464da0d714b647",
+  "current_revision_id": "rev-5f5c678e61054d6193be2f09716d3466",
   "id": "node-4e577937dd8046188907958c9e82c19e",
   "kind": "story",
   "parent_id": null,
   "project_id": "prj-mine",
   "record_type": "work_node",
   "schema_version": 1,
-  "updated_at": "2026-10-27T08:43:04.768456Z"
+  "updated_at": "2026-10-27T09:22:23.735392Z"
 }

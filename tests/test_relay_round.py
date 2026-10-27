@@ -272,3 +272,74 @@ def test_a_paste_with_no_matching_block_does_not_advance(tmp_path: Path):
     # No response was invented and no new request was recorded.
     assert len(list((directory / "relay" / "requests").glob("*.json"))) == 1
     assert not (directory / "relay" / "responses").exists()
+
+
+def test_revise_and_branch_use_the_relay_by_default_and_recover_one_chapter(tmp_path: Path):
+    """U-04: regenerating one chapter or one design doc is one relay round.
+
+    ``revise --chapter ch01`` and ``branch --design scene`` used to refuse an
+    omitted ``--provider`` even though ``quickstart.md`` documented them without
+    one.  They now take the same relay default as ``run`` / ``continue``: copy
+    everything else byte for byte, ask only for the selected item, and finish in
+    one ``relay submit``.
+    """
+    init_project(tmp_path)
+    answers = answers_by_purpose()
+    drive(tmp_path, "prj-round", answers)
+
+    before_rendered = cli("--root", str(tmp_path), "render", "prj-round").stdout
+    revised = cli("--root", str(tmp_path), "revise", "prj-round", "--chapter", "ch01")
+    assert revised.returncode == 3, revised.stderr
+
+    status = round_status(tmp_path, "prj-round")
+    # Plan and design are carried over; only draft:ch01 is asked for.
+    assert status["stages"] == {"plan": "done", "design": "done", "draft": "waiting_response"}
+    assert status["pending_count"] == 1
+    assert status["next"]["purpose"] == "draft:ch01"
+
+    new_ch01 = "{{time: day=1}}{{location: 灯台}}\n" + "改訂した第一章の本文です。" * 25
+    updated = dict(answers, **{"draft:ch01": new_ch01})
+    file = write_answers(tmp_path, status["next"]["tag"], "draft:ch01", updated)
+    done = submit(tmp_path, "prj-round", file)
+    assert done.returncode == 0, done.stdout
+    after = json.loads(done.stdout)["round"]
+    assert after["state"] == "complete"
+    assert after["answered"] == 13  # 12 from the first revision + 1 revised chapter
+
+    after_rendered = cli("--root", str(tmp_path), "render", "prj-round").stdout
+    assert "改訂した第一章の本文です。" in after_rendered
+    assert after_rendered != before_rendered
+
+
+def test_an_unresolved_design_doc_is_reported_and_points_at_revise_design(tmp_path: Path):
+    """Fail-open design keeps going, so the round must say which doc needs revise.
+
+    In the U-05 continuation dogfood, ``design:scene`` stayed ``unresolved`` and
+    only ``doctor`` noticed.  The round report now names the doc and the exact
+    ``revise --design <doc>`` command that regenerates just that document.
+    """
+    init_project(tmp_path)
+    answers = answers_by_purpose()
+    broken_scene = json.loads(answers["design:scene"])
+    # Put a canon foreshadow ID in `planted`: the scene checker rejects it, and
+    # repeating the same answer on the repair round leaves scene `unresolved`.
+    broken_scene["scenes"][0]["foreshadows"]["planted"] = [
+        {"id": "fs-001", "payoff": "ch03"}
+    ]
+    bad = dict(
+        answers,
+        **{
+            "design:scene": json.dumps(broken_scene, ensure_ascii=False),
+            "design:scene:repair": json.dumps(broken_scene, ensure_ascii=False),
+        },
+    )
+    rounds = drive(tmp_path, "prj-round", bad)
+    # 13 rounds: the 12 normal requests + 1 repair round for design:scene.
+    assert len(rounds) == 13
+    final = rounds[-1]
+    assert final["state"] == "complete"
+    assert any(
+        "design (scene)" in item and "revise prj-round --design scene" in item
+        for item in final["warnings"]
+    )
+

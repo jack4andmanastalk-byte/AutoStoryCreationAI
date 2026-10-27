@@ -14,17 +14,17 @@
     "findings": 0,
     "info": 0,
     "interrupted": 0,
-    "runs": 17,
+    "runs": 39,
     "warnings": 0
   },
   "entry_point": "scripts/story_project.py init|run|relay status|relay submit|render|doctor",
   "experiment": "2026-10-dogfood-01",
   "final": {
-    "answered": 14,
+    "answered": 27,
     "exit": 0,
     "next_command": "python3 scripts/story_project.py --root <root> render prj-mine --out <root>/prj-mine/manuscript.md",
     "pending": 0,
-    "requests": 14,
+    "requests": 27,
     "stages": {
       "design": "done",
       "draft": "done",
@@ -119,6 +119,33 @@
       "id": "F-17",
       "status": "fixed",
       "summary": "render --reader writes a reading copy with chapter headings and no audit markers while keeping the default checked text unchanged"
+    },
+    {
+      "area": "flow",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py",
+        "tests/test_project_branch.py"
+      ],
+      "id": "F-27",
+      "status": "fixed",
+      "summary": "revise and branch rejected an omitted --provider even though quickstart documented them without one"
+    },
+    {
+      "area": "editing",
+      "files": [
+        "scripts/story_project.py",
+        "tests/test_relay_round.py"
+      ],
+      "id": "F-28",
+      "status": "fixed",
+      "summary": "fail-open unresolved design documents were only visible in doctor; round warnings now name the doc and the revise --design command"
+    },
+    {
+      "area": "flow",
+      "id": "F-29",
+      "status": "observed",
+      "summary": "continue re-asks all 8 design docs even when only chapter-dependent docs (world/relation/plot/scene) need an update"
     }
   ],
   "kind": "real model output relayed verbatim from the Arena session (no scripted fixture)",
@@ -162,7 +189,39 @@
     "design:scene:repair": "foreshadows.planted carried canon IDs; canon cues belong in paid (foreshadow_tagged)"
   },
   "repairs": 2,
-  "round_count": 14,
+  "revisions": [
+    {
+      "chapters": 3,
+      "id": "rev-3a23302eaef74437a2464da0d714b647",
+      "kind": "initial",
+      "manuscript": "experiments/2026-10-dogfood-01/manuscript.md",
+      "reader": "experiments/2026-10-dogfood-01/manuscript.reader.md",
+      "rounds": 14
+    },
+    {
+      "chapters": 3,
+      "id": "rev-36f3674476494f79940e620b4d0acb7d",
+      "kind": "revise --chapter ch01",
+      "rounds": 1
+    },
+    {
+      "chapters": 4,
+      "id": "rev-2ebe138cc79e47dd86dd4f3cb8f7d2d1",
+      "kind": "continue --add-chapters 1",
+      "rounds": 11
+    },
+    {
+      "chapters": 4,
+      "id": "rev-5f5c678e61054d6193be2f09716d3466",
+      "kind": "revise --design scene",
+      "manuscript": "experiments/2026-10-dogfood-01/manuscript.4ch.md",
+      "manuscript_sha256": "740539f4422b727678b588a63775526634d011c797b5a0ebe044595da392edfb",
+      "reader": "experiments/2026-10-dogfood-01/manuscript.4ch.reader.md",
+      "reader_sha256": "80a811479e15cd7097e4f98febae057d7572c0c6b947f7f7a9d8533427b458a2",
+      "rounds": 1
+    }
+  ],
+  "round_count": 27,
   "rounds": [
     {
       "answered": 1,
