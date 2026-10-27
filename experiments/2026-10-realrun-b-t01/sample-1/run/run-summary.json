@@ -1,0 +1,195 @@
+{
+  "audit": {
+    "by_severity": {
+      "medium": 2
+    },
+    "ced_per_10k_chars": 6.137,
+    "checks_skipped": 0,
+    "violations": 2
+  },
+  "canon": {
+    "chapters": 3,
+    "characters": 4,
+    "checks_covered": "6/6",
+    "checks_missing": [],
+    "facts": 3,
+    "foreshadowing": 2,
+    "locations": 2
+  },
+  "chars": 3042,
+  "design": {
+    "attempts": 10,
+    "by_severity": {},
+    "docs": {
+      "brief": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      },
+      "character": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      },
+      "history": {
+        "attempts": 2,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {
+          "medium": 3
+        },
+        "first_attempt_checks_failed": 1,
+        "first_attempt_findings": 3,
+        "repairs": 1,
+        "status": "clean"
+      },
+      "plot": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      },
+      "relation": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      },
+      "scene": {
+        "attempts": 2,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {
+          "medium": 2
+        },
+        "first_attempt_checks_failed": 1,
+        "first_attempt_findings": 2,
+        "repairs": 1,
+        "status": "clean"
+      },
+      "voice": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      },
+      "world": {
+        "attempts": 1,
+        "by_severity": {},
+        "checks_failed": 0,
+        "findings": 0,
+        "first_attempt_by_severity": {},
+        "first_attempt_checks_failed": 0,
+        "first_attempt_findings": 0,
+        "repairs": 0,
+        "status": "clean"
+      }
+    },
+    "findings": 0,
+    "first_attempt_findings": 5,
+    "missing": [],
+    "repairs": 2,
+    "task": "t01",
+    "unresolved": []
+  },
+  "draft": {
+    "chapters": [
+      {
+        "chars": 1108,
+        "day": 1,
+        "id": "ch01",
+        "injected": [],
+        "location": "灯台",
+        "markers": 4
+      },
+      {
+        "chars": 1061,
+        "day": 4,
+        "id": "ch02",
+        "injected": [],
+        "location": "港町",
+        "markers": 4
+      },
+      {
+        "chars": 873,
+        "day": 7,
+        "id": "ch03",
+        "injected": [],
+        "location": "灯台",
+        "markers": 3
+      }
+    ],
+    "chars": 3042,
+    "must_include": {
+      "hits": {
+        "嵐": true,
+        "灯台": true,
+        "鍵": true
+      },
+      "rate": 1.0
+    },
+    "task": {
+      "avoid": [
+        "選ばれし者",
+        "古代の予言"
+      ],
+      "control": "fantasy",
+      "genre": "fantasy",
+      "id": "t01",
+      "logline": "嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。",
+      "must_include": [
+        "灯台",
+        "鍵",
+        "嵐"
+      ],
+      "title_ja": "灯台の鍵"
+    },
+    "warnings_ja": [
+      "ch03: 873 字（目安 1000〜1400 字の外）"
+    ]
+  },
+  "gates": {
+    "all_checks_ran": true,
+    "length": true,
+    "must_include": true,
+    "no_high_severity": true
+  },
+  "plan": {
+    "attempts": 1
+  },
+  "run_dir": "/home/user/AutoStoryCreationAI/experiments/2026-10-realrun-b-t01/sample-1/run",
+  "run_id": "run",
+  "stage": "all",
+  "status": "pass",
+  "system": "s1",
+  "task": "t01"
+}

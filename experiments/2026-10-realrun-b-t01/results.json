@@ -13,30 +13,547 @@
       "matches": true
     }
   },
-  "samples": {},
+  "samples": {
+    "sample-1": {
+      "name": "sample-1",
+      "run_dir": "experiments/2026-10-realrun-b-t01/sample-1/run",
+      "status": "pass",
+      "complete": true,
+      "eligible": true,
+      "condition_violations": [],
+      "manifest": {
+        "run_id": "run",
+        "task_id": "t01",
+        "system": "s1",
+        "seed": 0,
+        "model": "arena-agent-mode",
+        "model_version": "unversioned-2026-10-27",
+        "provider": "command",
+        "temperature": 0.8,
+        "response_count": 14,
+        "responses_sha256": "fb77ad5b16c20b578c8584fc0804f018df4b11e598bd6b656dd7d4660238a0af",
+        "git_commit": "45d892c2af80752ae43720d644e8addcbd18567b",
+        "protocol_version": "protocol-v1",
+        "status": "ok",
+        "error": null
+      },
+      "plan": {
+        "attempts": 1,
+        "first_attempt_failed": false,
+        "first_attempt_error_file_present": false,
+        "prompt": {
+          "name": "plan-canon",
+          "version": "1.0",
+          "digest": "d5efcf43e513e63c"
+        }
+      },
+      "canon": {
+        "summary": {
+          "chapters": 3,
+          "characters": 4,
+          "checks_covered": "6/6",
+          "checks_missing": [],
+          "facts": 3,
+          "foreshadowing": 2,
+          "locations": 2
+        },
+        "files_sha256": {
+          "characters.json": "6baa58c3b7c6ab6dfea0ffef21ee43514c97ed7b7e35521e71b8559cfebab19e",
+          "facts.json": "8d90bbe82a6c842f3c854d0e56894a931c8104ba926df0f7bed8f66d0ae2a704",
+          "locations.json": "8208f38a7df5498ce0fa63b94ff7a1291d9cc0d06f28843ee6424889a8304bca",
+          "timeline.json": "a177f21d2b54ad119218cfd6aa23302af1a036d043ef6bef861795f9d4a4461d",
+          "foreshadowing.json": "6784a78a7f30b37076dfdb5499f58d5092cc6ff7d06e7c6f2f7f563f91a4502a",
+          "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+        },
+        "missing_files": []
+      },
+      "design": {
+        "docs": {
+          "brief": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-brief",
+              "version": "1.1",
+              "digest": "d3896b1f827382b0"
+            }
+          },
+          "world": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-world",
+              "version": "1.0",
+              "digest": "16abef1d5aef1eeb"
+            }
+          },
+          "history": {
+            "status": "clean",
+            "attempts": 2,
+            "repairs": 1,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 3,
+              "by_check": {
+                "canon_separated": 3
+              },
+              "by_severity": {
+                "medium": 3
+              },
+              "findings": [
+                {
+                  "check": "canon_separated",
+                  "severity": "medium"
+                },
+                {
+                  "check": "canon_separated",
+                  "severity": "medium"
+                },
+                {
+                  "check": "canon_separated",
+                  "severity": "medium"
+                }
+              ],
+              "checks_failed": 1
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 3,
+            "final_repair_findings": 0,
+            "disappeared_exact": 3,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-repair",
+              "version": "1.0",
+              "digest": "24400eb90fe44e64"
+            }
+          },
+          "character": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-character",
+              "version": "1.0",
+              "digest": "e4bffc2ee9db74b2"
+            }
+          },
+          "relation": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-relation",
+              "version": "1.0",
+              "digest": "f8c3e64187631141"
+            }
+          },
+          "plot": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-plot",
+              "version": "1.0",
+              "digest": "d5889483d2b77e7f"
+            }
+          },
+          "scene": {
+            "status": "clean",
+            "attempts": 2,
+            "repairs": 1,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 2,
+              "by_check": {
+                "foreshadow_tagged": 2
+              },
+              "by_severity": {
+                "medium": 2
+              },
+              "findings": [
+                {
+                  "check": "foreshadow_tagged",
+                  "severity": "medium"
+                },
+                {
+                  "check": "foreshadow_tagged",
+                  "severity": "medium"
+                }
+              ],
+              "checks_failed": 1
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 2,
+            "final_repair_findings": 0,
+            "disappeared_exact": 2,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-repair",
+              "version": "1.0",
+              "digest": "24400eb90fe44e64"
+            }
+          },
+          "voice": {
+            "status": "clean",
+            "attempts": 1,
+            "repairs": 0,
+            "report_present": true,
+            "json_present": true,
+            "first_attempt": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "final": {
+              "count": 0,
+              "by_check": {},
+              "by_severity": {},
+              "findings": [],
+              "checks_failed": 0
+            },
+            "first_repair_findings": 0,
+            "final_repair_findings": 0,
+            "disappeared_exact": 0,
+            "new_in_final_exact": 0,
+            "prompt": {
+              "name": "design-voice",
+              "version": "1.0",
+              "digest": "bf9880f17ffb484d"
+            }
+          }
+        },
+        "docs_expected": 8,
+        "reports_present": 8,
+        "missing_reports": [],
+        "docs_not_reached": [],
+        "unresolved": [],
+        "missing": [],
+        "attempts": 10,
+        "repairs": 2,
+        "first_attempt_findings": 5,
+        "final_findings": 0,
+        "first_repair_findings": 5,
+        "final_repair_findings": 0,
+        "disappeared_exact": 5,
+        "new_in_final_exact": 0,
+        "docs_with_first_findings": [
+          "history",
+          "scene"
+        ],
+        "docs_with_multiple_attempts": [
+          "history",
+          "scene"
+        ],
+        "first_by_check": {
+          "canon_separated": 3,
+          "foreshadow_tagged": 2
+        },
+        "final_by_check": {},
+        "first_by_severity": {
+          "medium": 5
+        },
+        "final_by_severity": {}
+      },
+      "draft": {
+        "chapters": {
+          "ch01": {
+            "chars": 1108,
+            "in_length_band": true,
+            "day": 1,
+            "location": "灯台",
+            "attempts_observed": 1,
+            "first_attempt_failed": false,
+            "first_issues": [],
+            "issues_by_attempt": {},
+            "injected": [],
+            "injected_count": 0,
+            "markers": 4
+          },
+          "ch02": {
+            "chars": 1061,
+            "in_length_band": true,
+            "day": 4,
+            "location": "港町",
+            "attempts_observed": 1,
+            "first_attempt_failed": false,
+            "first_issues": [],
+            "issues_by_attempt": {},
+            "injected": [],
+            "injected_count": 0,
+            "markers": 4
+          },
+          "ch03": {
+            "chars": 873,
+            "in_length_band": false,
+            "day": 7,
+            "location": "灯台",
+            "attempts_observed": 1,
+            "first_attempt_failed": false,
+            "first_issues": [],
+            "issues_by_attempt": {},
+            "injected": [],
+            "injected_count": 0,
+            "markers": 3
+          }
+        },
+        "chapters_total": 3,
+        "chars_total": 3042,
+        "chapters_in_length_band": 2,
+        "first_failed_chapters": [],
+        "injected_markers_total": 0,
+        "must_include": {
+          "hits": {
+            "嵐": true,
+            "灯台": true,
+            "鍵": true
+          },
+          "rate": 1.0
+        },
+        "warnings_count": 1,
+        "total_in_length_band": true
+      },
+      "audit": {
+        "present": true,
+        "source": "audit.json",
+        "violations": 2,
+        "by_severity": {
+          "medium": 2
+        },
+        "by_type": {
+          "dead_character_reappears": 2
+        },
+        "high": 0,
+        "checks_run": 6,
+        "checks_skipped": 0,
+        "ced_per_10k_chars": 6.137,
+        "chars": 3259,
+        "violation_details": [
+          {
+            "type": "dead_character_reappears",
+            "severity": "medium",
+            "chapter": "ch02"
+          },
+          {
+            "type": "dead_character_reappears",
+            "severity": "medium",
+            "chapter": "ch03"
+          }
+        ]
+      },
+      "gates": {
+        "all_checks_ran": true,
+        "length": true,
+        "must_include": true,
+        "no_high_severity": true
+      },
+      "responses": {
+        "ledger_entries": 14,
+        "manifest_response_count": 14,
+        "by_purpose": {
+          "design:brief": 1,
+          "design:character": 1,
+          "design:history": 1,
+          "design:history:repair": 1,
+          "design:plot": 1,
+          "design:relation": 1,
+          "design:scene": 1,
+          "design:scene:repair": 1,
+          "design:voice": 1,
+          "design:world": 1,
+          "draft:ch01": 1,
+          "draft:ch02": 1,
+          "draft:ch03": 1,
+          "plan": 1
+        },
+        "provenance_counts": {
+          "unspecified": 14
+        }
+      }
+    }
+  },
   "verdicts": {
-    "samples_present": 0,
+    "samples_present": 1,
     "samples_planned": 1,
-    "enough_samples": false,
+    "enough_samples": true,
     "B0_condition": {
-      "verdict": "not_run",
+      "verdict": "condition_ok",
       "violations_by_sample": {}
     },
     "B1_completion": {
-      "verdict": "not_run",
-      "by_sample": {}
+      "verdict": "complete_pass",
+      "by_sample": {
+        "sample-1": "complete_pass"
+      }
     },
     "B2_first_attempt": {
-      "verdict": "not_enough_data",
-      "by_sample": {}
+      "verdict": "first_attempt_findings_repaired",
+      "by_sample": {
+        "sample-1": "first_attempt_findings_repaired"
+      },
+      "counting_rule": "count_first_attempt_findings_even_if_repaired_away",
+      "details": {
+        "sample-1": {
+          "plan_first_attempt_failed": false,
+          "design_first_attempt_findings": 5,
+          "design_final_findings": 0,
+          "design_disappeared_exact": 5,
+          "design_docs_with_first_findings": [
+            "history",
+            "scene"
+          ],
+          "design_first_by_check": {
+            "canon_separated": 3,
+            "foreshadow_tagged": 2
+          },
+          "draft_first_failed_chapters": []
+        }
+      }
     },
     "B3_length": {
-      "verdict": "not_enough_data",
-      "by_sample": {}
+      "verdict": "length_ok",
+      "by_sample": {
+        "sample-1": "length_ok"
+      },
+      "details": {
+        "sample-1": {
+          "chapters_in_length_band": 2,
+          "chars_total": 3042,
+          "total_in_length_band": true
+        }
+      }
     },
     "B4_audit": {
-      "verdict": "not_enough_data",
-      "by_sample": {}
+      "verdict": "audit_no_high_all_checks_ran",
+      "by_sample": {
+        "sample-1": "audit_no_high_all_checks_ran"
+      },
+      "details": {
+        "sample-1": {
+          "present": true,
+          "violations": 2,
+          "high": 0,
+          "checks_skipped": 0,
+          "ced_per_10k_chars": 6.137
+        }
+      }
     }
   },
   "not_claimed": [

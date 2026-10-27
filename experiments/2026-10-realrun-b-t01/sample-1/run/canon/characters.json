@@ -1,0 +1,60 @@
+{
+  "characters": [
+    {
+      "id": "akari",
+      "name": "灯里",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 19,
+      "birthday_day": 300,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "灯台守の娘。父の代わりに灯りを守る"
+    },
+    {
+      "id": "genzo",
+      "name": "源蔵",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 54,
+      "birthday_day": 305,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "灯台守。灯里の父。足を痛めて遠出できない"
+    },
+    {
+      "id": "so",
+      "name": "蒼",
+      "aliases": [],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "港町",
+      "age_at_start": 21,
+      "birthday_day": 310,
+      "knows": [],
+      "notes": "灯里の兄。三年前に海で死んだ"
+    },
+    {
+      "id": "hisano",
+      "name": "久乃",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "灯台",
+      "age_at_start": 34,
+      "birthday_day": 315,
+      "knows": [
+        "F-03"
+      ],
+      "notes": "港町の船乗り。嵐で灯台の入り江に避難している"
+    }
+  ]
+}

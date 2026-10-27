@@ -1,8 +1,8 @@
 # バッチ B: S1 全体（plan → 8 設計 → draft）の実走り準備 — t01
 
 - 日付: 2026-10-27
-- 種類: **実走り前のバンドル準備（事前登録）**。実モデル応答はまだ無い。
-- 状態: **未走行**（`results.json` は `not_run`）
+- 種類: 事前登録に基づく実走り 1 標本（Arena Agent Mode 内で実行）。
+- 状態: **完走**（2026-10-27、`sample-1`、status=`pass`）。事前登録は走行前に commit `45d892c` で固定した。
 - 事前登録: [`preregistration.md`](preregistration.md) / [`preregistration.json`](preregistration.json)
 - 手順: [`runbook.md`](runbook.md)（Arena Agent Mode 内でエージェントが実行）
 - 運用モデル: [`docs/arena_operation.md`](../../docs/arena_operation.md)
@@ -63,16 +63,42 @@ relay にある同じ標本の応答が再生されるだけであり、新し�
 （タスク・プロンプト固定・seed・temperature・canon 方針）も判定規則（B0〜B4）も
 **変更していない**。標本はいまだ未走行である。
 
-## 結果（走行後にここへ書く）
+## 結果（2026-10-27、1 標本）
 
-まだ無い。走行したら、次を `results.json` の verdict を読み替えずに引用して書く。
+`results.json` の verdict を読み替えずに引用する。
 
-- B0〜B4 の verdict、run の status と gates。
-- plan attempts／初回失敗、生成された canon の件数・被覆・sha256。
-- 8 設計の status、attempts、初回 findings、最終 findings、修復で消えた件数。
-- 章ごとの字数、attempts、初回 issues、補完マーカー、必須語率。
-- 監査の violations、severity/type の内訳、未実行検査、CED（参考値）。
-- 応答件数と `provenance.origin` の内訳、operator の独立性に関する限界。
+| 判定 | verdict |
+| --- | --- |
+| B0 条件 | `condition_ok` |
+| B1 完走 | `complete_pass` |
+| B2 初回所見 | `first_attempt_findings_repaired` |
+| B3 長さ | `length_ok` |
+| B4 監査 | `audit_no_high_all_checks_ran` |
+
+- **run 全体**: status=`pass`、gates はすべて true（必須語 3/3、合計長、high 違反なし、全検査実行）。
+  コードは事前登録コミット `45d892c`、model は `arena-agent-mode` / `unversioned-2026-10-27`。
+  応答は 14 件（plan 1・設計 10（修復 2 を含む）・draft 3）で、すべてこの Arena セッションの
+  エージェントが生成し逐語で取り込んだ。`provenance.origin` は全件 `unspecified`
+  （ingest が origin を書かないため）で、新規生成とは主張しない。独立性も保証されない。
+- **plan / canon**: 初回で受理（attempts=1、初回失敗なし）。生成 canon は人物 4・事実 3・
+  場所 2・章 3・伏線 2、checks_covered 6/6。6 ファイルの sha256 は `results.json` に記録した。
+- **設計**: 8 件すべて最終 `clean`、未解決・欠落なし。ただし **初回 findings は合計 5 件**あり、
+  すべて修復で消えた（`disappeared_exact=5`）。内訳は history の `canon_separated` ×3 と
+  scene の `foreshadow_tagged` ×2（いずれも medium）。最終報告だけを見ると 0 件に見えるため、
+  B2 は登録どおり初回所見を主として数えた。
+  - `canon_separated` は、プロンプトに列挙されていない制約（異説が年表内に現れること、
+    由来が `invented / adapted / cited` のいずれかであること）による指摘で、
+    §22 と同型の「検査だけが知っている規則」の候補である。
+  - `foreshadow_tagged` は、プロンプトが「新規の布石 ID」と明記していたのに canon の ID を
+    再利用した生成側の誤りである。
+- **draft**: 3 章すべて初回受理（再試行なし、補完マーカー 0）。字数は ch01=1,108、ch02=1,061、
+  ch03=873（**目安外れ**）、合計 3,042（目安内）。B3 は「2 章以上が目安内かつ合計が目安内」の
+  登録規則により `length_ok` だが、最終章の短さは残った課題として記録する。
+- **監査**: violations=2（すべて medium `dead_character_reappears`、ch02・ch03 での蒼への言及）、
+  high=0、checks_run=6 / checks_skipped=0、CED=6.137/1万字（参考値）。監査器自身が
+  「回想・遺体・言及の可能性」と注記する類の指摘であり、本文では死者は行為者になっていない。
+- **観測**: 設計の初回不適合は修復可能な形式面に集中し、plan と draft は初回で通った。
+  S1 全体が実応答で一度通ったこと以上の主張（率・再発・品質）は登録どおりしない。
 
 ## 限界
 

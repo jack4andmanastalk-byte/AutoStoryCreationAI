@@ -1,0 +1,30 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "scene",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "foreshadow_tagged",
+        "message_ja": "布石「fs-001」は canon に既にある。新規 ID にする。",
+        "scene_ref": "scenes:s01",
+        "severity": "medium"
+      },
+      {
+        "check": "foreshadow_tagged",
+        "message_ja": "布石「fs-002」は canon に既にある。新規 ID にする。",
+        "scene_ref": "scenes:s01",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

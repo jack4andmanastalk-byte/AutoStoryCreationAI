@@ -1,0 +1,64 @@
+{
+  "scenes": [
+    {
+      "id": "s01", "chapter": "ch01",
+      "purpose": "嵐の夜、灯里が人命のために久乃へ鍵を貸す場面。",
+      "conflict": "鍵を貸せば灯室を守れなくなり、貸さなければ入り江の船が危うい。",
+      "change": "鍵が灯里の手を離れ、その行方を追う物語が始まる。",
+      "tension": "deadline",
+      "knowledge": [
+        {"character": "akari", "entry": ["F-01", "F-02"], "gained": []},
+        {"character": "hisano", "entry": ["F-03"], "gained": []}
+      ],
+      "disclosure": {
+        "disclosed": ["F-01", "F-02"],
+        "withheld": [{"fact": "F-03", "reason": "鍵の出所は港町で明かすため、この章では伏せる"}]
+      },
+      "foreshadows": {
+        "planted": [
+          {"id": "scene-fs-001", "payoff": "ch02"},
+          {"id": "scene-fs-002", "payoff": "ch03"}
+        ],
+        "paid": []
+      }
+    },
+    {
+      "id": "s02", "chapter": "ch02",
+      "purpose": "港町で灯里が久乃から鍵の経緯を聞く場面。",
+      "conflict": "灯里は久乃を疑い、久乃は三年言えなかった真実を話さなければならない。",
+      "change": "鍵が蒼から託されたものだと分かり、灯里の疑いが解ける。",
+      "tension": "curiosity",
+      "knowledge": [
+        {"character": "akari", "entry": ["F-01", "F-02"], "gained": ["F-03"]},
+        {"character": "hisano", "entry": ["F-03"], "gained": []}
+      ],
+      "disclosure": {
+        "disclosed": ["F-03"],
+        "withheld": []
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": ["fs-001"]
+      }
+    },
+    {
+      "id": "s03", "chapter": "ch03",
+      "purpose": "戻った灯里が父の告白を受け、嵐の夜に灯りを守る場面。",
+      "conflict": "真相を知っても、務めを引き受けるかどうかは灯里自身が決めなければならない。",
+      "change": "源蔵の沈黙の理由が明かされ、灯里は自分の意志で灯室に立つ。",
+      "tension": "quiet",
+      "knowledge": [
+        {"character": "akari", "entry": ["F-01", "F-02", "F-03"], "gained": []},
+        {"character": "genzo", "entry": ["F-01", "F-02"], "gained": []}
+      ],
+      "disclosure": {
+        "disclosed": [],
+        "withheld": []
+      },
+      "foreshadows": {
+        "planted": [],
+        "paid": ["fs-002"]
+      }
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+<<<ANSWER 1AD3>>>
+{
+  "brief": {
+    "theme_ja": "死んだ兄が守った灯りを、娘が自分の意志で守り直す話。",
+    "protagonist_ja": "灯台守の娘・灯里。兄の死の真相を知りたいが、灯りを離れることを恐れる。",
+    "setting_ja": "嵐の多い海に面した灯台と、その先の港町。時代は特定しない近世風の世界。",
+    "tone_ja": "静かで湿った、抑制のきいた語り。",
+    "turn_ja": "貸した鍵が、三年前に死んだ兄が船乗りの久乃に託した鍵だったと分かる。",
+    "ending_ja": "灯里が鍵を取り戻して灯台へ戻り、嵐の夜に灯りを守り抜く解決で終わる。"
+  },
+  "characters": [
+    {"id": "akari", "name": "灯里", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 19,
+     "birthday_day": 300, "knows": ["F-01", "F-02"], "notes": "灯台守の娘。父の代わりに灯りを守る"},
+    {"id": "genzo", "name": "源蔵", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 54,
+     "birthday_day": 305, "knows": ["F-01", "F-02"], "notes": "灯台守。灯里の父。足を痛めて遠出できない"},
+    {"id": "so", "name": "蒼", "aliases": [], "status": "dead",
+     "status_since": "ch01", "location": "港町", "age_at_start": 21,
+     "birthday_day": 310, "knows": [], "notes": "灯里の兄。三年前に海で死んだ"},
+    {"id": "hisano", "name": "久乃", "aliases": [], "status": "alive",
+     "status_since": "ch01", "location": "灯台", "age_at_start": 34,
+     "birthday_day": 315, "knows": ["F-03"], "notes": "港町の船乗り。嵐で灯台の入り江に避難している"}
+  ],
+  "facts": [
+    {"id": "F-01", "summary": "灯台の灯りは嵐の夜に消してはいけない", "terms": ["灯りを消してはいけない"], "setup": "ch01"},
+    {"id": "F-02", "summary": "蒼は三年前に海で死んだ", "terms": ["三年前"], "setup": "ch01"},
+    {"id": "F-03", "summary": "蒼は死の直前、刻印のある鍵を久乃に託していた", "terms": ["刻印"], "setup": "ch02"}
+  ],
+  "locations": [
+    {"id": "灯台", "travel_days": {"港町": 2}},
+    {"id": "港町", "travel_days": {"灯台": 2}}
+  ],
+  "timeline": {
+    "chapters": [
+      {"id": "ch01", "day": 1, "location": "灯台"},
+      {"id": "ch02", "day": 4, "location": "港町"},
+      {"id": "ch03", "day": 7, "location": "灯台"}
+    ]
+  },
+  "foreshadowing": [
+    {"id": "fs-001", "description": "鍵に残る兄の刻印", "setup": "ch01", "payoff": "ch02"},
+    {"id": "fs-002", "description": "鍵のことを聞くと黙る父・源蔵", "setup": "ch01", "payoff": "ch03"}
+  ]
+}
+<<<END 1AD3>>>

@@ -1,0 +1,36 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "history",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:蒼は嵐の夜に灯台へ戻って来るという言い伝え（死者は戻らないため異説として扱う）",
+        "message_ja": "異説「蒼は嵐の夜に灯台へ戻って来るという言い伝え（死者は戻らないため異説として扱う）」が年表にない。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-1",
+        "message_ja": "由来 '灯室の書き付け' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      },
+      {
+        "check": "canon_separated",
+        "history_ref": "sources:src-2",
+        "message_ja": "由来 '船乗りの言い伝え' は invented / adapted / cited のいずれかにする。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}
