@@ -7,18 +7,27 @@
 
 ## 公開データと非公開研究の設計（2026-10-28）
 
-作品本文の再配布許諾は未確認。ユーザーの選択により、今回は
-[設計・注意書き](private_research_design.md) のみを追加し、公開設定・既存公開物・
-workflow は変更しない。`datasets`、Release、shard artifact には本文が含まれる。
-**main の月次・手動 `dataset-refresh` は引き続き再公開し得る。**
-今後変更する場合は権利、非公開の保管・復元先、公開範囲と影響を確認して別途判断する。
+作品本文の再配布許諾は未確認。設計作成時には、ユーザーの選択により
+[設計・注意書き](private_research_design.md) のみを追加し、公開物等は変更しなかった。
+
+その後、ユーザーが `dataset-refresh` を GitHub 上で手動停止し、確認時の状態は
+`disabled_manually`。workflow のコードは変更されておらず、再有効化すれば再公開し得る。
+ユーザーから非公開側 Release の4つのなろう本文圧縮ファイルについて、公開側とサイズ・
+GitHub メタデータの SHA-256 が一致するとの確認を受け、明示的な承認のもと公開 Release の
+該当4資産のみを削除し、不在を確認した。本文の再取得・独立ハッシュ計算は行っていない。
+
+公開 `datasets` ブランチ（確認時 `5a9f9f1861d2da85b59faac41a75dec73a794043`）と
+Actions 成果物は変更していない。`raw/narou/texts` には確認時373件があり、期限付きの
+shard artifact にも本文が含まれる。4圧縮ファイルがそれら全件を網羅するか未検証。
+公開 Release の他資産・青空本文も残る。削除後も第三者のコピーの消去は保証できない。
+今後の対応は権利、保全範囲・復元先、公開範囲と影響を確認して別途判断する。
 
 ## 残作業
 
 | 対象 | 完了・判明したこと | 未完・次の判断 |
 | --- | --- | --- |
 | [#57](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/issues/57) / `9195f0c3` | [PR #59](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/pull/59) で PDF 削除の安全性、R15・PDF の説明、doctor の回帰テストを統合。旧枝の doctor は不完全 index により偽陰性になり得る。旧枝の dataset 参照は plan prompt に伝わらない。詳細は [分解記録](branch_reconciliation_2026-10-28.md)。 | 旧枝の一括マージはしない。dataset の明示的な入力・権利・prompt・再開時の再現性を設計するまで接続を採用しない。skill registry は実需と関係の契約確認待ち（R-04）、index 差分検査は性能と正確性の検証待ち（R-05）。旧索引の比較を終え、現行の [実験索引](../experiments/INDEX.md) を追加。旧枝は保持。 |
-| [#58](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/issues/58) / 過去の dataset-refresh 失敗 | 失敗 job の一部は特定したがログ取得は EOF、根本原因は未確認。PR #59 で push / PR 起動を廃止し、公開を main に限定。 | 詳細ログなどの証拠が得られた場合に原因を切り分ける。main の月次・手動実行は引き続き共有データを公開する。データの取得・再公開はこの調査では実行しない。 |
+| [#58](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/issues/58) / 過去の dataset-refresh 失敗 | 失敗 job の一部は特定したがログ取得は EOF、根本原因は未確認。PR #59 で push / PR 起動を廃止し、公開を main に限定。 | 詳細ログなどの証拠が得られた場合に原因を切り分ける。workflow は GitHub 上で手動停止中。再有効化すると main の月次・手動実行で共有データを再公開し得る。 |
 | #58 / `f3ec8a91` | 先端 `fab7e5cf5c7039e7ed31365d5b20874acc1c8615` は、固定 canon・plan 不実行の事前登録（`preregistration.json` SHA-256 `ecaccfe468b7ca926ff5fe5171d07f3a6ffb87348961b796dc67482f97701b2f`）と回答待ち状態を持つ。main の同名実験は plan 実行を含む別条件・別登録（現在の登録 SHA-256 `d4784d1fbf539ac97852145233d1da9e4f256bd223377e6e83a900d4230624e9`）で完走済み。固定 canon での監査失敗と記録欠落を別途修正・回帰検査。旧先端の全21ファイル差分を[履歴資料](../experiments/archives/legacy-fixed-canon-b-2026-10-27/README.md)に保全し、親からの再構成・バイト一致を確認。 | 両者を同じ実験と見なしたり、main の事前登録・結果に上書きしたりしない。旧実験は未完・未再開であり、今後の扱いを判断するまで旧枝は保持。 |
 | #58 / `7d70c8c2` | 先端 `a9715d1a94f048b22a11f86ef3ef61cb9ee60025` の7ファイルを機能別に比較し、主機能は main 側にあり、旧 PDF 公開フローは戻さないと判断。詳細は下記。2026-10-28 にリモート一覧から旧枝が見えなくなったことを確認（本作業で削除しておらず、理由・日時は未確認）。 | 旧コミット自体は確認時に GitHub API で参照できた。公開物の権利とデータ取得の正常性は未確認。 |
 
