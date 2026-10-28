@@ -1,7 +1,7 @@
 # データセットアップ手順
 
 本ドキュメントは `scripts/setup_dataset.py` が一括で実行する処理を、段階ごとに説明します。
-実行環境の前提は Python 3.11 以上、標準ライブラリ + `fpdf2` / `PyYAML` のみです。
+実行環境の前提は Python 3.11 以上と `requirements.txt` に記載された依存です。
 
 ## 0. 準備
 
@@ -33,6 +33,9 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 
 ## 2. 青空文庫の本文と PDF
 
+通常の `make data` はテキストを生成します。以下の `--pdf` は個別に指定した場合の
+互換機能で、テキスト公開用 `dataset-refresh` は PDF を生成しません。
+
 ```bash
 .venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
 ```
@@ -62,6 +65,10 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 * 初回掲載日・最終掲載日・更新日
 * 話数・文字数・読了時間・会話率・挿絵数
 * R15・残酷な描写などの要素フラグ、ブックマーク数・評価ポイント
+
+既定設定の `narou.include_r15: true` は一般向け API の R15 作品を含みます。除外する
+場合は `configs/dataset.yaml` の値を `false` にします。R18 API は対象外です。設定を
+変更しても既存の収集済みファイルが自動で更新されるわけではありません。
 
 `setup_dataset.py narou-metadata` は保存済みの生 JSON（`narou.api_response_files`）を
 取り込みつつ、API へ直接クエリも実行します（`order` と `genre` を変えて重複排除）。
@@ -100,7 +107,7 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 ## 6. CI での再現と構築済みデータの取得
 
 `.github/workflows/dataset-refresh.yml` は同じコマンドを GitHub Actions 上で実行し、
-生成した JSONL・テキスト・PDF を専用ブランチ `datasets` および Actions artifact に公開します。
+生成した JSONL・テキストを専用ブランチ `datasets` および Actions artifact に公開します。
 公式ホストへ直接接続できない環境では `make pull-datasets` 一発で `data/` 配下に展開できます。
 
 ```bash
@@ -108,6 +115,16 @@ make pull-datasets
 # または artifact から取得する場合:
 gh run download --name datasets
 ```
+
+## PDF 変換・削除の注意
+
+`make data` は最後に `purge-pdfs` を実行します。このコマンドは設定された `pdf_dir`
+配下の `aozora/` と `narou/` にある対象 PDF を、既存テキストの確認またはテキスト抽出の後に
+**削除**し、書誌の PDF 情報を更新します。必要な PDF や関連データは事前にバックアップして
+ください。抽出が空の場合、既存テキストが短すぎる場合、想定外の場所に PDF がある場合は
+削除せず停止します。ただし空でない抽出結果でも、本文全体が正しく抽出された保証はありません。
+別の用途の PDF を同じディレクトリに置かないでください。`--reuse-existing-dir` の再利用元が
+`pdf_dir` の外にある場合、その再利用元の PDF は削除しません。CI の公開先もテキスト形式です。
 
 ## 7. トラブルシューティング
 

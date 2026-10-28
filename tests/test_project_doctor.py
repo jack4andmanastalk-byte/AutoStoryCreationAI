@@ -606,3 +606,42 @@ def test_doctor_cli_reports_unresolved_design_without_failing(tmp_path: Path):
     assert text.returncode == 0, text.stderr
     assert "design.unresolved" in text.stdout
     assert "brief, voice" in text.stdout
+
+
+def test_untrusted_index_never_hides_project_corruption(tmp_path: Path):
+    """An index alone must not turn a full doctor inspection into a clean result."""
+    store = ProjectStore(tmp_path)
+    root, child, _ = make_family(store)
+    add_world(store, root.project.id, child.child_node_id)
+    run_node(store, root.project.id, root.root_node.id)
+    run_node(store, root.project.id, child.child_node_id)
+    project_dir = store.project_dir(root.project.id)
+
+    status = store.status(root.project.id, child.child_node_id, include_descendants=False)
+    artifact = next(
+        row for row in status["checkpoints"]["draft"]["artifacts"]
+        if row["artifact_id"].startswith("draft-text-")
+    )
+    (project_dir / artifact["path"]).unlink()
+    world_file = project_dir / "world" / "culture_states" / "state-tide.json"
+    data = json.loads(world_file.read_text(encoding="utf-8"))
+    data["attributes"] = {"marker": "TAMPERED"}
+    world_file.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+    baseline = inspect_project(store, root.project.id)
+    baseline_codes = {item.code for item in baseline.findings}
+    assert {"artifact.missing", "world.invalid"} <= baseline_codes
+    # Mimic an old, incomplete index with a previous inspection and no checksums.
+    # It must never be trusted to skip revisions, checkpoints, links or world.
+    (project_dir / ".index.json").write_text(json.dumps({
+        "schema": "asc-project-index-v1", "project_id": root.project.id,
+        "summary": {"last_inspected_at": "2026-10-28T00:00:00Z"},
+        "nodes": {}, "revisions": {}, "checksums": {},
+    }), encoding="utf-8")
+    before = tree_digest(project_dir)
+    report = inspect_project(store, root.project.id)
+    assert report.ok is False
+    assert {item.code for item in report.findings} == baseline_codes
+    statuses = {check["name"]: check["status"] for check in report.checks}
+    assert all(statuses[name] != "skipped" for name in ("revisions", "checkpoints", "links", "world"))
+    assert tree_digest(project_dir) == before

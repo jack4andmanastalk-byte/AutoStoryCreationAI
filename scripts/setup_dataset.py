@@ -1527,21 +1527,60 @@ def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
             if rp.is_dir():
                 source_specs.append((sub_src, rp, target_txt_dir))
 
+    # Refuse unknown PDF locations before extracting or deleting anything.  In
+    # particular, never recursively erase unrelated files in the PDF directory.
+    pdf_root = cfg.paths.pdf_dir
+    recognized = {
+        path for _, directory, _ in source_specs[:2] if directory.is_dir()
+        for path in directory.iterdir()
+        if path.is_file() and path.suffix.lower() == ".pdf"
+    }
+    all_pdfs = {
+        path for path in pdf_root.rglob("*")
+        if path.is_file() and path.suffix.lower() == ".pdf"
+    } if pdf_root.is_dir() else set()
+    unknown = sorted(all_pdfs - recognized)
+    if unknown:
+        raise ValueError(
+            f"unrecognized PDF location {unknown[0]}; no PDFs were deleted. "
+            "Move it to a safe location before retrying."
+        )
+
     for src_name, pdir, tdir in source_specs:
         if not pdir.is_dir():
             continue
         tdir.mkdir(parents=True, exist_ok=True)
-        for pdf_file in sorted(pdir.glob("*.pdf")):
+        for pdf_file in sorted(p for p in pdir.iterdir()
+                               if p.is_file() and p.suffix.lower() == ".pdf"):
             stem = pdf_file.stem
-            # Match existing case-insensitive .txt if present
+            # Do not overwrite or trust a short/blank existing text, including
+            # a differently cased filename. Verify UTF-8 without loading a
+            # potentially large book into memory.
             existing_txt: Optional[Path] = None
             for cand in (tdir / f"{stem}.txt", tdir / f"{stem.lower()}.txt", tdir / f"{stem.upper()}.txt"):
-                if cand.exists() and cand.stat().st_size > 128:
-                    existing_txt = cand
-                    break
+                if not cand.exists():
+                    continue
+                if cand.stat().st_size <= 128:
+                    raise ValueError(
+                        f"text file {cand} is too short to trust; no PDFs were deleted. "
+                        "Review or move it before retrying."
+                    )
+                has_text = False
+                with cand.open("r", encoding="utf-8") as source:
+                    for chunk in iter(lambda: source.read(65536), ""):
+                        has_text = has_text or bool(chunk.strip())
+                if not has_text:
+                    raise ValueError(f"text file {cand} is blank; no PDFs were deleted")
+                existing_txt = cand
+                break
             if existing_txt is None:
-                extracted = extract_clean_text_from_pdf(pdf_file)
                 out_txt = tdir / f"{stem}.txt"
+                extracted = extract_clean_text_from_pdf(pdf_file)
+                if not extracted.strip():
+                    raise ValueError(
+                        f"no text extracted from {pdf_file}; no PDFs were deleted. "
+                        "Review it before retrying."
+                    )
                 out_txt.write_text(extracted, encoding="utf-8")
                 converted_count += 1
                 verified_txt_count += 1
@@ -1549,13 +1588,23 @@ def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
             else:
                 verified_txt_count += 1
 
-    # Delete all PDFs under cfg.paths.pdf_dir
-    if cfg.paths.pdf_dir.exists():
-        for pdf_file in cfg.paths.pdf_dir.rglob("*.pdf"):
-            removed_pdf_files += 1
-            removed_pdf_bytes += pdf_file.stat().st_size
-            pdf_file.unlink(missing_ok=True)
-        shutil.rmtree(cfg.paths.pdf_dir, ignore_errors=True)
+    # Delete only the recognized PDFs after every extraction passed. Preserve
+    # unrelated non-PDF files and remove directories only when they are empty.
+    for pdf_file in sorted(recognized):
+        removed_pdf_files += 1
+        removed_pdf_bytes += pdf_file.stat().st_size
+        pdf_file.unlink()
+    if pdf_root.is_dir():
+        directories = [path for path in pdf_root.rglob("*") if path.is_dir()]
+        for directory in sorted(directories, key=lambda path: len(path.parts), reverse=True):
+            try:
+                directory.rmdir()
+            except OSError:
+                pass  # not empty (or otherwise not removable): leave it intact
+        try:
+            pdf_root.rmdir()
+        except OSError:
+            pass
 
     # Index all verified .txt files by lowercase stem
     narou_txt_map = {

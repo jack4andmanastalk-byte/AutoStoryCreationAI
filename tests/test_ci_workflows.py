@@ -139,10 +139,15 @@ def test_a_cancelled_build_never_publishes(dataset):
     assert "needs.render-narou.result != 'cancelled'" in condition
 
 
-def test_dataset_trigger_does_not_fire_on_main_or_every_push(dataset):
+def test_dataset_refresh_cannot_be_started_by_branch_push(dataset):
     triggers = dataset[True] if True in dataset else dataset["on"]
-    assert "main" in triggers["push"]["branches-ignore"]
-    assert triggers["push"]["paths"], "an unfiltered push trigger would rebuild on every commit"
+    assert "push" not in triggers and "pull_request" not in triggers
+    assert "workflow_dispatch" in triggers and "schedule" in triggers
+
+
+def test_dataset_publish_only_from_main(dataset):
+    condition = " ".join(dataset["jobs"]["publish"]["if"].split())
+    assert "github.ref == 'refs/heads/main'" in condition
 
 
 # -- release publishing ----------------------------------------------------

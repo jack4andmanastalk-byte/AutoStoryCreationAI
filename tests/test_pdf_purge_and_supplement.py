@@ -450,3 +450,84 @@ def test_sharded_genre_supplement_and_merge(tmp_path: Path, monkeypatch):
     combined = sd.load_works(cfg.paths.dataset_dir / sd.NAROU_ALL_COMM)
     assert len(combined) == 11
 
+
+
+def _purge_config(tmp_path: Path) -> Config:
+    return Config(paths=PathsConfig(
+        raw_dir=tmp_path / "raw", pdf_dir=tmp_path / "pdf",
+        dataset_dir=tmp_path / "datasets", cache_dir=tmp_path / "cache",
+        font_dir=tmp_path / "fonts",
+    ))
+
+
+def test_purge_refuses_empty_extraction_without_deleting_any_pdf(tmp_path, monkeypatch):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf1 = cfg.paths.pdf_dir / "narou" / "a.pdf"
+    pdf2 = cfg.paths.pdf_dir / "narou" / "b.pdf"
+    pdf1.parent.mkdir(parents=True)
+    pdf1.write_bytes(b"first PDF")
+    pdf2.write_bytes(b"second PDF")
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda p: "valid text" if p == pdf1 else "  ")
+    with pytest.raises(ValueError, match="no text extracted"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert pdf1.read_bytes() == b"first PDF"
+    assert pdf2.read_bytes() == b"second PDF"
+    assert not (cfg.paths.dataset_dir / sd.MANIFEST).exists()
+
+
+def test_purge_refuses_unrecognized_pdf_without_deleting_any_pdf(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    known = cfg.paths.pdf_dir / "narou" / "known.pdf"
+    unknown = cfg.paths.pdf_dir / "other" / "important.PDF"
+    known.parent.mkdir(parents=True)
+    unknown.parent.mkdir(parents=True)
+    known.write_bytes(b"known")
+    unknown.write_bytes(b"unknown")
+    with pytest.raises(ValueError, match="unrecognized PDF location"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert known.read_bytes() == b"known"
+    assert unknown.read_bytes() == b"unknown"
+
+
+def test_purge_preserves_unrelated_files_and_short_existing_text(tmp_path, monkeypatch):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf = cfg.paths.pdf_dir / "narou" / "known.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"pdf")
+    sidecar = cfg.paths.pdf_dir / "notes.txt"
+    sidecar.write_text("do not delete", encoding="utf-8")
+    existing = cfg.paths.raw_dir / "narou" / "texts" / "known.txt"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("short", encoding="utf-8")
+    with pytest.raises(ValueError, match="too short"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert pdf.read_bytes() == b"pdf"
+    assert existing.read_text(encoding="utf-8") == "short"
+    existing.unlink()
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda _: "some extracted text")
+    sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert not pdf.exists()
+    assert sidecar.read_text(encoding="utf-8") == "do not delete"
+
+
+def test_purge_refuses_blank_or_invalid_existing_text(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf = cfg.paths.pdf_dir / "narou" / "known.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"pdf")
+    text = cfg.paths.raw_dir / "narou" / "texts" / "KNOWN.txt"
+    text.parent.mkdir(parents=True)
+    text.write_text(" " * 200, encoding="utf-8")
+    with pytest.raises(ValueError, match="blank"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert pdf.read_bytes() == b"pdf"
+    assert text.read_text(encoding="utf-8") == " " * 200
+    text.write_bytes(b"\xff" * 200)
+    with pytest.raises(UnicodeDecodeError):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert pdf.read_bytes() == b"pdf"
+    assert text.read_bytes() == b"\xff" * 200
