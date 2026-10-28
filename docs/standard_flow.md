@@ -125,6 +125,15 @@ Next: python3 scripts/story_project.py --root works relay submit prj-seaside --f
 - 既定の `<root>` は `runs/projects/` だが、**`runs/` は git 管理外**でセッションを
   越えて残る保証がない。残す作品は `--root works`（リポジトリ内・版管理）に置く。
   実験として登録する走りは `experiments/<id>/` に置く。
+- 回答待ちの復元には `project.json`・`nodes/`・`relay/` と **作品内の `runs/`** を
+  一緒に保存する。内部 `runs/` はルート直下の `/runs/` と異なり Git ignore 対象ではない。
+  個人情報・秘密・権利・サイズを確認して GitHub に commit / push する。`out/` や
+  `build/` は Arena のスナップショット対象外。保存先は `scripts/check_persistent_paths.py`
+  で事前確認する。チェックの成功自体は保存の保証ではない。
+- project 内の relay 待機パスは移動後の作品ディレクトリへ解決する。旧チェックポイントは
+  既定の Arena relay だけを互換対応する。外部 operator や旧版のカスタム relay は別途
+  保存場所と設定の復元が必要。固定台本による別 Git チェックアウトからの復元テストは
+  実モデルの再現性を保証しない。
 - 最終成果物は `render --out <root>/<project_id>/manuscript.md` の markdown である（検査マーカー込みの正本）。
   人間が読むときは `render --reader` で章見出し付き・マーカーなしの読書用コピーも出せる。
   JSON（`runs/`）を開かないと本文が読めない状態を標準にしない。
