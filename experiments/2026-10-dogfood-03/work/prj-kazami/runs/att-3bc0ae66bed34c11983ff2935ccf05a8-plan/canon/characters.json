@@ -1,0 +1,65 @@
+{
+  "characters": [
+    {
+      "id": "hina",
+      "name": "佐倉ヒナ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "霧ヶ原",
+      "age_at_start": 29,
+      "birthday_day": 55,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "測候所の観測員。朝九時に風速と気温を測り、日誌に書く"
+    },
+    {
+      "id": "sada",
+      "name": "宮内サダ",
+      "aliases": [
+        "サダさん"
+      ],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢根",
+      "age_at_start": 68,
+      "birthday_day": 300,
+      "knows": [
+        "F-04",
+        "F-05"
+      ],
+      "notes": "先代ツカサの妻。仏壇の引き出しに古い観測日誌をしまっている"
+    },
+    {
+      "id": "kuro",
+      "name": "黒沢タケシ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢根",
+      "age_at_start": 41,
+      "birthday_day": 180,
+      "knows": [
+        "F-03",
+        "F-06"
+      ],
+      "notes": "町役場の職員。測候所の閉鎖と土地の転用を進めている"
+    },
+    {
+      "id": "tsukasa",
+      "name": "佐倉ツカサ",
+      "aliases": [
+        "先代"
+      ],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "霧ヶ原",
+      "age_at_start": 52,
+      "birthday_day": 10,
+      "knows": [],
+      "notes": "ヒナの叔父で、先代の観測員。三年前に病死した"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "chapters": [
+    {
+      "chars": 1200,
+      "day": 1,
+      "id": "ch01",
+      "injected": [],
+      "location": "湯ノ瀬",
+      "markers": 6
+    },
+    {
+      "chars": 1200,
+      "day": 4,
+      "id": "ch02",
+      "injected": [],
+      "location": "奥湯",
+      "markers": 6
+    },
+    {
+      "chars": 1201,
+      "day": 7,
+      "id": "ch03",
+      "injected": [],
+      "location": "湯ノ瀬",
+      "markers": 5
+    }
+  ],
+  "chars": 3601,
+  "must_include": {
+    "hits": {},
+    "rate": 1.0
+  },
+  "task": {
+    "avoid": [],
+    "control": "creative-project",
+    "genre": "novel",
+    "id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+    "logline": "源泉の温度が三年続けて下がっている山あいの温泉町・湯ノ瀬。配湯係の若い女性が、町が隠している古い湯脈の記録を追う。源泉を守る古老と、観光に賭ける組合の若手は、それぞれ別の理由で記録を伏せている。",
+    "must_include": [],
+    "title_ja": "湯の目盛り"
+  },
+  "warnings_ja": [
+    "ch03: 1201 字（目安 1200〜1200 字の外）"
+  ]
+}

@@ -143,8 +143,12 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 - 読後の感想（長さ、説明過多、反復、会話、場面転換、伏線回収、文体）は、
   次の改善の材料として残す（摩擦ログとして `experiments/<id>/note.md` に残す）。
 - 章ごとの「目安 ◯◯ 字」は助言で、不合格にはならない（検査は矛盾とマーカーを見る）。
-  目安から外れた章があるときは、完成後の `relay status` / `relay submit` が `Warnings:` にその旨を出す。
+  単一値を指定したときは **±5% の許容幅**（`--target-chars 1200` なら 1140〜1260 字）として扱う。
+  許容幅から外れた章があるときだけ、完成後の `relay status` / `relay submit` が `Warnings:` にその旨を出す。
   短い・長いと感じたら、その章だけ `revise --chapter` で書き直す（手順6）。
+- `summary` は章の目安を許容幅つきで表示し、`revise` を重ねた作品では
+  「設計の累計（試行・修復）」と「このリビジョンでの作り直し」を Info に出す。
+  修復履歴は carried された設計書にも引き継がれる。
 
 ## 6. 続き・改訂・分岐・編纂へ進む
 
@@ -155,7 +159,9 @@ artifact・pending を横断して確認する。`doctor` の終了コードは 
 .venv/bin/python scripts/story_project.py --root works continue prj-seaside --add-chapters 1
 
 # 特定の章だけを書き直す（他の章はバイト単位でコピーされる）
-.venv/bin/python scripts/story_project.py --root works revise prj-seaside --chapter ch02
+# --note に「何を直すか」を書くと、依頼文の「改訂の意図」として生成側へ渡り、版にも記録される
+.venv/bin/python scripts/story_project.py --root works revise prj-seaside --chapter ch02 \
+  --note "同じ内容の台詞が二度出るので、後半を統合する。"
 
 # 完成版から分岐して別案の node を作る
 .venv/bin/python scripts/story_project.py --root works branch prj-seaside --node-id node-alt

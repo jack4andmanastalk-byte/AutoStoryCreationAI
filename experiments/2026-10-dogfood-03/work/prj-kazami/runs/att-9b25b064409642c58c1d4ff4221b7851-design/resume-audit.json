@@ -1,0 +1,72 @@
+{
+  "all_source_responses_consumed": true,
+  "delegated_responses": 1,
+  "requests": [
+    {
+      "mode": "resume",
+      "prompt_hash": "7c0281156a4648b4",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-brief-a1",
+      "source_response_index": 0
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "62e303799b7de923",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-brief-repair-a2",
+      "source_response_index": 1
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "952af3ce49581f8c",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-world-a1",
+      "source_response_index": 2
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "c65cc0ee47709a09",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-history-a1",
+      "source_response_index": 3
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "c5122765bd277030",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-character-a1",
+      "source_response_index": 4
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "b93a60205ef80ccb",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-relation-a1",
+      "source_response_index": 5
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "495389f67690d4a1",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-plot-a1",
+      "source_response_index": 6
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "ceb0cc4a630ed34c",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-scene-a1",
+      "source_response_index": 7
+    },
+    {
+      "mode": "delegate",
+      "origin": "unspecified",
+      "prompt_hash": "2c63fa5d3fa83496",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-s0-design-voice-a1",
+      "source_response_index": null
+    }
+  ],
+  "reused_responses": 8,
+  "schema": "project-resume-audit-v1",
+  "scope": "interrupted-run continuation; not strict offline replay or model reproducibility",
+  "source_attempt_id": "att-684c3d30b0a24c408c5c15867e9aaa82",
+  "source_run_id": "att-684c3d30b0a24c408c5c15867e9aaa82-design",
+  "source_sha256": {
+    "manifest": "2c3aa7f0f08d77437c78e3e2c9e9a1a333e0a612a4a66dfefde75e3ad49dc0a2",
+    "project_input": "ef5adfcdbe6009b44c9579d5e9fecdeb98e9b5f17f71c264a1f022c462e46502",
+    "responses": "1210de098b02740b5126e7255a718162d5dcc5dd71d29a82b308d2cd1d5dc115"
+  },
+  "source_unchanged": true
+}

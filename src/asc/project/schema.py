@@ -31,8 +31,11 @@ STAGE_STATUSES = {
 DERIVED_KINDS = {"revise", "branch"}
 DERIVED_FIELDS = {
     "kind", "source_node_id", "source_revision_id", "source_runs",
-    "chapters", "design",
+    "chapters", "design", "note",
 }
+
+#: Upper bound for the operator's revision note (``revise --note``).
+NOTE_MAX_CHARS = 1000
 
 _ID_RE = re.compile(r"[a-z0-9][a-z0-9._-]{0,62}")
 _SHA256_RE = re.compile(r"[0-9a-f]{64}")
@@ -256,6 +259,14 @@ def validate_derived(data: Any, field: str = "derived") -> dict[str, Any]:
             if value in seen:
                 raise ProjectValidationError(f"{field}.{key} repeats {value}")
             seen.add(value)
+    note = data.get("note")
+    if note is not None:
+        if not isinstance(note, str):
+            raise ProjectValidationError(f"{field}.note must be a string")
+        if len(note.strip()) > NOTE_MAX_CHARS:
+            raise ProjectValidationError(
+                f"{field}.note must be at most {NOTE_MAX_CHARS} characters"
+            )
     return data
 
 

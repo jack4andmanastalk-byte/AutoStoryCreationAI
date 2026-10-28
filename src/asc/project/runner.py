@@ -29,7 +29,7 @@ from ..pipeline import (
     build_plan,
     build_story,
 )
-from ..pipeline.design import DOCS
+from ..pipeline.design import DOCS, carried_row
 from ..story.canon import Canon, load_canon
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
 from .continuation import (
@@ -47,7 +47,9 @@ from .revise import (
     ReviseError,
     context_from_revision,
     copy_carried_files,
+    design_history,
     read_context,
+    run_dir,
     runs_for_revision,
 )
 from .schema import SCHEMA_VERSION
@@ -193,8 +195,8 @@ def _project_brief(attempt: _Attempt) -> str:
         f"- Node: `{attempt.snapshot.root_node.id}`",
         f"- Revision: `{attempt.snapshot.revision.id}`",
         f"- 章数: {pipeline.chapters}",
-        f"- 目安: 各章 {pipeline.chapter_target[0]} 字"
-        f"（全体 {pipeline.total_target[0]} 字）",
+        f"- 目安: 各章 {pipeline.chapter_target[0]}〜{pipeline.chapter_target[1]} 字"
+        f"（全体 {pipeline.total_target[0]}〜{pipeline.total_target[1]} 字）",
         "",
         f"前提: {spec.premise}",
         "",
@@ -386,6 +388,7 @@ class ProjectRunner:
         world_binding_id: str | None = None,
         seed: int = 0,
         temperature: float | None = None,
+        note: str = "",
     ) -> ProjectRunResult:
         """Create a new revision that regenerates only the selected content.
 
@@ -403,7 +406,7 @@ class ProjectRunner:
             runs = self._source_runs(project_id, snapshot, source)
             context = self._revise_context(
                 project_id, snapshot, source, runs,
-                kind="revise", chapters=chapters, design=design,
+                kind="revise", chapters=chapters, design=design, note=note,
             )
             new_spec = self._derived_spec(
                 source, title=title, premise=premise,
@@ -450,6 +453,7 @@ class ProjectRunner:
         world_binding_id: str | None = None,
         seed: int = 0,
         temperature: float | None = None,
+        note: str = "",
     ) -> ProjectRunResult:
         """Create a what-if node from one revision, regenerating only what is asked.
 
@@ -466,7 +470,7 @@ class ProjectRunner:
             runs = self._source_runs(project_id, source_snapshot, source)
             context = self._revise_context(
                 project_id, source_snapshot, source, runs,
-                kind="branch", chapters=chapters, design=design,
+                kind="branch", chapters=chapters, design=design, note=note,
             )
             new_spec = self._derived_spec(
                 source, title=title, premise=premise,
@@ -565,11 +569,12 @@ class ProjectRunner:
         self, project_id: str, snapshot: ProjectSnapshot,
         source: WorkNodeRevision, runs: dict[str, str], *,
         kind: str, chapters: tuple[str, ...], design: tuple[str, ...],
+        note: str = "",
     ) -> ReviseContext:
         try:
             return read_context(
                 self.store, project_id, snapshot.root_node.id, source.id, runs,
-                kind=kind, chapters=chapters, design=design,
+                kind=kind, chapters=chapters, design=design, note=note,
             )
         except ReviseError as exc:
             raise ProjectRunError(str(exc), project_id=project_id) from exc
@@ -606,7 +611,7 @@ class ProjectRunner:
         kind: str, source_node_id: str, source_revision_id: str,
         runs: dict[str, str], context: ReviseContext,
     ) -> dict[str, Any]:
-        return {
+        record: dict[str, Any] = {
             "kind": kind,
             "source_node_id": source_node_id,
             "source_revision_id": source_revision_id,
@@ -614,6 +619,9 @@ class ProjectRunner:
             "chapters": list(context.chapters),
             "design": list(context.design),
         }
+        if context.note:
+            record["note"] = context.note
+        return record
 
     def _copy_world_binding(
         self, project_id: str, world_binding_id: str | None, *,
@@ -1404,10 +1412,20 @@ class ProjectRunner:
                         project_id=project_id,
                     )
                 carried_docs[name] = raw.decode("utf-8")
+            history: dict[str, dict[str, Any]] = {}
+            parent_design_run = context.parent_runs.get("design")
+            if parent_design_run:
+                try:
+                    history = design_history(
+                        run_dir(self.store, project_id, parent_design_run) / "design"
+                    )
+                except ReviseError:
+                    history = {}
             return build_design(
                 attempt.pipeline.task, provider, ledger, canon,
                 temperature=config.temperature, seed=config.seed,
                 docs=context.design, carried_docs=carried_docs,
+                carried_meta=history,
             )
         return build_design(
             attempt.pipeline.task, provider, ledger, canon,
@@ -1439,12 +1457,12 @@ class ProjectRunner:
                 name for name in context.carried_design
                 if f"design/{name}.json" in copied_set
             )
+            history = design_history(context.design_dir)
             ledger.write_json("design.json", {
                 "task": attempt.pipeline.task.id,
                 "carried": carried_names,
                 "docs": {
-                    name: {"status": "carried", "attempts": 0, "repairs": 0,
-                           "findings": 0}
+                    name: carried_row(history.get(name))
                     for name in carried_names
                 },
                 "unresolved": [],

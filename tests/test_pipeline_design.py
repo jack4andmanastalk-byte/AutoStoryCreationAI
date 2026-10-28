@@ -113,7 +113,7 @@ def test_brief_prompt_matches_the_mechanical_element_and_axis_checks(
     assert "10 字以上" in prompt
     report = json.loads((ledger.path / "design" / "brief.report.json"
                          ).read_text(encoding="utf-8"))
-    assert report["prompt"]["version"] == "1.1"
+    assert report["prompt"]["version"] == "1.2"
 
 
 def test_unknown_document_is_a_programmer_error(task, responses, tmp_path):

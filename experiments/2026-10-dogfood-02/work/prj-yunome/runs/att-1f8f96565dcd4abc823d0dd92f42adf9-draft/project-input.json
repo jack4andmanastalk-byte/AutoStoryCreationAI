@@ -1,0 +1,213 @@
+{
+  "attempt_id": "att-1f8f96565dcd4abc823d0dd92f42adf9",
+  "continuation": null,
+  "input_artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/brief.md",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "53976c03bf45e8612ba471c345ef20a6d01ff54ff9c813e7cfb069157be90bd9"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/plan.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "c145390355bafd04881d90e87d63300e65e5a4cbf5054c87398b225078cc97a5"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/characters.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "95dc942b3b4f8a98ff556a5668df00dfca20c7670917c8432d22a0ef165bd873"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/facts.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "ba7979d970aa1a9e99aab212d5571c58ec22d98b8a63eae7a23b895d6c963c27"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "a50fa9b53b43338d04414d4f0bea8a09db48091d3457754d2b3feb939a73775d"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/locations.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "fe4d0c6bb5e14990d1cb4a663e0d9c561a40754c573038caaa1b02aa9fb5e916"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/suppressions.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/timeline.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "db28ce06534f7b923d30221975763583437c2249b318037c158abfeaa38a7d80"
+    },
+    {
+      "artifact_id": "plan-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/resume-audit.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "2f92de6dabc497a039d83e1e95946ae4fce0efee90149797c0b014f38522055c"
+    },
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "f54231c8176b86dc7c003f43a31f79afc397b9ad470bdd6d1f6cf235964b3074"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/brief.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "835345577ecac12a667916a136629247989e725f564df4a8e91b34911f092828"
+    },
+    {
+      "artifact_id": "design-design-brief.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/brief.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "3ba917093fcaa619266b6de4d5dafe5744003183e17500a846d44ed8553b3a93"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/character.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "0d64487865b33ef2ae161a9ce016f3cf73613230f115ae4f173fdb80f23f2c41"
+    },
+    {
+      "artifact_id": "design-design-character.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/character.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/history.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "e2f758c17d0fb15c413c3724a16b8687e5e3d2ea8c48a8bdedff0136ee70c65a"
+    },
+    {
+      "artifact_id": "design-design-history.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/history.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "6264d8fc0286bdc9be284377af6ccd9c82c7b6bca5a276fd825e2b601ee25324"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/plot.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "5da4744981e1b2b1ac42b1e456cf5b883351e287905e8c77c7e25101b15ffe2a"
+    },
+    {
+      "artifact_id": "design-design-plot.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/plot.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/relation.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "793ae9a6ab603ef56c21316951b72bd8cb79a60e5b1bfc3546f6ecda6449fd2b"
+    },
+    {
+      "artifact_id": "design-design-relation.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/relation.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/scene.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "19344777ed7a7481a0171c690f474f877c65fb15fceb55e7ff6274a2e081d036"
+    },
+    {
+      "artifact_id": "design-design-scene.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/scene.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "cbd9ce6a99ab809ca1ca5a2fa3b993dcfaecd9f56dde6feb155fc4ada9b3e84d"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/voice.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "68e91148fb03ac66fde7494e19b8677076716e1dbc57d55941ab4b9bcc20728e"
+    },
+    {
+      "artifact_id": "design-design-voice.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/voice.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/world.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "14929fe91cf0b0b3d919d98c68e297588baaf467f63c623c69432c3d0217ece7"
+    },
+    {
+      "artifact_id": "design-design-world.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/design/world.report.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+    },
+    {
+      "artifact_id": "design-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-a325b21408c74746914f48b554729066-design/resume-audit.json",
+      "producer_run_id": "att-a325b21408c74746914f48b554729066-design",
+      "sha256": "bdc74b59035d7cf4269e2bd678e3cbe2e296f360ca83381d9cec31715ee9ef3f"
+    }
+  ],
+  "node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "project_id": "prj-yunome",
+  "resume_of": "att-4ae7fc9138cf47b6822e1d8128b56247-draft",
+  "resume_source_responses_sha256": "d436def6aba02462bb8ab9b9c932f19edcfe353a3c87607de229381c79387495",
+  "retry_of": null,
+  "revision_id": "rev-c7cce9c3844e4d1996a2e0df0116fbae",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 3,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "源泉の温度が三年続けて下がっている山あいの温泉町・湯ノ瀬。配湯係の若い女性が、町が隠している古い湯脈の記録を追う。源泉を守る古老と、観光に賭ける組合の若手は、それぞれ別の理由で記録を伏せている。",
+    "target_chars_per_chapter": 1200,
+    "title": "湯の目盛り"
+  },
+  "spec_sha256": "8a13261bc620d611e5dd220110001bd224912a1ca9af504ae9af84cfe14c9c13",
+  "stage": "draft"
+}

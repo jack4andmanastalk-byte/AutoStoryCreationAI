@@ -1,0 +1,17 @@
+{
+  "attempts": 1,
+  "checks_failed": 0,
+  "doc": "plot",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "prompt": {
+    "digest": "d5889483d2b77e7f",
+    "name": "design-plot",
+    "version": "1.0"
+  },
+  "repairs": 0,
+  "status": "clean"
+}

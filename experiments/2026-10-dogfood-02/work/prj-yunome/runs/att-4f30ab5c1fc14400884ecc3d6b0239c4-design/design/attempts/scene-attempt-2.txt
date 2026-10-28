@@ -1,0 +1,87 @@
+{
+  "scenes": [
+    {
+      "id": "s01",
+      "chapter": "ch01",
+      "purpose": "ミナが朝の測定を終え、三つの湯屋の掲示板に数字を書く。",
+      "conflict": "掲示する数字と自分の帳面の数字が、二号湯で三分ずれている。",
+      "change": "ミナは組合に問い合わせず、帳面の余白に測り直した時刻を書き足す。",
+      "tension": "quiet",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01"], "gained": ["F-02"]}
+      ],
+      "disclosure": {"disclosed": ["F-02"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s02",
+      "chapter": "ch01",
+      "purpose": "ミナが源治の家へ朝の報告に寄り、父の帳面を見せずに古い温度計の話を振る。",
+      "conflict": "源治は湯口の話になると黙り、代わりに手の火傷の手当てを頼む。",
+      "change": "ミナは目盛りを削られた古い温度計を預かり、父の帳面の最後の頁が白紙だと知る。",
+      "tension": "curiosity",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01", "F-02"], "gained": ["F-04"]},
+        {"character": "genji", "entry": ["F-03", "F-05"], "gained": []}
+      ],
+      "disclosure": {"disclosed": ["F-04"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s03",
+      "chapter": "ch02",
+      "purpose": "ミナが歩いて一日かけて奥湯へ行き、塞がれた旧湯口を自分の目で見る。",
+      "conflict": "同行した源治は、崩落という町の説明を繰り返すだけで漆喰に触れない。",
+      "change": "ミナは漆喰の詰め方と源治の左手の甲の火傷が同じ形をしていると気づき、問い詰めずに「いつ閉じたんですか」とだけ聞く。",
+      "tension": "suspense",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01", "F-02", "F-04"], "gained": ["F-03"]},
+        {"character": "genji", "entry": ["F-03", "F-05"], "gained": []}
+      ],
+      "disclosure": {"disclosed": ["F-03"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": ["fs-002"]}
+    },
+    {
+      "id": "s04",
+      "chapter": "ch02",
+      "purpose": "帰り道の茶屋で、ミナが源治に封鎖の夜のことを聞き、源治が十五年前の作業を認める。",
+      "conflict": "源治は封鎖が古老会の決定だったと言い、ユウジはそこへ押印を求めて現れる。",
+      "change": "ミナは封鎖が人の手によるものだと確信し、組合の年報の上書きの紙に気づく。",
+      "tension": "surprise",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01", "F-02", "F-03", "F-04"], "gained": ["F-05"]},
+        {"character": "yuji", "entry": ["F-06"], "gained": []}
+      ],
+      "disclosure": {"disclosed": ["F-05"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s05",
+      "chapter": "ch03",
+      "purpose": "ミナが組合の事務所で、年報の上書きの紙と申請書の赤インクの日付をユウジの前で並べる。",
+      "conflict": "ユウジは隠したことを認めつつ、冬の予約と年度内の許可を盾に数字を戻すよう求める。",
+      "change": "ミナは下がった数字をそのまま掲示することを選び、書式の変更を求める書面を自分の名で出す。",
+      "tension": "irony",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01", "F-02", "F-03", "F-04", "F-05"], "gained": ["F-06"]},
+        {"character": "yuji", "entry": ["F-06"], "gained": []}
+      ],
+      "disclosure": {"disclosed": ["F-06", "F-03"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": ["fs-003"]}
+    },
+    {
+      "id": "s06",
+      "chapter": "ch03",
+      "purpose": "ミナが目盛りを削られた古い温度計を湯屋の入口に提げ、新しい目盛りを自分で書き入れる。",
+      "conflict": "源治は古老会を退くと告げ、ユウジは町会に異議の書面を回したうえで掘削の条件を引き受ける。",
+      "change": "ミナは下がり続ける湯を下がるまま書き続ける側に残り、毎朝同じ時刻に測り直す。",
+      "tension": "deadline",
+      "knowledge": [
+        {"character": "mina", "entry": ["F-01", "F-02", "F-03", "F-04", "F-05", "F-06"], "gained": []},
+        {"character": "genji", "entry": ["F-03", "F-05"], "gained": []}
+      ],
+      "disclosure": {"disclosed": [], "withheld": []},
+      "foreshadows": {"planted": [], "paid": ["fs-001"]}
+    }
+  ]
+}

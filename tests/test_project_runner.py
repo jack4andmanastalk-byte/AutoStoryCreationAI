@@ -59,8 +59,10 @@ def test_work_spec_adapter_uses_project_identity_and_targets(tmp_path: Path):
     assert adapted.task.control == "creative-project"
     assert adapted.task.must_include == ()
     assert adapted.chapters == 5
-    assert adapted.chapter_target == (1200, 1200)
-    assert adapted.total_target == (6000, 6000)
+    # A single target becomes an advisory band (F-30): a 1201-character
+    # chapter against a 1200-character target used to warn on every draft.
+    assert adapted.chapter_target == (1140, 1260)
+    assert adapted.total_target == (5700, 6300)
 
 
 def test_runner_completes_three_stage_runs_and_verifies_artifacts(tmp_path: Path):
@@ -201,3 +203,34 @@ def test_cli_run_and_status_in_another_process(tmp_path: Path):
     assert persisted["stages"] == run_status["stages"]
     assert persisted["checkpoints"] == run_status["checkpoints"]
     assert persisted["artifact_refs"] == run_status["artifact_refs"]
+
+
+def _chapter_near(chars: int, day: int) -> str:
+    body = "潮の記録を読み直し、灯台の窓を開ける。" * 60
+    return (
+        f"{{{{time: day={day}}}}}{{{{location: 灯台}}}}\n"
+        + body[:chars].rstrip() + "\n"
+    )
+
+
+def test_a_chapter_inside_the_advisory_band_draws_no_length_warning(tmp_path: Path):
+    """F-30: a single target is an advisory band, not an exact count.
+
+    A 1180-character chapter against a 1200-character target used to be
+    "outside 1200〜1200".  The band is 1140〜1260, so the same chapter is silent
+    and the writer is not asked to trim twenty characters.
+    """
+    store = ProjectStore(tmp_path)
+    snapshot = make_project(store)
+    scripted = project_responses()
+    scripted["draft:ch01"] = _chapter_near(1180, 1)
+    result = ProjectRunner(store).run(snapshot.project.id, ScriptedProvider(scripted))
+
+    draft_dir = (
+        store.project_dir(snapshot.project.id) / "runs" / result.stage_runs["draft"]
+    )
+    meta = json.loads((draft_dir / "draft.json").read_text(encoding="utf-8"))
+    chapter = next(row for row in meta["chapters"] if row["id"] == "ch01")
+    assert 1140 <= chapter["chars"] <= 1260
+    # The other chapters are far shorter; only ch01 is asked about here.
+    assert not any(warning.startswith("ch01:") for warning in meta["warnings_ja"])

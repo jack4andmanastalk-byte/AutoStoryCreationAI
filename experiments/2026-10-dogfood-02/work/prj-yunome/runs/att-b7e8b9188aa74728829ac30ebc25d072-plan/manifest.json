@@ -1,0 +1,33 @@
+{
+  "artifacts": [
+    "brief.md",
+    "canon/characters.json",
+    "canon/facts.json",
+    "canon/foreshadowing.json",
+    "canon/locations.json",
+    "canon/suppressions.json",
+    "canon/timeline.json",
+    "manifest.json",
+    "plan.json",
+    "project-input.json",
+    "revise.json"
+  ],
+  "error": null,
+  "finished_at": "2026-10-28T02:12:45Z",
+  "git_commit": "df8a6b8ad6a0b2aa3ddf1ff9a8ac2d74d2565be5",
+  "model": null,
+  "model_version": null,
+  "prompt_hashes": {},
+  "protocol_version": "asc-project-v1",
+  "provider": "carried",
+  "response_count": 0,
+  "responses_sha256": null,
+  "run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+  "seed": 0,
+  "started_at": "2026-10-28T02:12:45Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "temperature": 0.6,
+  "usage": {}
+}

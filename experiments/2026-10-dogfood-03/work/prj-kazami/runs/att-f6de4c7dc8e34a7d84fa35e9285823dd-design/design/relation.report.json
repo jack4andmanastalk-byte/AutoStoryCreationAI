@@ -1,0 +1,17 @@
+{
+  "attempts": 1,
+  "checks_failed": 0,
+  "doc": "relation",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "prompt": {
+    "digest": "f8c3e64187631141",
+    "name": "design-relation",
+    "version": "1.0"
+  },
+  "repairs": 0,
+  "status": "clean"
+}

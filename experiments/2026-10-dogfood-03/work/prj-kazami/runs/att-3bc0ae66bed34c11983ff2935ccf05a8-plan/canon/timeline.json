@@ -1,0 +1,19 @@
+{
+  "chapters": [
+    {
+      "id": "ch01",
+      "day": 1,
+      "location": "霧ヶ原"
+    },
+    {
+      "id": "ch02",
+      "day": 3,
+      "location": "沢根"
+    },
+    {
+      "id": "ch03",
+      "day": 6,
+      "location": "霧ヶ原"
+    }
+  ]
+}

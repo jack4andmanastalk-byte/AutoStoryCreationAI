@@ -1,0 +1,114 @@
+{
+  "brief": {
+    "theme_ja": "数字が正しいことを、誰が保証するのか。",
+    "protagonist_ja": "配湯係の瀬川ミナ（27）。湯の温度を毎日つける仕事に誇りを持つ。記録が書き換えられることを恐れ、父が何を守ったのかを知りたい。",
+    "setting_ja": "山あいの温泉町・湯ノ瀬と、そこから歩いて一日の奥湯。昭和の終わりごろ、冬の初め。",
+    "tone_ja": "湯気の向こうの静けさ。感情は説明せず、温度計と帳面の数字に預ける。",
+    "turn_ja": "奥湯の旧湯口は崩落ではなく、十五年前に町の人間の手で塞がれたと分かる。",
+    "ending_ja": "記録は直らない。ミナは新しい目盛りを自分でつけ、下がる湯を見届ける側に回る。"
+  },
+  "characters": [
+    {
+      "id": "mina",
+      "name": "瀬川ミナ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 27,
+      "birthday_day": 33,
+      "knows": ["F-01", "F-02"],
+      "notes": "配湯係。朝と夕に各湯屋の温度を測り、帳面につける"
+    },
+    {
+      "id": "genji",
+      "name": "桐生源治",
+      "aliases": ["源じい"],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 74,
+      "birthday_day": 210,
+      "knows": ["F-03", "F-05"],
+      "notes": "元湯守。左手の甲に古い火傷の跡がある"
+    },
+    {
+      "id": "yuji",
+      "name": "高梨ユウジ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 31,
+      "birthday_day": 120,
+      "knows": ["F-06"],
+      "notes": "観光組合の職員。新しい温泉スタンドの計画を進めている"
+    },
+    {
+      "id": "soichi",
+      "name": "瀬川宗一",
+      "aliases": [],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 41,
+      "birthday_day": 5,
+      "knows": [],
+      "notes": "ミナの父。十五年前に病死した元湯守"
+    }
+  ],
+  "facts": [
+    {
+      "id": "F-01",
+      "summary": "湯ノ瀬の源泉温度は三年前から毎年〇・四度ずつ下がっている",
+      "terms": ["温度", "〇・四度"],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-02",
+      "summary": "町の公式な湯脈調査は昭和三十八年で終わったと記録されている",
+      "terms": ["昭和三十八年", "調査"],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-03",
+      "summary": "奥湯の旧湯口は崩落ではなく、十五年前に人の手で塞がれている",
+      "terms": ["旧湯口", "崩落"],
+      "setup": "ch02"
+    },
+    {
+      "id": "F-04",
+      "summary": "ミナの父・宗一は十五年前に病死しており、以後の場面で行為者にならない",
+      "terms": ["宗一"],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-05",
+      "summary": "源治は十五年前の湯口封鎖の作業に加わった一人である",
+      "terms": ["封鎖", "塞いだ"],
+      "setup": "ch02"
+    },
+    {
+      "id": "F-06",
+      "summary": "ユウジは温度低下を伏せたまま新源泉の掘削許可を進めている",
+      "terms": ["掘削", "許可"],
+      "setup": "ch02"
+    }
+  ],
+  "locations": [
+    {"id": "湯ノ瀬", "travel_days": {"奥湯": 1}},
+    {"id": "奥湯", "travel_days": {"湯ノ瀬": 1}}
+  ],
+  "timeline": {
+    "chapters": [
+      {"id": "ch01", "day": 1, "location": "湯ノ瀬"},
+      {"id": "ch02", "day": 4, "location": "奥湯"},
+      {"id": "ch03", "day": 7, "location": "湯ノ瀬"}
+    ]
+  },
+  "foreshadowing": [
+    {"id": "fs-001", "description": "目盛りの削られた古い温度計", "setup": "ch01", "payoff": "ch03"},
+    {"id": "fs-002", "description": "源治の左手の甲の火傷の跡", "setup": "ch01", "payoff": "ch02"},
+    {"id": "fs-003", "description": "組合の書類で日付だけが赤インクで直されている", "setup": "ch02", "payoff": "ch03"}
+  ]
+}

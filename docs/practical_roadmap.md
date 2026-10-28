@@ -54,10 +54,15 @@
 ## 3. 現在地
 
 - S1全体（plan → 8設計 → draft → 監査）は実応答で通った記録がある（バッチB/B2）。
-- `design-history`（v1.1）と `design-scene`（v1.1）は、検査だけが知っていた契約をプロンプトへ明記済み。
+- `design-history`（v1.2）・`design-brief`（v1.2）・`design-scene`（v1.1）は、検査だけが知っていた契約
+  （異説の文字列一致、ログラインへの四要素の逐語一致、`planted` に canon の布石を書かない）を
+  プロンプトへ明記済み。
 - 継続性監査は、死者の行為・発話（`high`）と、参照としての言及（`observations` の `dead_character_reference`）を分けて記録できる。
 - 標準自動創作フローは `scripts/story_project.py`（既定 provider = Arena relay）に一本化され、`relay status` / `relay submit` による1ラウンド単位の往復、`render --reader` / `compose --reader` による読書用原稿、`summary` による作品情報・設定台帳・8設計書・検査要約（Blocker / Warning / Observation と次に直すコマンド）の Markdown 出力が揃っている。
 - 実応答 dogfood（[`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)）で、単体3章・1章改訂・第4章追加（continuation）・設計1文書回復・子作品の追加と親子編纂・共有 `world` 台帳登録と4種編纂（年代記・地誌・文化誌・作品集）まで一通り実応答で完走済み。
+- 2作目の実応答 dogfood（[`experiments/2026-10-dogfood-02/`](../experiments/2026-10-dogfood-02/note.md)、16ラウンド）で摩擦 F-36〜F-43 を採取し、字数の許容幅（F-39）、carried 設計書の修復履歴（F-40）、`revise --note`（F-41）を実装済み。
+- 3作目の実応答 dogfood（[`experiments/2026-10-dogfood-03/`](../experiments/2026-10-dogfood-03/note.md)、19ラウンド・3章版から4章版へ `continue`）で、字数の許容幅が警告を実際に消すこと（帯内4章で警告0）、
+  carried 設計書の履歴が `continue` を挟んでも積み上がること（`brief` の試行2・修復1を保持）を確認した。摩擦は F-44〜F-47。
 
 ## 4. タスク整理
 
@@ -80,6 +85,8 @@
 | U-08 | P1 | 原稿出力を読める形にそろえる | JSONを開かずに、結合原稿、作品情報、検査要約を読める |
 | U-09 | P2 | 長期・世界スケールのdogfoodを行う | 複数作品、複数時間軸、長期中断をまたいで、実際に必要な運用機能が見える |
 | U-10 | P2 | 規模対応は引き金が再現したときだけ行う | `doctor` や `compose` の実測が既定の目安を超えた場合に限り、index等を検討する |
+| U-11 | P1 | 字数の目安を許容幅で扱う | 単一値の指定でも ±5% の幅の外にだけ警告が出て、±数十字の調整が不要になる（F-39） |
+| U-12 | P1 | 作り直しの履歴を人間向け要約に残す | carried した設計書の試行・修復が `summary` に出て、`revise --note` の意図も読める（F-40 / F-41） |
 | M-01 | 保守 | READMEと `protocol.md` の状態表を現在へ同期する | B/B2と監査変更が反映され、研究上の主張範囲は変わらない |
 
 ### 後置するもの
@@ -209,3 +216,34 @@
   - `runs/` が存在しない環境でも `<project>/relay/responses/` の受理応答から canon と8設計書を復元して要約を表示できるようにした（F-26）。
   - 実応答 dogfood の親作品・子作品の要約を [`experiments/2026-10-dogfood-01/project_summary.md`](../experiments/2026-10-dogfood-01/project_summary.md) と [`child_summary.md`](../experiments/2026-10-dogfood-01/child_summary.md) に出力した。
 - **M-01**: [`README.md`](../README.md) と [`docs/protocol.md`](protocol.md) §10 の状態表に、バッチ B / B2（S1 全体の事前登録 1 標本実走り 2 件）、継続性監査の死者言及分離（`dead_character_reference` を `observations` に記録）、および標準創作フロー（`story_project.py`）を反映した（研究上の主張範囲・L2/L3 凍結は不変）。
+
+### U-11 / U-12 字数の許容幅・作り直しの履歴・改訂の意図（2026-10-28）
+
+[`experiments/2026-10-dogfood-02/`](../experiments/2026-10-dogfood-02/note.md) の摩擦 F-36〜F-41 への対応。
+
+- **F-39 / U-11**: `asc.project.adapter.target_band` を追加し、`--target-chars 1200` のような単一値を
+  **±5%** の許容幅（1140〜1260字）として扱うようにした。draft の警告は幅の外だけで、
+  依頼文（`この章の目安`）・`brief.md`・`summary` も幅で表示する。1字違いの警告は消え、
+  書き手が ±数十字のために文章を削る必要がなくなった。
+- **F-40 / U-12**: `revise` / `continue` で carried する設計書は、元 run の `design.json` から
+  試行・修復・所見を引き継ぐ（`asc.pipeline.design.carried_row`、`asc.project.revise.design_history`）。
+  修復前のデータでも `summary` が元リビジョンの run から補う。あわせて Info に
+  「設計の累計（試行・修復）」と「このリビジョンでの作り直し（章・設計）」を追加した。
+  走り（run id）は環境依存なので `design.json` には書かず、録音済み応答の byte リプレイを保つ。
+- **F-41**: `revise` / `branch` に `--note "…"` を追加。依頼文の `## 改訂の意図` に入り、
+  `derived.note`（最大1000字）と `summary`（Info の「改訂の意図」）に残る。
+- **F-36 / F-37**: `design-brief` v1.1 → **v1.2**（四要素を埋めたログラインの実例）、
+  `design-history` v1.1 → **v1.2**（異説は「そのままの文字列」で含める）。検査は変えていない。
+- 回帰: `tests/test_carried_history_and_note.py`（新規）、`tests/test_project_runner.py`、
+  `tests/test_relay_round.py`、`tests/test_design_prompt_contracts.py`、
+  `tests/test_project_continuation.py`（strict offline replay の byte 一致を維持）。
+- 記録のみ: F-42（`run` は絶対パス・`submit` は相対パスの表示差）、F-43（`index.json` の pending 残り）。
+- **検証済み（2026-10-28、[`experiments/2026-10-dogfood-03/`](../experiments/2026-10-dogfood-03/note.md)）**:
+  4章ぶんの本文（1004 / 1010 / 1006 / 998 字）で字数警告は 0 件、依頼文の目安も最初から
+  `950〜1050 字` の幅で出た。`continue --add-chapters 1` 後の `design.json` は
+  `carried: brief, history, character, voice` と `brief {attempts: 2, repairs: 1, carried_history: true}` を保ち、
+  `summary` の Info も「設計の累計: 試行 9 回 / 修復 1 回」と carried 行の「元リビジョンの履歴を引き継ぎ」で一致した。
+- 残り: F-44（`logline_elements` の逐語一致で brief が 1 回修復になった）、
+  F-46（章追加時の `acts` / `scenes` の章網羅は人間の裁量）、F-47（Info の「設計の累計」が
+  リビジョン内合計であることの表記）。
+

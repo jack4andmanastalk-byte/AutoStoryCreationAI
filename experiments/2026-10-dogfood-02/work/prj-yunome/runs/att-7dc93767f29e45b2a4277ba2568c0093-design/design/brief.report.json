@@ -1,0 +1,36 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "brief",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "brief_ref": "brief",
+        "check": "logline_elements",
+        "message_ja": "四要素 'where'（湯の温度が下がり続ける温泉町・湯ノ瀬）がログラインに現れない。",
+        "severity": "medium"
+      },
+      {
+        "brief_ref": "brief",
+        "check": "logline_elements",
+        "message_ja": "四要素 'wants'（下がる湯の理由と、父が何を守ったのかを知ること）がログラインに現れない。",
+        "severity": "medium"
+      },
+      {
+        "brief_ref": "brief",
+        "check": "logline_elements",
+        "message_ja": "四要素 'obstacle'（記録を伏せたまま新源泉の掘削を進める観光組合と、口を閉ざす古老）がログラインに現れない。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

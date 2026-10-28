@@ -27,6 +27,7 @@ from typing import Any
 from ..pipeline.design import DOCS
 from ..story.continuity import audit_texts
 from ..story.text import without_markers
+from .adapter import format_band, target_band
 from .model import StageCheckpoint, WorkLink, WorkNode, WorkNodeRevision
 from .store import ProjectError, ProjectStore
 
@@ -136,6 +137,58 @@ def _revision_chain(
             break
         chain.append(current)
     return chain
+
+
+def _design_rows_by_revision(project_dir: Path) -> dict[str, dict[str, dict[str, Any]]]:
+    """Map revision id to per-document rows from every design run under ``runs/``.
+
+    Used only as a fallback: a carried document written before the history was
+    inherited has zeros in its own row, and the numbers it should show live in
+    the source revision's run.
+    """
+    rows: dict[str, dict[str, dict[str, Any]]] = {}
+    runs = project_dir / "runs"
+    if not runs.is_dir():
+        return rows
+    for input_path in sorted(runs.glob("*/project-input.json")):
+        payload = _read_json(input_path)
+        if not payload or payload.get("stage") != "design":
+            continue
+        revision_id = payload.get("revision_id")
+        if not revision_id:
+            continue
+        data = _read_json(input_path.parent / "design.json") or {}
+        docs = data.get("docs") if isinstance(data, dict) else None
+        if not isinstance(docs, dict):
+            continue
+        target = rows.setdefault(str(revision_id), {})
+        for name, row in docs.items():
+            if isinstance(row, dict):
+                target[str(name)] = row
+    return rows
+
+
+def _inherited_history(
+    history_by_revision: dict[str, dict[str, dict[str, Any]]],
+    rev_chain_ids: list[str], name: str,
+) -> dict[str, Any] | None:
+    """Find the source revision's row for a carried document (oldest data first)."""
+    for revision_id in rev_chain_ids[1:]:
+        row = (history_by_revision.get(revision_id) or {}).get(name)
+        if not row:
+            continue
+        try:
+            attempts = int(row.get("attempts") or 0)
+            repairs = int(row.get("repairs") or 0)
+            findings = int(row.get("findings") or 0)
+        except (TypeError, ValueError):
+            continue
+        if attempts or repairs or findings:
+            return {
+                "attempts": attempts, "repairs": repairs, "findings": findings,
+                "run_id": row.get("carried_from") or revision_id,
+            }
+    return None
 
 
 def _relay_purpose_json(
@@ -553,6 +606,7 @@ class ProjectSummary:
                     "chars_body": int(meta_row.get("chars") or chars_body),
                     "chars_with_markers": chars_with_markers,
                     "target_chars": target_per_ch,
+                    "target_band": format_band(target_band(target_per_ch)),
                     "markers": meta_row.get("markers"),
                 })
 
@@ -586,7 +640,26 @@ class ProjectSummary:
             "form": revision.spec.form,
             "chapter_count": revision.spec.chapter_count,
             "target_chars_per_chapter": target_per_ch,
+            "target_band": format_band(target_band(target_per_ch)),
             "total_target_chars": revision.spec.chapter_count * target_per_ch,
+            "total_target_band": format_band(
+                target_band(revision.spec.chapter_count * target_per_ch)
+            ),
+            "regenerated_chapters": [
+                str(item).removeprefix("text/").removesuffix(".md")
+                for item in ((draft_revise or {}).get("regenerated") or [])
+                if str(item).startswith("text/")
+            ],
+            "regenerated_design": list(
+                revision.derived.get("design") or []
+                if revision.derived is not None
+                else revision.continuation_design or []
+            ),
+            "revise_note": (
+                str(revision.derived.get("note"))
+                if revision.derived is not None and revision.derived.get("note")
+                else ""
+            ),
             "total_chars_body": total_body,
             "total_chars_with_markers": total_with_markers,
             "stages": {
@@ -674,6 +747,7 @@ class ProjectSummary:
 
         documents: list[dict[str, Any]] = []
         source_used = "missing"
+        history_by_revision = _design_rows_by_revision(project_dir)
 
         for name in DOCS:
             doc_data: dict[str, Any] | None = None
@@ -727,6 +801,18 @@ class ProjectSummary:
                 int(row_meta.get("repairs", (report_data or {}).get("repairs", 0)))
                 if isinstance(row_meta, dict) or isinstance(report_data, dict) else 0
             )
+            carried_from = None
+            if doc_status == "carried" and not (attempts or repairs or findings_count):
+                # Older runs wrote zeros for carried documents; the numbers
+                # live in the source revision's design run.
+                inherited = _inherited_history(
+                    history_by_revision, rev_chain_ids, name,
+                )
+                if inherited is not None:
+                    attempts = inherited["attempts"]
+                    repairs = inherited["repairs"]
+                    findings_count = inherited["findings"]
+                    carried_from = inherited.get("run_id")
 
             documents.append({
                 "doc": name,
@@ -736,6 +822,7 @@ class ProjectSummary:
                 "attempts": attempts,
                 "repairs": repairs,
                 "findings_count": findings_count,
+                "carried_from": carried_from,
                 "findings": findings_list,
                 "summary_lines": _summarize_design_doc(name, doc_data) if doc_data else [],
             })
@@ -744,6 +831,13 @@ class ProjectSummary:
             "source": source_used,
             "unresolved": sorted(unresolved_set),
             "carried": sorted(carried_set),
+            "attempts_total": sum(int(doc["attempts"]) for doc in documents),
+            "repairs_total": sum(int(doc["repairs"]) for doc in documents),
+            "carried_with_history": [
+                doc["doc"] for doc in documents
+                if doc["status"] == "carried" and doc["carried_from"]
+                and (doc["attempts"] or doc["repairs"] or doc["findings_count"])
+            ],
             "copied": sorted(
                 item.removeprefix("design/").removesuffix(".json")
                 for item in copied_set
@@ -994,8 +1088,26 @@ class ProjectSummary:
                 f"- **現在リビジョン**: `{revision.id}`（種別: `{info['revision_kind']}`、全 {len(info['revision_ids'])} 版）",
                 f"- **前提（Premise）**: {info['premise']}",
                 f"- **工程状態**: plan=`{info['stages']['plan']}`, design=`{info['stages']['design']}`, draft=`{info['stages']['draft']}`",
-                f"- **文字数合計**: 本文 **{info['total_chars_body']} 字**（監査マーカー込み {info['total_chars_with_markers']} 字 / 目安合計 {info['total_target_chars']} 字）",
+                f"- **文字数合計**: 本文 **{info['total_chars_body']} 字**（監査マーカー込み {info['total_chars_with_markers']} 字 / 目安合計 {info['total_target_chars']} 字＝許容 {info['total_target_band']} 字）",
             ])
+            if info.get("regenerated_chapters") or info.get("regenerated_design"):
+                out.append(
+                    "- **このリビジョンでの作り直し**: 章 "
+                    f"`{', '.join(info.get('regenerated_chapters') or []) or 'なし'}` / 設計 "
+                    f"`{', '.join(info.get('regenerated_design') or []) or 'なし'}`"
+                )
+            if info.get("revise_note"):
+                out.append(f"- **改訂の意図**: {info['revise_note']}")
+            if design.get("repairs_total") or design.get("attempts_total"):
+                carried_note = (
+                    "（carried " + str(len(design.get("carried_with_history") or []))
+                    + " 件は元リビジョンの履歴を引き継ぐ）"
+                    if design.get("carried_with_history") else ""
+                )
+                out.append(
+                    f"- **設計の累計**: 試行 {design['attempts_total']} 回 / 修復 "
+                    f"{design['repairs_total']} 回{carried_note}"
+                )
             if info.get("continuation_design") is not None:
                 out.append(
                     f"- **continuation 再生成設計書**: `{', '.join(info['continuation_design']) or 'なし'}`"
@@ -1003,14 +1115,15 @@ class ProjectSummary:
             if info["chapters"]:
                 out.extend([
                     "",
-                    "| 章 | 日 | 場所 | 本文文字数 | マーカー込み | 目安 |",
-                    "| --- | ---: | --- | ---: | ---: | ---: |",
+                    "| 章 | 日 | 場所 | 本文文字数 | マーカー込み | 目安（許容幅） |",
+                    "| --- | ---: | --- | ---: | ---: | --- |",
                 ])
                 for ch in info["chapters"]:
                     out.append(
                         f"| `{ch['id']}` | {ch['day'] if ch['day'] is not None else '-'} "
                         f"| {ch['location'] or '-'} | {ch['chars_body']} 字 "
-                        f"| {ch['chars_with_markers']} 字 | {ch['target_chars']} 字 |"
+                        f"| {ch['chars_with_markers']} 字 | {ch['target_chars']} 字"
+                        f"（{ch['target_band']}） |"
                     )
             if info["child_links"]:
                 out.append("")
@@ -1080,9 +1193,15 @@ class ProjectSummary:
                 "",
             ])
             for doc in design["documents"]:
+                carried_note = ""
+                if doc["status"] == "carried" and (
+                        doc["attempts"] or doc["repairs"] or doc["findings_count"]):
+                    carried_note = "; 元リビジョンの履歴を引き継ぎ"
+                    if doc.get("carried_from"):
+                        carried_note += f"（元 `{doc['carried_from']}`）"
                 out.append(
                     f"### {doc['title_ja']} — 状態: `{doc['status']}` "
-                    f"(試行 {doc['attempts']}, 修復 {doc['repairs']}, 残存所見 {doc['findings_count']})"
+                    f"(試行 {doc['attempts']}, 修復 {doc['repairs']}, 残存所見 {doc['findings_count']}{carried_note})"
                 )
                 if doc["summary_lines"]:
                     for line in doc["summary_lines"]:

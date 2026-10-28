@@ -1,0 +1,51 @@
+{
+  "artifacts": [
+    "design/attempts/plot-attempt-1.txt",
+    "design/attempts/relation-attempt-1.txt",
+    "design/attempts/world-attempt-1.txt",
+    "design/brief.json",
+    "design/character.json",
+    "design/history.json",
+    "design/plot.json",
+    "design/plot.report.json",
+    "design/relation.json",
+    "design/relation.report.json",
+    "design/voice.json",
+    "design/world.json",
+    "design/world.report.json",
+    "manifest.json",
+    "project-input.json",
+    "responses.jsonl"
+  ],
+  "error": "NEED RESPONSE key=s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-scene-a1 file=experiments/2026-10-dogfood-03/work/prj-kazami/relay/responses/s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-scene-a1.json",
+  "finished_at": "2026-10-28T02:47:45Z",
+  "git_commit": "6f020b1f67ab709587e8a0e5565d21edc84075e1",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-28",
+  "prompt_hashes": {
+    "design-plot": "d5889483d2b77e7f",
+    "design-relation": "f8c3e64187631141",
+    "design-repair": "24400eb90fe44e64",
+    "design-scene": "86416625d09d31a8",
+    "design-world": "16abef1d5aef1eeb",
+    "design:plot": "3c62508ca8c05d00",
+    "design:relation": "1307af4fd2913ecf",
+    "design:world": "92438f02d7ef8a8d"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 3,
+  "responses_sha256": "6bb957756ddfc9d5d7fd967900b7ea29e54069acf1293dde7eca400ffaac2b9f",
+  "run_id": "att-bbde80b46cfb4ea08ea75ae08434053d-design",
+  "seed": 0,
+  "started_at": "2026-10-28T02:47:44Z",
+  "status": "waiting_response",
+  "system": "s1",
+  "task_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "temperature": 0.6,
+  "usage": {
+    "operator": 3,
+    "resume_delegate": 3,
+    "resume_reused": 2
+  }
+}

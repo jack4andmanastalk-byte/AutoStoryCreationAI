@@ -1,0 +1,42 @@
+{
+  "all_source_responses_consumed": true,
+  "delegated_responses": 1,
+  "requests": [
+    {
+      "mode": "resume",
+      "prompt_hash": "92438f02d7ef8a8d",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-world-a1",
+      "source_response_index": 0
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "1307af4fd2913ecf",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-relation-a1",
+      "source_response_index": 1
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "3c62508ca8c05d00",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-plot-a1",
+      "source_response_index": 2
+    },
+    {
+      "mode": "delegate",
+      "origin": "unspecified",
+      "prompt_hash": "34d16cfd42abf003",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-scene-a1",
+      "source_response_index": null
+    }
+  ],
+  "reused_responses": 3,
+  "schema": "project-resume-audit-v1",
+  "scope": "interrupted-run continuation; not strict offline replay or model reproducibility",
+  "source_attempt_id": "att-bbde80b46cfb4ea08ea75ae08434053d",
+  "source_run_id": "att-bbde80b46cfb4ea08ea75ae08434053d-design",
+  "source_sha256": {
+    "manifest": "6106578550bb40f182707918863b09ce67fa68c17378b2e30c0947c127942a62",
+    "project_input": "5370bd920cd71c5a69a3cad6b00fefb76a5df8b917b94a8f7d8a94fb0f83a7a7",
+    "responses": "6bb957756ddfc9d5d7fd967900b7ea29e54069acf1293dde7eca400ffaac2b9f"
+  },
+  "source_unchanged": true
+}

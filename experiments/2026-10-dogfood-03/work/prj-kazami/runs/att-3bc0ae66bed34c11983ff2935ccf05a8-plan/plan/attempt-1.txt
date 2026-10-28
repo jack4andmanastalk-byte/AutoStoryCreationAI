@@ -1,0 +1,114 @@
+{
+  "brief": {
+    "theme_ja": "続けることに意味がなくても、記録は誰かが閉じなければならない。",
+    "protagonist_ja": "観測員の佐倉ヒナ（29）。毎日の観測を欠かさず続けたい。先代の記録が書き換えられているのではと恐れている。",
+    "setting_ja": "高原の測候所「霧ヶ原」と、麓の町・沢根。昭和の終わりごろ、秋の終わり。",
+    "tone_ja": "乾いた風の音。感情は説明せず、数字と道具の手触りに預ける。",
+    "turn_ja": "閉鎖の理由は老朽化ではなく、先代が集めた署名が町に届いていたことが分かる。",
+    "ending_ja": "閉鎖は覆らない。ヒナは最後の観測を自分の字で書き、日誌を閉じる。"
+  },
+  "characters": [
+    {
+      "id": "hina",
+      "name": "佐倉ヒナ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "霧ヶ原",
+      "age_at_start": 29,
+      "birthday_day": 55,
+      "knows": ["F-01", "F-02"],
+      "notes": "測候所の観測員。朝九時に風速と気温を測り、日誌に書く"
+    },
+    {
+      "id": "sada",
+      "name": "宮内サダ",
+      "aliases": ["サダさん"],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢根",
+      "age_at_start": 68,
+      "birthday_day": 300,
+      "knows": ["F-04", "F-05"],
+      "notes": "先代ツカサの妻。仏壇の引き出しに古い観測日誌をしまっている"
+    },
+    {
+      "id": "kuro",
+      "name": "黒沢タケシ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "沢根",
+      "age_at_start": 41,
+      "birthday_day": 180,
+      "knows": ["F-03", "F-06"],
+      "notes": "町役場の職員。測候所の閉鎖と土地の転用を進めている"
+    },
+    {
+      "id": "tsukasa",
+      "name": "佐倉ツカサ",
+      "aliases": ["先代"],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "霧ヶ原",
+      "age_at_start": 52,
+      "birthday_day": 10,
+      "knows": [],
+      "notes": "ヒナの叔父で、先代の観測員。三年前に病死した"
+    }
+  ],
+  "facts": [
+    {
+      "id": "F-01",
+      "summary": "霧ヶ原の測候所は年度末で閉鎖されることが決まっている",
+      "terms": ["閉鎖", "年度末"],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-02",
+      "summary": "先代の日誌には、昭和五十八年の風速の欄が二重に書かれている",
+      "terms": ["風速", "二重"],
+      "setup": "ch01"
+    },
+    {
+      "id": "F-03",
+      "summary": "町が閉鎖の理由に挙げる機器の老朽化は、実際の理由ではない",
+      "terms": ["老朽化", "理由"],
+      "setup": "ch02"
+    },
+    {
+      "id": "F-04",
+      "summary": "サダはツカサの古い観測日誌を二冊、仏壇の引き出しに預かったまま返していない",
+      "terms": ["日誌", "引き出し"],
+      "setup": "ch02"
+    },
+    {
+      "id": "F-05",
+      "summary": "ツカサは三年前、閉鎖に反対する署名を集めて町に出していた",
+      "terms": ["署名", "反対"],
+      "setup": "ch03"
+    },
+    {
+      "id": "F-06",
+      "summary": "閉鎖計画には、測候所の土地を転用する案が含まれている",
+      "terms": ["土地", "転用"],
+      "setup": "ch02"
+    }
+  ],
+  "locations": [
+    {"id": "霧ヶ原", "travel_days": {"沢根": 1}},
+    {"id": "沢根", "travel_days": {"霧ヶ原": 1}}
+  ],
+  "timeline": {
+    "chapters": [
+      {"id": "ch01", "day": 1, "location": "霧ヶ原"},
+      {"id": "ch02", "day": 3, "location": "沢根"},
+      {"id": "ch03", "day": 6, "location": "霧ヶ原"}
+    ]
+  },
+  "foreshadowing": [
+    {"id": "fs-001", "description": "二重に書かれた風速の欄", "setup": "ch01", "payoff": "ch03"},
+    {"id": "fs-002", "description": "仏壇の引き出しの古い日誌", "setup": "ch01", "payoff": "ch02"},
+    {"id": "fs-003", "description": "測候所の鍵の束についた紙の札", "setup": "ch02", "payoff": "ch03"}
+  ]
+}

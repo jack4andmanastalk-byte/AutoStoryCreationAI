@@ -1,0 +1,26 @@
+{
+  "artifacts": [
+    "manifest.json",
+    "project-input.json"
+  ],
+  "error": "NEED RESPONSE key=s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s1-draft-ch01-a1 file=experiments/2026-10-dogfood-02/work/prj-yunome/relay/responses/s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s1-draft-ch01-a1.json",
+  "finished_at": "2026-10-28T02:10:45Z",
+  "git_commit": "df8a6b8ad6a0b2aa3ddf1ff9a8ac2d74d2565be5",
+  "model": "arena-agent-mode",
+  "model_version": null,
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 0,
+  "responses_sha256": null,
+  "run_id": "att-a325b21408c74746914f48b554729066-draft",
+  "seed": 0,
+  "started_at": "2026-10-28T02:10:44Z",
+  "status": "waiting_response",
+  "system": "s1",
+  "task_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "temperature": 0.8,
+  "usage": {}
+}

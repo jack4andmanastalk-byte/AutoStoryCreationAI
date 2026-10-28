@@ -1,0 +1,24 @@
+{
+  "copied": [
+    "text/ch01.md",
+    "text/ch02.md"
+  ],
+  "kind": "revise",
+  "regenerated": [
+    "text/ch03.md"
+  ],
+  "schema": "project-revise-v1",
+  "source_node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "source_revision_id": "rev-c7cce9c3844e4d1996a2e0df0116fbae",
+  "source_runs": {
+    "design": "att-a325b21408c74746914f48b554729066-design",
+    "draft": "att-8af24caa0fe44aa39ae9bb0fce5bf545-draft",
+    "plan": "att-7e60f1febe8c42e7a49dfa088554a790-plan"
+  },
+  "source_sha256": {
+    "text/ch01.md": "d4de7036204cea8abf4bcdf1edac65406b8a9c94a9910f037f4a94fc6f792947",
+    "text/ch02.md": "e6e615c2f89871b902ca4b8f4ac684eb393f2b4fa38933852fafec0407e5ea9c"
+  },
+  "stage": "draft",
+  "unchanged_bytes": true
+}

@@ -1,0 +1,35 @@
+{
+  "artifacts": [
+    "draft/ch01-attempt-1.txt",
+    "draft/ch02-attempt-1.txt",
+    "manifest.json",
+    "project-input.json",
+    "responses.jsonl"
+  ],
+  "error": "NEED RESPONSE key=s1-node-6e39929eb31a4287b99fd862d2203021-s3-draft-ch03-a1 file=experiments/2026-10-dogfood-03/work/prj-kazami/relay/responses/s1-node-6e39929eb31a4287b99fd862d2203021-s3-draft-ch03-a1.json",
+  "finished_at": "2026-10-28T02:46:46Z",
+  "git_commit": "6f020b1f67ab709587e8a0e5565d21edc84075e1",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-28",
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e",
+    "draft:ch01": "d5f601b4ddce3a97",
+    "draft:ch02": "e91f4daea7d78975"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 2,
+  "responses_sha256": "d1383660311aec7bfe05deca5ef17c84a0467edf596a7c30064bccf3de0c5be1",
+  "run_id": "att-8004d40c7b824538bf6f7e43c22e6dd4-draft",
+  "seed": 0,
+  "started_at": "2026-10-28T02:46:46Z",
+  "status": "waiting_response",
+  "system": "s1",
+  "task_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "temperature": 0.8,
+  "usage": {
+    "operator": 2,
+    "resume_delegate": 2,
+    "resume_reused": 1
+  }
+}

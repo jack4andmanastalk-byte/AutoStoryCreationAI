@@ -1,0 +1,23 @@
+{
+  "attempt_id": "att-9d4c39f2a4e249379c7bd15ecd79e61f",
+  "continuation": null,
+  "input_artifacts": [],
+  "node_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "project_id": "prj-kazami",
+  "resume_of": null,
+  "resume_source_responses_sha256": null,
+  "retry_of": null,
+  "revision_id": "rev-4d80dc2135a346c7baf581ae1d5a8956",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 3,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉鎖が決まった高原の測候所で、最後の観測員が先代の観測記録の食い違いに気づく。町は閉鎖を急ぎ、先代の妻は記録の一部を預かったまま黙っている。観測は続けられるのか、閉じられるべきなのか。",
+    "target_chars_per_chapter": 1000,
+    "title": "風速の窓"
+  },
+  "spec_sha256": "f5cefb36745b7e2320be24484cdd70be8caf06ab615268a6a18ee423705d2515",
+  "stage": "plan"
+}

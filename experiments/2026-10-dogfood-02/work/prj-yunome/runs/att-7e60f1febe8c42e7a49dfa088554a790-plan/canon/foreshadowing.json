@@ -1,0 +1,22 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "目盛りの削られた古い温度計",
+      "setup": "ch01",
+      "payoff": "ch03"
+    },
+    {
+      "id": "fs-002",
+      "description": "源治の左手の甲の火傷の跡",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-003",
+      "description": "組合の書類で日付だけが赤インクで直されている",
+      "setup": "ch02",
+      "payoff": "ch03"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "artifacts": [
+    "design/attempts/relation-attempt-1.txt",
+    "design/attempts/world-attempt-1.txt",
+    "design/brief.json",
+    "design/character.json",
+    "design/history.json",
+    "design/relation.json",
+    "design/relation.report.json",
+    "design/voice.json",
+    "design/world.json",
+    "design/world.report.json",
+    "manifest.json",
+    "project-input.json",
+    "responses.jsonl"
+  ],
+  "error": "NEED RESPONSE key=s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-plot-a1 file=experiments/2026-10-dogfood-03/work/prj-kazami/relay/responses/s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-design-plot-a1.json",
+  "finished_at": "2026-10-28T02:47:40Z",
+  "git_commit": "6f020b1f67ab709587e8a0e5565d21edc84075e1",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-28",
+  "prompt_hashes": {
+    "design-plot": "d5889483d2b77e7f",
+    "design-relation": "f8c3e64187631141",
+    "design-repair": "24400eb90fe44e64",
+    "design-scene": "86416625d09d31a8",
+    "design-world": "16abef1d5aef1eeb",
+    "design:relation": "1307af4fd2913ecf",
+    "design:world": "92438f02d7ef8a8d"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 2,
+  "responses_sha256": "93f3f052636d482eedd52b39fa3745899e2d4b8f8a84cd863ff260af83651c42",
+  "run_id": "att-d8a9700f0f7e42f7b9d2d191cc483290-design",
+  "seed": 0,
+  "started_at": "2026-10-28T02:47:40Z",
+  "status": "waiting_response",
+  "system": "s1",
+  "task_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "temperature": 0.6,
+  "usage": {
+    "operator": 2,
+    "resume_delegate": 2,
+    "resume_reused": 1
+  }
+}
