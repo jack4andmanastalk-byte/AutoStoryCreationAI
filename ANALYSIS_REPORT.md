@@ -150,7 +150,7 @@
 | プロジェクトモデル (`project/schema.py`) | ○ | `record_type`/`schema_version`/`spec_sha256`/`canonical_json` でレコード整合性を機械検証。 |
 | スキル↔実装 | ○ | `skills/<name>/SKILL.md` と `src/asc/<name>/`、`scripts/check_*.py` の対応が明確。 |
 | **研究カタログ↔スキル** | ○ | `configs/skills.yaml` の `technique_categories` と `src/asc/skills_registry.py` の `techniques_for_skill`/`techniques_by_category`/`category_counts` でコード級紐付けを実装（P1 U-E）。488件の技法とスキルがコードレベルで接続。 |
-| **データセット↔生成工程** | △ | データセット構築CLIと創作パイプラインが別経路。統一された受け渡しインターフェースなし。 |
+| **データセット↔生成工程** | ○ | `scripts/run_pipeline.py` の `--source-dataset`/`--source-work` と `scripts/story_project.py` `init` の同オプションで、データセット JSONL から Work を読み込み plan/premise の素材として利用可能（P1 U-F）。 |
 | 評価ハーネス | ○ | L1/L2/L3を層分離。`patterns.yaml`、`rubrics/`、`fixtures/` で判定器を外部コマンド接続。 |
 | CLI | ○ | `story_project.py`/`run_pipeline.py`等でサブコマンド統一。`--json`で機械可読出力。 |
 
@@ -180,11 +180,13 @@
 **U-E. 研究カタログとスキルのコードレベル接続** ✅ 完了
 - `configs/skills.yaml` の全13スキルに `technique_categories` を追加。`src/asc/skills_registry.py` に `TechniqueEntry`、`techniques.jsonl` 読み込み、`techniques_by_category`/`techniques_for_skill`/`category_counts` を実装。488件の技法とスキルがコードレベルで紐付き。
 
-**U-F. データセットと生成工程の接続** △ 未着手
-- 収集済み本文・メタデータを創作パイプラインの「参照素材」として取り込めるインターフェース（`--source-dataset` 等）を検討。現状の「データ構築」と「創作生成」が完全に分離している状態を緩和。
+**U-F. データセットと生成工程の接続** ✅ 完了（P1 U-F）
+- `scripts/run_pipeline.py` の `--source-dataset`/`--source-work` でデータセット JSONL から Work を読み込み、plan ステップの brief に参照作品情報を反映。
+- `scripts/story_project.py` の `init` に `--source-dataset`/`--source-work` を追加。premise 未指定時は source work の title からデフォルト premise を生成。WorkSpec オプションに source_dataset/source_work を記録。
 
-**U-G. 実験の横断索引と正体明確化** △ 未着手
-- `experiments/README.md` に「最新の正」を示す実験一覧（インデックス）を追加。類似実験（realrun a/b/b2、surface-checks t01/t02）を統合または非推奨標記。
+**U-G. 実験の横断索引と正体明確化** ✅ 完了（P1 U-G）
+- `experiments/README.md` に実験インデックステーブルを追加（26実験全件）。
+- 類似実験グループ（realrun a/b/b2、surface-checks t01/t02）の「最新の正」を★最新でマークし、後続に譲った実験を△非推奨でマーク。
 
 ### P2: 長期・大規模運用（必要になったら）
 
