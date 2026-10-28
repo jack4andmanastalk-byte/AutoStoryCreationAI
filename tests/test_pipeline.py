@@ -5,6 +5,7 @@ manifest, canon validation), not the quality of any model.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -326,6 +327,50 @@ def test_cli_runs_the_whole_s1_story_and_audits_it(tmp_path):
     quiet = run_cli("--task", "t01", "--out", str(tmp_path), "--run-id", "story2",
                     "--report-only")
     assert quiet.returncode == 0
+
+
+@pytest.mark.parametrize("stage", ["plan", "design", "all"])
+def test_reused_canon_is_auditable_and_recorded(tmp_path, stage):
+    planned = run_cli("--task", "t01", "--stage", "plan", "--out", str(tmp_path),
+                      "--run-id", "source", "--quiet")
+    assert planned.returncode == 0, planned.stderr
+    source = tmp_path / "source" / "canon"
+    completed = run_cli("--task", "t01", "--stage", stage, "--canon", str(source),
+                        "--out", str(tmp_path), "--run-id", "reused", "--quiet")
+    assert completed.returncode == (1 if stage == "all" else 0), completed.stderr
+    run = tmp_path / "reused"
+    summary = json.loads((run / "run-summary.json").read_text(encoding="utf-8"))
+    assert "plan" not in summary
+    copied = run / "canon" / "characters.json"
+    assert copied.read_bytes() == (source / "characters.json").read_bytes()
+    digest = hashlib.sha256(copied.read_bytes()).hexdigest()
+    assert summary["canon_source"]["files_sha256"]["characters.json"] == digest
+    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
+    assert "canon/characters.json" in manifest["artifacts"]
+    if stage == "all":
+        assert summary["audit"]["checks_skipped"] == 0
+    (source / "characters.json").write_text("changed", encoding="utf-8")
+    assert hashlib.sha256(copied.read_bytes()).hexdigest() == digest
+
+
+def test_cli_rejects_missing_reused_canon(tmp_path):
+    completed = run_cli("--task", "t01", "--stage", "all", "--canon",
+                        str(tmp_path / "missing"), "--out", str(tmp_path), "--quiet")
+    assert completed.returncode == 2
+    assert "cannot reuse canon" in completed.stderr
+
+
+@pytest.mark.parametrize("stage", ["all", "draft"])
+def test_cli_rejects_a_run_inside_its_reused_canon(tmp_path, stage):
+    planned = run_cli("--task", "t01", "--stage", "plan", "--out", str(tmp_path),
+                      "--run-id", "source", "--quiet")
+    assert planned.returncode == 0, planned.stderr
+    source = tmp_path / "source" / "canon"
+    completed = run_cli("--task", "t01", "--stage", stage, "--canon", str(source),
+                        "--out", str(source / "nested"), "--run-id", "r", "--quiet")
+    assert completed.returncode == 2
+    assert "inside the reused canon" in completed.stderr
+    assert not (source / "nested").exists()
 
 
 def test_cli_runs_the_s0_baseline(tmp_path):
