@@ -1535,12 +1535,27 @@ def _purge_pdf_preflight(pdf_root: Path) -> Set[Path]:
     return recognized
 
 
+def _purge_text_preflight(raw_root: Path) -> None:
+    """Do not write through links or trust linked text as a PDF replacement."""
+    for source in ("narou", "aozora"):
+        source_dir = raw_root / source
+        text_dir = source_dir / "texts"
+        for path in (raw_root, source_dir, text_dir):
+            if path.is_symlink():
+                raise ValueError(f"symbolic link in text output path: {path}; no PDFs were deleted")
+        if text_dir.is_dir():
+            for path in text_dir.iterdir():
+                if path.is_symlink() and path.suffix.lower() == ".txt":
+                    raise ValueError(f"symbolic link in text output path: {path}; no PDFs were deleted")
+
+
 def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
     """Convert any text-less PDFs to plain UTF-8 text, clear PDF fields, and delete all PDFs."""
     reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
     pdf_root = cfg.paths.pdf_dir
     # This must precede copying reuse texts as well as extraction/deletion.
     recognized = _purge_pdf_preflight(pdf_root)
+    _purge_text_preflight(cfg.paths.raw_dir)
 
     converted_count = 0
     verified_txt_count = 0
