@@ -27,6 +27,8 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: brief
+    technique_categories:
+      - 企画・発想
 
   - id: world-rules
     name: 世界の規則・公理・コスト・例外
@@ -47,6 +49,9 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: world
+    technique_categories:
+      - 異世界・ゲーム的世界の設計
+      - 神話・ジャンル・SF
 
   - id: history-timeline
     name: 歴史・年表・因果と痕跡
@@ -67,6 +72,9 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: history
+    technique_categories:
+      - ネット文学の進行と世界
+      - ドキュメンタリー・写真・記憶
 
   - id: character-core
     name: 人物の核・WANT/NEED・アーク
@@ -87,6 +95,9 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: character
+    technique_categories:
+      - 人物・関係
+      - 女性向け文学・耽美・ファン再創作
 
   - id: relationship-web
     name: 人物関係・利害・知識状態・沈黙
@@ -107,6 +118,8 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: relation
+    technique_categories:
+      - 人物・関係
 
   - id: plot-architecture
     name: 筋立て・幕・転換点・副筋
@@ -127,6 +140,11 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: plot
+    technique_categories:
+      - 構造・展開
+      - plot_devices
+      - macro_structure
+      - 短劇・マイクロドラマ
 
   - id: scene-information
     name: 場面の目的・対立・変化・開示計画
@@ -147,6 +165,10 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: scene
+    technique_categories:
+      - 場面・台詞
+      - 情報・伏線
+      - 漫画的な撮影・編集・音
 
   - id: voice-style
     name: 語り・文体・視点
@@ -167,6 +189,10 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: true
     design_doc: voice
+    technique_categories:
+      - 語り・時間
+      - 文学の声・現実・因果
+      - narration_pov
 
   - id: continuity-ledger
     name: 継続性台帳・監査
@@ -186,6 +212,8 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: false
     design_doc: null
+    technique_categories:
+      - 情報・伏線
 
   - id: revision-loop
     name: 改稿ループ・批評とパッチ
@@ -205,6 +233,8 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: false
     design_doc: null
+    technique_categories:
+      - 制作工程・改稿・翻案
 
   - id: interactive-branch
     name: 分岐構造・到達不能・行き止まり
@@ -224,6 +254,9 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: false
     design_doc: null
+    technique_categories:
+      - ゲームとプレイヤーの位置
+      - ゲームの相互作用・参照系
 
   - id: adaptation
     name: 翻案・メディアミックス設計
@@ -243,6 +276,8 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
     in_pipeline_design: false
     design_doc: null
+    technique_categories:
+      - 制作工程・改稿・翻案
 
   - id: evaluation-harness
     name: 評価ハーネス・L1/L2/L3
@@ -261,6 +296,9 @@ skills:
     compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要（L2 は外部コマンドとして接続）"
     in_pipeline_design: false
     design_doc: null
+    technique_categories:
+      - 制作工程・改稿・翻案
+      - 情報・伏線
 
 registry_version: "skill-registry-v1"
 skill_count: 13
