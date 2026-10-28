@@ -1,0 +1,68 @@
+{
+  "attempts": 0,
+  "carried": [
+    "brief",
+    "character",
+    "history",
+    "plot",
+    "relation",
+    "scene",
+    "voice",
+    "world"
+  ],
+  "docs": {
+    "brief": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "character": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "history": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "plot": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "relation": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "scene": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "voice": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "world": {
+      "attempts": 0,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    }
+  },
+  "findings": 0,
+  "missing": [],
+  "repairs": 0,
+  "task": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "unresolved": []
+}

@@ -1,0 +1,42 @@
+{
+  "artifacts": [
+    "draft.json",
+    "draft/ch01-attempt-1.txt",
+    "draft/ch02-attempt-1.txt",
+    "draft/ch03-attempt-1.txt",
+    "manifest.json",
+    "project-input.json",
+    "responses.jsonl",
+    "resume-audit.json",
+    "text/ch01.md",
+    "text/ch02.md",
+    "text/ch03.md"
+  ],
+  "error": null,
+  "finished_at": "2026-10-28T02:12:34Z",
+  "git_commit": "df8a6b8ad6a0b2aa3ddf1ff9a8ac2d74d2565be5",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-28",
+  "prompt_hashes": {
+    "draft-chapter": "1db9cea08abbbb8e",
+    "draft:ch01": "4d7f284375da938b",
+    "draft:ch02": "cc7d77014d3a5f4b",
+    "draft:ch03": "d6cb90ec36ac4d9a"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 3,
+  "responses_sha256": "4b833551a1b11f3fd1130e80e2d08dbadbba206bcabe5c59b298488f116049c8",
+  "run_id": "att-8af24caa0fe44aa39ae9bb0fce5bf545-draft",
+  "seed": 0,
+  "started_at": "2026-10-28T02:12:34Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "temperature": 0.8,
+  "usage": {
+    "operator": 3,
+    "resume_delegate": 3,
+    "resume_reused": 2
+  }
+}

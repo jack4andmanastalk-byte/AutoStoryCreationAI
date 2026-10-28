@@ -1,0 +1,63 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "draft-draft.json",
+      "media_type": "application/json",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/draft.json",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "3ec24d3e6b16c4ee48c5bc79f6d4c8b9b6817b5baaae4c6a899e6d1e9024943a"
+    },
+    {
+      "artifact_id": "draft-text-ch01.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/text/ch01.md",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "d4de7036204cea8abf4bcdf1edac65406b8a9c94a9910f037f4a94fc6f792947"
+    },
+    {
+      "artifact_id": "draft-text-ch02.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/text/ch02.md",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "e6e615c2f89871b902ca4b8f4ac684eb393f2b4fa38933852fafec0407e5ea9c"
+    },
+    {
+      "artifact_id": "draft-text-ch03.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/text/ch03.md",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "b05a44ac87447c36cffe25655477b2d9c8eeeb55d4921ad50e74198a26efb593"
+    },
+    {
+      "artifact_id": "draft-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/resume-audit.json",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "9a844a770838fde861acb01dc7df4536a94a9946cf177e3dd4d5a8ead8704302"
+    },
+    {
+      "artifact_id": "draft-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-89279002ca54489992f73f61c1e295fd-draft/revise.json",
+      "producer_run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+      "sha256": "c357bb1aae7e9aed80d2b0e03df67ecc473638bb3a5e939f3470e8f6ff82fee5"
+    }
+  ],
+  "attempt_id": "att-89279002ca54489992f73f61c1e295fd",
+  "created_at": "2026-10-28T02:12:59.312141Z",
+  "error": null,
+  "node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "pending": null,
+  "project_id": "prj-yunome",
+  "record_type": "stage_checkpoint",
+  "resume_of": "att-b7e8b9188aa74728829ac30ebc25d072-draft",
+  "retry_of": null,
+  "revision_id": "rev-4299c40127764dedbea6ed5f2d936539",
+  "run_id": "att-89279002ca54489992f73f61c1e295fd-draft",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "draft",
+  "status": "done",
+  "temperature": 0.8,
+  "updated_at": "2026-10-28T02:12:59.367436Z"
+}

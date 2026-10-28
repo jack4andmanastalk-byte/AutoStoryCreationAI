@@ -1,0 +1,17 @@
+{
+  "attempts": 1,
+  "checks_failed": 0,
+  "doc": "world",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 0,
+    "findings": []
+  },
+  "prompt": {
+    "digest": "16abef1d5aef1eeb",
+    "name": "design-world",
+    "version": "1.0"
+  },
+  "repairs": 0,
+  "status": "clean"
+}

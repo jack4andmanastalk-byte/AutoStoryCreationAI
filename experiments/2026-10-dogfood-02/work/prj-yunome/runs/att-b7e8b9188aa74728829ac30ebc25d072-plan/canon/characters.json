@@ -1,0 +1,62 @@
+{
+  "characters": [
+    {
+      "id": "mina",
+      "name": "瀬川ミナ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 27,
+      "birthday_day": 33,
+      "knows": [
+        "F-01",
+        "F-02"
+      ],
+      "notes": "配湯係。朝と夕に各湯屋の温度を測り、帳面につける"
+    },
+    {
+      "id": "genji",
+      "name": "桐生源治",
+      "aliases": [
+        "源じい"
+      ],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 74,
+      "birthday_day": 210,
+      "knows": [
+        "F-03",
+        "F-05"
+      ],
+      "notes": "元湯守。左手の甲に古い火傷の跡がある"
+    },
+    {
+      "id": "yuji",
+      "name": "高梨ユウジ",
+      "aliases": [],
+      "status": "alive",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 31,
+      "birthday_day": 120,
+      "knows": [
+        "F-06"
+      ],
+      "notes": "観光組合の職員。新しい温泉スタンドの計画を進めている"
+    },
+    {
+      "id": "soichi",
+      "name": "瀬川宗一",
+      "aliases": [],
+      "status": "dead",
+      "status_since": "ch01",
+      "location": "湯ノ瀬",
+      "age_at_start": 41,
+      "birthday_day": 5,
+      "knows": [],
+      "notes": "ミナの父。十五年前に病死した元湯守"
+    }
+  ]
+}

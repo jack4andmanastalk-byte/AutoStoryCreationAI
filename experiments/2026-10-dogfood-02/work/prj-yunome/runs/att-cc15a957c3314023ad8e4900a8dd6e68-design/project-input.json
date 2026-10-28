@@ -1,0 +1,87 @@
+{
+  "attempt_id": "att-cc15a957c3314023ad8e4900a8dd6e68",
+  "continuation": null,
+  "input_artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/brief.md",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "53976c03bf45e8612ba471c345ef20a6d01ff54ff9c813e7cfb069157be90bd9"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/plan.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "c145390355bafd04881d90e87d63300e65e5a4cbf5054c87398b225078cc97a5"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/characters.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "95dc942b3b4f8a98ff556a5668df00dfca20c7670917c8432d22a0ef165bd873"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/facts.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "ba7979d970aa1a9e99aab212d5571c58ec22d98b8a63eae7a23b895d6c963c27"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "a50fa9b53b43338d04414d4f0bea8a09db48091d3457754d2b3feb939a73775d"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/locations.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "fe4d0c6bb5e14990d1cb4a663e0d9c561a40754c573038caaa1b02aa9fb5e916"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/suppressions.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/canon/timeline.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "db28ce06534f7b923d30221975763583437c2249b318037c158abfeaa38a7d80"
+    },
+    {
+      "artifact_id": "plan-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-7e60f1febe8c42e7a49dfa088554a790-plan/resume-audit.json",
+      "producer_run_id": "att-7e60f1febe8c42e7a49dfa088554a790-plan",
+      "sha256": "2f92de6dabc497a039d83e1e95946ae4fce0efee90149797c0b014f38522055c"
+    }
+  ],
+  "node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "project_id": "prj-yunome",
+  "resume_of": "att-8a2c536a6652400eb422a2dab5b90334-design",
+  "resume_source_responses_sha256": "e8dec316833644b7e480f99154ea72e0c62898d3ab3d01b8aaf2a0a458160ecb",
+  "retry_of": null,
+  "revision_id": "rev-c7cce9c3844e4d1996a2e0df0116fbae",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 3,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "源泉の温度が三年続けて下がっている山あいの温泉町・湯ノ瀬。配湯係の若い女性が、町が隠している古い湯脈の記録を追う。源泉を守る古老と、観光に賭ける組合の若手は、それぞれ別の理由で記録を伏せている。",
+    "target_chars_per_chapter": 1200,
+    "title": "湯の目盛り"
+  },
+  "spec_sha256": "8a13261bc620d611e5dd220110001bd224912a1ca9af504ae9af84cfe14c9c13",
+  "stage": "design"
+}

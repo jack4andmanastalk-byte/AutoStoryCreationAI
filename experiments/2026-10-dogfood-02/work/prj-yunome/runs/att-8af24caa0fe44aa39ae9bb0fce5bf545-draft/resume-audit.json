@@ -1,0 +1,36 @@
+{
+  "all_source_responses_consumed": true,
+  "delegated_responses": 1,
+  "requests": [
+    {
+      "mode": "resume",
+      "prompt_hash": "4d7f284375da938b",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s1-draft-ch01-a1",
+      "source_response_index": 0
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "cc7d77014d3a5f4b",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s2-draft-ch02-a1",
+      "source_response_index": 1
+    },
+    {
+      "mode": "delegate",
+      "origin": "unspecified",
+      "prompt_hash": "d6cb90ec36ac4d9a",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s3-draft-ch03-a1",
+      "source_response_index": null
+    }
+  ],
+  "reused_responses": 2,
+  "schema": "project-resume-audit-v1",
+  "scope": "interrupted-run continuation; not strict offline replay or model reproducibility",
+  "source_attempt_id": "att-1f8f96565dcd4abc823d0dd92f42adf9",
+  "source_run_id": "att-1f8f96565dcd4abc823d0dd92f42adf9-draft",
+  "source_sha256": {
+    "manifest": "282cc3c1174fef59b13b274cf576fedc4f016df77c407ac440dfbfc232a5e9e9",
+    "project_input": "c63fc687cd338f751a54bb91ee6c30a6f4dcd80de855ea4c5081ccb6506c4b9a",
+    "responses": "d5ec45d04c6ff0919dfaffb43a2f39c845ec1a48b28f1912ba151a49a1084a37"
+  },
+  "source_unchanged": true
+}

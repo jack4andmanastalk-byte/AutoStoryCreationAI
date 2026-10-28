@@ -1,0 +1,24 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "scene",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "knowledge_tracked",
+        "message_ja": "yuji が得る F-03 が開示計画にない。開示か保留のどちらかに書く。",
+        "scene_ref": "scenes:s05",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

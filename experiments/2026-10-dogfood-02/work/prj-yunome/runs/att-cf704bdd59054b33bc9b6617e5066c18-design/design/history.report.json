@@ -1,0 +1,24 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "history",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "check": "canon_separated",
+        "history_ref": "apocrypha:塞がれた湯口の漆喰には、塞いだ者の名が書かれていない",
+        "message_ja": "異説「塞がれた湯口の漆喰には、塞いだ者の名が書かれていない」が年表にない。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

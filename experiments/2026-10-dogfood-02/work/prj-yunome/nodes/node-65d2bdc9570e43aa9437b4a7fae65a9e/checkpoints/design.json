@@ -1,0 +1,91 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "2bafa1d2d63fab27e1e362eec87e07715d676a184f07639261c2d6d57df4709e"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/brief.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "835345577ecac12a667916a136629247989e725f564df4a8e91b34911f092828"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/character.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "0d64487865b33ef2ae161a9ce016f3cf73613230f115ae4f173fdb80f23f2c41"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/history.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "e2f758c17d0fb15c413c3724a16b8687e5e3d2ea8c48a8bdedff0136ee70c65a"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/plot.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "5da4744981e1b2b1ac42b1e456cf5b883351e287905e8c77c7e25101b15ffe2a"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/relation.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "793ae9a6ab603ef56c21316951b72bd8cb79a60e5b1bfc3546f6ecda6449fd2b"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/scene.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "19344777ed7a7481a0171c690f474f877c65fb15fceb55e7ff6274a2e081d036"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/voice.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "68e91148fb03ac66fde7494e19b8677076716e1dbc57d55941ab4b9bcc20728e"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/design/world.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "14929fe91cf0b0b3d919d98c68e297588baaf467f63c623c69432c3d0217ece7"
+    },
+    {
+      "artifact_id": "design-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-design/revise.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+      "sha256": "11d0c078470c2113d7f5acb1fb95c753d48bd774ce10208a637cc034a97a6a3e"
+    }
+  ],
+  "attempt_id": "att-b7e8b9188aa74728829ac30ebc25d072",
+  "created_at": "2026-10-28T02:12:45.972021Z",
+  "error": null,
+  "node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "pending": null,
+  "project_id": "prj-yunome",
+  "record_type": "stage_checkpoint",
+  "resume_of": null,
+  "retry_of": null,
+  "revision_id": "rev-4299c40127764dedbea6ed5f2d936539",
+  "run_id": "att-b7e8b9188aa74728829ac30ebc25d072-design",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "design",
+  "status": "done",
+  "temperature": 0.6,
+  "updated_at": "2026-10-28T02:12:45.981090Z"
+}

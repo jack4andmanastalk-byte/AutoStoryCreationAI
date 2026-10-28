@@ -1,0 +1,84 @@
+{
+  "all_source_responses_consumed": true,
+  "delegated_responses": 1,
+  "requests": [
+    {
+      "mode": "resume",
+      "prompt_hash": "0af7f7d9064db917",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-brief-a1",
+      "source_response_index": 0
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "0b481d0aaf70a25d",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-brief-repair-a2",
+      "source_response_index": 1
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "2384d17158c5fad0",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-world-a1",
+      "source_response_index": 2
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "cf01687294691c2e",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-history-a1",
+      "source_response_index": 3
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "7a2dfd8836e58d8b",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-history-repair-a2",
+      "source_response_index": 4
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "6c21a22aabb10c8d",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-character-a1",
+      "source_response_index": 5
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "b0dc3636f23dab43",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-relation-a1",
+      "source_response_index": 6
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "e925b2737ea8f06f",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-plot-a1",
+      "source_response_index": 7
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "a6189bd060499cd9",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-scene-a1",
+      "source_response_index": 8
+    },
+    {
+      "mode": "resume",
+      "prompt_hash": "9f5844e156fe7246",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-scene-repair-a2",
+      "source_response_index": 9
+    },
+    {
+      "mode": "delegate",
+      "origin": "unspecified",
+      "prompt_hash": "c4a6e6f5e19aa8ee",
+      "request_key": "s1-node-65d2bdc9570e43aa9437b4a7fae65a9e-s0-design-voice-a1",
+      "source_response_index": null
+    }
+  ],
+  "reused_responses": 10,
+  "schema": "project-resume-audit-v1",
+  "scope": "interrupted-run continuation; not strict offline replay or model reproducibility",
+  "source_attempt_id": "att-4f30ab5c1fc14400884ecc3d6b0239c4",
+  "source_run_id": "att-4f30ab5c1fc14400884ecc3d6b0239c4-design",
+  "source_sha256": {
+    "manifest": "a27e384896f196019e0a5017bac3424e480d4467504c1150bdcf3fdefc289f34",
+    "project_input": "6666f1c8925cfa123e9f8dab6d19769c6a30f512098002e39ed2db83d39207e3",
+    "responses": "d86b9b05657943ec4e41bc65e3ea01bc6f9f3349d436c894970303228fd53150"
+  },
+  "source_unchanged": true
+}

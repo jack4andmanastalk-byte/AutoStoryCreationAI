@@ -1,0 +1,84 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/brief.md",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "bccb9b99abcbf8322d20aa5108acc66cc052572354940ebf13fa457f8965b542"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/plan.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "9c58afa1fd139fff200fa4244bf310c90139e9e6130130c1c2ee4d4c7d988b33"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/characters.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "95dc942b3b4f8a98ff556a5668df00dfca20c7670917c8432d22a0ef165bd873"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/facts.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "ba7979d970aa1a9e99aab212d5571c58ec22d98b8a63eae7a23b895d6c963c27"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "a50fa9b53b43338d04414d4f0bea8a09db48091d3457754d2b3feb939a73775d"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/locations.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "fe4d0c6bb5e14990d1cb4a663e0d9c561a40754c573038caaa1b02aa9fb5e916"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/suppressions.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/canon/timeline.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "db28ce06534f7b923d30221975763583437c2249b318037c158abfeaa38a7d80"
+    },
+    {
+      "artifact_id": "plan-revise.json",
+      "media_type": "application/json",
+      "path": "runs/att-b7e8b9188aa74728829ac30ebc25d072-plan/revise.json",
+      "producer_run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+      "sha256": "24870802fe5b22ab4298e7501636fd8d62b685103b7c0578c57c6852d2e1ace8"
+    }
+  ],
+  "attempt_id": "att-b7e8b9188aa74728829ac30ebc25d072",
+  "created_at": "2026-10-28T02:12:45.961407Z",
+  "error": null,
+  "node_id": "node-65d2bdc9570e43aa9437b4a7fae65a9e",
+  "pending": null,
+  "project_id": "prj-yunome",
+  "record_type": "stage_checkpoint",
+  "resume_of": null,
+  "retry_of": null,
+  "revision_id": "rev-4299c40127764dedbea6ed5f2d936539",
+  "run_id": "att-b7e8b9188aa74728829ac30ebc25d072-plan",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "plan",
+  "status": "done",
+  "temperature": 0.6,
+  "updated_at": "2026-10-28T02:12:45.970502Z"
+}
