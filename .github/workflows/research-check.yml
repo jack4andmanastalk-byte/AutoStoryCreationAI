@@ -4,20 +4,19 @@ name: research-check
 #
 # Why this workflow is small on purpose
 # -------------------------------------
-# This repository is private, so GitHub-hosted runners share one concurrency
-# budget (20 jobs on the Free plan). `dataset-refresh` fans out 20 shards and
-# used to fill that budget, which left this job queued for tens of minutes
-# behind a 30-minute PDF build.
+# GitHub-hosted runners share one concurrency budget (20 jobs on the Free
+# plan). The former `dataset-refresh` build fanned out 20 shards and used to
+# fill that budget, which left this job queued for tens of minutes behind a
+# 30-minute PDF build. That workflow was removed on 2026-10-29 together with
+# the body-text publication (see docs/maintenance_status.md).
 #
-# Two things keep CI fast now:
-#   1. `dataset-refresh` caps its matrix (`max-parallel`), reserving slots.
-#   2. This workflow has its own concurrency group, so a superseded commit is
-#      cancelled instead of queueing behind itself.
+# What keeps CI fast now: this workflow has its own concurrency group, so a
+# superseded commit is cancelled instead of queueing behind itself.
 #
 # The repository is public (since 2026-10-23), so standard hosted runners no
 # longer consume paid minutes; the billing block that stopped every job is gone.
-# The concurrency budget (20 jobs) remains, which is why the dataset build
-# still caps its matrix.
+# The concurrency budget (20 jobs) remains for any future shared work —
+# see docs/ci.md.
 #
 # Set the repository variable `CI_RUNNER_LABEL` to a self-hosted runner label
 # to take CI off the shared budget entirely; nothing else needs to change.
@@ -26,8 +25,9 @@ on:
   push:
     branches:
       - "**"
-      # The dataset bot force-pushes this branch in several batches; those
-      # commits cannot change code, so checking them only burns runner slots.
+      # Legacy guard: the dataset publishing branch was deleted on
+      # 2026-10-29. Keep excluding it so a re-created branch cannot burn
+      # runner slots on commits that cannot change code.
       - "!datasets"
   pull_request:
   workflow_dispatch:

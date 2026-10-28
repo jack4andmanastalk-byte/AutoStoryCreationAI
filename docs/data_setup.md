@@ -34,7 +34,7 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 ## 2. 青空文庫の本文と PDF
 
 通常の `make data` はテキストを生成します。以下の `--pdf` は個別に指定した場合の
-互換機能で、テキスト公開用 `dataset-refresh` は PDF を生成しません。
+互換機能です（テキスト公開用 `dataset-refresh` ワークフローは 2026-10-29 に削除済み）。
 
 ```bash
 .venv/bin/python scripts/setup_dataset.py aozora-texts --works 120 --pdf
@@ -106,15 +106,18 @@ NDC 分類の名称は `ndc_class_all.json` があればラベルに付与し、
 
 ## 6. CI での再現と構築済みデータの取得
 
-`.github/workflows/dataset-refresh.yml` は同じコマンドを GitHub Actions 上で実行し、
-生成した JSONL・テキストを専用ブランチ `datasets` および Actions artifact に公開します。
-公式ホストへ直接接続できない環境では `make pull-datasets` 一発で `data/` 配下に展開できます。
+旧 `dataset-refresh` ワークフロー（同じコマンドを GitHub Actions 上で実行し、JSONL・
+テキストを `datasets` ブランチと Actions artifact に公開）は 2026-10-29 に削除しました。
+本文の公開は終了しており、GitHub Release に残るのは書誌・ランキング等のメタデータのみです。
+公式ホストへ直接接続できない環境でも、メタデータは Release から取得できます。
 
 ```bash
 make pull-datasets
-# または artifact から取得する場合:
-gh run download --name datasets
+# または
+gh release download datasets-narou-commercialized --dir data/datasets
 ```
+
+本文は `make data` で自身の環境に生成し直します（取得先の利用条件を確認してください）。
 
 ## PDF 変換・削除の注意
 

@@ -119,7 +119,8 @@ def main() -> int:
     (sample_dir / "README.md").write_text(
         "# samples\n\n"
         "このディレクトリはリポジトリに同梱する小さなサンプルです。\n"
-        "全件データ・本文・PDF は `make data`（または `make pull-datasets`）で `data/` 配下に生成されます（Git には含めません）。\n\n"
+        "全件データ・本文・PDF は `make data` で `data/` 配下に生成されます（Git には含めません）。"
+        "書誌メタデータのみ `make pull-datasets` で取得できます。\n\n"
         "* `aozora_works.sample.jsonl` / `aozora_authors.sample.jsonl` … 青空文庫メタデータの部分集合\n"
         "* `narou_novels.sample.jsonl` … 小説家になろうメタデータ（商業化フラグ付き作品を含む）の部分集合\n"
         "* `pdf/` … 青空文庫（著作権消滅作品）から組版した A5 PDF サンプル\n",
