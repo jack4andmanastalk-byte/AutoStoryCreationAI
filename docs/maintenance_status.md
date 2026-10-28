@@ -24,11 +24,13 @@
   削除後は参照リンクが切れるため、名前・先端 SHA・統合先・判断をこの文書に残す。
 - `datasets` は公開用の独立ブランチであり、旧作業枝の整理対象ではない。
 
-### 整理候補: 保存・復元対策 `b843f5a4`
+### 整理済み: 保存・復元対策 `b843f5a4`
 
 旧枝先端 `ced6b9432531be573a64dd1a2ee0dd0e1b9fa652` の独自 3 コミット
 `1f7c7dd` / `f099065` / `ced6b94` は、`git cherry -v origin/main` で全て `-`
 （同一パッチが main 側に存在）と確認。対応する main のコミットは
 `a8142b9` / `d1303c0` / `f3f2d22`、[PR #56](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/pull/56)
-で統合済み。確認時点で旧枝を head とする PR はなかった。削除操作はこの記録の統合後、
-リモート先端を再確認してから行う。削除できたかどうかはリモートのブランチ一覧で確認する。
+で統合済み。確認時点で旧枝を head とする open PR はなかった。この記録を
+[PR #60](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/pull/60) で統合し、
+リモート先端が上記 SHA のままであることを再確認した後、2026-10-28 に旧枝を削除。
+`git ls-remote --heads` で旧枝が存在しないことを確認した。他の未評価枝は保持する。
