@@ -174,6 +174,15 @@ def main(argv: list[str] | None = None) -> int:
     temperature = args.temperature if args.temperature is not None else (
         0.6 if args.stage in {"plan", "design"} else 0.8)
 
+    # Never create a run inside the directory it is about to copy: copytree
+    # would otherwise recurse into its own destination and mutate the input.
+    if args.canon and (args.system != "s0" or args.stage == "draft"):
+        source = Path(args.canon).resolve()
+        run_path = (Path(args.out) / args.run_id).resolve() if args.run_id else Path(args.out).resolve()
+        if run_path.is_relative_to(source):
+            print("error: run directory cannot be inside the reused canon", file=sys.stderr)
+            return 2
+
     try:
         ledger = RunLedger.create(
             args.out, task_id=task.id, system=args.system, seed=args.seed,
@@ -194,6 +203,21 @@ def main(argv: list[str] | None = None) -> int:
     }
     canon = None
     design_ran = False
+
+    # Snapshot reused inputs for plan/design/all too. The audit reads the
+    # run-local canon; load and hash that same snapshot, not the mutable source.
+    if args.canon and args.system != "s0" and args.stage != "draft":
+        source_canon = Path(args.canon)
+        copied_canon = ledger.path / "canon"
+        try:
+            shutil.copytree(source_canon, copied_canon)
+            canon = load_canon(copied_canon)
+            hashes = _sha256_tree(copied_canon)
+        except (CanonError, OSError, shutil.Error) as exc:
+            print(f"error: cannot reuse canon: {exc}", file=sys.stderr)
+            return 2
+        ledger.track([f"canon/{name}" for name in hashes])
+        summary["canon_source"] = {"path": str(source_canon), "files_sha256": hashes}
 
     # Draft-only paired runs share a frozen canon and design directory; copy
     # the canon into each run so audit and provenance are self-contained.
@@ -217,13 +241,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # -- plan -------------------------------------------------------------
     if args.system != "s0" and args.stage in {"plan", "all"}:
-        if args.canon:
-            try:
-                canon = load_canon(args.canon)
-            except CanonError as exc:
-                print(f"error: {exc}", file=sys.stderr)
-                return 2
-        else:
+        if not args.canon:
             try:
                 plan = build_plan(
                     task, provider, ledger, chapters=tasks.chapters,
@@ -251,16 +269,9 @@ def main(argv: list[str] | None = None) -> int:
     # -- design -----------------------------------------------------------
     if args.system != "s0" and args.stage in {"design", "all"}:
         if canon is None:
-            if args.canon and args.stage == "design":
-                try:
-                    canon = load_canon(args.canon)
-                except CanonError as exc:
-                    print(f"error: {exc}", file=sys.stderr)
-                    return 2
-            else:
-                print("error: designing without a canon requires the plan stage "
-                      "or --canon", file=sys.stderr)
-                return 2
+            print("error: designing without a canon requires the plan stage "
+                  "or --canon", file=sys.stderr)
+            return 2
         if not args.design:
             summary["design"] = {"status": "skipped",
                                  "reason": "--no-design (ablation/debugging only)"}
@@ -362,6 +373,10 @@ def main(argv: list[str] | None = None) -> int:
     summary["status"] = "pass" if all(gates.values()) or not gates else "fail"
 
     ledger.write_json("run-summary.json", summary)
+    # A reused-canon plan (or skipped design) makes no provider calls, so no
+    # stage has finished the ledger yet. Preserve its input provenance too.
+    if not (ledger.path / "manifest.json").exists():
+        ledger.finish("ok")
     if not args.quiet:
         print(json.dumps(summary, ensure_ascii=False, indent=2))
 
