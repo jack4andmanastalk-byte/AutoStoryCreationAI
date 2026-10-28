@@ -1,6 +1,6 @@
 """Deterministic Stage A checks: game log vs canon, plot and scenes.
 
-The checker never asks a model. It answers seven mechanical questions:
+The checker never asks a model. It answers nine mechanical questions:
 
 1. ``schema_shape`` — does each chapter/scene actually describe a TRPG loop
    (situation, purpose, conflict, change, choice, outcome, actions)?
@@ -20,6 +20,10 @@ The checker never asks a model. It answers seven mechanical questions:
    chapter, and is every declared payoff actually paid?
 8. ``emitted_markers`` — does the log declare exactly the marker sequence
    derived from its own state?
+9. ``scene_frame`` (schema 1.1 only; absent from 1.0 reports) — does each scene carry a phase
+   (opening → development → climax → ending, never backwards), an outcome
+   kind, a non-empty rescue for a ``fail_forward`` scene, and carry-forward
+   notes that connect it to the next scene?
 
 A finding at ``high`` or ``medium`` sends the log back for a repair round;
 ``low`` is informational. The report carries the derived markers and the
@@ -35,7 +39,8 @@ from ..plot.schema import PlotDoc
 from ..scene.schema import SceneDoc
 from ..story.canon import Canon, chapter_key, load_canon
 from .markers import DERIVED_KINDS, derive_markers, marker_kind, normalise_marker, owner_markers
-from .schema import (GameLog, GameLogError, PRESENT_TENSE_TYPES, REFERENCE_TYPES,
+from .schema import (CARRY_FORWARD_MAX, GameLog, GameLogError, OUTCOME_KINDS, PHASES,
+                     PRESENT_TENSE_TYPES, REFERENCE_TYPES, SCHEMA_VERSION_V11,
                      TENSION_DEVICES, load_game_log)
 
 REPAIR_SEVERITIES = frozenset({"high", "medium"})
@@ -76,6 +81,12 @@ CHECKS: tuple[Check, ...] = (
     Check("emitted_markers", "確定マーカー列が state_delta から導出した列と一致するか。",
           "各章・各場面の emitted_markers が導出列と順序まで一致し、対応する marker 種別に限られること。",
           "マーカーは state_delta から決まる。Stage B の本文保持は別の検査。"),
+    Check("scene_frame", "場面がフェイズ・結果の種別・救済・次場面への持ち越しを持つか。",
+          "phase が opening→development→climax→ending の順に戻らず並び、最初が opening、最後が ending。"
+          "outcome_kind が列挙値。fail_forward の場面は rescue が空でない。"
+          "最後の場面以外は carry_forward が 1〜3 件。",
+          "1.0 のログは対象外（skipped）。climax が設計の転換点と対応するかは見ない。"
+          "持ち越しの内容が次場面で実際に使われたかは見ない。"),
 )
 
 CHECK_BY_ID = {spec.id: spec for spec in CHECKS}
@@ -206,6 +217,62 @@ def _check_schema_shape(log: GameLog, ctx: _Context) -> int:
                     ctx.add(_finding("schema_shape", "medium",
                                      "行為者（actor）が空欄。", aref))
     return evaluated
+
+
+def _check_scene_frame(log: GameLog, ctx: _Context) -> int:
+    """Schema 1.1 only: the phase order, the outcome kind, the rescue and the carry."""
+    scenes = [(chapter, scene) for chapter in log.chapters for scene in chapter.scenes]
+    previous_rank = -1
+    for index, (chapter, scene) in enumerate(scenes):
+        sref = f"chapters:{chapter.id}.scenes:{scene.id}"
+        if scene.phase not in PHASES:
+            ctx.add(_finding(
+                "scene_frame", "high",
+                f"フェイズ「{scene.phase}」は {list(PHASES)} のいずれかではない（空欄を含む）。",
+                sref, phase=scene.phase))
+        else:
+            rank = PHASES.index(scene.phase)
+            if rank < previous_rank:
+                ctx.add(_finding(
+                    "scene_frame", "high",
+                    f"フェイズが前の場面より戻っている（{scene.phase}）。"
+                    "導入→本編→クライマックス→結末の順に並べる。",
+                    sref, phase=scene.phase))
+            previous_rank = max(previous_rank, rank)
+        if scene.outcome_kind not in OUTCOME_KINDS:
+            ctx.add(_finding(
+                "scene_frame", "high",
+                f"結果の種別「{scene.outcome_kind}」は {list(OUTCOME_KINDS)} のいずれかではない。",
+                sref, outcome_kind=scene.outcome_kind))
+        if scene.outcome_kind == "fail_forward" and not scene.rescue:
+            ctx.add(_finding(
+                "scene_frame", "high",
+                "目的を果たせなかったが前進する場面に、必須情報や次の行き先を補う経路"
+                "（rescue）が書かれていない。", sref))
+        if len(scene.carry_forward) > CARRY_FORWARD_MAX:
+            ctx.add(_finding(
+                "scene_frame", "medium",
+                f"持ち越しが {len(scene.carry_forward)} 件ある（上限 {CARRY_FORWARD_MAX}）。"
+                "重要なものを 1〜3 件に絞る。", sref))
+        if index < len(scenes) - 1 and not scene.carry_forward:
+            ctx.add(_finding(
+                "scene_frame", "medium",
+                "次の場面へ渡す結果（carry_forward）が空欄。次の場面がこの結果を前提にできない。",
+                sref))
+    if scenes:
+        first_chapter, first = scenes[0]
+        last_chapter, last = scenes[-1]
+        if first.phase != "opening":
+            ctx.add(_finding("scene_frame", "medium",
+                             "最初の場面のフェイズが opening ではない。",
+                             f"chapters:{first_chapter.id}.scenes:{first.id}",
+                             phase=first.phase))
+        if last.phase != "ending":
+            ctx.add(_finding("scene_frame", "medium",
+                             "最後の場面のフェイズが ending ではない。",
+                             f"chapters:{last_chapter.id}.scenes:{last.id}",
+                             phase=last.phase))
+    return len(scenes)
 
 
 def _check_canon_refs(log: GameLog, ctx: _Context) -> int:
@@ -800,9 +867,13 @@ def check_game_log(log: GameLog, canon: Canon, plot: PlotDoc | None = None,
         ("knowledge_boundary", _check_knowledge_boundary),
         ("foreshadow_order", _check_foreshadow_order),
         ("emitted_markers", _check_emitted_markers),
+        ("scene_frame", _check_scene_frame),
     ]
     checks: list[dict] = []
     for check_id, runner in runners:
+        if check_id == "scene_frame" and log.schema_version != SCHEMA_VERSION_V11:
+            # Not listed for 1.0 logs at all, so the frozen 1.0 reports stay byte-identical.
+            continue
         if check_id == "design_alignment" and (plot is None or scenes is None):
             checks.append({**_spec_dict(check_id), "status": "skipped",
                            "reason": "plot.json / scene.json が与えられていない。",

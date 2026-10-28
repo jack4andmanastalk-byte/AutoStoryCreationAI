@@ -29,7 +29,21 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+#: Version of logs written before the scene frame existed. Frozen experiment
+#: bundles keep this version, so their bytes and replay hashes do not change.
 SCHEMA_VERSION = "1.0"
+#: Adds the scene frame: ``phase``, ``outcome_kind``, ``carry_forward`` and
+#: ``rescue`` (see docs/two_stage_slice.md §27). Required by the ``scene_frame``
+#: check; a 1.0 log is reported as skipped for that check, never failed.
+SCHEMA_VERSION_V11 = "1.1"
+SUPPORTED_SCHEMA_VERSIONS = (SCHEMA_VERSION, SCHEMA_VERSION_V11)
+#: Turn-level phases, in the only order a log may pass through them.
+PHASES = ("opening", "development", "climax", "ending")
+#: The result of a scene as a decision, without dice: ``fail_forward`` means the
+#: scene did not deliver its goal but moved the story on, and must say how
+#: (``rescue``).
+OUTCOME_KINDS = ("success", "partial", "fail_forward")
+CARRY_FORWARD_MAX = 3
 
 #: Keys the schema reads at each level. Anything else is reported, not dropped
 #: silently (see :func:`_note_unknown`).
@@ -38,7 +52,8 @@ KEYS_CHAPTER = frozenset({"id", "day", "location", "emitted_markers", "scenes"})
 KEYS_SCENE = frozenset({
     "id", "scene_ref", "act_ref", "turn_ref", "situation", "purpose", "conflict",
     "change", "tension", "choice", "outcome", "present_characters", "actions",
-    "state_delta", "day", "location", "emitted_markers"})
+    "state_delta", "day", "location", "emitted_markers",
+    "phase", "outcome_kind", "carry_forward", "rescue"})
 KEYS_ACTION = frozenset({"id", "type", "actor", "summary", "target", "subject",
                          "medium", "text"})
 KEYS_STATE_DELTA = frozenset({"learned_facts", "used_facts", "foreshadow_events",
@@ -206,8 +221,14 @@ class Scene:
     day: float | None = None
     location: str = ""
     emitted_markers: tuple[str, ...] = ()
+    #: Schema 1.1 only; empty for 1.0 logs.
+    phase: str = ""
+    outcome_kind: str = ""
+    carry_forward: tuple[str, ...] = ()
+    rescue: str = ""
 
-    def as_dict(self) -> dict:
+    def as_dict(self, *, frame: bool = False) -> dict:
+        """``frame=True`` writes the 1.1 fields even when empty (a 1.1 log)."""
         payload = {
             "id": self.id, "scene_ref": self.scene_ref, "act_ref": self.act_ref,
             "turn_ref": self.turn_ref, "situation": self.situation,
@@ -223,6 +244,11 @@ class Scene:
             payload["day"] = self.day
         if self.location:
             payload["location"] = self.location
+        if frame or self.phase or self.outcome_kind or self.carry_forward or self.rescue:
+            payload["phase"] = self.phase
+            payload["outcome_kind"] = self.outcome_kind
+            payload["carry_forward"] = list(self.carry_forward)
+            payload["rescue"] = self.rescue
         return payload
 
 
@@ -234,10 +260,10 @@ class Chapter:
     scenes: tuple[Scene, ...]
     emitted_markers: tuple[str, ...] = ()
 
-    def as_dict(self) -> dict:
+    def as_dict(self, *, frame: bool = False) -> dict:
         return {"id": self.id, "day": self.day, "location": self.location,
                 "emitted_markers": list(self.emitted_markers),
-                "scenes": [scene.as_dict() for scene in self.scenes]}
+                "scenes": [scene.as_dict(frame=frame) for scene in self.scenes]}
 
 
 @dataclass(frozen=True)
@@ -256,7 +282,8 @@ class GameLog:
             "schema_version": self.schema_version,
             "task": self.task,
             "notes": self.notes,
-            "chapters": [chapter.as_dict() for chapter in self.chapters],
+            "chapters": [chapter.as_dict(frame=self.schema_version == SCHEMA_VERSION_V11)
+                         for chapter in self.chapters],
         }
 
     def chapter(self, chapter_id: str) -> Chapter | None:
@@ -357,7 +384,11 @@ def _parse_scene(row: dict, chapter_id: str, where: str,
         day=day,
         location=_text(row, "location", where, required=False),
         emitted_markers=_strings(row.get("emitted_markers"),
-                                 f"{where}.emitted_markers"))
+                                 f"{where}.emitted_markers"),
+        phase=_text(row, "phase", where, required=False),
+        outcome_kind=_text(row, "outcome_kind", where, required=False),
+        carry_forward=_strings(row.get("carry_forward"), f"{where}.carry_forward"),
+        rescue=_text(row, "rescue", where, required=False))
 
 
 def parse_game_log(data: Any, path: str | Path = "<memory>") -> GameLog:
@@ -366,9 +397,10 @@ def parse_game_log(data: Any, path: str | Path = "<memory>") -> GameLog:
     unknown: list[dict] = []
     _note_unknown(root, KEYS_ROOT, "game_log", unknown)
     version = _text(root, "schema_version", "game_log")
-    if version != SCHEMA_VERSION:
+    if version not in SUPPORTED_SCHEMA_VERSIONS:
         raise GameLogError(
-            f"game_log.schema_version: expected {SCHEMA_VERSION!r}, got {version!r}")
+            f"game_log.schema_version: expected one of {list(SUPPORTED_SCHEMA_VERSIONS)!r}, "
+            f"got {version!r}")
     chapter_rows = _rows(root.get("chapters"), "game_log.chapters")
     if not chapter_rows:
         raise GameLogError("game_log.chapters: at least one chapter is required")
@@ -412,7 +444,8 @@ def load_game_log(path: str | Path) -> GameLog:
 #: Raised for parse errors during Stage A; exported for callers that only want
 #: the loader's exception type.
 __all__ = [
-    "SCHEMA_VERSION", "ACTION_TYPES", "PRESENT_TENSE_TYPES", "REFERENCE_TYPES",
+    "SCHEMA_VERSION", "SCHEMA_VERSION_V11", "SUPPORTED_SCHEMA_VERSIONS", "PHASES",
+    "OUTCOME_KINDS", "CARRY_FORWARD_MAX", "ACTION_TYPES", "PRESENT_TENSE_TYPES", "REFERENCE_TYPES",
     "FORESHADOW_EVENTS", "TENSION_DEVICES", "GameLogError", "Action", "FactUse",
     "ForeshadowEvent", "LocationMove", "StateDelta", "Scene", "Chapter",
     "GameLog", "parse_game_log", "load_game_log", "KEYS_ROOT", "KEYS_CHAPTER",

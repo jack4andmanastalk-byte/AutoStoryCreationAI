@@ -454,6 +454,9 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
 * `make skills-check` — `SKILL.md` の frontmatter・リンク・500 行制限、継続性監査の期待値、
   評価ハーネスのゲート（根拠必須・回帰判定・カバレッジ警告）を検査
+* 場面フレーム（schema 1.1、[`docs/two_stage_slice.md`](docs/two_stage_slice.md) §27）は `--gamelog-schema 1.1` で
+  有効化します（既定は 1.0）。フェイズ（導入・本編・クライマックス・結末）、結果の種別、救済、次場面への持ち越しを
+  記録し、検査 `scene_frame` で確かめます。実モデルでの 1.1 の確認は未実施です。
 * `make gamelog-check` / `make two-stage` — 二段階方式の Stage A ログ検査と Stage A→B の
   固定台本配線。決定論的な回帰テスト（`tests/test_gamelog_*.py`、
   `tests/test_twostage_pipeline.py`）が `make ci` で毎回走ります
