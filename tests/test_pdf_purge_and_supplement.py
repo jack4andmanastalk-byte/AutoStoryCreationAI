@@ -618,3 +618,53 @@ def test_purge_allows_same_pdf_stem_in_different_sources(tmp_path, monkeypatch):
     assert not narou.exists() and not aozora.exists()
     assert (cfg.paths.raw_dir / "narou" / "texts" / "same.txt").exists()
     assert (cfg.paths.raw_dir / "aozora" / "texts" / "same.txt").exists()
+
+
+def test_purge_refuses_text_output_symlink_before_any_write_or_deletion(tmp_path, monkeypatch):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf = cfg.paths.pdf_dir / "narou" / "a.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"fake")
+    text = cfg.paths.raw_dir / "narou" / "texts" / "a.txt"
+    text.parent.mkdir(parents=True)
+    outside = tmp_path / "outside.txt"
+    text.symlink_to(outside)  # Broken link: Path.exists() is false.
+    called = []
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda p: called.append(p) or "X" * 200)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert not outside.exists() and pdf.read_bytes() == b"fake"
+    assert called == []
+
+
+def test_purge_refuses_text_directory_symlink_before_copy_or_deletion(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf = cfg.paths.pdf_dir / "narou" / "a.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"fake")
+    parent = cfg.paths.raw_dir / "narou"
+    parent.mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "a.txt").write_text("unrelated existing text " * 20, encoding="utf-8")
+    (parent / "texts").symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert pdf.read_bytes() == b"fake"
+    assert (outside / "a.txt").read_text(encoding="utf-8") == "unrelated existing text " * 20
+
+
+def test_purge_refuses_text_root_symlink_before_reuse_copy(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    cfg.paths.raw_dir.symlink_to(outside, target_is_directory=True)
+    reuse = tmp_path / "reuse" / "raw" / "aozora" / "texts"
+    reuse.mkdir(parents=True)
+    (reuse / "a.txt").write_text("some text " * 20, encoding="utf-8")
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=str(tmp_path / "reuse")))
+    assert list(outside.iterdir()) == []
