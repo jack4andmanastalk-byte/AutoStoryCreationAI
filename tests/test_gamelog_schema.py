@@ -97,7 +97,7 @@ def test_declared_emitted_markers_equal_the_derived_sequence():
     (lambda d: d["chapters"][0]["scenes"][0]["state_delta"][
         "foreshadow_events"][0].update({"event": "plant"}), "is not one of"),
     (lambda d: d.pop("schema_version"), "must be a string"),
-    (lambda d: d.update({"schema_version": "2.0"}), "expected '1.0'"),
+    (lambda d: d.update({"schema_version": "2.0"}), "expected one of"),
     (lambda d: d["chapters"].clear(), "at least one chapter"),
     (lambda d: d["chapters"][0].update({"day": "one"}), "must be a number"),
     (lambda d: d["chapters"][0]["scenes"][0].update(

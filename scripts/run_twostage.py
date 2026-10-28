@@ -146,6 +146,20 @@ GAMELOG_SCHEMA = """\
 型: action / dialogue / record_reference / memory_mention。tension: suspense /
 curiosity / surprise / irony / deadline / quiet。event: setup / payoff。"""
 
+#: Schema 1.1 (scene frame). Opt-in with ``--gamelog-schema 1.1``; the 1.0 text
+#: above is unchanged so recorded runs keep their prompt hashes.
+PROMPT_NAME_V11 = "stage-a-gamelog-v1.1"
+GAMELOG_SCHEMA_V11 = GAMELOG_SCHEMA.replace('"schema_version": "1.0"',
+                                            '"schema_version": "1.1"', 1)
+_V11_SCENE_KEYS = ('"outcome": "結果", ',
+                   '"outcome": "結果", "phase": "opening", "outcome_kind": "success", '
+                   '"rescue": "", "carry_forward": ["次の場面へ渡す結果"], ')
+assert GAMELOG_SCHEMA_V11.count(_V11_SCENE_KEYS[0]) == 1
+GAMELOG_SCHEMA_V11 = GAMELOG_SCHEMA_V11.replace(*_V11_SCENE_KEYS) + (
+    "\n場面フレーム（1.1）: phase は opening/development/climax/ending、"
+    "outcome_kind は success/partial/fail_forward、rescue は fail_forward のときだけ、"
+    "carry_forward は最後の場面以外で 1〜3 件。")
+
 MARKER_CONTRACT = """\
 - 章ごとに、先頭へ `{{time: day=<章の day>}}`、`{{location: <章の location>}}`
   をこの順で 1 件ずつ。この 2 件を章の `emitted_markers` に書く。
@@ -402,8 +416,13 @@ def _record_once(ledger, request: GenerationRequest,
 # -- stages -----------------------------------------------------------------
 def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
                 plot: PlotDoc, scenes: SceneDoc, prompts: dict, *,
-                temperature: float, seed: int, max_attempts: int) -> dict:
+                temperature: float, seed: int, max_attempts: int,
+                gamelog_schema: str = "1.0") -> dict:
     findings: list[dict] = []
+    if gamelog_schema == "1.1":
+        stage_a_name, schema_text = PROMPT_NAME_V11, GAMELOG_SCHEMA_V11
+    else:
+        stage_a_name, schema_text = "stage-a-gamelog", GAMELOG_SCHEMA
     report: dict | None = None
     log: GameLog | None = None
     attempts = 0
@@ -411,11 +430,11 @@ def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
     for attempt in range(1, max_attempts + 1):
         attempts = attempt
         if attempt == 1:
-            template = prompts["stage-a-gamelog"]
+            template = prompts[stage_a_name]
             prompt = template.render({
                 "task": _task_text(task), "canon": canon_brief(canon),
                 "plot": _plot_slice(plot), "scenes": _scenes_slice(scenes),
-                "schema": GAMELOG_SCHEMA, "marker_contract": MARKER_CONTRACT,
+                "schema": schema_text, "marker_contract": MARKER_CONTRACT,
             })
             purpose = "stage_a"
         else:
@@ -423,7 +442,7 @@ def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
             prompt = template.render({
                 "findings": _format_findings(findings),
                 "marker_contract": MARKER_CONTRACT,
-                "schema": GAMELOG_SCHEMA,
+                "schema": schema_text,
                 "previous": ledger.path.joinpath(
                     f"stage_a/attempt-{attempt - 1}.txt").read_text(encoding="utf-8"),
             })
@@ -473,7 +492,7 @@ def run_stage_a(task: Task, provider, ledger: RunLedger, canon: Canon,
     report = {**report, "attempts": attempts, "repairs": max(0, attempts - 1),
               "first_attempt_findings": first_findings,
               "prompt_hashes": {name: prompts[name].digest for name in
-                                ("stage-a-gamelog", "stage-a-repair")}}
+                                (stage_a_name, "stage-a-repair")}}
     if log is not None:
         ledger.write_json("game_log.json", log.as_dict())
     ledger.write_json("game_log.report.json", report)
@@ -607,6 +626,9 @@ def parse_args(argv=None) -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--temperature", type=float, default=0.8)
     parser.add_argument("--max-attempts", type=int, default=2)
+    parser.add_argument("--gamelog-schema", choices=("1.0", "1.1"), default="1.0",
+                        help="Stage A log schema: 1.0 (frozen default) or 1.1 "
+                             "(scene frame: phase, outcome_kind, rescue, carry_forward)")
     parser.add_argument("--observe-surface", action="store_true",
                         help="record the candidate place check's observations in "
                              "each chapter report (never used as a finding or a "
@@ -628,7 +650,7 @@ def parse_args(argv=None) -> argparse.Namespace:
 #: Config entries that must not change between a run and its ``--resume``.
 CONFIG_COMPARE = ("task", "system", "stage", "seed", "temperature",
                   "max_attempts", "provider", "protocol_version",
-                  "strict_timeline")
+                  "strict_timeline", "gamelog_schema")
 #: Input digests that must not change between a run and its ``--resume``.
 INPUT_COMPARE = ("canon_files_sha256", "design_files_sha256",
                  "script_sha256", "game_log_sha256", "prompt_hashes")
@@ -666,6 +688,8 @@ def _resume_command(args: argparse.Namespace, run_id: str) -> str:
               "--max-attempts", str(args.max_attempts)]
     if args.game_log:
         parts += ["--game-log", args.game_log]
+    if args.gamelog_schema != "1.0":
+        parts += ["--gamelog-schema", args.gamelog_schema]
     if args.min_chars != MIN_REWRITE_CHARS:
         parts += ["--min-chars", str(args.min_chars)]
     if args.strict_timeline:
@@ -736,6 +760,8 @@ def main(argv=None) -> int:
         voice = load_voice(voice_path)
         scope = load_evaluation_scope()
         prompts = {name: load_prompt(name) for name in PROMPT_NAMES}
+        if args.gamelog_schema == "1.1":
+            prompts[PROMPT_NAME_V11] = load_prompt(PROMPT_NAME_V11)
     except (TaskError, CanonError, EvaluationScopeError, OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -781,6 +807,10 @@ def main(argv=None) -> int:
                             if args.game_log else None),
         "prompt_hashes": {name: prompts[name].digest for name in PROMPT_NAMES},
     }
+    if args.gamelog_schema == "1.1":
+        # Recorded only for 1.1, so the 1.0 config (and every recorded run) is unchanged.
+        config["gamelog_schema"] = "1.1"
+        config["prompt_hashes"][PROMPT_NAME_V11] = prompts[PROMPT_NAME_V11].digest
     recorded: list[dict] = []
     resume_count = 0
     config_changes: dict[str, dict] = {}
@@ -969,7 +999,8 @@ def main(argv=None) -> int:
         if provided_log is None:
             stage_a = run_stage_a(task, provider, ledger, canon, plot, scenes, prompts,
                                   temperature=args.temperature, seed=args.seed,
-                                  max_attempts=args.max_attempts)
+                                  max_attempts=args.max_attempts,
+                                  gamelog_schema=args.gamelog_schema)
         else:
             stage_a = {"log": provided_log, "report": {
                 **provided_report, "attempts": 0, "repairs": 0,
