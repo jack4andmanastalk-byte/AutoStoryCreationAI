@@ -1495,9 +1495,52 @@ def _write_combined_commercialized_catalog(cfg: Config) -> Optional[Path]:
     return out_path
 
 
+def _purge_pdf_preflight(pdf_root: Path) -> Set[Path]:
+    """Reject ambiguous or symlinked PDF inputs before writing or deleting."""
+    if pdf_root.is_symlink():
+        raise ValueError(f"symbolic link in PDF directory: {pdf_root}; no PDFs were deleted")
+    if not pdf_root.is_dir():
+        return set()
+
+    expected_dirs = {pdf_root / "narou", pdf_root / "aozora"}
+    for path in pdf_root.rglob("*"):
+        if path.is_symlink() and (path in expected_dirs or path.is_dir()
+                                  or path.suffix.lower() == ".pdf"):
+            raise ValueError(f"symbolic link in PDF directory: {path}; no PDFs were deleted")
+
+    recognized: Set[Path] = set()
+    for directory in sorted(expected_dirs):
+        if not directory.is_dir():
+            continue
+        stems: Dict[str, Path] = {}
+        for path in sorted(directory.iterdir()):
+            if not path.is_file() or path.suffix.lower() != ".pdf":
+                continue
+            key = path.stem.casefold()
+            if key in stems:
+                raise ValueError(
+                    f"ambiguous PDF names {stems[key]} and {path}; no PDFs were deleted"
+                )
+            stems[key] = path
+            recognized.add(path)
+
+    all_pdfs = {path for path in pdf_root.rglob("*")
+                if path.is_file() and path.suffix.lower() == ".pdf"}
+    unknown = sorted(all_pdfs - recognized)
+    if unknown:
+        raise ValueError(
+            f"unrecognized PDF location {unknown[0]}; no PDFs were deleted. "
+            "Move it to a safe location before retrying."
+        )
+    return recognized
+
+
 def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
     """Convert any text-less PDFs to plain UTF-8 text, clear PDF fields, and delete all PDFs."""
     reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
+    pdf_root = cfg.paths.pdf_dir
+    # This must precede copying reuse texts as well as extraction/deletion.
+    recognized = _purge_pdf_preflight(pdf_root)
 
     converted_count = 0
     verified_txt_count = 0
@@ -1526,25 +1569,6 @@ def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
                         shutil.copy2(tf, dest)
             if rp.is_dir():
                 source_specs.append((sub_src, rp, target_txt_dir))
-
-    # Refuse unknown PDF locations before extracting or deleting anything.  In
-    # particular, never recursively erase unrelated files in the PDF directory.
-    pdf_root = cfg.paths.pdf_dir
-    recognized = {
-        path for _, directory, _ in source_specs[:2] if directory.is_dir()
-        for path in directory.iterdir()
-        if path.is_file() and path.suffix.lower() == ".pdf"
-    }
-    all_pdfs = {
-        path for path in pdf_root.rglob("*")
-        if path.is_file() and path.suffix.lower() == ".pdf"
-    } if pdf_root.is_dir() else set()
-    unknown = sorted(all_pdfs - recognized)
-    if unknown:
-        raise ValueError(
-            f"unrecognized PDF location {unknown[0]}; no PDFs were deleted. "
-            "Move it to a safe location before retrying."
-        )
 
     for src_name, pdir, tdir in source_specs:
         if not pdir.is_dir():

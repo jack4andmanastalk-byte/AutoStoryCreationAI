@@ -531,3 +531,90 @@ def test_purge_refuses_blank_or_invalid_existing_text(tmp_path):
         sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
     assert pdf.read_bytes() == b"pdf"
     assert text.read_bytes() == b"\xff" * 200
+
+
+def test_purge_refuses_symlinked_source_directory_before_copy_or_deletion(tmp_path, monkeypatch):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    external_pdf = outside / "important.pdf"
+    external_pdf.write_bytes(b"outside PDF")
+    cfg.paths.pdf_dir.mkdir()
+    (cfg.paths.pdf_dir / "narou").symlink_to(outside, target_is_directory=True)
+    reuse = tmp_path / "reuse" / "raw" / "aozora" / "texts"
+    reuse.mkdir(parents=True)
+    (reuse / "copy.txt").write_text("not private data " * 20, encoding="utf-8")
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda _: "nonempty" * 30)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=str(tmp_path / "reuse")))
+    assert external_pdf.read_bytes() == b"outside PDF"
+    assert not (cfg.paths.raw_dir / "aozora" / "texts" / "copy.txt").exists()
+
+
+def test_purge_refuses_case_colliding_pdfs_before_extraction_or_deletion(tmp_path, monkeypatch):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    pdf_dir = cfg.paths.pdf_dir / "narou"
+    pdf_dir.mkdir(parents=True)
+    first, second = pdf_dir / "Book.pdf", pdf_dir / "book.pdf"
+    first.write_bytes(b"first")
+    second.write_bytes(b"second")
+    called = []
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda p: called.append(p) or "X" * 200)
+    with pytest.raises(ValueError, match="ambiguous PDF"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert first.read_bytes() == b"first" and second.read_bytes() == b"second"
+    assert called == []
+    assert not cfg.paths.raw_dir.exists()
+
+
+def test_purge_refuses_pdf_file_and_nested_directory_symlinks(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    directory = cfg.paths.pdf_dir / "aozora"
+    directory.mkdir(parents=True)
+    known = directory / "known.pdf"
+    known.write_bytes(b"known")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    external = outside / "external.pdf"
+    external.write_bytes(b"external")
+    pdf_link = directory / "linked.PDF"
+    pdf_link.symlink_to(external)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert known.read_bytes() == b"known" and external.read_bytes() == b"external"
+    pdf_link.unlink()
+    directory_link = cfg.paths.pdf_dir / "unrecognized"
+    directory_link.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert known.read_bytes() == b"known" and external.read_bytes() == b"external"
+
+
+def test_purge_refuses_symlinked_pdf_root(tmp_path):
+    import pytest
+    cfg = _purge_config(tmp_path)
+    outside = tmp_path / "outside"
+    (outside / "narou").mkdir(parents=True)
+    external = outside / "narou" / "external.pdf"
+    external.write_bytes(b"external")
+    cfg.paths.pdf_dir.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(ValueError, match="symbolic link"):
+        sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert external.read_bytes() == b"external"
+
+
+def test_purge_allows_same_pdf_stem_in_different_sources(tmp_path, monkeypatch):
+    cfg = _purge_config(tmp_path)
+    narou = cfg.paths.pdf_dir / "narou" / "same.pdf"
+    aozora = cfg.paths.pdf_dir / "aozora" / "same.pdf"
+    for pdf in (narou, aozora):
+        pdf.parent.mkdir(parents=True)
+        pdf.write_bytes(b"fake PDF")
+    monkeypatch.setattr(sd, "extract_clean_text_from_pdf", lambda _: "generated text " * 20)
+    sd.cmd_purge_pdfs(cfg, argparse.Namespace(reuse_existing_dir=None))
+    assert not narou.exists() and not aozora.exists()
+    assert (cfg.paths.raw_dir / "narou" / "texts" / "same.txt").exists()
+    assert (cfg.paths.raw_dir / "aozora" / "texts" / "same.txt").exists()
