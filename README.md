@@ -8,7 +8,7 @@ AIが作品を作り続けられるよう、その基盤として **研究素材
 1. 公開ドメインの日本語文学（青空文庫）
 2. Web 小説（小説家になろう）
 
-から、統一スキーマのメタデータ JSONL と AI 自動創作・評価に直接利用できる整形済みプレーンテキスト（UTF-8 `.txt`、PDF 廃止済）を生成するパイプラインと、
+から、統一スキーマのメタデータ JSONL と AI 自動創作・評価に直接利用できる整形済みプレーンテキスト（UTF-8 `.txt`）を生成するパイプラインと、
 その実行結果を収録します。
 
 > 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
@@ -36,7 +36,7 @@ AIが作品を作り続けられるよう、その基盤として **研究素材
 | 外部確認済・商業化300作品メタデータ | `samples/narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` / `rank201_300` も同梱) | CiNii Books (ISBN)・Wikipedia・Apple Books Japan により書籍・マンガ・アニメ・ゲームの実在を確認した上位 300 作品カタログ（R15 対象作品を含む） |
 | 5ジャンル限定・商業化追加73作品メタデータ | `samples/narou_commercialized_genre_supplement.jsonl` | **歴史（15）・推理（15）・現代（15）・SF（15）・ホラー（13）** に限定して外部実在検証・全話テキスト化した計 73 作品（19,057 話 / 約 7,981 万文字、Top 300 と重複なし） |
 | 外部確認済・商業化カタログ表 | `docs/narou_commercialized_ranking.md`, `docs/narou_genre_supplement_ranking.md` (`top100` / `rank101_200` / `rank201_300` も同梱) | 順位・区分・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・本文TXTサイズ一覧 |
-| 整形済み本文（プレーンテキスト専用） | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いた全話 UTF-8 プレーンテキスト（既存 PDF は全てテキスト化の上で完全削除済） |
+| 整形済み本文（プレーンテキスト専用） | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いた UTF-8 プレーンテキスト（公開データはテキスト形式） |
 | ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・テキスト容量・生成時刻 |
 
 JSONL は 1 行 = 1 レコード（UTF-8 / `ensure_ascii=False` / キー順固定）です。
@@ -120,6 +120,12 @@ make pull-datasets
 gh release download datasets-narou-commercialized
 ```
 
+**PDF と既存ファイルへの注意:** 通常の `make data` / `dataset-refresh` はテキスト形式を
+使いますが、CLI の `--pdf` と旧 PDF の `purge-pdfs` は互換機能として残っています。
+`make data` は最後に `purge-pdfs` を実行し、対応するテキストを確認・抽出した後、
+設定の PDF ディレクトリ内の対象 PDF を削除します。実行前に必要なファイルをバックアップし、
+[`docs/data_setup.md`](docs/data_setup.md) の注意事項を確認してください。
+
 ## 3.  データソース
 
 ### 3.1 青空文庫（aozora.gr.jp）
@@ -153,7 +159,7 @@ gh release download datasets-narou-commercialized
 * `narou.local_text_dir` … 事前取得済みの本文（`<Nコード>/<話数>.txt`）を再利用
 
 `.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
-生成した JSONL・本文・PDF を `datasets` ブランチおよび artifact として公開します
+生成した JSONL・本文テキストを `datasets` ブランチおよび artifact として公開します
 （`make data` のネットワーク制約がある環境では `make pull-datasets` で即座に展開可能）。
 
 ## 4.  ディレクトリ構成
@@ -463,7 +469,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * CI: `.github/workflows/research-check.yml` が**全 push / 全 PR** でカタログ整合・全テスト・
   デモの監査と評価を実行します（ローカル 30〜60 秒）。実行枠の設計は
   [`docs/ci.md`](docs/ci.md) を参照してください
-* `dataset-refresh`（データ取得と PDF 生成）は別ワークフローで、**同時実行数を絞って**
+* `dataset-refresh`（データ取得とテキスト公開）は別ワークフローで、**同時実行数を絞って**
   CI の枠を空けます
 
 ## 6.  次フェーズ候補

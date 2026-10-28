@@ -136,7 +136,12 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 | ワークフロー | トリガー | 時間 | 役割 |
 | --- | --- | --- | --- |
 | `research-check` | 全 push・全 PR・手動 | 30〜60 秒 | カタログ整合、全テスト、デモ監査、デモ評価 |
-| `dataset-refresh` | データ関連のパスへの push・月次・手動 | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化・PDF完全削除、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
+| `dataset-refresh` | 月次・手動（push / PR では起動しない） | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化・PDF完全削除、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
+
+`dataset-refresh` の `publish` は **main の実行時のみ** `datasets` と Release を更新する。
+手動で作業ブランチを指定するとビルド確認はできるが公開ジョブは実行されない。通常の
+push / PR では外部データ取得・上書きは始まらない。main を手動実行または月次実行すると
+従来どおり公開されるため、実行前に権利・対象・容量を確認する。
 
 `research-check` は**デモの監査と評価も実行**する。テストが緑でも、デモの期待値が
 ずれていれば落ちる（`harness/cases/demo/EXPECTED.md` が契約）。
@@ -145,7 +150,7 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 
 * `dataset-refresh` のシャード数を増やすなら `max-parallel` も見直す。
   `シャード数 - max-parallel + 2` が常時使う枠。**8 以上は空ける**こと。
-* `publish` の `if` は `(!cancelled()) && needs.prepare.result == 'success' && needs.render-narou.result != 'cancelled'` を維持する（`always()` を使うと Web UI の Cancel が効かなくなるため `!cancelled()` とする）。
+* `publish` の `if` は main 限定と `(!cancelled()) && needs.prepare.result == 'success' && needs.render-narou.result != 'cancelled'` を維持する（`always()` を使うと Web UI の Cancel が効かなくなるため `!cancelled()` とする）。
   キャンセルされた実行の部分的な PDF で `datasets` ブランチを上書きしてしまう。
 * `dataset-refresh` の頻度を週次に戻すなら、分数を計算し直すこと（1 回 700 分）。
 * `research-check` に path フィルタを戻さない。**列挙漏れで CI が走らない**のが

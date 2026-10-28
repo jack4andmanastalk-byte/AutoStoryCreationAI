@@ -22,17 +22,8 @@ on:
       seed_run_id:
         description: "Optional prior workflow run ID to reuse prepared/shard artifacts from"
         default: ""
-  push:
-    branches-ignore:
-      - "main"
-    paths:
-      - ".github/workflows/dataset-refresh.yml"
-      - "scripts/setup_dataset.py"
-      - "scripts/fetch_narou_api.py"
-      - "src/asc/sources/narou.py"
-      - "src/asc/sources/media_verify.py"
-      - "configs/dataset.yaml"
-      - "requirements.txt"
+  # Publishing force-updates datasets and releases; ordinary branch pushes and
+  # pull requests must never implicitly start a refresh. Use dispatch or schedule.
   schedule:
     # Monthly schedule (use workflow_dispatch when an immediate refresh is wanted).
     - cron: "0 3 1 * *"
@@ -326,11 +317,13 @@ jobs:
 
   publish:
     needs: [prepare, render-narou]
+    # Only the default main branch may publish. Manual dispatch on another ref
+    # can exercise the build without overwriting the shared datasets/release.
     # `!cancelled()` runs even when individual `render-narou` shards failed (so
     # `--backfill` heals partial failures), while still honouring Web UI Cancel
     # immediately instead of blocking cancellation like `always()` did.
     if: >-
-      (!cancelled()) && needs.prepare.result == 'success'
+      github.ref == 'refs/heads/main' && (!cancelled()) && needs.prepare.result == 'success'
       && needs.render-narou.result != 'cancelled'
     runs-on: ${{ vars.DATASET_RUNNER_LABEL || 'ubuntu-latest' }}
     timeout-minutes: 90
