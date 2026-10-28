@@ -769,3 +769,56 @@ def test_strict_timeline_makes_the_same_chapter_a_repair(tmp_path):
     assert report["chapters"]["ch03"]["attempts"] == 2
     assert read_json(run / "run-summary.json")["timeline"]["strict"] is True
     assert read_json(tmp_path / "results.json")["timeline"]["strict"] is True
+
+
+def test_pending_relay_can_resume_from_git_checkpoint(tmp_path):
+    """A Git checkout, not an Arena snapshot, restores the pending run."""
+    import shlex
+
+    original = tmp_path / "checkpoint"
+    original.mkdir()
+    subprocess.run(["git", "init", "-q", str(original)], check=True)
+    subprocess.run(["git", "-C", str(original), "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(original), "config", "user.name", "Test"], check=True)
+    operator = REPO_ROOT / "scripts" / "chat_operator.py"
+
+    def run_at(root, resume=False):
+        command = shlex.join([sys.executable, str(operator), "--dir", str(root / "relay")])
+        flags = ["--command", command]
+        if resume:
+            flags.append("--resume")
+        return run_cli(root / "runs", *flags, provider="command", run_id="run1")
+
+    def answer_pending(root):
+        requests = list((root / "relay" / "requests").glob("*.json"))
+        pending = [p for p in requests if not (root / "relay" / "responses" / p.name).exists()]
+        assert len(pending) == 1
+        request = read_json(pending[0])
+        files = {"stage_a": INPUTS / "game_log.json",
+                 "stage_b:ch01": INPUTS / "rewrite" / "ch01.md",
+                 "stage_b:ch02": INPUTS / "rewrite" / "ch02.md",
+                 "stage_b:ch03": INPUTS / "rewrite" / "ch03.md"}
+        response = root / "relay" / "responses" / pending[0].name
+        response.parent.mkdir(parents=True, exist_ok=True)
+        response.write_text(json.dumps({"text": files[request["purpose"]].read_text(encoding="utf-8")},
+                                       ensure_ascii=False), encoding="utf-8")
+
+    first = run_at(original)
+    assert first.returncode == 3, first.stderr
+    answer_pending(original)
+    subprocess.run(["git", "-C", str(original), "add", "runs", "relay"], check=True)
+    subprocess.run(["git", "-C", str(original), "commit", "-qm", "pending checkpoint"], check=True)
+    restored = tmp_path / "restored"
+    subprocess.run(["git", "clone", "-q", str(original), str(restored)], check=True)
+    assert read_json(restored / "runs" / "run1" / "state.json")["status"] == "pending"
+    for _ in range(4):
+        result = run_at(restored, resume=True)
+        if result.returncode == 0:
+            break
+        assert result.returncode == 3, result.stderr
+        answer_pending(restored)
+    else:
+        pytest.fail("run did not complete")
+    assert read_json(restored / "runs" / "run1" / "run-summary.json")["status"] == "clean"
+    entries = [json.loads(line) for line in (restored / "runs" / "run1" / "responses.jsonl").read_text(encoding="utf-8").splitlines() if line.strip()]
+    assert [entry["purpose"] for entry in entries] == ["stage_a", "stage_b:ch01", "stage_b:ch02", "stage_b:ch03"]
