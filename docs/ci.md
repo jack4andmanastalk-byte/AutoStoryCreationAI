@@ -138,10 +138,11 @@ make ci    # カタログ整合 → 全テスト → デモ監査 → デモ評�
 | `research-check` | 全 push・全 PR・手動 | 30〜60 秒 | カタログ整合、全テスト、デモ監査、デモ評価 |
 | `dataset-refresh` | 月次・手動（push / PR では起動しない） | 10〜90 分（キャッシュ再利用時 ~7 分） | メタデータ取得、5ジャンル並列検証、プレーンテキスト化・PDF完全削除、orphan `datasets` ブランチと Release (`*_texts.tar.gz`) への公開 |
 
-`dataset-refresh` の `publish` は **main の実行時のみ** `datasets` と Release を更新する。
-手動で作業ブランチを指定するとビルド確認はできるが公開ジョブは実行されない。通常の
-push / PR では外部データ取得・上書きは始まらない。main を手動実行または月次実行すると
-従来どおり公開されるため、実行前に権利・対象・容量を確認する。
+`dataset-refresh` は現在 GitHub 上で手動停止されている（[保守状況](maintenance_status.md)）。
+以下は再有効化した場合のコードの挙動であり、再開の許可ではない。`publish` は **main の
+実行時のみ** `datasets` と Release を更新する。手動で作業ブランチを指定するとビルド確認は
+できるが公開ジョブは実行されない。通常の push / PR では外部データ取得・上書きは始まらない。
+main の手動・月次実行では再公開されるため、再開前に権利・対象・容量を確認する。
 
 `research-check` は**デモの監査と評価も実行**する。テストが緑でも、デモの期待値が
 ずれていれば落ちる（`harness/cases/demo/EXPECTED.md` が契約）。
