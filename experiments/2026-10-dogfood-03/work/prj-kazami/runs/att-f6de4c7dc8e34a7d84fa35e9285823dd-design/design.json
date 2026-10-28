@@ -1,0 +1,90 @@
+{
+  "attempts": 4,
+  "by_severity": {},
+  "carried": [
+    "brief",
+    "history",
+    "character",
+    "voice"
+  ],
+  "docs": {
+    "brief": {
+      "attempts": 2,
+      "carried_history": true,
+      "findings": 0,
+      "repairs": 1,
+      "status": "carried"
+    },
+    "character": {
+      "attempts": 1,
+      "carried_history": true,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "history": {
+      "attempts": 1,
+      "carried_history": true,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "plot": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "relation": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "scene": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "voice": {
+      "attempts": 1,
+      "carried_history": true,
+      "findings": 0,
+      "repairs": 0,
+      "status": "carried"
+    },
+    "world": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    }
+  },
+  "findings": 0,
+  "first_attempt_findings": 0,
+  "missing": [],
+  "repairs": 0,
+  "task": "node-6e39929eb31a4287b99fd862d2203021",
+  "unresolved": []
+}

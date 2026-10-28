@@ -1,0 +1,63 @@
+{
+  "artifacts": [
+    {
+      "artifact_id": "draft-draft.json",
+      "media_type": "application/json",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/draft.json",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "dc1ac5f8687885eab2055862a7b9ebc60c3428765426878ab449ab296b2d1153"
+    },
+    {
+      "artifact_id": "draft-text-ch01.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/text/ch01.md",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "c47adcd3f3f54cd68c4b1223d242f10d5273e86c0fe10ae5fce87e987f36b7ac"
+    },
+    {
+      "artifact_id": "draft-text-ch02.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/text/ch02.md",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "d1b96e94f4f68c83624cbd151b90e848074ba28304258e35d00e11e5f9e9988e"
+    },
+    {
+      "artifact_id": "draft-text-ch03.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/text/ch03.md",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "ecb10e1e4ce77641200645c6516f8123efd5d3a42fb4b7ea19cf940cae2992cb"
+    },
+    {
+      "artifact_id": "draft-text-ch04.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/text/ch04.md",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "5bd4f6c8b04498e5d770ad1cb52b998cb923650817e893f9582e171ff6ee6bc0"
+    },
+    {
+      "artifact_id": "draft-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-08c355bc7d91494d987e3afda67b7cd0-draft/resume-audit.json",
+      "producer_run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+      "sha256": "c133376c4853babf5f0f7f8f999d64454ed78c9fd0094f4f0ac2117ba2b40489"
+    }
+  ],
+  "attempt_id": "att-08c355bc7d91494d987e3afda67b7cd0",
+  "created_at": "2026-10-28T02:48:20.532444Z",
+  "error": null,
+  "node_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "pending": null,
+  "project_id": "prj-kazami",
+  "record_type": "stage_checkpoint",
+  "resume_of": "att-f6de4c7dc8e34a7d84fa35e9285823dd-draft",
+  "retry_of": null,
+  "revision_id": "rev-88dd9f8f2b6b41c889ec9b0769d2ec3a",
+  "run_id": "att-08c355bc7d91494d987e3afda67b7cd0-draft",
+  "schema_version": 1,
+  "seed": 0,
+  "stage": "draft",
+  "status": "done",
+  "temperature": 0.8,
+  "updated_at": "2026-10-28T02:48:20.580985Z"
+}

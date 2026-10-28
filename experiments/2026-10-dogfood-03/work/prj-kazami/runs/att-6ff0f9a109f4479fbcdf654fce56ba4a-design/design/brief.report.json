@@ -1,0 +1,24 @@
+{
+  "attempts": 2,
+  "checks_failed": 0,
+  "doc": "brief",
+  "findings": [],
+  "first_attempt": {
+    "checks_failed": 1,
+    "findings": [
+      {
+        "brief_ref": "brief",
+        "check": "logline_elements",
+        "message_ja": "四要素 'wants'（先代の記録が書き換えられているのではないかと疑いながら最後の観測を続けること）がログラインに現れない。",
+        "severity": "medium"
+      }
+    ]
+  },
+  "prompt": {
+    "digest": "24400eb90fe44e64",
+    "name": "design-repair",
+    "version": "1.0"
+  },
+  "repairs": 1,
+  "status": "clean"
+}

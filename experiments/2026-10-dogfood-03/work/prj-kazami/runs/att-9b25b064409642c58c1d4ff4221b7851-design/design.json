@@ -1,0 +1,102 @@
+{
+  "attempts": 9,
+  "by_severity": {},
+  "docs": {
+    "brief": {
+      "attempts": 2,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {
+        "medium": 1
+      },
+      "first_attempt_checks_failed": 1,
+      "first_attempt_findings": 1,
+      "repairs": 1,
+      "status": "clean"
+    },
+    "character": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "history": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "plot": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "relation": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "scene": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "voice": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    },
+    "world": {
+      "attempts": 1,
+      "by_severity": {},
+      "checks_failed": 0,
+      "findings": 0,
+      "first_attempt_by_severity": {},
+      "first_attempt_checks_failed": 0,
+      "first_attempt_findings": 0,
+      "repairs": 0,
+      "status": "clean"
+    }
+  },
+  "findings": 0,
+  "first_attempt_findings": 1,
+  "missing": [],
+  "repairs": 1,
+  "task": "node-6e39929eb31a4287b99fd862d2203021",
+  "unresolved": []
+}

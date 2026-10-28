@@ -1,0 +1,172 @@
+{
+  "pairs": [
+    {
+      "a": "hina",
+      "b": "kuro",
+      "public": "観測員と町の職員。月に一度、観測の報告書を役場へ持って行く。",
+      "stakes": "ヒナは閉鎖の日まで観測を続けたい。黒沢は年度内に閉鎖と転用を終わらせたい。",
+      "conflict": "ヒナは日誌の数字を残したい。黒沢は日誌を役場の書庫に畳みたい。同じ紙を、二人が別の目的で見ている。"
+    },
+    {
+      "a": "hina",
+      "b": "sada",
+      "public": "観測員と先代の妻。ヒナは月に一度、麓へ降りたついでに顔を出す。",
+      "stakes": "ヒナは先代の古い日誌を読みたく、サダは夫が何を書きたかったかを誰にも渡したくない。",
+      "conflict": "ヒナは日誌を借りたい。サダは日誌を渡せば署名のことも表に出ると知っている。"
+    },
+    {
+      "a": "kuro",
+      "b": "sada",
+      "public": "役場の職員と町の年寄り。閉鎖の説明にサダの家を訪ねる。",
+      "stakes": "黒沢は署名の有無を確かめたい。サダは署名のことを言いたくない。",
+      "conflict": "黒沢は書類の手続きとして署名を確認したい。サダは夫が町に睨まれた理由を残したくない。"
+    },
+    {
+      "a": "hina",
+      "b": "tsukasa",
+      "public": "姪と叔父。ヒナは先代の観測員を「先代」と呼び、名前をあまり口にしない。",
+      "stakes": "ヒナは三年前に自分が書き足した数字を、誰にも知られたくない。",
+      "conflict": "ヒナは叔父の記録を無傷の手本にしたい。だが三年前の欄は、ヒナ自身の字で埋められている。"
+    },
+    {
+      "a": "sada",
+      "b": "tsukasa",
+      "public": "夫婦。ツカサの死後、サダは仏壇の引き出しを開けていない。",
+      "stakes": "サダは日誌と署名の控えを、夫の代わりに預かっている。",
+      "conflict": "サダは夫の意図を汲みたい。同時に、夫が黙っていた理由を誰にも説明できない。"
+    }
+  ],
+  "knowledge": [
+    {
+      "character": "hina",
+      "fact": "F-01",
+      "state": "knows"
+    },
+    {
+      "character": "hina",
+      "fact": "F-02",
+      "state": "knows"
+    },
+    {
+      "character": "hina",
+      "fact": "F-03",
+      "state": "unknown"
+    },
+    {
+      "character": "hina",
+      "fact": "F-04",
+      "state": "unknown"
+    },
+    {
+      "character": "hina",
+      "fact": "F-05",
+      "state": "unknown"
+    },
+    {
+      "character": "hina",
+      "fact": "F-06",
+      "state": "unknown"
+    },
+    {
+      "character": "sada",
+      "fact": "F-04",
+      "state": "knows"
+    },
+    {
+      "character": "sada",
+      "fact": "F-05",
+      "state": "knows"
+    },
+    {
+      "character": "sada",
+      "fact": "F-02",
+      "state": "unknown"
+    },
+    {
+      "character": "kuro",
+      "fact": "F-03",
+      "state": "knows"
+    },
+    {
+      "character": "kuro",
+      "fact": "F-06",
+      "state": "knows"
+    },
+    {
+      "character": "kuro",
+      "fact": "F-05",
+      "state": "suspects"
+    },
+    {
+      "character": "tsukasa",
+      "fact": "F-04",
+      "state": "knows"
+    },
+    {
+      "character": "tsukasa",
+      "fact": "F-05",
+      "state": "knows"
+    }
+  ],
+  "changes": [
+    {
+      "pair": [
+        "hina",
+        "sada"
+      ],
+      "chapter": "ch02",
+      "trigger": "ヒナが三度目に訪ね、茶を断らずに待ったことで、サダが古い日誌を二冊だけ渡す。",
+      "after": "互いに渡さないものを一つずつ持ったまま、日誌の話ができる関係になる。"
+    },
+    {
+      "pair": [
+        "hina",
+        "kuro"
+      ],
+      "chapter": "ch03",
+      "trigger": "ヒナが二重に書かれた風速の欄の写しを黒沢に渡し、閉鎖の理由を議会で説明してほしいと頼む。",
+      "after": "閉じる側と閉じられる側ではなく、同じ日誌の頁を並べて見る関係になる。"
+    },
+    {
+      "pair": [
+        "kuro",
+        "sada"
+      ],
+      "chapter": "ch03",
+      "trigger": "黒沢が署名を自分が受理したと議会で認め、その足でサダの家へ礼を言いに行く。",
+      "after": "署名をめぐる沈黙が終わり、手続きの話が正面からできるようになる。"
+    }
+  ],
+  "silences": [
+    {
+      "chapter": "ch01",
+      "who": "hina",
+      "unsaid_ja": "三年前、空欄だった風速の欄に、自分の字で数字を書いたこと。"
+    },
+    {
+      "chapter": "ch01",
+      "who": "sada",
+      "unsaid_ja": "夫が集めた署名の控えを、日誌と一緒に引き出しへしまっていること。"
+    },
+    {
+      "chapter": "ch02",
+      "who": "kuro",
+      "unsaid_ja": "老朽化という閉鎖の理由を、自分が書いたこと。"
+    },
+    {
+      "chapter": "ch02",
+      "who": "sada",
+      "unsaid_ja": "夫が署名を出した夜、町の誰も反応しなかったこと。"
+    },
+    {
+      "chapter": "ch03",
+      "who": "hina",
+      "unsaid_ja": "日誌の最終頁が、自分の字で埋まっていること。"
+    },
+    {
+      "chapter": "ch03",
+      "who": "kuro",
+      "unsaid_ja": "転用の議案を、閉鎖の決定前から用意していたこと。"
+    }
+  ]
+}

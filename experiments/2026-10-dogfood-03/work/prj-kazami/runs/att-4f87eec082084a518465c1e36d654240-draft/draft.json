@@ -1,0 +1,43 @@
+{
+  "chapters": [
+    {
+      "chars": 1004,
+      "day": 1,
+      "id": "ch01",
+      "injected": [],
+      "location": "霧ヶ原",
+      "markers": 5
+    },
+    {
+      "chars": 1010,
+      "day": 3,
+      "id": "ch02",
+      "injected": [],
+      "location": "沢根",
+      "markers": 7
+    },
+    {
+      "chars": 1006,
+      "day": 6,
+      "id": "ch03",
+      "injected": [],
+      "location": "霧ヶ原",
+      "markers": 5
+    }
+  ],
+  "chars": 3020,
+  "must_include": {
+    "hits": {},
+    "rate": 1.0
+  },
+  "task": {
+    "avoid": [],
+    "control": "creative-project",
+    "genre": "novel",
+    "id": "node-6e39929eb31a4287b99fd862d2203021",
+    "logline": "閉鎖が決まった高原の測候所で、最後の観測員が先代の観測記録の食い違いに気づく。町は閉鎖を急ぎ、先代の妻は記録の一部を預かったまま黙っている。観測は続けられるのか、閉じられるべきなのか。",
+    "must_include": [],
+    "title_ja": "風速の窓"
+  },
+  "warnings_ja": []
+}

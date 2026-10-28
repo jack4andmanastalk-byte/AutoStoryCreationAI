@@ -1,0 +1,85 @@
+{
+  "scenes": [
+    {
+      "id": "s01",
+      "chapter": "ch01",
+      "purpose": "ヒナが朝九時の観測を順序どおりに行い、日誌に書く。",
+      "conflict": "先代の日誌を開くと、同じ日の風速が二度、別の筆跡で書かれている。",
+      "change": "ヒナは黒沢に確かめず、自分の日誌の余白に「測り直し」とだけ書く。",
+      "tension": "quiet",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01"], "gained": ["F-02"]}
+      ],
+      "disclosure": {"disclosed": ["F-02"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s02",
+      "chapter": "ch01",
+      "purpose": "ヒナが閉鎖の日程表を確かめ、日誌の最終頁の日付を数える。",
+      "conflict": "閉鎖までの日数が、日誌の残りの頁数より少ない。",
+      "change": "ヒナは頁を足すのではなく、一頁に二日分を書く段取りを決める。",
+      "tension": "deadline",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01", "F-02"], "gained": []}
+      ],
+      "disclosure": {"disclosed": [], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s03",
+      "chapter": "ch02",
+      "purpose": "ヒナが一日かけて麓の沢根へ降り、サダの家を三度目に訪ねる。",
+      "conflict": "サダは日誌の話になると茶を入れ直し、引き出しの前から動かない。",
+      "change": "ヒナが茶を断らずに待ったことで、サダは古い日誌を二冊だけ渡す。",
+      "tension": "curiosity",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01", "F-02"], "gained": ["F-04"]},
+        {"character": "sada", "entry": ["F-04", "F-05"], "gained": []}
+      ],
+      "disclosure": {"disclosed": ["F-04"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": ["fs-002"]}
+    },
+    {
+      "id": "s04",
+      "chapter": "ch02",
+      "purpose": "ヒナが役場で黒沢に閉鎖の理由を尋ね、転用の議案の写しを見せるよう求める。",
+      "conflict": "黒沢は老朽化という文面を守り、署名の有無には触れない。",
+      "change": "ヒナは閉鎖の理由が老朽化ではないと知り、議案の写しを受け取る。",
+      "tension": "irony",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01", "F-02", "F-04"], "gained": ["F-03", "F-06"]},
+        {"character": "kuro", "entry": ["F-03", "F-06"], "gained": ["F-04"]}
+      ],
+      "disclosure": {"disclosed": ["F-03", "F-06", "F-04"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s05",
+      "chapter": "ch03",
+      "purpose": "ヒナが役場の議会の席で、先代の署名の控えの話を黒沢から聞く。",
+      "conflict": "黒沢は署名を受理していたことを認め、ヒナに日誌の写しを求めない。",
+      "change": "ヒナは先代が反対の署名を出していたと知り、自分の書き足した数字を黒沢に告げる。",
+      "tension": "surprise",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01", "F-02", "F-03", "F-04", "F-06"], "gained": ["F-05"]},
+        {"character": "kuro", "entry": ["F-03", "F-05", "F-06"], "gained": ["F-02"]}
+      ],
+      "disclosure": {"disclosed": ["F-05", "F-02"], "withheld": []},
+      "foreshadows": {"planted": [], "paid": []}
+    },
+    {
+      "id": "s06",
+      "chapter": "ch03",
+      "purpose": "ヒナが霧ヶ原へ戻り、最後の観測を行って日誌を閉じる。",
+      "conflict": "閉じる頁には、二重に書かれた風速の欄と、ヒナ自身の書き足しが並んでいる。",
+      "change": "ヒナは数字を消さずに、閉じる頁へ氏名と日付を入れ、鍵の束を黒沢に渡す。",
+      "tension": "deadline",
+      "knowledge": [
+        {"character": "hina", "entry": ["F-01", "F-02", "F-03", "F-04", "F-05", "F-06"], "gained": []}
+      ],
+      "disclosure": {"disclosed": [], "withheld": []},
+      "foreshadows": {"planted": [], "paid": ["fs-001", "fs-003"]}
+    }
+  ]
+}

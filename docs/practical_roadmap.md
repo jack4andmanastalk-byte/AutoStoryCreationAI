@@ -61,6 +61,8 @@
 - 標準自動創作フローは `scripts/story_project.py`（既定 provider = Arena relay）に一本化され、`relay status` / `relay submit` による1ラウンド単位の往復、`render --reader` / `compose --reader` による読書用原稿、`summary` による作品情報・設定台帳・8設計書・検査要約（Blocker / Warning / Observation と次に直すコマンド）の Markdown 出力が揃っている。
 - 実応答 dogfood（[`experiments/2026-10-dogfood-01/`](../experiments/2026-10-dogfood-01/note.md)）で、単体3章・1章改訂・第4章追加（continuation）・設計1文書回復・子作品の追加と親子編纂・共有 `world` 台帳登録と4種編纂（年代記・地誌・文化誌・作品集）まで一通り実応答で完走済み。
 - 2作目の実応答 dogfood（[`experiments/2026-10-dogfood-02/`](../experiments/2026-10-dogfood-02/note.md)、16ラウンド）で摩擦 F-36〜F-43 を採取し、字数の許容幅（F-39）、carried 設計書の修復履歴（F-40）、`revise --note`（F-41）を実装済み。
+- 3作目の実応答 dogfood（[`experiments/2026-10-dogfood-03/`](../experiments/2026-10-dogfood-03/note.md)、19ラウンド・3章版から4章版へ `continue`）で、字数の許容幅が警告を実際に消すこと（帯内4章で警告0）、
+  carried 設計書の履歴が `continue` を挟んでも積み上がること（`brief` の試行2・修復1を保持）を確認した。摩擦は F-44〜F-47。
 
 ## 4. タスク整理
 
@@ -236,5 +238,12 @@
   `tests/test_relay_round.py`、`tests/test_design_prompt_contracts.py`、
   `tests/test_project_continuation.py`（strict offline replay の byte 一致を維持）。
 - 記録のみ: F-42（`run` は絶対パス・`submit` は相対パスの表示差）、F-43（`index.json` の pending 残り）。
-- 残り: 次作品で警告が実際に減ったか、`continue` を挟んだ累計が正しく積み上がるかを見る。
+- **検証済み（2026-10-28、[`experiments/2026-10-dogfood-03/`](../experiments/2026-10-dogfood-03/note.md)）**:
+  4章ぶんの本文（1004 / 1010 / 1006 / 998 字）で字数警告は 0 件、依頼文の目安も最初から
+  `950〜1050 字` の幅で出た。`continue --add-chapters 1` 後の `design.json` は
+  `carried: brief, history, character, voice` と `brief {attempts: 2, repairs: 1, carried_history: true}` を保ち、
+  `summary` の Info も「設計の累計: 試行 9 回 / 修復 1 回」と carried 行の「元リビジョンの履歴を引き継ぎ」で一致した。
+- 残り: F-44（`logline_elements` の逐語一致で brief が 1 回修復になった）、
+  F-46（章追加時の `acts` / `scenes` の章網羅は人間の裁量）、F-47（Info の「設計の累計」が
+  リビジョン内合計であることの表記）。
 

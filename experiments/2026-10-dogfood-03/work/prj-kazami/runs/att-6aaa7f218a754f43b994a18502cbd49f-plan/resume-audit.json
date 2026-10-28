@@ -1,0 +1,24 @@
+{
+  "all_source_responses_consumed": true,
+  "delegated_responses": 1,
+  "requests": [
+    {
+      "mode": "delegate",
+      "origin": "unspecified",
+      "prompt_hash": "2534b9b969c91a49",
+      "request_key": "s1-node-6e39929eb31a4287b99fd862d2203021-rev-88dd9f8f2b6b41c889ec9b0769d2ec3a-s0-plan-a1",
+      "source_response_index": null
+    }
+  ],
+  "reused_responses": 0,
+  "schema": "project-resume-audit-v1",
+  "scope": "interrupted-run continuation; not strict offline replay or model reproducibility",
+  "source_attempt_id": "att-f29e0e47dde941dda31da44e1f02ea84",
+  "source_run_id": "att-f29e0e47dde941dda31da44e1f02ea84-plan",
+  "source_sha256": {
+    "manifest": "f795971836c147304f1dd8e5cfacd1f85cc3a912f6582ba2924072e1b63f7013",
+    "project_input": "24d63a2690147be26e0f7cc6028553dc214c2cf9a73d39b5c63bf2b070a5284c",
+    "responses": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "source_unchanged": true
+}

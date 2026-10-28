@@ -1,0 +1,43 @@
+{
+  "artifacts": [
+    "brief.md",
+    "canon/README.md",
+    "canon/characters.json",
+    "canon/facts.json",
+    "canon/foreshadowing.json",
+    "canon/locations.json",
+    "canon/suppressions.json",
+    "canon/timeline.json",
+    "manifest.json",
+    "plan.json",
+    "plan/attempt-1.txt",
+    "project-input.json",
+    "responses.jsonl",
+    "resume-audit.json"
+  ],
+  "error": null,
+  "finished_at": "2026-10-28T02:47:28Z",
+  "git_commit": "6f020b1f67ab709587e8a0e5565d21edc84075e1",
+  "model": "arena-agent-mode",
+  "model_version": "unversioned-2026-10-28",
+  "prompt_hashes": {
+    "plan": "2534b9b969c91a49",
+    "plan-canon": "d5efcf43e513e63c",
+    "plan-repair": "4b4307af6b4381cb"
+  },
+  "protocol_version": "asc-project-v1",
+  "provider": "arena-relay",
+  "response_count": 1,
+  "responses_sha256": "ff412096cbe208691b3952a8254517ddf7609376cb0f822f9906f186e0072f97",
+  "run_id": "att-6aaa7f218a754f43b994a18502cbd49f-plan",
+  "seed": 0,
+  "started_at": "2026-10-28T02:47:28Z",
+  "status": "ok",
+  "system": "s1",
+  "task_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "temperature": 0.6,
+  "usage": {
+    "operator": 1,
+    "resume_delegate": 1
+  }
+}

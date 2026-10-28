@@ -1,0 +1,54 @@
+{
+  "attempt_id": "att-f29e0e47dde941dda31da44e1f02ea84",
+  "continuation": {
+    "carried_design": [
+      "brief",
+      "history",
+      "character",
+      "voice"
+    ],
+    "parent_chapter_count": 3,
+    "parent_revision_id": "rev-4d80dc2135a346c7baf581ae1d5a8956",
+    "parent_runs": {
+      "design": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "draft": "att-4f87eec082084a518465c1e36d654240-draft",
+      "plan": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan"
+    },
+    "regenerated_design": [
+      "world",
+      "relation",
+      "plot",
+      "scene"
+    ],
+    "reused_chapters": [
+      "ch01",
+      "ch02",
+      "ch03"
+    ],
+    "source_design_sha256": {
+      "design/brief.json": "24bdf23214b415e7014693f362f3b129b35d21ab7be4c5a7c5047177e12f3fa6",
+      "design/character.json": "33b739756827d9e917750757f09ff9f45d47f2fbef7b26cd51d429ae8031688b",
+      "design/history.json": "cb00413ccd3d9f9f8dbb53e0771a62ae62ce8faabcb323af7d3a8fe0d70c3307",
+      "design/voice.json": "e772d0e97c78498f76ac3769b7b5c00d08cd5d5f0790de3bd1e1c817cd7ea59b"
+    }
+  },
+  "input_artifacts": [],
+  "node_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "project_id": "prj-kazami",
+  "resume_of": null,
+  "resume_source_responses_sha256": null,
+  "retry_of": null,
+  "revision_id": "rev-88dd9f8f2b6b41c889ec9b0769d2ec3a",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 4,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉鎖が決まった高原の測候所で、最後の観測員が先代の観測記録の食い違いに気づく。町は閉鎖を急ぎ、先代の妻は記録の一部を預かったまま黙っている。観測は続けられるのか、閉じられるべきなのか。",
+    "target_chars_per_chapter": 1000,
+    "title": "風速の窓"
+  },
+  "spec_sha256": "2a1e5c3300b29e0a41c226f15f13bf584061186f453123f50fe5bb66cc6f5d04",
+  "stage": "plan"
+}

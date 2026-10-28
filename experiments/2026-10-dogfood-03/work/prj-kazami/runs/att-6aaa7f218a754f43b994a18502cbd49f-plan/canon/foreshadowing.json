@@ -1,0 +1,22 @@
+{
+  "foreshadowing": [
+    {
+      "id": "fs-001",
+      "description": "二重に書かれた風速の欄",
+      "setup": "ch01",
+      "payoff": "ch03"
+    },
+    {
+      "id": "fs-002",
+      "description": "仏壇の引き出しの古い日誌",
+      "setup": "ch01",
+      "payoff": "ch02"
+    },
+    {
+      "id": "fs-003",
+      "description": "測候所の鍵の束についた紙の札",
+      "setup": "ch02",
+      "payoff": "ch03"
+    }
+  ]
+}

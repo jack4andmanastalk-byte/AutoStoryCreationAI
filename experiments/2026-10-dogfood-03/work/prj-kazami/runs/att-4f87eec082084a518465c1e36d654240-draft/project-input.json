@@ -1,0 +1,213 @@
+{
+  "attempt_id": "att-4f87eec082084a518465c1e36d654240",
+  "continuation": null,
+  "input_artifacts": [
+    {
+      "artifact_id": "plan-brief.md",
+      "media_type": "text/markdown",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/brief.md",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "9d5c49a073c439416d726bd6b831c02c1696ee7c1c3f465307ba7dd0703bfb18"
+    },
+    {
+      "artifact_id": "plan-plan.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/plan.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "817a9c7eac6ff69036ec4c2df29d51862062a0f050a5d556d8b0f7398edd6b30"
+    },
+    {
+      "artifact_id": "plan-canon-characters.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/characters.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "9f082a5055bcd746141518dbae578bc7f217dbd64df9f937677a539ba93ba559"
+    },
+    {
+      "artifact_id": "plan-canon-facts.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/facts.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "43b1eedab0025fd6c1c73eb95c264d1a901946b2b582ed19bc5670e05d5e5b21"
+    },
+    {
+      "artifact_id": "plan-canon-foreshadowing.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/foreshadowing.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "2477dd5146e4dce7ac36759f4c695a1116cf38660cbfe0ccae637fff7981827f"
+    },
+    {
+      "artifact_id": "plan-canon-locations.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/locations.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "f4b40dbd14737511ef2993f1e020e3c1d8bbe85e01095f74b928f67c23d6ab9c"
+    },
+    {
+      "artifact_id": "plan-canon-suppressions.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/suppressions.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c"
+    },
+    {
+      "artifact_id": "plan-canon-timeline.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/canon/timeline.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "af596aca0db6138437444f88def8c54dd0e5f98b9f2a374178f0bd3b18a5cead"
+    },
+    {
+      "artifact_id": "plan-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-3bc0ae66bed34c11983ff2935ccf05a8-plan/resume-audit.json",
+      "producer_run_id": "att-3bc0ae66bed34c11983ff2935ccf05a8-plan",
+      "sha256": "e0d0af838ded5c1af9b6198baa7673644f53dda2be37d49c43068499458d5c98"
+    },
+    {
+      "artifact_id": "design-design.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "ae32fcef4ba6a98a65fc82460d1920d2acd24045d48c72f2ee10b38edc3fcd15"
+    },
+    {
+      "artifact_id": "design-design-brief.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/brief.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "24bdf23214b415e7014693f362f3b129b35d21ab7be4c5a7c5047177e12f3fa6"
+    },
+    {
+      "artifact_id": "design-design-brief.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/brief.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "3673b96819ec94ce011f2ae3ceaed83ac5975aa022d932a1c4f0e643ac51f122"
+    },
+    {
+      "artifact_id": "design-design-character.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/character.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "33b739756827d9e917750757f09ff9f45d47f2fbef7b26cd51d429ae8031688b"
+    },
+    {
+      "artifact_id": "design-design-character.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/character.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "d984b67c3a923ea4eca6320f14232f0e074ea5f204844e697628d0e6d470a9ac"
+    },
+    {
+      "artifact_id": "design-design-history.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/history.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "cb00413ccd3d9f9f8dbb53e0771a62ae62ce8faabcb323af7d3a8fe0d70c3307"
+    },
+    {
+      "artifact_id": "design-design-history.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/history.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "e11a3378f9e098eec3639de36e0e4129f2b891008d6276031c0a5fab186e7e43"
+    },
+    {
+      "artifact_id": "design-design-plot.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/plot.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "a1ba3b5c6025db3f26d86551a32c6beebf73c6a6ff6f3ae3312adbba6df70b0c"
+    },
+    {
+      "artifact_id": "design-design-plot.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/plot.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "d4a1ff0752fa89b28280f6b0bc520b96111e9208af2bf4eabc18423d53059d19"
+    },
+    {
+      "artifact_id": "design-design-relation.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/relation.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "995d2ded60e18d202d1b38687789d023e0273cd3fa94ef1dbbf873914b4740f6"
+    },
+    {
+      "artifact_id": "design-design-relation.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/relation.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "eeb09ac85f04cde94ec39ae57dafbd531616c4f4d18dfc31de4158f00814d50f"
+    },
+    {
+      "artifact_id": "design-design-scene.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/scene.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "aaa774a6ddcedd7409b9ab07aaeeba1c9882d99e855aef8af327977c8bb51593"
+    },
+    {
+      "artifact_id": "design-design-scene.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/scene.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "389051c87f0c2972134cf6e3cbb21a6999be5e340f5a841f86df4ac4348137ef"
+    },
+    {
+      "artifact_id": "design-design-voice.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/voice.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "e772d0e97c78498f76ac3769b7b5c00d08cd5d5f0790de3bd1e1c817cd7ea59b"
+    },
+    {
+      "artifact_id": "design-design-voice.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/voice.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "aa3d0f379b215a6ab9e78cd175791e03396761ac91ab4da4a660db1cb63c022f"
+    },
+    {
+      "artifact_id": "design-design-world.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/world.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "213ab6f68741e708ad03f2516f97739ced2428ac9f1bd97370b79e27032fd51d"
+    },
+    {
+      "artifact_id": "design-design-world.report.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/design/world.report.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "76fa4405389795e878a241d388c51abe93b302749242d6fda498e890fd09a366"
+    },
+    {
+      "artifact_id": "design-resume-audit.json",
+      "media_type": "application/json",
+      "path": "runs/att-9b25b064409642c58c1d4ff4221b7851-design/resume-audit.json",
+      "producer_run_id": "att-9b25b064409642c58c1d4ff4221b7851-design",
+      "sha256": "3b1270b17b5b8609a2fed4b3cc60abc1ddf07b6c9a60320a1dd71dd18b27199a"
+    }
+  ],
+  "node_id": "node-6e39929eb31a4287b99fd862d2203021",
+  "project_id": "prj-kazami",
+  "resume_of": "att-8004d40c7b824538bf6f7e43c22e6dd4-draft",
+  "resume_source_responses_sha256": "d1383660311aec7bfe05deca5ef17c84a0467edf596a7c30064bccf3de0c5be1",
+  "retry_of": null,
+  "revision_id": "rev-4d80dc2135a346c7baf581ae1d5a8956",
+  "schema_version": 1,
+  "spec": {
+    "chapter_count": 3,
+    "form": "novel",
+    "language": "ja",
+    "options": {},
+    "premise": "閉鎖が決まった高原の測候所で、最後の観測員が先代の観測記録の食い違いに気づく。町は閉鎖を急ぎ、先代の妻は記録の一部を預かったまま黙っている。観測は続けられるのか、閉じられるべきなのか。",
+    "target_chars_per_chapter": 1000,
+    "title": "風速の窓"
+  },
+  "spec_sha256": "f5cefb36745b7e2320be24484cdd70be8caf06ab615268a6a18ee423705d2515",
+  "stage": "draft"
+}
