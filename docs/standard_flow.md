@@ -160,6 +160,9 @@ Next: python3 scripts/story_project.py --root works relay submit prj-seaside --f
 | 待機中の next action | `pending` → `relay export`（`status` / `doctor` 共通） | relay 手順と別の入口に見えていた |
 | 完成・失敗時の `relay submit` | 取り込まずに `continue`/`revise` または `--retry-failed` を案内 | 完了済み応答の上書きと、再試行で再利用されない回答の収集を防ぐ |
 | `status` の relay 行 | `Relay: N answered / M pending` | 完成・待機が1画面で分かる |
+| 字数の目安（F-39 / U-11） | 単一の `--target-chars` も draft では **±5%** の許容幅として扱い、幅の外にだけ `Warnings:` を出す | 1200 字指定で 1201 字が「目安の外」になり、±数十字の調整に時間を使っていた |
+| carried した設計書の履歴（F-40 / U-12） | `revise` / `continue` で持ち越す設計書は元 run の試行・修復・所見を引き継ぎ、`summary` の Info に累計と「このリビジョンでの作り直し」を出す | 1章だけ作り直すと、8設計がすべて「試行0・修復0」に見えていた |
+| `revise --note`（F-41） | 改訂の意図を依頼文の `## 改訂の意図` に渡し、`derived.note` と `summary` に残す | 「何を直したいか」を渡す口がなく、狙いと別の点が変わりうる |
 
 `build_actions` の pending 関連の文言（`pending` → `relay export` への統一など）は
 **U-02 で扱う**。今回は既存の契約を壊さない範囲に留めた。

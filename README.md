@@ -87,7 +87,9 @@ make report
 回答済みの要求は再生成せず、完成済みの作品には取り込みません。
 `render --reader` は章見出しを付け監査マーカーを除いた読書用原稿を、`summary` は JSON を
 開かずに作品情報・設定台帳（canon）・8設計書・検査要約（Blocker / Warning / Observation と
-次に直すコマンド）を Markdown で出力します。
+次に直すコマンド）を Markdown で出力します。章の目安字数は単一指定でも ±5% の許容幅
+（`1200` → `1140〜1260` 字）として扱い、幅の外にだけ警告を出します。一部だけ作り直すときは
+`revise --chapter ch02 --note "何を直すか"` のように意図を渡せます（依頼文と `summary` に残ります）。
 
 `run_pipeline.py` と `run_twostage.py` は、凍結した実験条件を再実行するための
 固定経路で、標準フローではありません（[`docs/standard_flow.md`](docs/standard_flow.md) §1）。

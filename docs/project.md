@@ -746,6 +746,8 @@ python3 scripts/story_project.py branch prj-seaside --from-node node-tide \
   `--provider` が必須です。
 - `--title` / `--premise` / `--target-chars` は新しいrevisionのWorkSpecを上書きします。
   章数は変更しません（章の追加は `continue` の役割）。
+- 目標字数は単一値を指定しても、draft段では**±5%の許容幅**（例: 1200 → 1140〜1260字）として
+  扱います。幅の外にだけ警告を出し、数十字の調整を書き手に強いません（`asc.project.adapter.target_band`）。
 - `revise` の新revisionは `parent_revision_id` に元revision、`parent_runs` に元の3 runを持ち、
   `derived` に種別・元node/revision/run・生成し直す章と設計資料を記録します。
 - `branch` は新しいnodeを作り、`create_child` と同じ規則（深さ・order・linkの一意性）で
@@ -757,6 +759,11 @@ python3 scripts/story_project.py branch prj-seaside --from-node node-tide \
   コピーを担当したstageのmanifestは `provider: "carried"`、`model: null`、response 0件です。
 - 生成する章のpromptには `## 前版からの改訂` を付け、「改訂する章」と「本文を保持する章」を
   明示します。旧本文はchatへ渡しません（直前に生成した章の末尾400字だけが文脈）。
+- `--note "…"` を付けると、その文が `## 改訂の意図` として同じpromptに入り、`derived.note`
+  （最大1000字）と `summary` の Info に残ります。何を直したいかを依頼文へ渡すための口です。
+- コピーした設計資料の試行・修復回数は元runの `design.json` から引き継ぎます（0に戻しません）。
+  走り（run id）は環境依存なので `design.json` には書かず、`summary` が元revisionから補います。
+  これで録音済み応答のbyte単位リプレイが保たれます。
 - 中断した `revise` / `branch` は `resume` で続行できます。このときも元runの章bytesは
   再検証され、一致しなければ失敗します。
 - 親のpinned出力（`compose` / link）は、`adopt-child` するまで変わりません。改訂した子は

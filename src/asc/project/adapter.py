@@ -14,6 +14,24 @@ from .model import WorkSpec
 
 PROJECT_PROTOCOL = "asc-project-v1"
 
+#: Fraction of the per-chapter target a chapter may deviate before the draft
+#: stage warns.  A project spec names one number, but a single-value band made
+#: a 1201-character chapter "out of range" for a 1200-character target, so the
+#: writer spent more time trimming a few characters than writing.  The band is
+#: advisory: it changes the warning, never the acceptance of a chapter.
+TARGET_TOLERANCE = 0.05
+
+
+def target_band(target: int, tolerance: float = TARGET_TOLERANCE) -> tuple[int, int]:
+    """Return the advisory ``(min, max)`` band for one character target."""
+    slack = max(1, round(target * tolerance))
+    return (max(1, target - slack), target + slack)
+
+
+def format_band(band: tuple[int, int]) -> str:
+    """Render a band the way prompts and summaries show it (``1140〜1260``)."""
+    return f"{band[0]}〜{band[1]}"
+
 
 @dataclass(frozen=True)
 class PipelineInput:
@@ -40,6 +58,6 @@ def adapt_work_spec(node_id: str, spec: WorkSpec) -> PipelineInput:
     return PipelineInput(
         task=task,
         chapters=spec.chapter_count,
-        chapter_target=(target, target),
-        total_target=(total, total),
+        chapter_target=target_band(target),
+        total_target=target_band(total),
     )

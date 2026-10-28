@@ -161,7 +161,7 @@ def test_a_finished_round_reports_the_warnings_the_draft_stage_recorded(tmp_path
     human = cli("--root", str(tmp_path), "relay", "status", "prj-round")
     assert human.returncode == 0
     assert "Warnings:" in human.stdout
-    assert "（目安 1200〜1200 字の外）" in human.stdout
+    assert "（目安 1140〜1260 字の外）" in human.stdout
     # The exit code still says "done", because a warning is not a failure.
     assert "complete" in human.stdout
 

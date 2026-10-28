@@ -248,6 +248,34 @@ class Design:
         }
 
 
+#: Per-document fields that describe how much work a document cost.  A carried
+#: document keeps the numbers of the revision that actually produced it: a
+#: ``revise`` of one chapter used to reset every design document to
+#: "attempts 0, repairs 0", which hid the repairs from the human summary.
+HISTORY_FIELDS = ("attempts", "repairs", "findings")
+
+
+def carried_row(meta: Mapping[str, Any] | None) -> dict:
+    """Build the ``design.json`` row for one carried document.
+
+    ``meta`` is the row read from the source run (see
+    :func:`asc.project.revise.design_history`).  The inherited counts stay
+    visible so a derived revision does not look untouched; the run ids are
+    deliberately *not* written here, because a run id is environment-specific
+    and a recorded-response replay reproduces this file byte for byte.
+    """
+    row: dict[str, Any] = {"status": "carried"}
+    for key in HISTORY_FIELDS:
+        try:
+            value = int((meta or {}).get(key) or 0)
+        except (TypeError, ValueError):
+            value = 0
+        row[key] = max(0, value)
+    if row["attempts"] or row["repairs"] or row["findings"]:
+        row["carried_history"] = True
+    return row
+
+
 def _strip_fences(text: str) -> str:
     stripped = text.strip()
     if stripped.startswith("```"):
@@ -344,7 +372,9 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
                  temperature: float = 0.6, max_tokens: int = 2000,
                  seed: int = 0, max_attempts: int = 2,
                  docs: tuple[str, ...] = DOCS,
-                 carried_docs: Mapping[str, str] | None = None) -> Design:
+                 carried_docs: Mapping[str, str] | None = None,
+                 carried_meta: Mapping[str, Mapping[str, Any]] | None = None,
+                 ) -> Design:
     """Generate and validate the design documents, in dependency order."""
     for name in docs:
         if name not in DOCS:
@@ -480,10 +510,9 @@ def build_design(task: Task, provider: Provider, ledger: RunLedger,
     if carried_names:
         design_payload["carried"] = carried_names
         for name in carried_names:
-            design_payload["docs"][name] = {
-                "status": "carried", "attempts": 0, "repairs": 0,
-                "findings": 0,
-            }
+            design_payload["docs"][name] = carried_row(
+                (carried_meta or {}).get(name),
+            )
     ledger.write_json("design.json", design_payload)
     ledger.finish("ok")
     return design

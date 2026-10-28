@@ -185,6 +185,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         parser.add_argument("--premise")
         parser.add_argument("--target-chars", type=int)
         parser.add_argument(
+            "--note", default="",
+            help="why the content is regenerated; shown to the generator "
+                 "as 改訂の意図 (revise/branch)",
+        )
+        parser.add_argument(
             "--world-binding",
             help="explicitly copy this source-revision world binding to the new revision",
         )
@@ -1725,6 +1730,7 @@ def main(argv: list[str] | None = None) -> int:
                     target_chars_per_chapter=args.target_chars,
                     world_binding_id=args.world_binding,
                     seed=args.seed, temperature=args.temperature,
+                    note=args.note,
                 )
             else:
                 source_node = store.load_node_snapshot(
@@ -1745,6 +1751,7 @@ def main(argv: list[str] | None = None) -> int:
                     target_chars_per_chapter=args.target_chars,
                     world_binding_id=args.world_binding,
                     seed=args.seed, temperature=args.temperature,
+                    note=args.note,
                 )
             status = dict(result.status)
             status["attempt_id"] = result.attempt_id
@@ -1766,6 +1773,8 @@ def main(argv: list[str] | None = None) -> int:
                         "Regenerated design: "
                         + (", ".join(derived.get("design") or []) or "none")
                     )
+                    if derived.get("note"):
+                        print(f"改訂の意図: {derived['note']}")
                     if not regenerate:
                         print("Provider calls: none (the revision was copied in full)")
             return 0

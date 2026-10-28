@@ -33,6 +33,39 @@ def _sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def design_history(source_design_dir: Path) -> dict[str, dict[str, Any]]:
+    """Read per-document attempt history from a design run's ``design.json``.
+
+    ``source_design_dir`` is the run's ``design/`` directory.  Called by the
+    continuation and revise paths so that carried documents keep the counts of
+    the run that produced them instead of being reset to zero.
+    """
+    path = source_design_dir.parent / "design.json"
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    docs = data.get("docs") if isinstance(data, dict) else None
+    if not isinstance(docs, dict):
+        return {}
+    history: dict[str, dict[str, Any]] = {}
+    for name, row in docs.items():
+        if not isinstance(row, dict):
+            continue
+        entry: dict[str, Any] = {}
+        for key in ("attempts", "repairs", "findings"):
+            try:
+                entry[key] = max(0, int(row.get(key) or 0))
+            except (TypeError, ValueError):
+                entry[key] = 0
+        if row.get("carried_from"):
+            entry["carried_from"] = str(row["carried_from"])
+        history[str(name)] = entry
+    return history
+
+
 def run_dir(store: ProjectStore, project_id: str, run_id: str) -> Path:
     """Return one run directory inside a project, or raise a clear error."""
     directory = store.project_dir(project_id) / "runs" / run_id
@@ -135,6 +168,9 @@ class ReviseContext:
     design_dir: Path
     source_paths: dict[str, Path]
     source_sha256: dict[str, str]
+    #: Operator's reason for the revision (``revise --note``); passed to the
+    #: prompt so the regenerated chapter follows the intent of the edit.
+    note: str = ""
 
     @property
     def carried_chapters(self) -> tuple[str, ...]:
@@ -162,6 +198,8 @@ class ReviseContext:
         ]
         if self.design:
             lines.append(f"作り直す設計資料: {', '.join(self.design)}")
+        if self.note:
+            lines.extend(["## 改訂の意図", self.note])
         return "\n".join(lines)
 
     def as_dict(self) -> dict[str, Any]:
@@ -185,6 +223,7 @@ def read_context(
     store: ProjectStore, project_id: str, source_node_id: str,
     source_revision_id: str, source_runs: dict[str, str], *,
     kind: str, chapters: Iterable[str] = (), design: Iterable[str] = (),
+    note: str = "",
 ) -> ReviseContext:
     """Load the source canon, chapter text and design documents to carry."""
     if kind not in DERIVED_KINDS:
@@ -243,6 +282,7 @@ def read_context(
         design_dir=design_dir,
         source_paths=paths,
         source_sha256=sources,
+        note=(note or "").strip(),
     )
 
 
@@ -263,6 +303,7 @@ def context_from_revision(
             derived["source_revision_id"], dict(derived.get("source_runs") or {}),
             kind=derived["kind"], chapters=derived.get("chapters") or (),
             design=derived.get("design") or (),
+            note=str(derived.get("note") or ""),
         )
     except (KeyError, ProjectValidationError) as exc:
         raise ReviseError(f"invalid derived revision record: {exc}") from exc
