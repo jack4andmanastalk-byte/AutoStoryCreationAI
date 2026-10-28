@@ -28,6 +28,7 @@ import json
 import shutil
 import sys
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
@@ -40,6 +41,8 @@ from asc.pipeline import (  # noqa: E402
 )
 from asc.story.canon import CanonError, load_canon  # noqa: E402
 from asc.story.continuity import audit_texts  # noqa: E402
+from asc.jsonl import read_jsonl  # noqa: E402
+from asc.schema import Work  # noqa: E402
 
 DEFAULT_TASKS = REPO_ROOT / "benchmarks" / "protocol-v1" / "tasks.yaml"
 DEFAULT_SCRIPT = REPO_ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "plan-demo.json"
@@ -63,6 +66,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--script", default=str(DEFAULT_SCRIPT))
     parser.add_argument("--command", help="external provider command (with --provider command)")
     parser.add_argument("--canon", help="reuse an existing canon instead of planning")
+    parser.add_argument("--source-dataset", default=None,
+                        help="dataset JSONL directory (e.g. data/datasets) to read a source work from")
+    parser.add_argument("--source-work", default=None,
+                        help="work id (e.g. aozora:000148) to use as source material for the plan")
     parser.add_argument("--request-namespace", default=None,
                         help="separate provider request keys for paired relay conditions; "
                              "does not alter prompt text")
@@ -121,8 +128,33 @@ def make_provider(args: argparse.Namespace):
     return ScriptedProvider(load_scripted_responses(args.script))
 
 
+def load_source_work(args: argparse.Namespace) -> Optional[Work]:
+    """--source-dataset / --source-work で指定されたデータセットから Work を読み込む。"""
+    if not args.source_dataset or not args.source_work:
+        return None
+    dataset_dir = Path(args.source_dataset)
+    candidates = [
+        dataset_dir / "aozora_works.jsonl",
+        dataset_dir / "narou_novels.jsonl",
+        dataset_dir / "narou_commercialized_all.jsonl",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        for row in read_jsonl(path):
+            work = Work.from_json(row)
+            if work.id == args.source_work:
+                return work
+    print(
+        f"error: source work {args.source_work!r} not found in {args.source_dataset}",
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    source_work = load_source_work(args)
     try:
         tasks = load_tasks(args.tasks_file)
         task = tasks.get(args.task)
@@ -228,7 +260,7 @@ def main(argv: list[str] | None = None) -> int:
                 plan = build_plan(
                     task, provider, ledger, chapters=tasks.chapters,
                     target_chars=tasks.target_chars, temperature=temperature,
-                    seed=args.seed,
+                    seed=args.seed, source_work=source_work,
                 )
             except PlanError as exc:
                 print(f"error: {exc}", file=sys.stderr)

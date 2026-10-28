@@ -13,7 +13,9 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Optional
 
+from ..schema import Work
 from ..story.canon import Canon, CanonError, chapter_key, load_canon
 from ..story.continuity import CHECKS
 from .llm import GenerationRequest, Provider, ProviderError
@@ -239,14 +241,15 @@ def build_plan(task: Task, provider: Provider, ledger: RunLedger, *,
                chapters: int = 3, target_chars: tuple[int, int] = (3000, 4200),
                prompt_dir: str | Path | None = None, temperature: float = 0.6,
                max_tokens: int = 3000, seed: int = 0,
-               max_attempts: int = 2, prompt_suffix: str = "") -> Plan:
+               max_attempts: int = 2, prompt_suffix: str = "",
+               source_work: Optional[Work] = None) -> Plan:
     """Ask the provider for a canon, repairing it at most ``max_attempts`` times."""
     base = load_prompt("plan-canon", prompt_dir)
     repair = load_prompt("plan-repair", prompt_dir)
     ledger.prompt_hashes["plan-canon"] = base.digest
     ledger.prompt_hashes["plan-repair"] = repair.digest
 
-    ledger.write_text("brief.md", _render_brief(task, chapters, target_chars))
+    ledger.write_text("brief.md", _render_brief(task, chapters, target_chars, source_work))
     values = {
         "title": task.title_ja,
         "genre": task.genre,
@@ -320,8 +323,9 @@ def build_plan(task: Task, provider: Provider, ledger: RunLedger, *,
     raise PlanError(message)
 
 
-def _render_brief(task: Task, chapters: int, target_chars: tuple[int, int]) -> str:
-    return "\n".join([
+def _render_brief(task: Task, chapters: int, target_chars: tuple[int, int],
+                  source_work: Optional[Work] = None) -> str:
+    lines = [
         f"# {task.title_ja}",
         "",
         f"- タスク: `{task.id}`（{task.genre}）",
@@ -330,11 +334,23 @@ def _render_brief(task: Task, chapters: int, target_chars: tuple[int, int]) -> s
         f"- 禁止: {'、'.join(task.avoid)}",
         f"- 章数: {chapters}",
         f"- 目安: {target_chars[0]}〜{target_chars[1]} 字",
+    ]
+    if source_work is not None:
+        authors = "、".join(a.name for a in source_work.authors)
+        lines += [
+            "",
+            f"- 参照作品: {source_work.id}（{source_work.title}）",
+            f"- 参照著者: {authors or '不明'}",
+            f"- 参照ジャンル: {source_work.genre}",
+            f"- 参照元: {source_work.source}",
+        ]
+    lines += [
         "",
         "この企画は固定タスクセット（`benchmarks/protocol-v1/tasks.yaml`）の一部であり、",
         "変更すると評価プロトコルの版が上がります。",
         "",
-    ])
+    ]
+    return "\n".join(lines)
 
 
 def _render_canon_note(task: Task, attempts: int) -> str:

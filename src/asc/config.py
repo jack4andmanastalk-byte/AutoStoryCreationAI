@@ -20,7 +20,6 @@ DEFAULT_CONFIG_PATH = REPO_ROOT / "configs" / "dataset.yaml"
 @dataclass
 class PathsConfig:
     raw_dir: Path = REPO_ROOT / "data" / "raw"
-    pdf_dir: Path = REPO_ROOT / "data" / "pdf"
     dataset_dir: Path = REPO_ROOT / "data" / "datasets"
     cache_dir: Path = REPO_ROOT / "data" / "cache"
     font_dir: Path = REPO_ROOT / "data" / "cache" / "fonts"
@@ -114,7 +113,7 @@ def load_config(path: str | Path | None = None) -> Config:
     config = Config(raw=raw)
     paths_data = raw.get("paths") or {}
     paths = _build(PathsConfig, paths_data)
-    for attr in ("raw_dir", "pdf_dir", "dataset_dir", "cache_dir", "font_dir"):
+    for attr in ("raw_dir", "dataset_dir", "cache_dir", "font_dir"):
         setattr(paths, attr, _resolve(str(getattr(paths, attr))))
     config.paths = paths
 

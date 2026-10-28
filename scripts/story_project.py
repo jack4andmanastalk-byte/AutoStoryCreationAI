@@ -46,6 +46,7 @@ import shlex
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
@@ -55,6 +56,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import relay_prompts  # noqa: E402
 
+from asc.jsonl import read_jsonl  # noqa: E402
+from asc.schema import Work  # noqa: E402
 from asc.pipeline import (  # noqa: E402
     CommandProvider, ProviderError, ScriptedProvider, load_scripted_responses,
 )
@@ -92,9 +95,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     init = subparsers.add_parser("init", help="create a project and its first revision")
     init.add_argument("--project-id", help="optional stable id; lowercase letters, digits, ._-")
     init.add_argument("--title", required=True)
-    premise = init.add_mutually_exclusive_group(required=True)
+    premise = init.add_mutually_exclusive_group(required=False)
     premise.add_argument("--premise", help="premise text")
     premise.add_argument("--premise-file", help="read UTF-8 premise text from a file")
+    init.add_argument("--source-dataset", default=None,
+                      help="dataset JSONL directory to read a source work from")
+    init.add_argument("--source-work", default=None,
+                      help="work id (e.g. aozora:000148) to use as source material")
     init.add_argument("--language", default="ja")
     init.add_argument("--chapters", type=int, default=3)
     init.add_argument("--target-chars", type=int, default=1600)
@@ -457,9 +464,38 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 
 def _work_options(args: argparse.Namespace) -> dict:
-    if not args.knowledge_character:
-        return {}
-    return {"context_knowledge": {"character_id": args.knowledge_character}}
+    opts: dict = {}
+    if args.knowledge_character:
+        opts["context_knowledge"] = {"character_id": args.knowledge_character}
+    if args.source_dataset:
+        opts["source_dataset"] = args.source_dataset
+    if args.source_work:
+        opts["source_work"] = args.source_work
+    return opts
+
+
+def load_source_work(args: argparse.Namespace) -> Optional[Work]:
+    """--source-dataset / --source-work で指定されたデータセットから Work を読み込む。"""
+    if not args.source_dataset or not args.source_work:
+        return None
+    dataset_dir = Path(args.source_dataset)
+    candidates = [
+        dataset_dir / "aozora_works.jsonl",
+        dataset_dir / "narou_novels.jsonl",
+        dataset_dir / "narou_commercialized_all.jsonl",
+    ]
+    for path in candidates:
+        if not path.exists():
+            continue
+        for row in read_jsonl(path):
+            work = Work.from_json(row)
+            if work.id == args.source_work:
+                return work
+    print(
+        f"error: source work {args.source_work!r} not found in {args.source_dataset}",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 class _UnusedProvider:
@@ -1352,9 +1388,12 @@ def main(argv: list[str] | None = None) -> int:
     store = ProjectStore(args.root)
     try:
         if args.command == "init":
+            source_work = load_source_work(args)
             premise = args.premise
             if args.premise_file:
                 premise = Path(args.premise_file).read_text(encoding="utf-8")
+            if premise is None and source_work is not None:
+                premise = f"「{source_work.title}」を下敷きにした創作。"
             spec = WorkSpec(
                 title=args.title,
                 premise=premise,
