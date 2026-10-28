@@ -39,10 +39,8 @@ if str(REPO_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from asc.config import Config, load_config  # noqa: E402
-from asc.fonts import build_font_set  # noqa: E402
 from asc.http import HttpClient  # noqa: E402
 from asc.jsonl import read_jsonl, write_jsonl  # noqa: E402
-from asc.render.pdf import BookPdfRenderer  # noqa: E402
 from asc.schema import Work  # noqa: E402
 from asc.sources.aozora import (  # noqa: E402
     AozoraSource,
@@ -92,24 +90,6 @@ def build_client(cfg: Config, request_interval: Optional[float] = None) -> HttpC
     )
 
 
-def build_renderer(cfg: Config) -> BookPdfRenderer:
-    fonts = build_font_set(
-        body_font=cfg.pdf.body_font,
-        heading_font=cfg.pdf.heading_font,
-        body_bold_font=cfg.pdf.body_bold_font,
-        cache_dir=cfg.paths.font_dir,
-        source=cfg.pdf.font_source,
-    )
-    return BookPdfRenderer(
-        fonts=fonts,
-        page_size=cfg.pdf.page_size,
-        font_size=cfg.pdf.font_size,
-        heading_font_size=cfg.pdf.heading_font_size,
-        margin_mm=cfg.pdf.margin_mm,
-        line_height=cfg.pdf.line_height,
-    )
-
-
 def relative(path: Path) -> str:
     try:
         return str(path.resolve().relative_to(REPO_ROOT))
@@ -145,50 +125,6 @@ def store_works(path: Path, works: Iterable[Work]) -> int:
 _SENTENCE_END_CHARS = frozenset("。！？!?）」』】〉》〕…―ー〜~・:：;；")
 
 
-def extract_clean_text_from_pdf(pdf_path: Path) -> str:
-    """Extract clean, paragraph-joined UTF-8 plain text from a rendered novel PDF."""
-    from pypdf import PdfReader
-
-    reader = PdfReader(str(pdf_path))
-    pages = reader.pages[1:] if len(reader.pages) > 1 else reader.pages
-
-    raw_lines: List[str] = []
-    for page in pages:
-        page_txt = page.extract_text() or ""
-        plines = [ln.rstrip() for ln in page_txt.splitlines()]
-        # Drop trailing standalone page number footer (e.g. "12" or "- 12 -")
-        while plines and not plines[-1].strip():
-            plines.pop()
-        if plines and re.fullmatch(r"[-—–\s]*\d+[-—–\s]*", plines[-1].strip()):
-            plines.pop()
-        # Drop running header on top line when separated or formatted like a header
-        while plines and not plines[0].strip():
-            plines.pop(0)
-        raw_lines.extend(plines)
-        raw_lines.append("")
-
-    paragraphs: List[str] = []
-    buf = ""
-    for line in raw_lines:
-        stripped = line.strip()
-        if not stripped:
-            if buf:
-                paragraphs.append(buf)
-                buf = ""
-            continue
-        is_new_para = line.startswith(("　", "「", "『", "（", "【", "第", "■", "◆", "●", "◇"))
-        if not buf:
-            buf = line.lstrip() if not line.startswith("　") else line
-        elif is_new_para or buf[-1] in _SENTENCE_END_CHARS:
-            paragraphs.append(buf)
-            buf = line.lstrip() if not line.startswith("　") else line
-        else:
-            buf += stripped
-    if buf:
-        paragraphs.append(buf)
-    return "\n\n".join(paragraphs).strip()
-
-
 def _format_byte_cell(num_bytes: int) -> str:
     if num_bytes <= 0:
         return "-"
@@ -206,11 +142,8 @@ def render_narou_ranking_markdown(
     """Format a Markdown summary table of externally verified commercialised Narou works."""
     total_eps = sum(int((w.stats or {}).get("episodes") or 0) for w in works)
     total_chars = sum(int((w.stats or {}).get("char_count") or 0) for w in works)
-    total_pdf_bytes = sum(int((w.extra or {}).get("pdf_bytes") or 0) for w in works)
     total_txt_bytes = sum(int((w.extra or {}).get("text_bytes") or 0) for w in works)
-    pdf_count = sum(1 for w in works if w.pdf_path)
     txt_count = sum(1 for w in works if w.text_path)
-    text_only_mode = pdf_count == 0
     r15_count = sum(1 for w in works if "R15" in ((w.stats or {}).get("elements") or []))
     book_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_book"))
     manga_cnt = sum(1 for w in works if ((w.extra or {}).get("ranking") or {}).get("is_comic"))
@@ -229,8 +162,6 @@ def render_narou_ranking_markdown(
 
     storage_summary = (
         f"プレーンテキスト収録済: {txt_count} 作品・全話収録 / 話数制限なし・PDF廃止済"
-        if text_only_mode
-        else f"PDF 生成済: {pdf_count} 作品・全話収録 / 話数制限なし"
     )
     lines = [
         heading,
@@ -253,10 +184,8 @@ def render_narou_ranking_markdown(
             lines.append(f"- **対象5ジャンル別収録数**: {cat_str}")
     if total_txt_bytes:
         lines.append(f"- **総プレーンテキストサイズ（UTF-8）**: {total_txt_bytes / (1024 * 1024):.2f} MB")
-    if total_pdf_bytes and not text_only_mode:
-        lines.append(f"- **総PDFサイズ**: {total_pdf_bytes / (1024 * 1024):.2f} MB")
 
-    size_col_header = "本文TXT" if text_only_mode else "PDF"
+    size_col_header = "本文TXT"
     if show_category:
         lines.extend(
             [
@@ -307,16 +236,8 @@ def render_narou_ranking_markdown(
             pub_parts.append(f"{vols}巻+")
         pub_str = " / ".join(pub_parts) if pub_parts else "-"
 
-        if text_only_mode:
-            txt_bytes = int((work.extra or {}).get("text_bytes") or 0)
-            size_cell = _format_byte_cell(txt_bytes) if txt_bytes else ("済" if work.text_path else "-")
-        else:
-            pdf_bytes = int((work.extra or {}).get("pdf_bytes") or 0)
-            size_cell = (
-                f"{pdf_bytes / (1024 * 1024):.1f}MB"
-                if pdf_bytes
-                else ("済" if work.pdf_path else "-")
-            )
+        txt_bytes = int((work.extra or {}).get("text_bytes") or 0)
+        size_cell = _format_byte_cell(txt_bytes) if txt_bytes else ("済" if work.text_path else "-")
         safe_title = work.title.replace("|", "｜")
         safe_author = author.replace("|", "｜")
         safe_pub = pub_str.replace("|", "｜")
@@ -412,9 +333,7 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
         LOGGER.info("sampling up to %s public-domain works (pool %s)",
                     target, len(chosen))
 
-    renderer = build_renderer(cfg) if args.pdf else None
     raw_dir = cfg.paths.raw_dir / "aozora" / "texts"
-    pdf_dir = cfg.paths.pdf_dir / "aozora"
 
     updated: List[Work] = []
     for work in chosen:
@@ -435,25 +354,6 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
         ruby_count = sum(len(block.get("ruby", [])) for block in parsed.blocks)
         if ruby_count:
             work.stats["ruby_count"] = ruby_count
-        if renderer is not None:
-            pdf_path = pdf_dir / f"{work.id.split(':', 1)[1]}.pdf"
-            blocks = [
-                {
-                    "type": "paragraph",
-                    "text": b["text"],
-                    "ruby": b.get("ruby", []),
-                    "emphasis": b.get("emphasis", []),
-                }
-                for b in parsed.blocks
-                if b["type"] == "paragraph"
-            ]
-            renderer.render(
-                work,
-                blocks,
-                pdf_path,
-                note="出典: 青空文庫 (aozora.gr.jp) — 作品著作権フラグ「なし」の作品のみ収録",
-            )
-            work.pdf_path = relative(pdf_path)
         updated.append(work)
         LOGGER.info("[%s/%s] %s", len(updated), target, work.title)
 
@@ -467,7 +367,6 @@ def cmd_aozora_texts(cfg: Config, args: argparse.Namespace) -> None:
             "aozora_texts": {
                 "works": len(updated),
                 "texts_dir": relative(raw_dir),
-                "pdf_dir": relative(pdf_dir) if args.pdf else None,
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         },
@@ -563,20 +462,12 @@ def _write_ranked_catalogs(
 
 def _load_reuse_maps(
     reuse_dir: Optional[Path],
-) -> Tuple[Dict[str, Path], Dict[str, Path], Dict[str, Work]]:
-    """Index existing full-episode PDFs, texts, and metadata for incremental continuation."""
-    pdfs: Dict[str, Path] = {}
+) -> Tuple[Dict[str, Path], Dict[str, Work]]:
+    """Index existing full-episode texts and metadata for incremental continuation."""
     txts: Dict[str, Path] = {}
     prev_works: Dict[str, Work] = {}
     if not reuse_dir or not reuse_dir.exists():
-        return pdfs, txts, prev_works
-
-    for sub in ("pdf/narou", "data/pdf/narou", "narou", "."):
-        pdir = reuse_dir / sub
-        if pdir.is_dir():
-            for p in pdir.glob("*.pdf"):
-                if p.stat().st_size > 2048:
-                    pdfs.setdefault(p.stem.lower(), p)
+        return txts, prev_works
 
     for sub in ("raw/narou/texts", "data/raw/narou/texts", "texts", "."):
         tdir = reuse_dir / sub
@@ -607,28 +498,21 @@ def _load_reuse_maps(
             for w in load_works(shard_jpath):
                 prev_works.setdefault(w.id.lower(), w)
 
-    return pdfs, txts, prev_works
+    return txts, prev_works
 
 
 def _try_reuse_cached_work(
     work: Work,
     *,
-    reuse_pdfs: Dict[str, Path],
     reuse_txts: Dict[str, Path],
     reuse_prev: Dict[str, Work],
     raw_dir: Path,
-    pdf_dir: Path,
-    renderer: Optional[BookPdfRenderer],
-    cover_note: str,
 ) -> bool:
-    """Reuse a previously downloaded full-episode plain text (or legacy PDF)."""
+    """Reuse a previously downloaded full-episode plain text."""
     ncode = work.id.split(":", 1)[1]
     ncode_lower = ncode.lower()
     src_txt = reuse_txts.get(ncode_lower)
-    src_pdf = reuse_pdfs.get(ncode_lower)
-    if src_txt is None and src_pdf is None:
-        return False
-    if renderer is not None and src_pdf is None:
+    if src_txt is None:
         return False
 
     prev_w = reuse_prev.get(work.id.lower())
@@ -655,10 +539,6 @@ def _try_reuse_cached_work(
     if src_txt is not None and src_txt.exists():
         if src_txt.resolve() != text_path.resolve():
             shutil.copy2(src_txt, text_path)
-    elif not text_path.exists() and src_pdf is not None:
-        extracted = extract_clean_text_from_pdf(src_pdf)
-        text_path.write_text(extracted or work.title, encoding="utf-8")
-        txt_content = extracted
 
     work.text_path = relative(text_path)
     work.extra["text_bytes"] = text_path.stat().st_size
@@ -668,21 +548,6 @@ def _try_reuse_cached_work(
     work.stats["episodes"] = prev_eps or expected_eps
     work.extra["text_origin"] = "reused full-episode cache"
     work.extra["all_episodes_rendered"] = True
-
-    if renderer is not None and src_pdf is not None:
-        pdf_path = pdf_dir / f"{ncode}.pdf"
-        try:
-            renderer.refresh_cover(work, src_pdf, pdf_path, note=cover_note)
-        except Exception as exc:
-            LOGGER.warning("cover refresh fallback copy for %s: %s", ncode, exc)
-            if src_pdf.resolve() != pdf_path.resolve():
-                pdf_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(src_pdf, pdf_path)
-        work.pdf_path = relative(pdf_path)
-        work.extra["pdf_bytes"] = pdf_path.stat().st_size
-    else:
-        work.pdf_path = None
-        work.extra.pop("pdf_bytes", None)
     return True
 
 
@@ -722,7 +587,7 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
     )
 
     reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
-    reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
+    reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
 
     seed_verifications: Dict[str, MediaVerificationResult] = {}
     seed_sources: List[Work] = list(reuse_prev.values())
@@ -770,7 +635,7 @@ def cmd_narou_rank(cfg: Config, args: argparse.Namespace) -> None:
         if len(selected) >= top_target:
             break
         ncode_lower = work.id.split(":", 1)[1].lower()
-        already_downloaded = ncode_lower in reuse_pdfs or ncode_lower in reuse_txts
+        already_downloaded = ncode_lower in reuse_txts
         if args.verify_web and not already_downloaded and not source.verify_web_text_available(work):
             LOGGER.warning("skipping %s (%s) - WEB episodes unavailable/stubbed", work.id, work.title)
             continue
@@ -860,7 +725,6 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
 
     interval = getattr(args, "request_interval", None)
     source = NarouSource(cfg.narou, cfg.paths, build_client(cfg, request_interval=interval))
-    renderer = build_renderer(cfg) if args.pdf else None
 
     commercialized_only = cfg.narou.commercialized_only and not getattr(
         args, "allow_uncommercialized", False
@@ -943,10 +807,9 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
         )
 
     reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
-    reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
+    reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
 
     raw_dir = cfg.paths.raw_dir / "narou" / "texts"
-    pdf_dir = cfg.paths.pdf_dir / "narou"
 
     updated: List[Work] = []
     for work in ordered_pool:
@@ -983,27 +846,22 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
             )
         )
 
-        # Fast incremental reuse when an already-rendered full-episode PDF exists
+        # Fast incremental reuse when a cached full-episode plain text exists
         if args.max_episodes == 0 and _try_reuse_cached_work(
             work,
-            reuse_pdfs=reuse_pdfs,
             reuse_txts=reuse_txts,
             reuse_prev=reuse_prev,
             raw_dir=raw_dir,
-            pdf_dir=pdf_dir,
-            renderer=renderer,
-            cover_note=cover_note,
         ):
             updated.append(work)
             LOGGER.info(
-                "[%s/%s] Rank #%s %s -> REUSED (%s episodes, %s chars, pdf=%s)",
+                "[%s/%s] Rank #%s %s -> REUSED (%s episodes, %s chars)",
                 len(updated),
                 target,
                 rank_label or "-",
                 work.title,
                 work.stats["episodes"],
                 f"{work.stats['char_count']:,}",
-                work.pdf_path,
             )
             continue
 
@@ -1039,35 +897,15 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
                 "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
                 "二次利用には作者の許諾が必要です。"
             )
-        if renderer is not None:
-            pdf_path = pdf_dir / f"{ncode}.pdf"
-            blocks = []
-            for chapter in novel.chapters:
-                if chapter.get("title"):
-                    blocks.append({"type": "paragraph", "text": chapter["title"], "chapter": True})
-                for paragraph in chapter.get("paragraphs", []):
-                    blocks.append({"type": "paragraph", "text": paragraph})
-            renderer.render(
-                work,
-                blocks,
-                pdf_path,
-                note=cover_note,
-            )
-            work.pdf_path = relative(pdf_path)
-            work.extra["pdf_bytes"] = pdf_path.stat().st_size
-        else:
-            work.pdf_path = None
-            work.extra.pop("pdf_bytes", None)
         updated.append(work)
         LOGGER.info(
-            "[%s/%s] Rank #%s %s -> %s episodes, %s chars, pdf=%s",
+            "[%s/%s] Rank #%s %s -> %s episodes, %s chars",
             len(updated),
             target,
             rank_label or "-",
             work.title,
             len(novel.chapters),
             f"{novel.char_count:,}",
-            work.pdf_path,
         )
 
     if shard_count > 1:
@@ -1103,7 +941,6 @@ def cmd_narou_texts(cfg: Config, args: argparse.Namespace) -> None:
                 "total_episodes": sum(int(w.stats.get("episodes") or 0) for w in updated),
                 "total_chars": sum(int(w.stats.get("char_count") or 0) for w in updated),
                 "texts_dir": relative(raw_dir),
-                "pdf_dir": relative(pdf_dir) if args.pdf else None,
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         },
@@ -1117,7 +954,6 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
     if not shard_files:
         raise SystemExit(f"no shard files found in {shard_dir}")
 
-    want_pdf = bool(getattr(args, "pdf", False))
     updated_by_id: Dict[str, Work] = {}
     for sfile in shard_files:
         for work in load_works(sfile):
@@ -1125,15 +961,6 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
                 txt_full = REPO_ROOT / work.text_path
                 if txt_full.exists() and txt_full.stat().st_size > 256:
                     work.extra["text_bytes"] = txt_full.stat().st_size
-                    if not want_pdf:
-                        work.pdf_path = None
-                        work.extra.pop("pdf_bytes", None)
-                        updated_by_id[work.id] = work
-                        continue
-            if work.pdf_path:
-                pdf_full = REPO_ROOT / work.pdf_path
-                if pdf_full.exists() and pdf_full.stat().st_size > 1024:
-                    work.extra["pdf_bytes"] = pdf_full.stat().st_size
                     updated_by_id[work.id] = work
 
     ranked_path = cfg.paths.dataset_dir / NAROU_RANKED
@@ -1154,12 +981,9 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             if getattr(args, "reuse_existing_dir", None)
             else None
         )
-        reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
+        reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
         source = NarouSource(cfg.narou, cfg.paths, build_client(cfg, request_interval=0.25))
-        renderer = build_renderer(cfg) if want_pdf else None
         raw_dir = cfg.paths.raw_dir / "narou" / "texts"
-        pdf_dir = cfg.paths.pdf_dir / "narou"
-        cover_note = "出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版（全話収録）"
         for spare in ranked_pool:
             if len(updated_by_id) >= args.works:
                 break
@@ -1167,13 +991,9 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
                 continue
             if _try_reuse_cached_work(
                 spare,
-                reuse_pdfs=reuse_pdfs,
                 reuse_txts=reuse_txts,
                 reuse_prev=reuse_prev,
                 raw_dir=raw_dir,
-                pdf_dir=pdf_dir,
-                renderer=renderer,
-                cover_note=cover_note,
             ):
                 updated_by_id[spare.id] = spare
                 continue
@@ -1191,25 +1011,6 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             spare.stats["episodes"] = len(novel.chapters)
             spare.extra["text_origin"] = novel.origin
             spare.extra["all_episodes_rendered"] = True
-            if renderer is not None:
-                pdf_path = pdf_dir / f"{ncode}.pdf"
-                blocks = []
-                for chapter in novel.chapters:
-                    if chapter.get("title"):
-                        blocks.append({"type": "paragraph", "text": chapter["title"], "chapter": True})
-                    for paragraph in chapter.get("paragraphs", []):
-                        blocks.append({"type": "paragraph", "text": paragraph})
-                renderer.render(
-                    spare,
-                    blocks,
-                    pdf_path,
-                    note=cover_note,
-                )
-                spare.pdf_path = relative(pdf_path)
-                spare.extra["pdf_bytes"] = pdf_path.stat().st_size
-            else:
-                spare.pdf_path = None
-                spare.extra.pop("pdf_bytes", None)
             updated_by_id[spare.id] = spare
 
     if ranked_pool:
@@ -1224,25 +1025,8 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             key=lambda w: ((w.extra.get("ranking") or {}).get("rank") or 999999),
         )[: args.works]
 
-    cover_renderer: Optional[BookPdfRenderer] = None
     for idx, work in enumerate(final_ranked, start=1):
-        old_rank = (work.extra.get("ranking") or {}).get("rank")
         work.extra.setdefault("ranking", {})["rank"] = idx
-        if want_pdf and old_rank != idx and work.pdf_path:
-            pdf_full = REPO_ROOT / work.pdf_path
-            if pdf_full.exists():
-                if cover_renderer is None:
-                    cover_renderer = build_renderer(cfg)
-                try:
-                    cover_renderer.refresh_cover(
-                        work,
-                        pdf_full,
-                        pdf_full,
-                        note="出典: 小説家になろう (syosetu.com) — 外部確認済・商業化作品の無料公開WEB版（全話収録）",
-                    )
-                    work.extra["pdf_bytes"] = pdf_full.stat().st_size
-                except Exception as exc:
-                    LOGGER.warning("cover rank refresh skipped for %s: %s", work.id, exc)
 
     # Preserve genre-supplement texts if present while removing unused spare files
     keep_ncodes = {w.id.split(":", 1)[1].lower() for w in final_ranked}
@@ -1252,8 +1036,7 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
             keep_ncodes.add(sw.id.split(":", 1)[1].lower())
     if (cfg.paths.pdf_dir / "narou").exists():
         for p in (cfg.paths.pdf_dir / "narou").glob("*.pdf"):
-            if not want_pdf or p.stem.lower() not in keep_ncodes:
-                p.unlink(missing_ok=True)
+            p.unlink(missing_ok=True)
     for p in (cfg.paths.raw_dir / "narou" / "texts").glob("*.txt"):
         if p.stem.lower() not in keep_ncodes:
             p.unlink(missing_ok=True)
@@ -1268,11 +1051,10 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
 
     ranked_path, md_path = _write_ranked_catalogs(cfg, final_ranked, out_path=ranked_path)
 
-    completed = [w for w in final_ranked if (w.pdf_path if want_pdf else w.text_path)]
+    completed = [w for w in final_ranked if w.text_path]
     total_eps = sum(int(w.stats.get("episodes") or 0) for w in completed)
     total_chars = sum(int(w.stats.get("char_count") or 0) for w in completed)
     total_txt_bytes = sum(int((w.extra or {}).get("text_bytes") or 0) for w in completed)
-    total_pdf_bytes = sum(int((w.extra or {}).get("pdf_bytes") or 0) for w in completed)
 
     LOGGER.info(
         "merged %s shards -> %s/%s ranked works (%s episodes, %s chars, %.2f MB txt)",
@@ -1296,11 +1078,9 @@ def cmd_narou_merge_shards(cfg: Config, args: argparse.Namespace) -> None:
                 "total_episodes": total_eps,
                 "total_chars": total_chars,
                 "total_text_bytes": total_txt_bytes,
-                "total_pdf_bytes": total_pdf_bytes,
                 "ranked_file": relative(ranked_path),
                 "ranking_markdown": relative(md_path),
                 "texts_dir": relative(cfg.paths.raw_dir / "narou" / "texts"),
-                "pdf_dir": relative(cfg.paths.pdf_dir / "narou") if want_pdf else None,
                 "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             }
         },
@@ -1495,510 +1275,6 @@ def _write_combined_commercialized_catalog(cfg: Config) -> Optional[Path]:
     return out_path
 
 
-def cmd_purge_pdfs(cfg: Config, args: argparse.Namespace) -> None:
-    """Convert any text-less PDFs to plain UTF-8 text, clear PDF fields, and delete all PDFs."""
-    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
-
-    converted_count = 0
-    verified_txt_count = 0
-    removed_pdf_files = 0
-    removed_pdf_bytes = 0
-
-    source_specs = [
-        ("narou", cfg.paths.pdf_dir / "narou", cfg.paths.raw_dir / "narou" / "texts"),
-        ("aozora", cfg.paths.pdf_dir / "aozora", cfg.paths.raw_dir / "aozora" / "texts"),
-    ]
-    if reuse_dir and reuse_dir.exists():
-        for sub_src, pdf_rel, txt_rel in (
-            ("narou", "pdf/narou", "raw/narou/texts"),
-            ("narou", "data/pdf/narou", "data/raw/narou/texts"),
-            ("aozora", "pdf/aozora", "raw/aozora/texts"),
-            ("aozora", "data/pdf/aozora", "data/raw/aozora/texts"),
-        ):
-            rp = reuse_dir / pdf_rel
-            rt = reuse_dir / txt_rel
-            target_txt_dir = cfg.paths.raw_dir / sub_src / "texts"
-            if rt.is_dir():
-                target_txt_dir.mkdir(parents=True, exist_ok=True)
-                for tf in rt.glob("*.txt"):
-                    dest = target_txt_dir / tf.name
-                    if not dest.exists() and tf.stat().st_size > 64:
-                        shutil.copy2(tf, dest)
-            if rp.is_dir():
-                source_specs.append((sub_src, rp, target_txt_dir))
-
-    for src_name, pdir, tdir in source_specs:
-        if not pdir.is_dir():
-            continue
-        tdir.mkdir(parents=True, exist_ok=True)
-        for pdf_file in sorted(pdir.glob("*.pdf")):
-            stem = pdf_file.stem
-            # Match existing case-insensitive .txt if present
-            existing_txt: Optional[Path] = None
-            for cand in (tdir / f"{stem}.txt", tdir / f"{stem.lower()}.txt", tdir / f"{stem.upper()}.txt"):
-                if cand.exists() and cand.stat().st_size > 128:
-                    existing_txt = cand
-                    break
-            if existing_txt is None:
-                extracted = extract_clean_text_from_pdf(pdf_file)
-                out_txt = tdir / f"{stem}.txt"
-                out_txt.write_text(extracted, encoding="utf-8")
-                converted_count += 1
-                verified_txt_count += 1
-                LOGGER.info("extracted plain text from PDF %s -> %s (%s chars)", pdf_file.name, out_txt, len(extracted))
-            else:
-                verified_txt_count += 1
-
-    # Delete all PDFs under cfg.paths.pdf_dir
-    if cfg.paths.pdf_dir.exists():
-        for pdf_file in cfg.paths.pdf_dir.rglob("*.pdf"):
-            removed_pdf_files += 1
-            removed_pdf_bytes += pdf_file.stat().st_size
-            pdf_file.unlink(missing_ok=True)
-        shutil.rmtree(cfg.paths.pdf_dir, ignore_errors=True)
-
-    # Index all verified .txt files by lowercase stem
-    narou_txt_map = {
-        p.stem.lower(): p
-        for p in (cfg.paths.raw_dir / "narou" / "texts").glob("*.txt")
-        if p.is_file() and p.stat().st_size > 0
-    }
-    aozora_txt_map = {
-        p.stem.lower(): p
-        for p in (cfg.paths.raw_dir / "aozora" / "texts").glob("*.txt")
-        if p.is_file() and p.stat().st_size > 0
-    }
-
-    # Update all dataset JSONL catalogs to text-only (pdf_path = None)
-    for jpath in sorted(cfg.paths.dataset_dir.glob("*.jsonl")):
-        if jpath.name == AOZORA_AUTHORS:
-            continue
-        works = load_works(jpath)
-        changed = False
-        for w in works:
-            wid_tail = w.id.split(":", 1)[1].lower() if ":" in w.id else w.id.lower()
-            is_aozora = w.source.startswith("aozora") or w.id.startswith("aozora:")
-            tmap = aozora_txt_map if is_aozora else narou_txt_map
-            matched_txt = tmap.get(wid_tail)
-            if matched_txt is not None:
-                rel_txt = relative(matched_txt)
-                tbytes = matched_txt.stat().st_size
-                if w.text_path != rel_txt or w.extra.get("text_bytes") != tbytes:
-                    w.text_path = rel_txt
-                    w.extra["text_bytes"] = tbytes
-                    changed = True
-            elif w.text_path:
-                full_t = REPO_ROOT / w.text_path
-                if full_t.exists():
-                    w.extra["text_bytes"] = full_t.stat().st_size
-                    changed = True
-            if w.pdf_path is not None or "pdf_bytes" in w.extra:
-                w.pdf_path = None
-                w.extra.pop("pdf_bytes", None)
-                changed = True
-        if changed:
-            store_works(jpath, works)
-
-    # Re-render Markdown catalogs with text-only metadata
-    ranked_path = cfg.paths.dataset_dir / NAROU_RANKED
-    if ranked_path.exists():
-        ranked_works = load_works(ranked_path)
-        _write_ranked_catalogs(cfg, ranked_works, out_path=ranked_path)
-    supp_path = cfg.paths.dataset_dir / NAROU_GENRE_SUPP
-    if supp_path.exists():
-        supp_works = load_works(supp_path)
-        (cfg.paths.dataset_dir / NAROU_GENRE_SUPP_MD).write_text(
-            render_narou_ranking_markdown(
-                supp_works,
-                heading="# 小説家になろう 5ジャンル限定（歴史・推理・現代・SF・ホラー）外部確認済・商業化追加作品カタログ",
-                show_category=True,
-            ),
-            encoding="utf-8",
-        )
-    _write_combined_commercialized_catalog(cfg)
-
-    total_narou_txt_bytes = sum(p.stat().st_size for p in narou_txt_map.values())
-    total_aozora_txt_bytes = sum(p.stat().st_size for p in aozora_txt_map.values())
-    LOGGER.info(
-        "purge-pdfs complete: converted=%s PDFs, verified_narou_txts=%s (%.2f MB), "
-        "verified_aozora_txts=%s (%.2f MB), deleted=%s PDFs (%.2f MB freed)",
-        converted_count,
-        len(narou_txt_map),
-        total_narou_txt_bytes / (1024 * 1024),
-        len(aozora_txt_map),
-        total_aozora_txt_bytes / (1024 * 1024),
-        removed_pdf_files,
-        removed_pdf_bytes / (1024 * 1024),
-    )
-
-    # Update manifest entries to reflect PDF removal
-    manifest_path = cfg.paths.dataset_dir / MANIFEST
-    existing_manifest: Dict[str, Any] = {}
-    if manifest_path.exists():
-        try:
-            existing_manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        except Exception:
-            existing_manifest = {}
-    if isinstance(existing_manifest.get("aozora_texts"), dict):
-        existing_manifest["aozora_texts"]["pdf_dir"] = None
-        existing_manifest["aozora_texts"]["total_text_bytes"] = total_aozora_txt_bytes
-    if isinstance(existing_manifest.get("narou_texts"), dict):
-        existing_manifest["narou_texts"]["pdf_dir"] = None
-        existing_manifest["narou_texts"]["total_pdf_bytes"] = 0
-        existing_manifest["narou_texts"]["total_text_bytes"] = total_narou_txt_bytes
-    existing_manifest["pdf_purge"] = {
-        "pdfs_purged": True,
-        "converted_from_pdf": converted_count,
-        "removed_pdf_files": removed_pdf_files,
-        "freed_pdf_bytes": removed_pdf_bytes,
-        "narou_text_files": len(narou_txt_map),
-        "aozora_text_files": len(aozora_txt_map),
-        "total_text_bytes": total_narou_txt_bytes + total_aozora_txt_bytes,
-        "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-    }
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest_path.write_text(
-        json.dumps(existing_manifest, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-
-
-def cmd_narou_genre_supplement(cfg: Config, args: argparse.Namespace) -> None:
-    """Select, externally verify, and download 10-15 commercialized works in each of 5 genres."""
-    works_path = cfg.paths.dataset_dir / NAROU_WORKS
-    if not works_path.exists():
-        raise SystemExit(f"{works_path} not found - run 'narou-metadata' first")
-    works = load_works(works_path)
-
-    ranked_path = cfg.paths.dataset_dir / NAROU_RANKED
-    existing_ranked = load_works(ranked_path) if ranked_path.exists() else []
-    exclude_ids: Set[str] = {w.id.lower() for w in existing_ranked}
-    repo_sample_ranked = REPO_ROOT / "samples" / NAROU_RANKED
-    if repo_sample_ranked.is_file():
-        for w in load_works(repo_sample_ranked):
-            exclude_ids.add(w.id.lower())
-
-    reuse_dir = Path(args.reuse_existing_dir) if getattr(args, "reuse_existing_dir", None) else None
-    reuse_pdfs, reuse_txts, reuse_prev = _load_reuse_maps(reuse_dir)
-
-    seed_verifications: Dict[str, MediaVerificationResult] = {}
-    seed_sources: List[Work] = list(reuse_prev.values())
-    repo_sample_supp = REPO_ROOT / "samples" / NAROU_GENRE_SUPP
-    if repo_sample_supp.is_file():
-        seed_sources.extend(load_works(repo_sample_supp))
-    for sw in seed_sources:
-        ext_dict = (sw.rights or {}).get("external_verification")
-        if isinstance(ext_dict, dict) and ext_dict.get("verified"):
-            ncode_key = sw.id.split(":", 1)[1].lower()
-            seed_verifications.setdefault(ncode_key, MediaVerificationResult.from_dict(ext_dict))
-
-    interval = getattr(args, "request_interval", None) or 0.22
-    source = NarouSource(cfg.narou, cfg.paths, build_client(cfg, request_interval=interval))
-    anime_ncodes = source.fetch_anime_ncodes()
-
-    per_genre = int(args.per_genre)
-    min_per_genre = int(args.min_per_genre)
-    scan_per_genre = int(args.scan_limit_per_genre)
-    raw_dir = cfg.paths.raw_dir / "narou" / "texts"
-    pdf_dir = cfg.paths.pdf_dir / "narou"
-    raw_dir.mkdir(parents=True, exist_ok=True)
-
-    cat_idx_arg = getattr(args, "category_index", None)
-    if cat_idx_arg is not None:
-        if not (0 <= int(cat_idx_arg) < len(SUPPLEMENT_GENRE_SPECS)):
-            raise SystemExit(
-                f"--category-index must be in 0..{len(SUPPLEMENT_GENRE_SPECS) - 1}, got {cat_idx_arg}"
-            )
-        active_specs = [SUPPLEMENT_GENRE_SPECS[int(cat_idx_arg)]]
-    else:
-        active_specs = SUPPLEMENT_GENRE_SPECS
-
-    all_supplement: List[Work] = []
-    category_counts: Dict[str, int] = {}
-
-    for spec in active_specs:
-        cat_name = spec["category"]
-        gcodes = spec["genre_codes"]
-        req_non_isekai = bool(spec["require_non_isekai"])
-
-        queue = _build_genre_candidate_queue(
-            works,
-            genre_codes=gcodes,
-            require_non_isekai=req_non_isekai,
-            exclude_ids=exclude_ids,
-            min_chars=args.min_chars,
-            min_episodes=args.min_episodes,
-            include_r15=cfg.narou.include_r15,
-            max_scan=scan_per_genre,
-        )
-        LOGGER.info(
-            "=== [%s] (%s) verifying up to %s candidates (target=%s, min=%s) ===",
-            cat_name,
-            spec["description"],
-            len(queue),
-            per_genre,
-            min_per_genre,
-        )
-
-        verified = source.verify_candidates_external(
-            queue,
-            anime_ncodes=anime_ncodes,
-            strict=True,
-            check_syuppan=False,
-            seed_verifications=seed_verifications,
-            target_verified_pool=per_genre + 5,
-            min_scan_before_stop=min(len(queue), max(35, per_genre * 2 + 5)),
-        )
-        verified.sort(
-            key=lambda w: (
-                (w.extra.get("ranking") or {}).get("ranking_score") or 0,
-                w.stats.get("global_point") or 0,
-                w.stats.get("fav_novel_cnt") or 0,
-                w.stats.get("all_point") or 0,
-            ),
-            reverse=True,
-        )
-        if len(gcodes) > 1:
-            verified = _interleave_by_subgenre(verified, gcodes)
-
-        cat_selected: List[Work] = []
-        for cand in verified:
-            if len(cat_selected) >= per_genre:
-                break
-            if cand.id.lower() in exclude_ids:
-                continue
-            ncode = cand.id.split(":", 1)[1]
-            ncode_lower = ncode.lower()
-
-            if _try_reuse_cached_work(
-                cand,
-                reuse_pdfs=reuse_pdfs,
-                reuse_txts=reuse_txts,
-                reuse_prev=reuse_prev,
-                raw_dir=raw_dir,
-                pdf_dir=pdf_dir,
-                renderer=None,
-                cover_note="",
-            ):
-                exclude_ids.add(cand.id.lower())
-                grank = len(cat_selected) + 1
-                cand.extra["supplement_category"] = cat_name
-                cand.extra["genre_rank"] = grank
-                cand.extra.setdefault("ranking", {})["rank"] = grank
-                cand.pdf_path = None
-                cand.extra.pop("pdf_bytes", None)
-                cat_selected.append(cand)
-                LOGGER.info(
-                    "[%s %s/%s] %s (%s) -> REUSED (%s eps, %s chars)",
-                    cat_name,
-                    grank,
-                    per_genre,
-                    cand.title,
-                    cand.id,
-                    cand.stats.get("episodes"),
-                    f"{int(cand.stats.get('char_count') or 0):,}",
-                )
-                continue
-
-            if args.verify_web and not source.verify_web_text_available(cand):
-                LOGGER.warning("skipping %s (%s) - WEB episodes unavailable", cand.id, cand.title)
-                continue
-
-            expected_eps = int(cand.stats.get("episodes") or 0)
-            cand.extra.setdefault("api_char_count", int(cand.stats.get("char_count") or 0))
-            cand.extra.setdefault("api_episodes", expected_eps)
-            novel = source.fetch_novel_text(
-                ncode,
-                max_episodes=0,
-                expected_episodes=expected_eps,
-            )
-            if not novel.chapters:
-                LOGGER.warning("skipping %s (%s) - 0 episodes fetched", cand.id, cand.title)
-                continue
-
-            text_path = raw_dir / f"{ncode}.txt"
-            text_path.write_text(novel.text, encoding="utf-8")
-            cand.text_path = relative(text_path)
-            cand.extra["text_bytes"] = text_path.stat().st_size
-            cand.pdf_path = None
-            cand.extra.pop("pdf_bytes", None)
-            cand.stats["char_count"] = novel.char_count
-            cand.stats["episodes"] = len(novel.chapters)
-            cand.extra["text_origin"] = novel.origin
-            cand.extra["all_episodes_rendered"] = True
-            cand.rights["note"] = (
-                "この作品は外部書誌・メディアDBにより商業化が実在確認されています。"
-                "商業版（紙書籍・電子書籍）は再配布せず、"
-                "本データセットでは公式サイトが無料公開しているWEB版のみを扱います。"
-                "二次利用には作者の許諾が必要です。"
-            )
-            exclude_ids.add(cand.id.lower())
-            grank = len(cat_selected) + 1
-            cand.extra["supplement_category"] = cat_name
-            cand.extra["genre_rank"] = grank
-            cand.extra.setdefault("ranking", {})["rank"] = grank
-            cat_selected.append(cand)
-            LOGGER.info(
-                "[%s %s/%s] %s (%s) -> %s eps, %s chars (media=%s)",
-                cat_name,
-                grank,
-                per_genre,
-                cand.title,
-                cand.id,
-                len(novel.chapters),
-                f"{novel.char_count:,}",
-                ",".join((cand.extra.get("ranking") or {}).get("verified_media") or []),
-            )
-
-        category_counts[cat_name] = len(cat_selected)
-        if len(cat_selected) < min_per_genre and getattr(args, "strict_count", False):
-            raise SystemExit(
-                f"category '{cat_name}' yielded {len(cat_selected)} works (< min_per_genre={min_per_genre})"
-            )
-        all_supplement.extend(cat_selected)
-
-    if cat_idx_arg is not None:
-        shard_dir = cfg.paths.dataset_dir / "shards"
-        shard_file = shard_dir / f"narou_supplement_cat_{int(cat_idx_arg):02d}.jsonl"
-        store_works(shard_file, all_supplement)
-        LOGGER.info(
-            "wrote %s genre-supplement shard records (category_index=%s) to %s",
-            len(all_supplement),
-            cat_idx_arg,
-            shard_file,
-        )
-        return
-
-    _finalize_genre_supplement_catalogs(
-        cfg,
-        all_supplement,
-        works_path=works_path,
-        per_genre=per_genre,
-        min_per_genre=min_per_genre,
-        category_counts=category_counts,
-        raw_dir=raw_dir,
-    )
-
-
-def _finalize_genre_supplement_catalogs(
-    cfg: Config,
-    all_supplement: Sequence[Work],
-    *,
-    works_path: Path,
-    per_genre: int,
-    min_per_genre: int,
-    category_counts: Dict[str, int],
-    raw_dir: Path,
-) -> None:
-    supp_jsonl = cfg.paths.dataset_dir / NAROU_GENRE_SUPP
-    supp_md = cfg.paths.dataset_dir / NAROU_GENRE_SUPP_MD
-    store_works(supp_jsonl, all_supplement)
-    supp_md.write_text(
-        render_narou_ranking_markdown(
-            all_supplement,
-            heading="# 小説家になろう 5ジャンル限定（歴史・推理・現代・SF・ホラー）外部確認済・商業化追加作品カタログ",
-            show_category=True,
-        ),
-        encoding="utf-8",
-    )
-
-    if works_path.exists():
-        works = load_works(works_path)
-        merged = {w.id: w for w in works}
-        for w in all_supplement:
-            merged[w.id] = w
-        store_works(works_path, merged.values())
-    all_comm_path = _write_combined_commercialized_catalog(cfg)
-
-    total_eps = sum(int(w.stats.get("episodes") or 0) for w in all_supplement)
-    total_chars = sum(int(w.stats.get("char_count") or 0) for w in all_supplement)
-    total_txt_bytes = sum(int((w.extra or {}).get("text_bytes") or 0) for w in all_supplement)
-    r15_cnt = sum(1 for w in all_supplement if "R15" in (w.stats.get("elements") or []))
-
-    write_manifest(
-        cfg,
-        {
-            "narou_genre_supplement": {
-                "works": len(all_supplement),
-                "per_genre_target": per_genre,
-                "min_per_genre": min_per_genre,
-                "category_counts": category_counts,
-                "r15_works": r15_cnt,
-                "all_episodes": True,
-                "pdf_generated": False,
-                "total_episodes": total_eps,
-                "total_chars": total_chars,
-                "total_text_bytes": total_txt_bytes,
-                "supplement_file": relative(supp_jsonl),
-                "supplement_markdown": relative(supp_md),
-                "combined_file": relative(all_comm_path) if all_comm_path else None,
-                "texts_dir": relative(raw_dir),
-                "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            }
-        },
-    )
-
-
-def cmd_narou_merge_supplement_shards(cfg: Config, args: argparse.Namespace) -> None:
-    """Merge 5 parallel genre-supplement shard outputs into the unified supplement catalog."""
-    shard_dir = Path(args.shard_dir) if args.shard_dir else (cfg.paths.dataset_dir / "shards")
-    shard_files = sorted(shard_dir.glob("narou_supplement_cat_*.jsonl"))
-    if not shard_files:
-        raise SystemExit(f"no supplement shard files found in {shard_dir}")
-
-    ranked_path = cfg.paths.dataset_dir / NAROU_RANKED
-    exclude_ids = {
-        w.id.lower() for w in (load_works(ranked_path) if ranked_path.exists() else [])
-    }
-    by_cat: Dict[str, List[Work]] = {spec["category"]: [] for spec in SUPPLEMENT_GENRE_SPECS}
-    seen_ids: Set[str] = set(exclude_ids)
-
-    for sfile in shard_files:
-        for w in load_works(sfile):
-            if w.id.lower() in seen_ids:
-                continue
-            if not w.text_path:
-                continue
-            txt_full = REPO_ROOT / w.text_path
-            if not txt_full.exists() or txt_full.stat().st_size <= 128:
-                continue
-            w.extra["text_bytes"] = txt_full.stat().st_size
-            w.pdf_path = None
-            w.extra.pop("pdf_bytes", None)
-            cat = str((w.extra or {}).get("supplement_category") or "")
-            if cat in by_cat and len(by_cat[cat]) < int(args.per_genre):
-                seen_ids.add(w.id.lower())
-                grank = len(by_cat[cat]) + 1
-                w.extra["genre_rank"] = grank
-                w.extra.setdefault("ranking", {})["rank"] = grank
-                by_cat[cat].append(w)
-
-    ordered: List[Work] = []
-    category_counts: Dict[str, int] = {}
-    for spec in SUPPLEMENT_GENRE_SPECS:
-        cat = spec["category"]
-        items = by_cat[cat]
-        category_counts[cat] = len(items)
-        if getattr(args, "strict_count", False) and len(items) < int(args.min_per_genre):
-            raise SystemExit(
-                f"supplement category '{cat}' has {len(items)} works (< min_per_genre={args.min_per_genre})"
-            )
-        ordered.extend(items)
-
-    _finalize_genre_supplement_catalogs(
-        cfg,
-        ordered,
-        works_path=cfg.paths.dataset_dir / NAROU_WORKS,
-        per_genre=int(args.per_genre),
-        min_per_genre=int(args.min_per_genre),
-        category_counts=category_counts,
-        raw_dir=cfg.paths.raw_dir / "narou" / "texts",
-    )
-
-
-# ---------------------------------------------------------------------------
-# report
-# ---------------------------------------------------------------------------
 def cmd_report(cfg: Config, args: argparse.Namespace) -> None:
     from asc.report import build_report  # local import keeps the CLI light
 
@@ -2019,12 +1295,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--limit", type=int, default=None)
     p.set_defaults(func=cmd_aozora_metadata)
 
-    p = sub.add_parser("aozora-texts", help="download texts (and PDFs) of Aozora works")
+    p = sub.add_parser("aozora-texts", help="download plain texts of Aozora works")
     p.add_argument("--works", type=int, default=None)
     p.add_argument("--ids-file", default=None,
                    help="fetch exactly these work ids (one per line), "
                         "e.g. the download list from select_controls.py propose")
-    p.add_argument("--pdf", action="store_true", help="also render PDF files")
     p.set_defaults(func=cmd_aozora_texts)
 
     p = sub.add_parser("narou-metadata", help="download the Narou bibliographic records")
@@ -2049,11 +1324,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--out-file", default=None)
     p.set_defaults(func=cmd_narou_rank)
 
-    p = sub.add_parser("narou-texts", help="download texts (and PDFs) of Narou novels")
+    p = sub.add_parser("narou-texts", help="download plain texts of Narou novels")
     p.add_argument("--start-rank", type=int, default=1, help="1-indexed rank to start from (e.g. 101)")
     p.add_argument("--works", type=int, default=None)
     p.add_argument("--max-episodes", type=int, default=0)
-    p.add_argument("--pdf", action="store_true", help="also render PDF files")
     p.add_argument("--ranked-file", default=None, help="path to pre-ranked JSONL file")
     p.add_argument("--ignore-ranked-file", action="store_true")
     p.add_argument("--rank-order", action="store_true", help="execute strictly in rank order")
@@ -2077,18 +1351,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = sub.add_parser("narou-merge-shards", help="merge sharded narou-texts outputs")
     p.add_argument("--shard-dir", default=None)
     p.add_argument("--works", type=int, default=300)
-    p.add_argument("--pdf", action="store_true", help="preserve/render PDF files")
     p.add_argument("--reuse-existing-dir", default=None)
     p.add_argument("--backfill", action="store_true", help="backfill from spare ranked works")
     p.add_argument("--strict-count", action="store_true", help="exit non-zero if count < --works")
     p.set_defaults(func=cmd_narou_merge_shards)
-
-    p = sub.add_parser(
-        "purge-pdfs",
-        help="convert any text-less PDFs to plain UTF-8 text and delete all PDF files",
-    )
-    p.add_argument("--reuse-existing-dir", default=None)
-    p.set_defaults(func=cmd_purge_pdfs)
 
     p = sub.add_parser(
         "narou-genre-supplement",
@@ -2129,7 +1395,6 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--limit", type=int, default=None)
     p.add_argument("--works", type=int, default=None)
     p.add_argument("--max-episodes", type=int, default=0)
-    p.add_argument("--pdf", action="store_true")
     p.set_defaults(func=None)
 
     args = parser.parse_args(argv)

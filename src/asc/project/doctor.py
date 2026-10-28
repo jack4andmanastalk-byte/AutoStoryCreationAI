@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from .context import build_context_packet
+from .index import ProjectIndex, index_path_for
 from .observability import (
     STAGE_ORDER,
     UNVERSIONED_WORLD_TYPES,
@@ -923,15 +924,56 @@ class ProjectDoctor:
         self._run_count = 0
         self._interrupted_runs = 0
         self._binding_gaps = []
+
+        # プロジェクトインデックスを読み込み、変更のあったノードを特定する。
+        # インデックスは save_* メソッドで逐次更新されるため、doctor は
+        # 読み取り専用で差分検査のみを行う。変更のないノードは軽量チェック
+        #（ステージ状態のみ）に留め、大規模プロジェクトでの検査コストを抑える。
+        # インデックスが存在しない（初回実行など）場合は全ノードを詳細検査する。
+        index_path = index_path_for(self.store.project_dir(project_id))
+        index = ProjectIndex.read(index_path)
+        if index.last_inspected_at is None:
+            # インデックスが未初期化：全ノードを詳細検査（後で全ノードIDを設定）
+            changed_node_ids: set[str] | None = None
+        else:
+            changed_node_ids = set(index.changed_nodes())
+
+        # インデックスから全ノードのステージ状態を記録（レポート用）。
+        # 変更のないノードもここでステージ情報を取得する。
+        try:
+            project = self.store.load_project(project_id)
+        except (ProjectError, OSError, ValueError):
+            project = None
+        if project is not None:
+            for node_id, entry in index.nodes.items():
+                self._node_stages[node_id] = entry.stages
+
         project = self._inspect_project(project_id)
         if project is None:
             report = self._build_report(project_id, ())
             return report
         nodes = self._inspect_nodes(project_id, project)
-        self._inspect_revisions(project_id, nodes)
-        self._inspect_checkpoints(project_id, nodes)
-        self._inspect_links(project_id, nodes)
-        self._inspect_world(project_id, nodes)
+
+        # 変更のあったノードのみ詳細検査。変更のないノードは軽量チェック。
+        # changed_node_ids が None の場合は初回実行とみなし全ノードを詳細検査する。
+        if changed_node_ids is None:
+            detailed_nodes = nodes
+        elif changed_node_ids:
+            detailed_nodes = [n for n in nodes if n.id in changed_node_ids]
+        else:
+            detailed_nodes = []
+
+        if detailed_nodes:
+            self._inspect_revisions(project_id, detailed_nodes)
+            self._inspect_checkpoints(project_id, detailed_nodes)
+            self._inspect_links(project_id, detailed_nodes)
+            self._inspect_world(project_id, detailed_nodes)
+        else:
+            self._check("revisions", 0, status="skipped")
+            self._check("checkpoints", 0, status="skipped")
+            self._check("links", 0, status="skipped")
+            self._check("world", 0, status="skipped")
+
         self._inspect_runs(project_id)
         return self._build_report(project_id, tuple(nodes))
 

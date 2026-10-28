@@ -109,14 +109,3 @@ narou:
   local_text_dir: data/cache/narou_texts
   # auto | download | local
   text_source: auto
-
-pdf:
-  page_size: A5
-  font_size: 10.5
-  heading_font_size: 16
-  margin_mm: 18
-  line_height: 1.75
-  body_font: ZenOldMincho-Regular.ttf
-  body_bold_font: ZenOldMincho-Bold.ttf
-  heading_font: ZenKakuGothicNew-Bold.ttf
-  font_source: google-fonts

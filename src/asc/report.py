@@ -26,7 +26,6 @@ class DatasetStats:
     works: int = 0
     authors: int = 0
     with_text: int = 0
-    with_pdf: int = 0
     commercialized: int = 0
     copyrighted: int = 0
     total_chars: int = 0
@@ -62,8 +61,6 @@ class DatasetReport:
                 ) or stats.authors
                 if row.get("text_path"):
                     stats.with_text += 1
-                if row.get("pdf_path"):
-                    stats.with_pdf += 1
                 rights = row.get("rights") or {}
                 if rights.get("commercialized") is True:
                     stats.commercialized += 1
@@ -100,7 +97,6 @@ class DatasetReport:
             lines.append(f"   records          : {stats.works}")
             if filename != "aozora_authors.jsonl":
                 lines.append(f"   with plain text  : {stats.with_text}")
-                lines.append(f"   with PDF         : {stats.with_pdf}")
                 if stats.commercialized:
                     lines.append(f"   commercialized   : {stats.commercialized}")
                 if stats.copyrighted:

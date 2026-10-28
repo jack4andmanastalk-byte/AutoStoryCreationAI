@@ -19,7 +19,6 @@ Field conventions
 * ``rights``        machine readable rights information
 * ``stats``         corpus statistics (character counts, episodes, ratings, ...)
 * ``text_path``     repository relative path of the normalised plain text
-* ``pdf_path``      repository relative path of the rendered PDF
 * ``extra``         source specific fields that do not fit the common schema
 """
 
@@ -97,7 +96,6 @@ class Work:
     rights: Dict[str, Any] = field(default_factory=dict)
     stats: Dict[str, Any] = field(default_factory=dict)
     text_path: Optional[str] = None
-    pdf_path: Optional[str] = None
     extra: Dict[str, Any] = field(default_factory=dict)
 
     # ------------------------------------------------------------------
@@ -118,7 +116,6 @@ class Work:
             "rights": self.rights,
             "stats": self.stats,
             "text_path": self.text_path,
-            "pdf_path": self.pdf_path,
             "extra": self.extra,
         }
 
@@ -140,7 +137,6 @@ class Work:
             rights=data.get("rights") or {},
             stats=data.get("stats") or {},
             text_path=data.get("text_path"),
-            pdf_path=data.get("pdf_path"),
             extra=data.get("extra") or {},
         )
 

@@ -30,6 +30,7 @@ from .model import (
     new_id,
     utc_now,
 )
+from .index import NodeIndexEntry, ProjectIndex, index_path_for
 from .observability import build_actions, summarize
 from .schema import (
     SCHEMA_VERSION,
@@ -258,6 +259,7 @@ class ProjectStore:
                     raise ProjectExistsError(f"project already exists: {project_id}")
                 os.replace(temporary_dir, final_dir)
                 _fsync_directory(self.root)
+                self._update_index_for_node(project_id, root_node_id)
             except Exception:
                 shutil.rmtree(temporary_dir, ignore_errors=True)
                 raise
@@ -631,6 +633,7 @@ class ProjectStore:
                             f"parent run {run_id} does not belong to revision {parent.id}"
                         )
             _atomic_write_json(path, revision.to_dict())
+            self._update_index_for_node(revision.project_id, revision.node_id)
 
     def save_project(self, project: WorkProject) -> None:
         """Atomically save project metadata while preserving its root identity."""
@@ -657,6 +660,7 @@ class ProjectStore:
             _atomic_write_json(
                 self.node_dir(node.project_id, node.id) / "current.json", node.to_dict(),
             )
+            self._update_index_for_node(node.project_id, node.id)
 
     def save_checkpoint(self, checkpoint: StageCheckpoint) -> None:
         """Atomically persist a stage state for the node's current revision."""
@@ -673,6 +677,7 @@ class ProjectStore:
                 ),
                 checkpoint.to_dict(),
             )
+            self._update_index_for_node(checkpoint.project_id, checkpoint.node_id)
 
     @staticmethod
     def _project_file(directory: Path, relative: str) -> Path:
@@ -986,3 +991,66 @@ class ProjectStore:
             "next_actions": next_actions,
             "project_dir": str(directory),
         }
+
+    # -- project index helpers -------------------------------------------
+
+    def _index_path(self, project_id: str) -> Path:
+        return index_path_for(self.project_dir(project_id))
+
+    def _load_index(self, project_id: str) -> ProjectIndex:
+        return ProjectIndex.read(self._index_path(project_id))
+
+    def _save_index(self, project_id: str, index: ProjectIndex) -> None:
+        index.project_id = project_id
+        index.updated_at = utc_now()
+        index.write(self._index_path(project_id))
+
+    def _update_index_for_node(self, project_id: str, node_id: str) -> None:
+        """ノードの現在の状態からインデックスエントリを（再）構築する。"""
+        index = self._load_index(project_id)
+        try:
+            node = self.load_node(project_id, node_id)
+        except (ProjectError, OSError, ValueError):
+            return
+        revisions = self.list_revisions(project_id, node_id)
+        checkpoint_dir = self.node_dir(project_id, node_id) / "checkpoints"
+        checkpoint_count = 0
+        if checkpoint_dir.is_dir():
+            checkpoint_count = sum(1 for p in checkpoint_dir.glob("*.json") if p.is_file())
+        artifact_count = 0
+        for revision in revisions:
+            artifact_count += len(revision.artifacts)
+        stages: dict[str, str] = {}
+        if checkpoint_dir.is_dir():
+            for path in sorted(checkpoint_dir.glob("*.json")):
+                try:
+                    checkpoint = self._parse(path, StageCheckpoint.from_dict)
+                except (ProjectError, OSError, ValueError):
+                    continue
+                stages[checkpoint.stage] = checkpoint.status
+        index.nodes[node_id] = NodeIndexEntry(
+            id=node.id,
+            kind=node.kind,
+            current_revision_id=node.current_revision_id,
+            revision_count=len(revisions),
+            checkpoint_count=checkpoint_count,
+            artifact_count=artifact_count,
+            last_updated=node.updated_at,
+            stages=stages,
+        )
+        index.node_count = len(index.nodes)
+        all_revisions = 0
+        all_artifacts = 0
+        for nid in index.nodes:
+            try:
+                revs = self.list_revisions(project_id, nid)
+                all_revisions += len(revs)
+                for r in revs:
+                    all_artifacts += len(r.artifacts)
+            except (ProjectError, OSError, ValueError):
+                continue
+        index.revision_count = all_revisions
+        index.artifact_count = all_artifacts
+        index.link_count = len(self.list_all_links(project_id))
+        index.checkpoint_count = sum(n.checkpoint_count for n in index.nodes.values())
+        self._save_index(project_id, index)

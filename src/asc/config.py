@@ -80,25 +80,11 @@ class NarouConfig:
 
 
 @dataclass
-class PdfConfig:
-    page_size: str = "A5"
-    font_size: float = 10.5
-    heading_font_size: float = 16.0
-    margin_mm: float = 18.0
-    line_height: float = 1.75
-    body_font: str = "ZenOldMincho-Regular.ttf"
-    body_bold_font: str = "ZenOldMincho-Bold.ttf"
-    heading_font: str = "ZenKakuGothicNew-Bold.ttf"
-    font_source: str = "google-fonts"
-
-
-@dataclass
 class Config:
     paths: PathsConfig = field(default_factory=PathsConfig)
     http: HttpConfig = field(default_factory=HttpConfig)
     aozora: AozoraConfig = field(default_factory=AozoraConfig)
     narou: NarouConfig = field(default_factory=NarouConfig)
-    pdf: PdfConfig = field(default_factory=PdfConfig)
     raw: Dict[str, Any] = field(default_factory=dict)
 
 

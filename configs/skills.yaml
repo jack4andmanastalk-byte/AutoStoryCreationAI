@@ -1,0 +1,266 @@
+# スキルレジストリ
+#
+# 各スキルの仕様（SKILL.md）、実装モジュール、チェッカースクリプト、
+# プロンプトテンプレートを機械可読に紐付ける。
+# story_project.py やパイプラインからこのレジストリ経由でスキルを
+# 動的参照し、新スキル追加時の手動配線を減らす。
+#
+# バージョン: skill-registry-v1
+
+skills:
+  - id: premise-brief
+    name: 企画核・ログライン・主題の確定
+    description: 企画の核（一文ログライン・前提・主題・差分・禁止条件）を、後続の設計と評価が検証できる形に圧縮する。
+    skill_md: skills/premise-brief/SKILL.md
+    impl_module: asc.brief
+    impl_package: src/asc/brief
+    checker_script: scripts/check_brief.py
+    prompt_template: prompts/design-brief.md
+    schema_ref: skills/premise-brief/references/brief-schema.md
+    measurement_ref: skills/premise-brief/references/measurement.md
+    techniques_ref: skills/premise-brief/references/techniques.md
+    seed: seed-01-premise-brief
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: brief
+
+  - id: world-rules
+    name: 世界の規則・公理・コスト・例外
+    description: 世界観を公理・規則系として設計し、人物の選択を拘束する。
+    skill_md: skills/world-rules/SKILL.md
+    impl_module: asc.world
+    impl_package: src/asc/world
+    checker_script: scripts/check_world.py
+    prompt_template: prompts/design-world.md
+    schema_ref: skills/world-rules/references/world-schema.md
+    measurement_ref: skills/world-rules/references/measurement.md
+    techniques_ref: skills/world-rules/references/techniques.md
+    seed: seed-02-world-rules
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: world
+
+  - id: history-timeline
+    name: 歴史・年表・因果と痕跡
+    description: 歴史を因果と証拠の連鎖として組み立て、年代順・原因参照・痕跡・正史と異説の分離を検査する。
+    skill_md: skills/history-timeline/SKILL.md
+    impl_module: asc.history
+    impl_package: src/asc/history
+    checker_script: scripts/check_history.py
+    prompt_template: prompts/design-history.md
+    schema_ref: skills/history-timeline/references/history-schema.md
+    measurement_ref: skills/history-timeline/references/measurement.md
+    techniques_ref: skills/history-timeline/references/techniques.md
+    seed: seed-03-history-timeline
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: history
+
+  - id: character-core
+    name: 人物の核・WANT/NEED・アーク
+    description: 人物モデル（WANT/NEED・恐れ・行動原理・口調・アーク）を設計書として検証する。
+    skill_md: skills/character-core/SKILL.md
+    impl_module: asc.character
+    impl_package: src/asc/character
+    checker_script: scripts/check_character.py
+    prompt_template: prompts/design-character.md
+    schema_ref: skills/character-core/references/character-schema.md
+    measurement_ref: skills/character-core/references/measurement.md
+    techniques_ref: skills/character-core/references/techniques.md
+    seed: seed-04-character-core
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: character
+
+  - id: relationship-web
+    name: 人物関係・利害・知識状態・沈黙
+    description: 関係を両立しない目的・知識状態・沈黙として設計する。
+    skill_md: skills/relationship-web/SKILL.md
+    impl_module: asc.relation
+    impl_package: src/asc/relation
+    checker_script: scripts/check_relation.py
+    prompt_template: prompts/design-relation.md
+    schema_ref: skills/relationship-web/references/relation-schema.md
+    measurement_ref: skills/relationship-web/references/measurement.md
+    techniques_ref: skills/relationship-web/references/techniques.md
+    seed: seed-05-relationship-web
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: relation
+
+  - id: plot-architecture
+    name: 筋立て・幕・転換点・副筋
+    description: 幕割り・転換点・副筋・結末・未回収を設計書として書く。
+    skill_md: skills/plot-architecture/SKILL.md
+    impl_module: asc.plot
+    impl_package: src/asc/plot
+    checker_script: scripts/check_plot.py
+    prompt_template: prompts/design-plot.md
+    schema_ref: skills/plot-architecture/references/plot-schema.md
+    measurement_ref: skills/plot-architecture/references/measurement.md
+    techniques_ref: skills/plot-architecture/references/techniques.md
+    seed: seed-06-plot-architecture
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: plot
+
+  - id: scene-information
+    name: 場面の目的・対立・変化・開示計画
+    description: 各場面の目的・対立・変化・緊張・知識の流れ・開示計画を設計書として書く。
+    skill_md: skills/scene-information/SKILL.md
+    impl_module: asc.scene
+    impl_package: src/asc/scene
+    checker_script: scripts/check_scene.py
+    prompt_template: prompts/design-scene.md
+    schema_ref: skills/scene-information/references/scene-schema.md
+    measurement_ref: skills/scene-information/references/measurement.md
+    techniques_ref: skills/scene-information/references/techniques.md
+    seed: seed-07-scene-information
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: scene
+
+  - id: voice-style
+    name: 語り・文体・視点
+    description: 誰が語るか・何を知るか・どの文体かを宣言し、視点逸脱・禁止表現を報告する。
+    skill_md: skills/voice-style/SKILL.md
+    impl_module: asc.style
+    impl_package: src/asc/style
+    checker_script: scripts/check_voice.py
+    prompt_template: prompts/design-voice.md
+    schema_ref: skills/voice-style/references/voice-schema.md
+    measurement_ref: skills/voice-style/references/measurement.md
+    techniques_ref: skills/voice-style/references/techniques.md
+    seed: seed-08-voice-style
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: true
+    design_doc: voice
+
+  - id: continuity-ledger
+    name: 継続性台帳・監査
+    description: 本文と設定台帳（canon）を照合し、矛盾を根拠位置つきで報告する。
+    skill_md: skills/continuity-ledger/SKILL.md
+    impl_module: asc.story
+    impl_package: src/asc/story
+    checker_script: scripts/audit_continuity.py
+    schema_ref: skills/continuity-ledger/references/canon-schema.md
+    measurement_ref: skills/continuity-ledger/references/measurement.md
+    techniques_ref: skills/continuity-ledger/references/techniques.md
+    seed: seed-09-continuity-ledger
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: false
+    design_doc: null
+
+  - id: revision-loop
+    name: 改稿ループ・批評とパッチ
+    description: 所見を批評ノートに変え、パッチで修正して再監査・比較する。
+    skill_md: skills/revision-loop/SKILL.md
+    impl_module: asc.revision
+    impl_package: src/asc/revision
+    checker_script: scripts/revise.py
+    schema_ref: skills/revision-loop/references/loop-schema.md
+    measurement_ref: skills/revision-loop/references/measurement.md
+    techniques_ref: skills/revision-loop/references/techniques.md
+    seed: seed-10-revision-loop
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: false
+    design_doc: null
+
+  - id: interactive-branch
+    name: 分岐構造・到達不能・行き止まり
+    description: 分岐を節点と辺として設計し、到達不能・行き止まりを機械的に検査する。
+    skill_md: skills/interactive-branch/SKILL.md
+    impl_module: asc.branch
+    impl_package: src/asc/branch
+    checker_script: scripts/check_branch.py
+    schema_ref: skills/interactive-branch/references/branch-schema.md
+    measurement_ref: skills/interactive-branch/references/measurement.md
+    techniques_ref: skills/interactive-branch/references/techniques.md
+    seed: seed-11-interactive-branch
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: false
+    design_doc: null
+
+  - id: adaptation
+    name: 翻案・メディアミックス設計
+    description: 原作の機能を別媒体に翻訳し、削除理由と代替・権利を記録する。
+    skill_md: skills/adaptation/SKILL.md
+    impl_module: asc.adapt
+    impl_package: src/asc/adapt
+    checker_script: scripts/check_adaptation.py
+    schema_ref: skills/adaptation/references/adaptation-schema.md
+    measurement_ref: skills/adaptation/references/measurement.md
+    techniques_ref: skills/adaptation/references/techniques.md
+    seed: seed-12-adaptation
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要"
+    in_pipeline_design: false
+    design_doc: null
+
+  - id: evaluation-harness
+    name: 評価ハーネス・L1/L2/L3
+    description: 作品をL1/L2/L3に分けて測り、ベースラインとの差を欠陥密度と次元別プロファイルで報告する。
+    skill_md: skills/evaluation-harness/SKILL.md
+    impl_module: asc.evaluation
+    impl_package: src/asc/evaluation
+    checker_script: scripts/run_evaluation.py
+    measurement_ref: skills/evaluation-harness/references/measurement.md
+    techniques_ref: skills/evaluation-harness/references/techniques.md
+    seed: seed-13-evaluation-harness
+    version: "0.1"
+    catalog: research/catalog/techniques.jsonl
+    executability: research/catalog/executability.jsonl
+    license: MIT
+    compatibility: "Python 3.11+; PyYAML 6+; ネットワーク不要（L2 は外部コマンドとして接続）"
+    in_pipeline_design: false
+    design_doc: null
+
+registry_version: "skill-registry-v1"
+skill_count: 13

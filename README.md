@@ -8,7 +8,7 @@ AIが作品を作り続けられるよう、その基盤として **研究素材
 1. 公開ドメインの日本語文学（青空文庫）
 2. Web 小説（小説家になろう）
 
-から、統一スキーマのメタデータ JSONL と AI 自動創作・評価に直接利用できる整形済みプレーンテキスト（UTF-8 `.txt`、PDF 廃止済）を生成するパイプラインと、
+から、統一スキーマのメタデータ JSONL と AI 自動創作・評価に直接利用できる整形済みプレーンテキスト（UTF-8 `.txt`）を生成するパイプラインと、
 その実行結果を収録します。
 
 > 現在のフェーズ: **Phase 0 — データセットアップ**（完了）、
@@ -36,7 +36,7 @@ AIが作品を作り続けられるよう、その基盤として **研究素材
 | 外部確認済・商業化300作品メタデータ | `samples/narou_commercialized_ranked.jsonl` (`top100` / `rank101_200` / `rank201_300` も同梱) | CiNii Books (ISBN)・Wikipedia・Apple Books Japan により書籍・マンガ・アニメ・ゲームの実在を確認した上位 300 作品カタログ（R15 対象作品を含む） |
 | 5ジャンル限定・商業化追加73作品メタデータ | `samples/narou_commercialized_genre_supplement.jsonl` | **歴史（15）・推理（15）・現代（15）・SF（15）・ホラー（13）** に限定して外部実在検証・全話テキスト化した計 73 作品（19,057 話 / 約 7,981 万文字、Top 300 と重複なし） |
 | 外部確認済・商業化カタログ表 | `docs/narou_commercialized_ranking.md`, `docs/narou_genre_supplement_ranking.md` (`top100` / `rank101_200` / `rank201_300` も同梱) | 順位・区分・R15有無・外部確認メディア・ISBN/レーベル・全話数・総文字数・本文TXTサイズ一覧 |
-| 整形済み本文（プレーンテキスト専用） | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いた全話 UTF-8 プレーンテキスト（既存 PDF は全てテキスト化の上で完全削除済） |
+| 整形済み本文（プレーンテキスト専用） | `data/raw/{aozora,narou}/texts/*.txt` | ルビ・まえがき／あとがき・注記を除いた全話 UTF-8 プレーンテキスト |
 | ビルド情報 | `data/datasets/manifest.json` | 各ステップの取得元・件数・総話数・総文字数・テキスト容量・生成時刻 |
 
 JSONL は 1 行 = 1 レコード（UTF-8 / `ensure_ascii=False` / キー順固定）です。
@@ -97,14 +97,13 @@ make report
 .venv/bin/python scripts/setup_dataset.py narou-texts --works 300 --max-episodes 0 --rank-order
 # 5ジャンル限定（歴史・推理・現代・SF・ホラー）の商業化作品を各 10〜15 作品（計 50〜75 作品）追加する場合:
 .venv/bin/python scripts/setup_dataset.py narou-genre-supplement --per-genre 15 --min-per-genre 10
-# 残存 PDF がある場合にプレーンテキストへ変換して完全削除する:
-.venv/bin/python scripts/setup_dataset.py purge-pdfs
+
 ```
 
-事前ビルド済みの全 373 作品・全話（総合 Top 300 作品＋歴史・推理・現代・SF・ホラー 73 作品＝139,656 話 / 約 5.84 億文字 / 圧縮アーカイブ合計 0.54 GB、PDF 完全削除済）プレーンテキストセットを取得する場合:
+事前ビルド済みの全 373 作品・全話（総合 Top 300 作品＋歴史・推理・現代・SF・ホラー 73 作品＝139,656 話 / 約 5.84 億文字 / 圧縮アーカイブ合計 0.54 GB）プレーンテキストセットを取得する場合:
 
 ```bash
-# 方法 A: datasets ブランチから展開（プレーンテキスト＋JSONL のみ、PDF ゼロ）
+# 方法 A: datasets ブランチから展開（プレーンテキスト＋JSONL のみ）
 make pull-datasets
 
 # 方法 B: GitHub Release から圧縮テキストアーカイブ (*_texts.tar.gz) を直接取得
@@ -121,7 +120,7 @@ gh release download datasets-narou-commercialized
 * 本文: 作品ごとの ZIP（`/cards/<人物ID>/files/<作品ID>_<形式>_<ハッシュ>.zip`）
 * 権利: 「青空文庫収録ファイルの取り扱い規準」に従います。**作品著作権フラグが「あり」の作品
   （著作権存続作品）は再配布できません**。本パイプラインはフラグを `rights.copyright_flag`
-  に記録し、フラグ「なし」の作品のみ本文・PDF を生成します。
+  に記録し、フラグ「なし」の作品のみ本文を生成します。
 
 ### 3.2 小説家になろう（syosetu.com）
 
@@ -144,7 +143,7 @@ gh release download datasets-narou-commercialized
 * `narou.local_text_dir` … 事前取得済みの本文（`<Nコード>/<話数>.txt`）を再利用
 
 `.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
-生成した JSONL・本文・PDF を `datasets` ブランチおよび artifact として公開します
+生成した JSONL・本文を `datasets` ブランチおよび artifact として公開します
 （`make data` のネットワーク制約がある環境では `make pull-datasets` で即座に展開可能）。
 
 ## 4.  ディレクトリ構成
@@ -153,10 +152,9 @@ gh release download datasets-narou-commercialized
 .
 ├── configs/dataset.yaml        # 取得対象・件数・フォント等の設定
 ├── data/                       # 生成物（大半は .gitignore 対象）
-│   ├── cache/                  # ダウンロードキャッシュ（tarball・ZIP・フォント・API生JSON）
+│   ├── cache/                  # ダウンロードキャッシュ（tarball・ZIP・API生JSON）
 │   ├── datasets/               # メタデータ JSONL と manifest
-│   ├── raw/                    # 整形済み本文テキスト
-│   └── pdf/                    # レンダリングした PDF
+│   └── raw/                    # 整形済み本文テキスト
 ├── docs/                       # 設計・スキーマ・法務メモ
 ├── skills/                     # 実行可能なスキル（SKILL.md + references/、下記 4.2）
 ├── harness/                    # 評価ケース・ルーブリック・判定器（下記 4.2）
@@ -175,7 +173,7 @@ gh release download datasets-narou-commercialized
 │   ├── config.py http.py jsonl.py schema.py report.py
 │   ├── sources/aozora.py sources/narou.py
 │   ├── text/aozora_format.py text/narou_html.py
-│   ├── render/pdf.py fonts.py
+│   └── render/
 │   ├── story/                  # canon・台帳・継続性監査（continuity-ledger）
 │   ├── evaluation/             # 指標・ルーブリック・判定器・ハーネス
 │   └── pipeline/               # 生成（現在は Plan: 企画 → canon）
@@ -430,7 +428,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 
 ## 5.  品質保証
 
-* `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、PDF 描画、
+* `make test` — パーサ（青空文庫ルビ記法／小説家になろう HTML）、NUXT ペイロード、
   JSONL ラウンドトリップのユニットテスト
 * `make report` — レコード数・ジャンル分布・出版年分布・文字数合計・必須フィールド欠損の集計
 * `make skills-check` — `SKILL.md` の frontmatter・リンク・500 行制限、継続性監査の期待値、
@@ -441,7 +439,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * CI: `.github/workflows/research-check.yml` が**全 push / 全 PR** でカタログ整合・全テスト・
   デモの監査と評価を実行します（ローカル 30〜60 秒）。実行枠の設計は
   [`docs/ci.md`](docs/ci.md) を参照してください
-* `dataset-refresh`（データ取得と PDF 生成）は別ワークフローで、**同時実行数を絞って**
+* `dataset-refresh`（データ取得）は別ワークフローで、**同時実行数を絞って**
   CI の枠を空けます
 
 ## 6.  次フェーズ候補
@@ -459,7 +457,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * 設計書を canon 生成に使う順序（design-first）の検討（現行は plan → design。`plan-canon` の作り替えを伴うため別件）
 * 文字種・文構造・会話率などの言語統計に基づく feature 抽出
 * **凍結**: L2/L3 の実証・較正・人間評定・それらの追加開発（再開には利用者の明示的な方針変更が必要）
-* 縦組み PDF / EPUB 出力（現在は横組み A5）
+
 
 ## 7.  ライセンスと引用
 
