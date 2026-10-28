@@ -34,6 +34,7 @@ from pathlib import Path
 from typing import Any
 
 from .context import build_context_packet
+from .pending_paths import resolve_project_paths
 from .observability import (
     STAGE_ORDER,
     UNVERSIONED_WORLD_TYPES,
@@ -574,7 +575,9 @@ class ProjectDoctor:
             self._inspect_design_report(project_id, node_id, checkpoint)
 
     def _add_pending(self, project_id: str, node: Any, checkpoint: Any) -> None:
-        details = dict(checkpoint.pending or {})
+        details = resolve_project_paths(
+            self.store.project_dir(project_id), checkpoint.pending or {}, checkpoint.run_id,
+        )
         response_path = details.get("response_path")
         self._pending.append({
             "project_id": project_id,

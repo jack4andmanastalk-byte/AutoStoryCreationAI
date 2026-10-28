@@ -29,6 +29,7 @@ from ..pipeline import (
     build_plan,
     build_story,
 )
+from .pending_paths import record_project_paths, resolve_project_paths
 from ..pipeline.design import DOCS, carried_row
 from ..story.canon import Canon, load_canon
 from .adapter import PROJECT_PROTOCOL, PipelineInput, adapt_work_spec
@@ -717,7 +718,9 @@ class ProjectRunner:
                     run_id=checkpoint.run_id if checkpoint is not None else None,
                 )
             if checkpoint is not None and checkpoint.status == "waiting_response":
-                pending = checkpoint.pending or {}
+                pending = resolve_project_paths(
+                    self.store.project_dir(project_id), checkpoint.pending or {}, checkpoint.run_id,
+                )
                 response_path = pending.get("response_path")
                 if response_path and not Path(response_path).is_file():
                     raise ProjectRunPending(
@@ -1642,7 +1645,9 @@ class ProjectRunner:
         project_id = attempt.snapshot.project.id
         ledger.error = str(exc)
         ledger.finish("waiting_response")
-        pending = self._pending_details(exc)
+        pending = record_project_paths(
+            self.store.project_dir(project_id), self._pending_details(exc),
+        )
         self.store.save_checkpoint(replace(
             checkpoint, status="waiting_response", error=None,
             pending=pending, artifacts=(), updated_at=utc_now(),

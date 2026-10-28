@@ -171,7 +171,7 @@ phase の並び（`opening` → `development` → `ending`、戻りなし）・`
 - `relay/run1/` から同じ run を再構成できる。応答 `text` の sha256（先頭 16 桁）:
   Stage A `d4f72370b910448c`、ch01 `ec3ce276c5fc35f7`、ch02 `5b9e4c4d3d18d0de`、ch03 `5193509e5d94d4ef`
   （フル値とリプレイの一致は [`artifacts/run1/replay.report.json`](artifacts/run1/replay.report.json)）。
-- 見る場所の対応（runbook §4 は `out/run1/` を指す。コミット済みは `artifacts/`）:
+- 見る場所の対応（実走当時の runbook は `out/run1/` を指していた。現行 runbook は新規 run2 用であり、実走の記録は `artifacts/`）:
 
 | runbook §4 | このリポジトリでの場所 |
 | --- | --- |

@@ -25,6 +25,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPT = ROOT / "scripts" / "story_project.py"
 FIXTURE = ROOT / "benchmarks" / "protocol-v1" / "fixtures" / "project-demo.json"
@@ -466,3 +468,66 @@ def test_render_out_records_custom_manuscript_path_and_revision_for_relay_status
     assert explicit_next["manuscript"]["written"] is False
 
 
+
+
+@pytest.mark.parametrize("legacy", [False, True])
+def test_pending_project_restores_from_git_checkpoint_in_another_directory(tmp_path: Path, legacy: bool):
+    """A Git checkpoint must resume without relying on the old checkout's paths."""
+    import shutil
+
+    original = tmp_path / "original"
+    original.mkdir()
+    subprocess.run(["git", "init", "-q", str(original)], check=True)
+    subprocess.run(["git", "-C", str(original), "config", "user.name", "Test"], check=True)
+    subprocess.run(["git", "-C", str(original), "config", "user.email", "test@example.invalid"], check=True)
+    (original / ".gitignore").write_text("/runs/\n", encoding="utf-8")
+    root = original / "works"
+    project = init_project(root)
+    assert cli("--root", str(root), "run", "prj-round").returncode == 3
+    plan = round_status(root, "prj-round")["next"]
+    assert submit(root, "prj-round", write_answers(root, plan["tag"], plan["purpose"], answers_by_purpose())).returncode == 3
+    brief = round_status(root, "prj-round")["next"]
+    assert brief["purpose"] == "design:brief"
+    # Store the answer before checkpointing, but do not resume yet.
+    answer = write_answers(root, brief["tag"], brief["purpose"], answers_by_purpose())
+    result = cli("--root", str(root), "relay", "ingest", "prj-round", "--file", str(answer), "--json")
+    assert result.returncode == 0, result.stderr
+    saved = {p.name: p.read_bytes() for p in (project / "relay" / "responses").glob("*.json")}
+    assert len(saved) == 2
+    if legacy:
+        # Checkpoints written before project-relative paths existed.
+        checkpoint = next(p for p in project.glob("nodes/*/checkpoints/design.json"))
+        data = json.loads(checkpoint.read_text(encoding="utf-8"))
+        data["pending"].pop("request_path_relative", None)
+        data["pending"].pop("response_path_relative", None)
+        checkpoint.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    subprocess.run(["git", "-C", str(original), "add", ".gitignore", "works/prj-round"], check=True)
+    subprocess.run(["git", "-C", str(original), "commit", "-qm", "pending project"], check=True)
+    restored = tmp_path / "restored"
+    subprocess.run(["git", "clone", "-q", str(original), str(restored)], check=True)
+    shutil.rmtree(original)
+    newroot = restored / "works"
+    status = cli("--root", str(newroot), "status", "prj-round", "--json")
+    assert status.returncode == 0, status.stderr
+    pending = json.loads(status.stdout)["pending"][0]
+    assert pending["response_ready"] is True
+    assert str(newroot) in pending["response_path"]
+    doctor = cli("--root", str(newroot), "doctor", "prj-round", "--json")
+    assert doctor.returncode == 0, doctor.stdout + doctor.stderr
+    assert json.loads(doctor.stdout)["pending"][0]["response_ready"] is True
+    resumed = cli("--root", str(newroot), "resume", "prj-round", "--json")
+    assert resumed.returncode == 3, resumed.stdout + resumed.stderr
+    assert round_status(newroot, "prj-round")["next"]["purpose"] == "design:world"
+    assert {p.name: p.read_bytes() for p in (newroot / "prj-round" / "relay" / "responses").glob("*.json")} == saved
+    for _ in range(20):
+        row = round_status(newroot, "prj-round")["next"]
+        if row is None:
+            break
+        result = submit(newroot, "prj-round", write_answers(newroot, row["tag"], row["purpose"], answers_by_purpose()))
+        assert result.returncode in (0, 3), result.stdout + result.stderr
+    else:
+        pytest.fail("restored project did not complete")
+    assert round_status(newroot, "prj-round")["state"] == "complete"
+    responses = newroot / "prj-round" / "relay" / "responses"
+    assert len(list(responses.glob("*.json"))) == 12
+    assert all((responses / name).read_bytes() == data for name, data in saved.items())

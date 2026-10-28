@@ -31,6 +31,7 @@ from .model import (
     utc_now,
 )
 from .observability import build_actions, summarize
+from .pending_paths import resolve_project_paths
 from .schema import (
     SCHEMA_VERSION,
     ProjectValidationError,
@@ -846,7 +847,9 @@ class ProjectStore:
             checkpoint = checkpoints.get(stage)
             if checkpoint is None or checkpoint.status != "waiting_response":
                 continue
-            details = dict(checkpoint.pending or {})
+            details = resolve_project_paths(
+                directory, checkpoint.pending or {}, checkpoint.run_id,
+            )
             response_path = details.get("response_path")
             pending.append({
                 "project_id": project_id,

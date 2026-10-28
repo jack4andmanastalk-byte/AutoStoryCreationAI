@@ -17,11 +17,11 @@
 手順は experiments/2026-10-stage-a-v11-t01/runbook.md の 1 と 3 に従います。
 
 1. runbook.md の「1. 1 回目」のコマンドを実行する（--resume は付けない）。
-   relay/run1 が既にある場合は、中身を消さずに止めて私に知らせてください。
-2. exit 3 のとき、relay/run1/requests/ の依頼ファイルを読み、その本文（"prompt" の値）を
+   relay/run2 が既にある場合は、中身を消さずに止めて私に知らせてください。
+2. exit 3 のとき、state と relay を確認して GitHub の作業ブランチへ commit / push してから、relay/run2/requests/ の依頼ファイルを読み、その本文（"prompt" の値）を
    そのまま表示してください。ファイルの内容は要約しないでください。
 3. 私が回答用チャットから得た JSON を貼ったら（文面 C）、その JSON を
-   relay/run1/responses/<key>.json に保存し、「3. 再開」のコマンドを --resume 付きで実行してください。
+   relay/run2/responses/<key>.json に保存し、「3. 再開」のコマンドを --resume 付きで実行してください。
 4. 各回の結果（exit code、game_log.report.json の summary.status と scene_frame の所見、次の依頼の有無）を
    短く報告してください。
 5. 本文・応答を私の代わりに作らないでください。回答は私が別チャットで得たものだけを使います。
@@ -57,7 +57,7 @@
 --- 応答 JSON 終了 ---
 
 手順:
-1. relay/run1/responses/<依頼ファイルの key>.json に、次の形で保存してください。
+1. relay/run2/responses/<依頼ファイルの key>.json に、次の形で保存してください。
    {"text": "<応答 JSON の本文を文字列として>", "model": "<応答者>",
     "model_version": "unversioned-2026-10-28", "provenance": {"origin": "fresh"}}
 2. runbook.md の「3. 再開」のコマンドを --resume 付きで実行してください。
@@ -71,14 +71,14 @@
 ```
 experiments/2026-10-stage-a-v11-t01 の実走の状況を教えてください。
 chat_operator.py --status の結果、未回答の依頼の一覧、最後の exit code、
-out/run1/game_log.report.json の summary（status と checks の status）を報告してください。
+runs/run2/game_log.report.json の summary（status と checks の status）を報告してください。
 ```
 
 ---
 
 ## 注意
 
-- **やり直すとき**は、`run1` を消さずに `run2` のような新しい名前で始めてください（文面 A の 1 を `run2` に読み替え）。
+- **やり直すとき**は、`run1` を消さずに `run3` のような新しい名前で始めてください（文面 A の 1 を `run2` に読み替え）。
 - **修復の依頼**（検査に落ちた場合）は、次の依頼として届きます。文面 B と同じ手順で、新しいチャットに貼ってください。
 - **結果の判定**は、エージェントが報告する `scene_frame` の所見と本文を見て行います。判定の基準は、実走の前に決めたものを変えないでください。
 - この実走は L1（構造・衛生の検査）の範囲です。物語の質の証拠にはなりません。
