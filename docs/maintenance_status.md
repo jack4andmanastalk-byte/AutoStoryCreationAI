@@ -19,8 +19,8 @@ workflow は変更しない。`datasets`、Release、shard artifact には本文
 | --- | --- | --- |
 | [#57](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/issues/57) / `9195f0c3` | [PR #59](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/pull/59) で PDF 削除の安全性、R15・PDF の説明、doctor の回帰テストを統合。旧枝の doctor は不完全 index により偽陰性になり得る。旧枝の dataset 参照は plan prompt に伝わらない。詳細は [分解記録](branch_reconciliation_2026-10-28.md)。 | 旧枝の一括マージはしない。dataset の明示的な入力・権利・prompt・再開時の再現性を設計するまで接続を採用しない。skill registry は実需確認待ち（R-04）、index 差分検査は性能と正確性の検証待ち（R-05）。実験索引の独自差分も未確認。旧枝は保持。 |
 | [#58](https://github.com/jack4andmanastalk-byte/AutoStoryCreationAI/issues/58) / 過去の dataset-refresh 失敗 | 失敗 job の一部は特定したがログ取得は EOF、根本原因は未確認。PR #59 で push / PR 起動を廃止し、公開を main に限定。 | 詳細ログなどの証拠が得られた場合に原因を切り分ける。main の月次・手動実行は引き続き共有データを公開する。データの取得・再公開はこの調査では実行しない。 |
-| #58 / `f3ec8a91` | 先端 `fab7e5cf5c7039e7ed31365d5b20874acc1c8615` は、固定 canon・plan 不実行の事前登録（`preregistration.json` SHA-256 `ecaccfe468b7ca926ff5fe5171d07f3a6ffb87348961b796dc67482f97701b2f`）と回答待ち状態を持つ。main の同名実験は plan 実行を含む別条件・別登録（現在の登録 SHA-256 `d4784d1fbf539ac97852145233d1da9e4f256bd223377e6e83a900d4230624e9`）で完走済み。固定 canon での監査失敗と記録欠落を別途修正・回帰検査。 | 両者を同じ実験と見なしたり、main の事前登録・結果に上書きしたりしない。独自の未完実験記録と他の差分の保全・採否を確認するまで旧枝を保持。 |
-| #58 / `7d70c8c2` | 先端 `a9715d1a94f048b22a11f86ef3ef61cb9ee60025` の7ファイルを機能別に比較し、主機能は main 側にあり、旧 PDF 公開フローは戻さないと判断。詳細は下記。 | 公開物の権利とデータ取得の正常性は未確認。安全な保管・整理方針を確認するまで旧枝を保持。 |
+| #58 / `f3ec8a91` | 先端 `fab7e5cf5c7039e7ed31365d5b20874acc1c8615` は、固定 canon・plan 不実行の事前登録（`preregistration.json` SHA-256 `ecaccfe468b7ca926ff5fe5171d07f3a6ffb87348961b796dc67482f97701b2f`）と回答待ち状態を持つ。main の同名実験は plan 実行を含む別条件・別登録（現在の登録 SHA-256 `d4784d1fbf539ac97852145233d1da9e4f256bd223377e6e83a900d4230624e9`）で完走済み。固定 canon での監査失敗と記録欠落を別途修正・回帰検査。旧先端の全21ファイル差分を[履歴資料](../experiments/archives/legacy-fixed-canon-b-2026-10-27/README.md)に保全し、親からの再構成・バイト一致を確認。 | 両者を同じ実験と見なしたり、main の事前登録・結果に上書きしたりしない。旧実験は未完・未再開であり、今後の扱いを判断するまで旧枝は保持。 |
+| #58 / `7d70c8c2` | 先端 `a9715d1a94f048b22a11f86ef3ef61cb9ee60025` の7ファイルを機能別に比較し、主機能は main 側にあり、旧 PDF 公開フローは戻さないと判断。詳細は下記。2026-10-28 にリモート一覧から旧枝が見えなくなったことを確認（本作業で削除しておらず、理由・日時は未確認）。 | 旧コミット自体は確認時に GitHub API で参照できた。公開物の権利とデータ取得の正常性は未確認。 |
 
 ## ブランチ整理の安全条件
 
@@ -58,3 +58,4 @@ workflow は変更しない。`datasets`、Release、shard artifact には本文
 
 この比較は旧枝に現行側と異なる振る舞いがないこと、公開済みデータの権利、または
 データ取得の正常性を保証しない。枝の削除や公開物の変更はこの比較時には行っていない。
+その後のリモート一覧確認では、旧枝は既に存在しなかった。

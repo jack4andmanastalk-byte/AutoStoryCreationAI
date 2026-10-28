@@ -1,0 +1,2481 @@
+diff --git a/README.md b/README.md
+index 0be237599d6315a3f9d92f3b18a17e0894276d40..7d82a130298e1ce81b92cac3f7f1ef69eda607cd 100644
+--- a/README.md
++++ b/README.md
+@@ -366,0 +367,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
++* その数え方を潰した**バッチ B**（同じ `t01`・同じ canon で、S1 の設計 8 文書と本文 3 章を 1 標本）
++  を走行中です: [`experiments/2026-10-realrun-b-t01/`](experiments/2026-10-realrun-b-t01/note.md)
++  （`preregistration.json`・`operations.md`・`scripts/measure_realrun_b.py`）。往復は対話モデルとの
++  チャット、状態は `relay/` のコミットで残すので、作業者が端末を開く前提はありません。canon は plan の
++  成果物なので **plan は固定して走らせません** — 測るのは S1 の design → draft で、「S1 全体」とは
++  呼びません（`docs/two_stage_slice.md` §23）。所見は `repair_erased_included` と `final_only` の
++  **両方**で数え、片方を主にしません。
+diff --git a/docs/two_stage_slice.md b/docs/two_stage_slice.md
+index 14d7134c1e54883156abcd37de99122e414a7b51..e0404378e4d70b38ccde00a052b306c484862921 100644
+--- a/docs/two_stage_slice.md
++++ b/docs/two_stage_slice.md
+@@ -683,0 +684,100 @@ clean 本文を 9 章に増やし、言い換えと紛らわしい文の固定
++
++## 23. バッチ B: 同じ canon で S1 の設計から先を 1 標本（2026-10-27、走行中）
++
++§21.1 で Stage B だけを 3 標本走らせた結果、**設計 8 文書のうち 3 つ（`plot` / `scene` / `voice`）しか
++走っていない**ことが残った。§15.2 も「S1 全体（plan → 8 設計 → draft）との比較」を未実施として
++挙げ、`2026-10-l1-pair-t01` の「次に試すこと」1 番目は、同じタスクで S1 全体を 1 件走らせて
++**設計段の出来が本文と L1 にどう出るか**を見ることを求めている。バッチ A と同じやり方
++（走らせる前に判定規則を固定）で、1 標本ぶんのバンドルを用意して走り始めた:
++[`experiments/2026-10-realrun-b-t01/`](../experiments/2026-10-realrun-b-t01/note.md)。
++
++### 23.1 往復はチャット、状態はリポジトリ
++
++このリポジトリはモデルを呼ばない。バッチ B の運用は次の分担で、**作業者が端末を開くことを前提に
++しない**。
++
++| 役 | すること |
++| --- | --- |
++| ハーネス（エージェント） | `scripts/` の実行、要求の書き出し、回答の取り込み、run・計測・コミット |
++| 回答者（対話モデル） | チャットに貼られた 1 リクエストに答える |
++| 人 | プロンプトを貼り、回答をそのまま返す |
++
++`relay/sample-1/requests/`（要求と `prompt_hash`）と `responses/`（実テキスト）を**1 往復ごとに
++コミットする**。`run_pipeline.py` は resume しないので、回答が揃うまで毎回最初から走らせて記録済みの
++回答を再生するが、その状態は `build/` ではなく `relay/` にあり、GitHub から再開できる。
++
++### 23.2 「S1 全体」と「同一 canon」は両立しない
++
++canon は plan の成果物である。plan を走らせれば canon が変わり、**バッチ A と同一 canon** は
++満たせない。バッチ B は canon を固定する側を取り、**plan は走らせない**（要求も出さない）。
++`run_pipeline.py --canon` は「plan の代わりに既存 canon を使う」入口で、`Makefile` の `design`
++目標も同じ形を取っている。
++
++* 測るのは **S1 の design → draft**。plan 段の出来は測らない。
++* したがって**「S1 全体を測った」とは書かない。** この trade-off は登録の
++  `condition.plan = {requested: false}` として走行前に固定した。
++* 代わりに、バッチ A（Stage B・同じ canon）と `2026-10-l1-pair-t01`（固定設計・同じ canon）の
++  3 腕を同じ canon 上に並べられる。
++
++### 23.3 バッチ A が残した曖昧さを、登録文で潰す
++
++§21.1 の R3 は「2 標本以上で所見を出した検査」とだけ書き、**最終報告だけを見るのか、修復で
++消えた所見も数えるのか**を決めていなかった。バッチ B は**両方を数え、両方の verdict を出し、
++片方を主に固定しない**。
++
++| 数え方 | 設計 | 本文 | audit |
++| --- | --- | --- | --- |
++| `repair_erased_included` | `design/<doc>.report.json` の `first_attempt.findings` | `draft/<ch>-attempt-<n>.issues.txt` | `audit.json` |
++| `final_only` | `design/<doc>.report.json` の `findings` | 採用章の所見（**構造上つねに 0**） | `audit.json` |
++
++S1 の本文は、採用しなかった試行の所見を最終報告に残さない（`issues.txt` にだけ残る）。
++`audit` は最終本文にだけ走る。**2 つの数え方が違う値になるのは設計段でだけ**であり、これは
++仕様であって欠陥ではない（登録に明記した）。
++
++### 23.4 判定規則（走らせる前に固定）
++
++| 規則 | 問い | 判定 |
++| --- | --- | --- |
++| B1 | 設計 8 文書は 1 試行目で通るか | `design_clean_first_attempt` / `design_repaired` / `design_unresolved` |
++| B2 | 章の長さは目安 1,000〜1,400 字に 2/3 以上入るか。外れたのは書いた時点か修復か | `length_ok` / `length_lost_in_repair` / `length_out_at_write` / `length_mixed_causes` |
++| B3 | 同じ検査が 2 標本以上で所見を出すか | `recurring` / `no_recurring_failure` / `not_evaluable_at_n1`（**2 つの数え方それぞれ**） |
++| B4 | 必須語が完全一致で出るか | `exact_match_ok` / `exact_match_gap` |
++| B5 | 時点・場所のマーカーを本文が書いたか、canon と一致するか | `markers_declared` / `markers_repaired` / `markers_disagree` |
++
++B2 はバッチ A の所見（**目安を割る経路は修復にある**）を判定に織り込み、原因は attempt 1 の字数と
++比べて切り分ける。目安を割った章が 1 つだけで 2/3 を満たす場合も、原因は `out_of_band_causes` に
++残す（判定は `length_ok` のまま）。B4 は `2026-10-arena-fresh-s1-n3` の「嵐 → 暴風」
++（`must_include_rate = 0.667`）の再発監視である。
++
++条件は `s1` / `--stage all` / `--canon`（固定）、temperature 0.8（`--stage all` では設計も 0.8）、
++修復上限は設計・本文とも 2 試行。プロンプトは現行（`draft-chapter` **1.2**、`design-brief` 1.1、
++`design-*` 1.0）で、digest を登録に固定した。**§22 の v1.2 とは別物である**（あちらは
++`stage-b-rewrite` v1.2。S1 はそのプロンプトを使わない）。
++
++### 23.5 用意しているもの
++
++* [`preregistration.json`](../experiments/2026-10-realrun-b-t01/preregistration.json) /
++  [`preregistration.md`](../experiments/2026-10-realrun-b-t01/preregistration.md): 判定規則、
++  数え方、役割分担、canon とプロンプトの `sha256`。
++* [`operations.md`](../experiments/2026-10-realrun-b-t01/operations.md): ハーネス側の手順。
++  **読者は実行しない**（記録用）。
++* [`scripts/measure_realrun_b.py`](../scripts/measure_realrun_b.py): 登録の `sha256` を記録し、
++  B1〜B5 を判定する（B3 は 2 つの数え方の両方）。
++* [`tests/test_measure_realrun_b.py`](../tests/test_measure_realrun_b.py): 数え方の差
++  （修復で消えた所見が片方でだけ数えられること）、長さの原因、マーカーの補完と食い違い、
++  途中停止の扱いを、scripted の走りと手組みの run で確認する。
++
++### 23.6 準備中に見つけた実装の穴（修正済み）
++
++`run_pipeline.py --stage all --canon <dir>` は、canon を run ディレクトリへ複製せずに draft まで
++進み、**audit の段で `canon directory not found` で落ちていた**（`--stage draft` だけが複製して
++いた）。バッチ B の条件がまさにこの組み合わせなので、`--canon` を渡した全段で canon を複製し、
++`run-summary.json` に `canon_source.files_sha256` を残すよう直した。run が「どの canon で判定
++されたか」を自分の中に持つので、バンドルが自己完結する。
++
++### 23.7 主張しないこと（走行前から）
++
++L2/L3 は `frozen_not_measured`。G3/G4 は未測定、G5 は operator 方式では到達しない。N=1 なので
++率・区間・有意差を出さない。**plan 段は測っていない。** 地名の観測（バッチ A の R1）は Stage B
++専用の観測器なので S1 では測らない。バッチ A・`s1-draft` との並置は記述であり、
++方式の効果の推定ではない。
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/characters.json b/experiments/2026-10-realrun-b-t01/inputs/canon/characters.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..943376f08219a443022fcf769cd18514739dc678
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/characters.json
+@@ -0,0 +1,43 @@
++{
++  "characters": [
++    {
++      "id": "aria",
++      "name": "アリア",
++      "aliases": ["灯守の娘"],
++      "status": "alive",
++      "location": "灯台",
++      "age_at_start": 24,
++      "knows": ["F-01"],
++      "notes": "灯台守の娘。物語の視点人物。"
++    },
++    {
++      "id": "boris",
++      "name": "ボリス",
++      "aliases": ["鍵屋"],
++      "status": "alive",
++      "location": "王都",
++      "age_at_start": 51,
++      "knows": ["F-02", "F-03"],
++      "notes": "王都の鍵屋。帳面を管理する。"
++    },
++    {
++      "id": "celia",
++      "name": "セリア",
++      "aliases": ["渡し守"],
++      "status": "alive",
++      "location": "港",
++      "age_at_start": 33,
++      "knows": [],
++      "notes": "港の渡し守。このスライスには登場しない（未登場人物の検出用）。"
++    },
++    {
++      "id": "johan",
++      "name": "ヨハン",
++      "aliases": ["兄", "帰らぬ兄"],
++      "status": "dead",
++      "location": "王都",
++      "knows": ["F-04"],
++      "notes": "物語開始前に死亡。潮札・石膏手形・回想の中だけに現れる。"
++    }
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/facts.json b/experiments/2026-10-realrun-b-t01/inputs/canon/facts.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..b858e2fcce9d3db1db44ef962a21ff9245e1fac6
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/facts.json
+@@ -0,0 +1,34 @@
++{
++  "facts": [
++    {
++      "id": "F-01",
++      "summary": "灯りを消してはいけない。霧が港町を呑む。",
++      "terms": ["灯り"],
++      "setup": "ch01"
++    },
++    {
++      "id": "F-02",
++      "summary": "鍵は二本あり、予備は王都の鍵屋に預けられている。",
++      "terms": ["予備の鍵"],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-03",
++      "summary": "三年前の嵐の夜の記録は、後から別の筆で書き換えられている。",
++      "terms": ["書き換え", "削られた頁"],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-04",
++      "summary": "ヨハンは雷から港町を守るために灯りを落とし、その夜に死んだ。",
++      "terms": ["雷", "三年前"],
++      "setup": "ch03"
++    },
++    {
++      "id": "F-05",
++      "summary": "灯台から王都までは三日、戻りも三日である。",
++      "terms": ["三日"],
++      "setup": "ch01"
++    }
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/foreshadowing.json b/experiments/2026-10-realrun-b-t01/inputs/canon/foreshadowing.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..1db95c67485d41bab8f01a25caa64e66aef1603f
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/foreshadowing.json
+@@ -0,0 +1,22 @@
++{
++  "foreshadowing": [
++    {
++      "id": "fs-001",
++      "description": "父が『鍵は二本ある』と言ったまま口を閉ざしたこと。",
++      "setup": "ch01",
++      "payoff": "ch03"
++    },
++    {
++      "id": "fs-002",
++      "description": "三年前の嵐の夜の記録が帳面から欠けていること。",
++      "setup": "ch01",
++      "payoff": "ch02"
++    },
++    {
++      "id": "fs-003",
++      "description": "潮札に書かれた『半灯』の刻み。",
++      "setup": "ch02",
++      "payoff": "ch03"
++    }
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/locations.json b/experiments/2026-10-realrun-b-t01/inputs/canon/locations.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..9cd6a96ac75a03251797d8eb21e815ee6744525b
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/locations.json
+@@ -0,0 +1,7 @@
++{
++  "locations": [
++    {"id": "灯台", "travel_days": {"港": 1, "王都": 3}},
++    {"id": "港", "travel_days": {"灯台": 1, "王都": 2}},
++    {"id": "王都", "travel_days": {"灯台": 3, "港": 2}}
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/suppressions.json b/experiments/2026-10-realrun-b-t01/inputs/canon/suppressions.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..3bf2fe7114b8fb2e90ea7f29217b3c416c53dc14
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/suppressions.json
+@@ -0,0 +1,3 @@
++{
++  "suppressions": []
++}
+diff --git a/experiments/2026-10-realrun-b-t01/inputs/canon/timeline.json b/experiments/2026-10-realrun-b-t01/inputs/canon/timeline.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..779f3ecbfb7429866910f5f6fe98b4a2d5d19d9a
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/inputs/canon/timeline.json
+@@ -0,0 +1,7 @@
++{
++  "chapters": [
++    {"id": "ch01", "day": 1, "location": "灯台"},
++    {"id": "ch02", "day": 4, "location": "王都"},
++    {"id": "ch03", "day": 7, "location": "灯台"}
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/note.md b/experiments/2026-10-realrun-b-t01/note.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..05740cb4e5fda63dfe6868ce24ffabbebfb6975f
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/note.md
+@@ -0,0 +1,102 @@
++# バッチ B: 同じ canon で S1 の設計 8 本と本文 3 章を 1 標本走らせる — t01
++
++- 日付: 2026-10-27
++- 種類: **実走り（事前登録 → 1 標本 → 判定）**
++- 状態: **走行中**（往復のたびに `relay/sample-1/` が増える。`results.json` は判定可能になるまで全 `not_run`）
++- 事前登録: [`preregistration.md`](preregistration.md) / [`preregistration.json`](preregistration.json)
++- 手順: [`operations.md`](operations.md)（**ハーネス側の記録**。読者は実行しない）
++- 計測: [`results.json`](results.json)（`schema: realrun-b-v1`、事前登録の `sha256` を記録）
++- 位置づけ: [`docs/two_stage_slice.md`](../../docs/two_stage_slice.md) §23
++
++## このバンドルの建て付け
++
++このリポジトリはモデルを呼ばない。**往復は arena.ai のチャット、状態は GitHub**で完結させる。
++作業者が端末を開くことは前提にしない。
++
++| 役 | すること |
++| --- | --- |
++| ハーネス（エージェント） | `scripts/` の実行、要求の書き出し、回答の取り込み、run・計測・コミット |
++| 回答者（対話モデル） | チャットに貼られた 1 リクエストに答える |
++| 人 | プロンプトを貼り、回答をそのまま返す |
++
++1 往復ごとに `relay/sample-1/requests/` と `responses/` がコミットされる。作業環境が消えても、
++GitHub から同じ位置で再開できる。
++
++## なぜこのバンドルがあるか
++
++バッチ A（§21.1）は **Stage B だけ**を 3 標本走らせ、同じ canon で本文だけを書いた。設計 8 文書のうち
++走ったのは `plot` / `scene` / `voice` の 3 つだけである。`2026-10-l1-pair-t01` は同じ canon・同じ設計で
++draft 段だけを比べ、「次に試すこと」の 1 番目に **S1 全体（plan → 設計 → draft）を同じタスクで 1 件
++走らせ、設計段の出来が本文と L1 にどう出るか**を挙げた。本バッチはその 1 件を、**canon をバッチ A と
++同一に固定したまま**で行う。
++
++### 「S1 全体」と「同一 canon」の折り合い
++
++両立しない。canon は plan の成果物なので、plan を走らせれば canon が変わる。本バッチは
++**canon を固定する**側を取り、plan は走らせない（要求も出さない）。したがって
++
++- 測るのは **S1 の design → draft**。
++- **plan 段の出来は測らない。**「S1 全体を測った」とは書かない。
++- 代わりに、バッチ A・`s1-draft`（固定設計）と同じ canon 上で並べられる状態を保つ。
++
++この判断は走らせる前に固定した（登録に `condition.plan = {requested: false}` として残る）。
++
++## 何を固定したか（走らせる前）
++
++1. **条件**: `--system s1 --stage all --canon inputs/canon`、プロンプトは現行
++   （`draft-chapter` **1.2**、`design-brief` 1.1、`design-*` 1.0）、temperature 0.8、
++   設計・本文とも修復上限 2 試行。
++2. **canon**: `inputs/canon` は `2026-10-realrun-a-t01/inputs/canon` のコピーで、
++   **バイト一致**（6 ファイル、`tree_sha256` = `eaaf14e6…`）。この値は登録と `results.json` の
++   `condition` に残る。
++3. **標本数**: 1。結果を見てから足すなら、走らせる前に B2 として別登録する。
++4. **判定規則**（`results.json` の `verdicts` がそのまま答える）:
++   - B1: 設計 8 文書の 1 試行目 → `design_clean_first_attempt` / `design_repaired` /
++     `design_unresolved`
++   - B2: 章の長さ（1,000〜1,400 字、3 章中 2 章以上）→ `length_ok` / `length_lost_in_repair` /
++     `length_out_at_write` / `length_mixed_causes`。**原因の切り分けを判定に含めた**
++   - B3: 繰り返す失敗。**修復で消えた所見を数えるか**を両方の数え方で出し、**片方を主にしない**
++     （バッチ A の登録の不備をここで潰す）。N=1 では `not_evaluable_at_n1`
++   - B4: 必須語の完全一致（`2026-10-arena-fresh-s1-n3` の「嵐 → 暴風」の再発監視）
++   - B5: マーカーの宣言（本文が書いたか、canon から補ったか、canon と食い違うか）
++5. **主張しないこと**: L2/L3 は `frozen_not_measured`、G5 は operator 方式では到達しない、
++   N=1 で率・区間・有意差は出さない、plan 段は測っていない、地名の観測（バッチ A の R1）は
++   Stage B 専用なので S1 では測らない。
++
++登録の `sha256` は計測時に `results.json` へ記録される（結果を見て規則を書き換えたかどうかが残る）。
++
++## 現在の中身
++
++| パス | 内容 |
++| --- | --- |
++| `inputs/canon/` | バッチ A と同一の 6 チャネル（`sha256` は登録に記載） |
++| `preregistration.json` / `preregistration.md` | 走らせる前の判定規則、数え方、役割分担 |
++| `operations.md` | ハーネス側の手順（読者は実行しない） |
++| `results.json` | 計測スクリプトの出力（判定可能になるまで全 `not_run`、canon 一致は確認済み） |
++| `relay/sample-1/` | 要求・回答・配布ログ。**1 往復ごとにコミットする** |
++| `sample-1/run/` | 全回答が揃ったあとの最終 run（design 8 ＋ draft 3 ＋ audit） |
++
++## 走行の記録（往復ごとに追記する）
++
++| # | リクエスト | 結果 | 日時 |
++| --- | --- | --- | --- |
++| 1 | `design:brief`（`s1-t01-s0-design-brief-a1`、tag `CF27`） | 要求を記録・チャットで回答待ち | 2026-10-27 |
++
++## 走行後にここへ書くこと
++
++- 往復の回数、修復が入った箇所（設計の doc 名・本文の章）。
++- 標本の `status`、設計 8 文書の `status` と `attempts`、章ごとの字数（最終と attempt 1）。
++- `results.json` の verdict をそのまま引用（B3 は 2 つの数え方の両方）。
++- バッチ A・固定設計の `s1-draft` との並置は**参考値**として書き、効果の推定とは書かない。
++- 回答者が誰で、`provenance.origin` が何だったか（独立性の限界）。
++
++## 限界（走る前から言えること）
++
++- **N=1。** 分布ではない。率・区間・有意差は出さない。
++- **plan は固定。** 設計段の出来は測るが、企画段の出来は入っていない。
++- **同じ canon・同じタスク・同じ回答者。** バッチ A との差を方式の効果と呼ばない。
++  プロンプトも別物（Stage B の `stage-b-rewrite` と S1 の `draft-chapter`）。
++- 設計検査は修復上限後に `unresolved` でも本文へ進む（S1 の仕様）。`clean` は意味的整合の
++  保証ではない。
++- 本文のマーカーは**自己申告**である。S1 には `{{location}}` の中身を canon と照合する検査が
++  無い（B5 はその有無を記録するだけで、直しはしない）。
+diff --git a/experiments/2026-10-realrun-b-t01/operations.md b/experiments/2026-10-realrun-b-t01/operations.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..70d6e15e4690ab9b1d3c0fa20d63f2a5fece905e
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/operations.md
+@@ -0,0 +1,84 @@
++# バッチ B の運用手順（ハーネス側・記録用）
++
++**読者はこれを実行しない。** 実行するのはハーネス（エージェント）で、往復は arena.ai のチャットで
++行う。ここにコマンドが並んでいるのは、あとから「何をどの順で走らせたか」を再現できるようにするためで、
++作業者に端末を要求するためではない。
++
++- 事前登録: [`preregistration.json`](preregistration.json) / [`preregistration.md`](preregistration.md)
++- 計測: [`results.json`](results.json)（`scripts/measure_realrun_b.py`）
++- 位置づけ: [`docs/two_stage_slice.md`](../../docs/two_stage_slice.md) §23
++
++## 役割
++
++| 役 | すること |
++| --- | --- |
++| ハーネス | パイプライン実行、`relay/sample-1/PROMPTS.md` の書き出し、回答の取り込み、run、計測、コミット |
++| 回答者（対話モデル） | チャットに貼られた 1 リクエストにだけ答える |
++| 人 | プロンプトを貼り、回答をそのまま返す。**コマンドは叩かない** |
++
++## 1 往復の形
++
++1. ハーネスが `run_pipeline.py` を走らせる。回答が無い先頭の要求で止まる（exit 2,
++   `NEED RESPONSE key=…`）。
++2. ハーネスが `relay_prompts.py export` で `relay/sample-1/PROMPTS.md` を書き出し、
++   **1 リクエストぶんをチャットに貼る**（タグ付き）。
++3. 回答者が `<<<ANSWER タグ>>> … <<<END タグ>>>` を返す。
++4. ハーネスがチャットの回答をそのまま `relay/sample-1/answers/round-NN.txt` に保存し、
++   `relay_prompts.py ingest` で `responses/` に入れる。`provenance.origin` を記録する。
++5. ハーネスが `relay/` をコミットして push する（作業環境が消えても GitHub から再開できる）。
++6. 1 に戻る。**最小 11 往復**（設計 8 ＋ 本文 3）。修復が入ると増える。
++
++`run_pipeline.py` は resume しないので、毎回**最初から**走らせて記録済みの回答を再生する
++（`build/` は捨ててよい。`relay/` が状態）。
++
++```bash
++# ハーネスが実行する（読者は実行しない）
++advance () {
++  rm -rf build/runs/b-adv
++  .venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage all \
++    --canon "$BUNDLE/inputs/canon" \
++    --provider command \
++    --command "$PWD/.venv/bin/python scripts/chat_operator.py --dir $RELAY" \
++    --seed 0 --out build/runs --run-id b-adv --quiet
++  echo "pipeline exit: $? （2 = 回答待ち。NEED RESPONSE 以外なら stderr を読む）"
++  .venv/bin/python scripts/relay_prompts.py export --dir "$RELAY" --out "$RELAY"
++}
++```
++
++## 記録の残し方
++
++- `relay/sample-1/requests/` … パイプラインが実際に要求した文と `prompt_hash`（再生成できる）。
++- `relay/sample-1/responses/` … 返ってきた実テキスト。**作文も修正もしない。**
++  `origin` は `fresh`（このバッチのために新しく書いた）。過去の走りの本文を使った場合は
++  `{"origin": "reused", "source_run_id": "…"}` に直し、標本として扱わない。
++- `relay/sample-1/answers/` … チャットから受け取った原文（`ingest` の入力）。来歴の一次資料。
++- `relay/sample-1/served.jsonl` … 何をいつ配ったか（`prompt_hash` つき）。
++
++## 最終 run と計測
++
++全回答が揃ったら、バンドルの中に 1 回だけ走らせる（ここが記録になる run）。
++
++```bash
++.venv/bin/python scripts/run_pipeline.py --task t01 --system s1 --stage all \
++  --canon "$BUNDLE/inputs/canon" \
++  --provider command \
++  --command "$PWD/.venv/bin/python scripts/chat_operator.py --dir $RELAY" \
++  --seed 0 --out "$BUNDLE/sample-1" --run-id run
++
++.venv/bin/python scripts/measure_realrun_b.py
++```
++
++- 終了コード: **0 = ゲート通過**、**1 = 走ったがゲート未達**（これも結果）、**2 = 停止**。
++- 判定は `results.json` の verdict を**そのまま引用する**（人が読み替えない）。B3 は
++  `repair_erased_included` と `final_only` の両方が出る。
++
++## つまずき
++
++| 症状 | 対処 |
++| --- | --- |
++| `NEED RESPONSE key=…` | 正常。その 1 件をチャットに貼る |
++| `unknown tag` | 推測しない。`--map 送った文字=正しいタグ` で明示して再取り込み |
++| `STALE RESPONSE …` | プロンプトが変わった後の古い回答。その回答を消して、新しい要求に答え直す |
++| 設計が `unresolved` のまま本文へ進む | S1 の仕様。そのまま記録する（B1 は `design_unresolved`） |
++| 本文が 2 試行とも不合格で停止（exit 2） | run を残し、判定は `incomplete`。**消して書き直さない** |
++| `condition.canon_matches_registration` が false | `inputs/canon` が変わっている。走行をやり直す |
+diff --git a/experiments/2026-10-realrun-b-t01/preregistration.json b/experiments/2026-10-realrun-b-t01/preregistration.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..e6dee6bc35e3d9b6f58375e9abbcaa4ca3dfd8d3
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/preregistration.json
+@@ -0,0 +1,168 @@
++{
++  "schema": "realrun-preregistration-v1",
++  "experiment": "2026-10-realrun-b-t01",
++  "batch": "B",
++  "registered_on": "2026-10-27",
++  "registered_before_any_sample": true,
++  "design_note": "docs/two_stage_slice.md §23",
++  "question": "バッチ A と同じ canon で S1 の設計 8 本と本文 3 章を 1 標本走らせたとき、(1) 設計は 1 試行目で通るか、(2) 章の長さは目安に入るか、外れるのは書いた時点か修復か、(3) 同じ検査が繰り返し落ちるか、(4) 題材の必須語は完全一致で出るか、(5) 時点・場所のマーカーは本文が書いたか、canon と一致するか。",
++  "operation": {
++    "why": "このリポジトリはモデルを呼ばない。往復は arena.ai のチャット、状態は GitHub で完結させる。作業者が端末を開くことは前提にしない。",
++    "actors": {
++      "harness": "エージェント。scripts/ の実行、要求の書き出し、回答の取り込み、run と計測、コミットまでを行う。",
++      "respondent": "対話モデル。チャットに貼られた 1 リクエストに答える。前のリクエストを持ち越さない。",
++      "reader": "人。チャットの往復を見るだけで、コマンドを実行しない。"
++    },
++    "channel": "arena.ai のチャット。1 リクエストずつ貼り、タグ付きの回答を受け取る。",
++    "durability": "relay/sample-1/requests/ と responses/ を毎往復コミットする。作業環境が消えても GitHub から再開できる。",
++    "user_actions": "プロンプトを貼り、返ってきた回答をそのままチャットに返す。それだけ。端末・.venv・コマンド入力は不要。"
++  },
++  "condition": {
++    "system": "s1",
++    "stage": "all",
++    "invocation": "scripts/run_pipeline.py --task t01 --system s1 --stage all --canon <pinned>（エージェントが実行）",
++    "plan": {
++      "requested": false,
++      "why": "plan の成果物は canon そのものである。『バッチ A と同一 canon』は、plan を固定しなければ満たせない。固定した plan は走らせない（要求を出さない）。",
++      "consequence": "本バッチが測るのは S1 の design → draft であり、plan 段の出来は測らない。『S1 全体』とは呼ばない。"
++    },
++    "canon_source": "inputs/canon（experiments/2026-10-realrun-a-t01/inputs/canon とバイト一致）",
++    "canon_tree_sha256": "eaaf14e6b960f7723284abd08bd11cfa035855e3a6831f56fddaa37ceb99aa71",
++    "canon_files_sha256": {
++      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
++      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
++      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
++      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
++      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
++      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
++    },
++    "prompts": {
++      "design-brief": {"version": "1.1", "digest": "d3896b1f827382b0"},
++      "design-world": {"version": "1.0", "digest": "16abef1d5aef1eeb"},
++      "design-history": {"version": "1.0", "digest": "5c7d40abddc6b3b8"},
++      "design-character": {"version": "1.0", "digest": "e4bffc2ee9db74b2"},
++      "design-relation": {"version": "1.0", "digest": "f8c3e64187631141"},
++      "design-plot": {"version": "1.0", "digest": "d5889483d2b77e7f"},
++      "design-scene": {"version": "1.0", "digest": "444740c2bfca082c"},
++      "design-voice": {"version": "1.0", "digest": "bf9880f17ffb484d"},
++      "design-repair": {"version": "1.0", "digest": "24400eb90fe44e64"},
++      "draft-chapter": {"version": "1.2", "digest": "1db9cea08abbbb8e"}
++    },
++    "prompt_note": "本バッチの『v1.2』は draft-chapter v1.2 を指す。§22 の v1.2（保留語・文スコープ規則を足したもの）は stage-b-rewrite の v1.2 で、S1 はそのプロンプトを使わない。名前が同じだけで変更内容は別である。",
++    "provider": "command -> scripts/chat_operator.py（エージェントが実行）",
++    "temperature": 0.8,
++    "temperature_note": "run_pipeline の --stage all では設計も 0.8（--stage design 単独の既定 0.6 ではない）。",
++    "repair_limits": {
++      "design_per_doc": 2,
++      "draft_per_chapter": 2,
++      "note": "コード既定（CLI に露出していない）。設計は上限後も unresolved のまま次へ進み、本文は 2 試行とも不合格なら DraftError で停止する。"
++    },
++    "observe_surface": false,
++    "observe_surface_note": "--observe-surface は Stage B（run_twostage.py）の機能で、S1 には無い。バッチ A の R1（地名の観測）は本バッチでは測らない。"
++  },
++  "samples_planned": 1,
++  "sample_ids": ["sample-1"],
++  "sample_rule": "1 標本で打ち切る。足す場合は、走らせる前に B2（別バンドル・別登録）として追加する。結果を見てから標本を足さない。",
++  "length_band": [1000, 1400],
++  "counting_rules": {
++    "why": "バッチ A の R3 は『修復で消えた所見を数えるか、最終報告だけを見るか』を決めていなかった。同じ曖昧さを残さないため、ここで数え方を固定する。",
++    "resolution": "両方を数え、両方の verdict を出す。片方を主に固定しない。結果を見てから読みを選ばない。",
++    "modes": {
++      "repair_erased_included": "設計は design/<doc>.report.json の first_attempt.findings、本文は draft/<chapter>-attempt-<n>.issues.txt、audit は audit.json。修復で消えた所見も 1 件として数える。",
++      "final_only": "設計は design/<doc>.report.json の findings、本文は採用された章の所見（後述のとおり構造上つねに 0）、audit は audit.json。"
++    },
++    "structural_note": "本文（S1 draft）は、採用されなかった試行の所見を最終報告に残さない。所見は draft/<chapter>-attempt-<n>.issues.txt にしか残らない。audit は最終本文にだけ走る。したがって 2 つの数え方が違う値になるのは設計段でだけである。この非対称は仕様であり、欠陥として扱わない（記録はする）。",
++    "length_mode": "長さの判定は最終本文（採用された章）。attempt 1 の字数は原因の切り分けにだけ使い、判定を二重に作らない。"
++  },
++  "rules": {
++    "B1_design_first_attempt": {
++      "question": "設計 8 文書は 1 試行目で検査を通るか。落ちるのはどの検査か。",
++      "unit": "doc",
++      "docs": ["brief", "world", "history", "character", "relation", "plot", "scene", "voice"],
++      "reading": "1 試行目（design/<doc>.report.json の first_attempt.findings）。修復後の findings も併記する。",
++      "verdicts": {
++        "design_clean_first_attempt": "8 文書すべてで 1 試行目の所見が 0",
++        "design_repaired": "1 試行目に所見があり、修復で解消した（unresolved / missing は 0）",
++        "design_unresolved": "修復上限の後も unresolved または missing の文書がある"
++      },
++      "precedence": ["design_unresolved", "design_repaired", "design_clean_first_attempt"]
++    },
++    "B2_length": {
++      "question": "章の長さは目安 1,000〜1,400 字に入るか。外れたのは書いた時点か、修復か。",
++      "min_chapters_in_band": 2,
++      "chapters_per_sample": 3,
++      "measured_on": "最終本文（採用された章）",
++      "cause_split": "attempt 1 の字数（保存された生の応答から、マーカーと空白を除いて数える）と比べる",
++      "verdicts": {
++        "length_ok": "全標本で 2/3 以上が目安内",
++        "length_lost_in_repair": "目安外の章がすべて『attempt 1 は目安内・最終は外』",
++        "length_out_at_write": "目安外の章がすべて『attempt 1 から目安外』",
++        "length_mixed_causes": "両方がある"
++      },
++      "cause_is_reported_even_when_ok": "目安を割った章が 1 つだけで 2/3 を満たす場合も、その章の原因は out_of_band_causes に残す。判定は length_ok のまま（閾値は動かさない）。"
++    },
++    "B3_recurring_failure": {
++      "question": "同じ検査が 2 標本以上で所見を出すか。",
++      "min_samples": 2,
++      "counting": ["repair_erased_included", "final_only"],
++      "verdicts": {
++        "recurring": "2 標本以上で同じ検査が所見を出した（数え方ごとに出す）",
++        "no_recurring_failure": "どの検査も 2 標本以上では所見を出さない",
++        "not_evaluable_at_n1": "標本が 1 つで閾値 2 に届かない。判定しない（所見の一覧は出す）"
++      },
++      "notes": "verdict は repair_erased_included と final_only の両方について出す。N=1 では両方 not_evaluable_at_n1 になる見込みだが、所見の一覧は残す。"
++    },
++    "B4_must_include_exact": {
++      "question": "題材の必須語が本文に完全一致で出るか。",
++      "terms": ["灯台", "鍵", "嵐"],
++      "match": "部分文字列の完全一致",
++      "why_registered": "2026-10-arena-fresh-s1-n3 の seed 1 で『嵐』が『暴風』になり must_include_rate が 0.667 になった。語形の言い換えは不一致として数える。",
++      "verdicts": {
++        "exact_match_ok": "全標本で rate 1.0",
++        "exact_match_gap": "rate < 1.0。欠けた語を列挙する"
++      }
++    },
++    "B5_marker_declaration": {
++      "question": "章の時点と場所のマーカーを本文が書いたか。canon と一致するか。",
++      "reading": "最終本文の最初の {{time: day=N}} と {{location: X}} を canon の章 day / location と比べる。加えて draft.json の injected（canon から補った分）を数える。",
++      "verdicts": {
++        "markers_disagree": "canon と食い違う宣言が 1 つ以上ある（S1 には照合する検査が無い）",
++        "markers_repaired": "食い違いは無いが、canon から補完した章がある",
++        "markers_declared": "補完 0・食い違い 0"
++      },
++      "precedence": ["markers_disagree", "markers_repaired", "markers_declared"]
++    }
++  },
++  "incomplete_rule": "走行が途中で止まった場合（本文が 2 試行とも不合格で DraftError、provider の失敗など）も、そこまでの run を sample-1/run として残し、判定は incomplete を出す。止まった run を消して書き直さない。条件を変えてやり直す場合は、走らせる前に別バッチとして登録する。",
++  "primary_quantities": [
++    "章ごとの最終字数と attempt 1 の字数",
++    "設計 8 文書の status・attempts・first_attempt.findings（check 名と重大度）",
++    "must_include の hits / rate と、欠けた語",
++    "draft.json の injected（補完されたマーカー）",
++    "章の {{time}} / {{location}} と canon の一致",
++    "audit の violations・by_type・by_severity・checks_skipped・CED"
++  ],
++  "secondary_quantities": [
++    "run-summary.json の gates と status",
++    "manifest.json の prompt_hashes（登録した digest との一致）",
++    "responses.jsonl の provenance.origin（fresh / reused / unspecified）",
++    "バッチ A・2026-10-l1-pair-t01 との L1 並置（scripts/compare_l1_arms.py。記述のみ、判定には使わない）"
++  ],
++  "not_measured": {
++    "plan_stage": "走らせない（canon を固定するため）",
++    "place_observation_R1_of_batch_a": "Stage B 専用の観測器。S1 には無い",
++    "L2_L3": "frozen_not_measured",
++    "reader_preference": "測らない"
++  },
++  "not_claimed": [
++    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
++    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
++    "面白さ・読みやすさの比較はしない",
++    "N=1 なので率・区間・有意差を出さない",
++    "バッチ A との差を『S1 と二段階方式の効果』と呼ばない（canon は同じでも、N=1・同一 operator・prompt が別物）",
++    "protocol-v1 の合格判定には使わない（探索的な参考値）",
++    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）",
++    "『S1 全体』を測ったとは言わない（plan は固定）"
++  ],
++  "stop_rule": "1 標本が完走するか、修復上限で停止した時点で測る。途中で結果を見て条件を変えない。応答が揃わないあいだに閾値も変えない。"
++}
+diff --git a/experiments/2026-10-realrun-b-t01/preregistration.md b/experiments/2026-10-realrun-b-t01/preregistration.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..bebab1905a7cb89c02a04a1cf7514b5de78d7821
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/preregistration.md
+@@ -0,0 +1,168 @@
++# バッチ B の事前登録（走らせる前に固定した判定規則）
++
++- 日付: 2026-10-27（**標本を 1 つも走らせる前に記録**）
++- 機械可読な実体: [`preregistration.json`](preregistration.json)。計測はこのファイルの閾値だけを使い、
++  `sha256` を結果に記録する（結果を見てから規則を書き換えたかどうかが残る）。
++- 位置づけ: [`docs/two_stage_slice.md`](../../docs/two_stage_slice.md) §23。
++  前段は §21（バッチ A の登録）・§21.1（結果）・§22（プロンプト v1.2）。
++
++## 誰が何をするか
++
++このリポジトリは**モデルを呼ばない**。往復は arena.ai のチャット、状態は GitHub で完結させる。
++**読者が端末を開くことは前提にしない。**
++
++| 役 | すること | しないこと |
++| --- | --- | --- |
++| **ハーネス（エージェント）** | `scripts/` の実行、要求の書き出し、回答の取り込み、run・計測・コミット | 本文を書くこと |
++| **回答者（対話モデル）** | チャットに貼られた **1 リクエスト**に答える | 前のリクエストを持ち越すこと |
++| **人** | プロンプトを貼り、返ってきた回答をそのまま返す | 端末・`.venv`・コマンド入力 |
++
++1 往復ごとに `relay/sample-1/requests/` と `responses/` がコミットされる。作業環境が消えても、
++GitHub から同じ位置で再開できる。
++
++## 何を決めたいのか
++
++バッチ A（§21.1）は **Stage B だけ**を 3 標本走らせた。canon・設計・ログは固定で、書いたのは本文だけ。
++その結果、次の 3 つが残った。
++
++1. `fact_boundary`（「三年前」）は 3/3 の ch02 で、`character_boundary` は 2/3 で出た。どちらも修復で消えた。
++2. 章の目安を割ったのは**修復後**の 2 章だけだった（修復前は目安内）。
++3. 地名の観測（R1）は発火機会 0 で、採否の材料にならなかった。
++
++バッチ B は、**同じ canon のまま、S1 の設計段から先を 1 標本ぶん通す**。目的は優劣の判定ではなく、
++次の 3 点を記録することである。
++
++1. **設計 8 文書は 1 試行目で通るか。** バッチ A の入力では `plot` / `scene` / `voice` の 3 つだけが
++   与えられ、`brief` / `world` / `history` / `character` / `relation` は走っていない。
++2. **設計を固定した効果と、方式の効果を切り分けられるか。** `2026-10-l1-pair-t01` は同じ canon・
++   同じ設計で draft 段だけを比べた。その note の「次に試すこと」1 番目が本バッチの問いである。
++3. **同じ canon で設計から書き直したとき、長さ・必須語・マーカーの現れ方が変わるか。**
++
++## 条件（固定）
++
++| 項目 | 値 |
++| --- | --- |
++| タスク | `t01`（灯台の鍵、3 章、目安 3,000〜4,200 字） |
++| 系 / 段 | `s1` / `--stage all`（design 8 文書 → draft 3 章） |
++| canon | [`inputs/canon/`](inputs/canon/)（バッチ A と**バイト一致**。`sha256` は登録に記載） |
++| plan | **走らせない**（`--canon` で固定。理由は下記） |
++| プロンプト | リポジトリ現行（`design-brief` 1.1、`design-*` 1.0、`draft-chapter` **1.2**）。digest を登録に記載 |
++| provider | `command` → `scripts/chat_operator.py`（ハーネスが実行） |
++| temperature | 0.8（`--stage all` では設計も 0.8） |
++| 修復上限 | 設計 2 試行 / 文書、本文 2 試行 / 章（コード既定） |
++| 標本数 | **1**（`sample-1`） |
++| 観測器 | `--observe-surface` は使わない（S1 には無い機能） |
++
++### なぜ plan を固定するのか
++
++**canon は plan の成果物そのものである。** plan を走らせれば canon が変わり、「バッチ A と同一 canon」は
++満たせない。`run_pipeline.py --canon` は「plan の代わりに既存 canon を使う」ための入口で、
++`Makefile` の `design` 目標も同じ形（plan を 1 回走らせ、その canon を次の段に渡す）を取っている。
++
++したがって本バッチが測るのは **S1 の design → draft** であり、**plan 段の出来は測らない**。
++「S1 全体を測った」とは書かない。この trade-off は登録の時点で固定し、結果を見てから
++「やはり S1 全体だった」と読み替えない。
++
++> 参考: `2026-10-plot-ablation-t01/paired/` の `--prepare-shared` は、plan と設計 8 文書を
++> 1 回だけ作って両腕で共有する。バッチ B はその「共有された plan」を、既存の canon
++> （`t01` の共有 canon）で置き換えた形に当たる。走らせるのは設計から先である。
++
++## 数え方（バッチ A の曖昧さをここで潰す）
++
++バッチ A の R3 は「2 標本以上で**所見を出した**検査」とだけ書き、**最終報告だけを見るのか、
++修復で消えた所見も数えるのか**を決めていなかった。本バッチは両方を出し、**片方を主に固定しない**。
++
++| 数え方 | 設計 | 本文 | audit |
++| --- | --- | --- | --- |
++| `repair_erased_included` | `design/<doc>.report.json` の `first_attempt.findings` | `draft/<ch>-attempt-<n>.issues.txt` | `audit.json` |
++| `final_only` | `design/<doc>.report.json` の `findings` | 採用章の所見（**構造上つねに 0**） | `audit.json` |
++
++- **本文の所見は最終報告に残らない。** 採用されなかった試行の所見は `issues.txt` にしか残らず、
++  `audit` は最終本文にだけ走る。したがって 2 つの数え方が違う値になるのは**設計段でだけ**である。
++  この非対称は仕様であり、欠陥として扱わない（記録はする）。
++- 長さの判定は**最終本文**で行う。`attempt 1` の字数は「書いた時点で外れていたか、修復で外れたか」の
++  切り分けにだけ使い、判定を二重に作らない。
++
++## 判定規則（結果を見る前に固定）
++
++### B1: 設計 8 文書の 1 試行目
++
++| 結果 | 判定 | その後の行動 |
++| --- | --- | --- |
++| 8 文書すべて 1 試行目で所見 0 | `design_clean_first_attempt` | 設計は律速でない。本文側の規則（B2・B4・B5）を見る |
++| 1 試行目に所見があり、修復で解消 | `design_repaired` | 落ちた `check` を列挙し、次の修正対象の候補にする |
++| 修復上限後も `unresolved` / `missing` | `design_unresolved` | どの文書か・どの検査かを列挙する。**本文の判定は続ける**（S1 は設計不合格でも draft へ進む） |
++
++### B2: 章の長さ（目安 1,000〜1,400 字、3 章中 2 章以上）
++
++| 結果 | 判定 | その後の行動 |
++| --- | --- | --- |
++| 2/3 以上が目安内 | `length_ok` | 目標値もプロンプトも動かさない |
++| 目安外の章がすべて「attempt 1 は内・最終は外」 | `length_lost_in_repair` | 修復プロンプトに「字数を減らさない」を足す候補（実装はまだ） |
++| 目安外の章がすべて「attempt 1 から外」 | `length_out_at_write` | draft プロンプトの目安を直す候補 |
++| 両方がある | `length_mixed_causes` | 章ごとに原因を分けて記録する。判定は保留 |
++
++**この規則はバッチ A の所見をそのまま引き継ぐ。** バッチ A では「目安を割る経路は修復にある」と
++書いたが、標本は 3 つで、割れ幅も 183 / 15 / 187 字とばらついた。原因を章ごとに分ければ、
++同じ結論が出るかを N=1 でも確かめられる。
++
++なお、**目安を割った章が 1 つだけで 2/3 を満たす場合も、その章の原因は残す**
++（`out_of_band_causes`）。判定は `length_ok` のままで、閾値は動かさない。判定が「合格」でも、
++修復で長さが落ちた事実を消さないための措置である。
++
++### B3: 繰り返す失敗（2 標本以上で同じ検査）
++
++- `recurring`: 2 標本以上で同じ `check` が所見を出した（**数え方ごとに**判定する）。
++- `no_recurring_failure`: どの `check` も 2 標本以上では出ない。
++- `not_evaluable_at_n1`: 標本が 1 つで閾値に届かない。**判定しない。所見の一覧だけ出す。**
++
++N=1 なので B3 は `not_evaluable_at_n1` になる見込みである。それでも規則を先に書くのは、
++標本を足すときに**同じ規則で足せる**ようにするためである。
++
++### B4: 必須語の完全一致
++
++`灯台`・`鍵`・`嵐` が本文に**部分文字列として**出るか。`2026-10-arena-fresh-s1-n3` の seed 1 で
++「嵐」が「暴風」になり `must_include_rate = 0.667` になった事例があるため、語形の言い換えは
++**不一致**として数える。事後に語形を推論して合格へ書き換えない。
++
++### B5: マーカーの宣言
++
++最終本文の最初の `{{time: day=N}}` と `{{location: X}}` を canon の章 `day` / `location` と比べる。
++
++| 結果 | 判定 |
++| --- | --- |
++| canon と食い違う宣言がある | `markers_disagree`（**S1 には照合する検査が無い**） |
++| 食い違いは無いが、canon から補完した章がある | `markers_repaired` |
++| 補完 0・食い違い 0 | `markers_declared` |
++
++S1 の draft は、マーカーが無ければ canon から**補完して記録する**（黙って入れない）。
++補完は「本文が書いていなかった」という事実であり、通過として数えない。
++
++## 測る量
++
++主: 章ごとの最終字数と `attempt 1` の字数、設計 8 文書の `status`・`attempts`・
++`first_attempt.findings`（`check` 名と重大度）、`must_include` の hits / rate、`injected`、
++`{{time}}` / `{{location}}` と canon の一致、`audit` の violations / by_type / by_severity /
++checks_skipped / CED。
++
++副: `run-summary.json` の gates と status、`manifest.json` の prompt_hashes（登録との一致）、
++`responses.jsonl` の `provenance.origin`、バッチ A・`2026-10-l1-pair-t01` との L1 並置
++（`scripts/compare_l1_arms.py`）。**並置は記述であり、判定には使わない。**
++
++## 主張しないこと
++
++- L2/L3（意味の整合・質）は `frozen_not_measured` のまま。G3/G4 は未測定、G5 は operator 方式では
++  到達しない（同一 seed で同一出力を作れない）。
++- N=1。**率・区間・有意差を出さない。**
++- バッチ A との差を「S1 と二段階方式の効果」と呼ばない。canon は同じでも、N=1・同一 operator・
++  プロンプトが別物である。
++- **plan 段は測っていない。** 「S1 全体」とは呼ばない。
++- 地名の観測（バッチ A の R1）は Stage B 専用の機能で、S1 では測らない。
++- protocol-v1 の合格判定には使わない（探索的な参考値）。
++
++## 打ち切りと失敗の扱い
++
++1 標本が完走するか、修復上限で停止した時点で測る。**途中で結果を見て条件を変えない。**
++本文が 2 試行とも不合格で `DraftError` になった場合も、そこまでの run を `sample-1/run` として残し、
++判定は `incomplete` を出す。**止まった run を消して書き直さない。** 条件を変えてやり直す場合は、
++走らせる前に別バッチとして登録する。
+diff --git a/experiments/2026-10-realrun-b-t01/relay/sample-1/PROMPTS.md b/experiments/2026-10-realrun-b-t01/relay/sample-1/PROMPTS.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..5deffa7da4063c959b3f562e3e70c2acff34d356
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/relay/sample-1/PROMPTS.md
+@@ -0,0 +1,250 @@
++# 生成リクエスト（貼り付け用）
++
++上から順に、1 リクエストずつチャットへ送ってください。
++**この節より上は送らないでください。**各リクエストの見出しも送る必要はありません。
++
++- 残り 1 件 / 回答済み 0 件
++
++## 最初に一度だけ送る文章（プリアンブル）
++
++```text
++あなたは生成ハーネスの「モデル役」です。次の規則だけを守ってください。
++
++1. 各リクエストは独立しています。前のリクエストの内容を持ち越さないでください。
++2. 指示された成果物だけを返してください。前置き・後書き・解説・見出し・コードフェンスを
++   書かないでください。
++3. 回答は必ず次の形で囲んでください（タグはリクエストごとに違います）。
++
++<<<ANSWER タグ>>>
++（成果物）
++<<<END タグ>>>
++
++4. 日本語で書いてください。文字数の指定がある場合はそれに従ってください。
++5. 指示に従えない場合は、成果物の代わりに次を返してください。
++
++<<<ERROR タグ>>>
++（従えない理由を 1 行）
++<<<END タグ>>>
++
++6. 質問を返さないでください。判断が必要な点は、作品として自然なほうを選んでください。
++```
++
++---
++
++## リクエスト 1/1（タグ `CF27`）
++
++```text
++あなたは短編小説の企画担当です。次の固定タスクと設定台帳から、企画核（brief）を作ってください。
++企画核は「検証可能な形の企画」であり、本文ではありません。
++
++## タスク
++- 題名: 灯台の鍵
++- ジャンル: fantasy
++- ログライン: 嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。
++- 本文に必ず含める語: 灯台、鍵、嵐
++- 使ってはいけない定型: 選ばれし者、古代の予言
++- 章数: 3 章
++
++## 設定台帳
++{
++  "characters": [
++    {
++      "id": "aria",
++      "name": "アリア",
++      "aliases": [
++        "灯守の娘"
++      ],
++      "status": "alive",
++      "location": "灯台",
++      "age_at_start": 24,
++      "knows": [
++        "F-01"
++      ]
++    },
++    {
++      "id": "boris",
++      "name": "ボリス",
++      "aliases": [
++        "鍵屋"
++      ],
++      "status": "alive",
++      "location": "王都",
++      "age_at_start": 51,
++      "knows": [
++        "F-02",
++        "F-03"
++      ]
++    },
++    {
++      "id": "celia",
++      "name": "セリア",
++      "aliases": [
++        "渡し守"
++      ],
++      "status": "alive",
++      "location": "港",
++      "age_at_start": 33,
++      "knows": []
++    },
++    {
++      "id": "johan",
++      "name": "ヨハン",
++      "aliases": [
++        "兄",
++        "帰らぬ兄"
++      ],
++      "status": "dead",
++      "location": "王都",
++      "age_at_start": null,
++      "knows": [
++        "F-04"
++      ]
++    }
++  ],
++  "facts": [
++    {
++      "id": "F-01",
++      "summary": "灯りを消してはいけない。霧が港町を呑む。",
++      "terms": [
++        "灯り"
++      ],
++      "setup": "ch01"
++    },
++    {
++      "id": "F-02",
++      "summary": "鍵は二本あり、予備は王都の鍵屋に預けられている。",
++      "terms": [
++        "予備の鍵"
++      ],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-03",
++      "summary": "三年前の嵐の夜の記録は、後から別の筆で書き換えられている。",
++      "terms": [
++        "書き換え",
++        "削られた頁"
++      ],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-04",
++      "summary": "ヨハンは雷から港町を守るために灯りを落とし、その夜に死んだ。",
++      "terms": [
++        "雷",
++        "三年前"
++      ],
++      "setup": "ch03"
++    },
++    {
++      "id": "F-05",
++      "summary": "灯台から王都までは三日、戻りも三日である。",
++      "terms": [
++        "三日"
++      ],
++      "setup": "ch01"
++    }
++  ],
++  "locations": [
++    {
++      "id": "灯台",
++      "travel_days": {
++        "港": 1,
++        "王都": 3
++      }
++    },
++    {
++      "id": "港",
++      "travel_days": {
++        "灯台": 1,
++        "王都": 2
++      }
++    },
++    {
++      "id": "王都",
++      "travel_days": {
++        "灯台": 3,
++        "港": 2
++      }
++    }
++  ],
++  "chapters": [
++    {
++      "id": "ch01",
++      "day": 1,
++      "location": "灯台"
++    },
++    {
++      "id": "ch02",
++      "day": 4,
++      "location": "王都"
++    },
++    {
++      "id": "ch03",
++      "day": 7,
++      "location": "灯台"
++    }
++  ],
++  "foreshadowing": [
++    {
++      "id": "fs-001",
++      "description": "父が『鍵は二本ある』と言ったまま口を閉ざしたこと。",
++      "setup": "ch01",
++      "payoff": "ch03"
++    },
++    {
++      "id": "fs-002",
++      "description": "三年前の嵐の夜の記録が帳面から欠けていること。",
++      "setup": "ch01",
++      "payoff": "ch02"
++    },
++    {
++      "id": "fs-003",
++      "description": "潮札に書かれた『半灯』の刻み。",
++      "setup": "ch02",
++      "payoff": "ch03"
++    }
++  ]
++}
++
++## 先行する設計書
++（先行する設計書なし）
++
++## 守ること
++1. ログラインは一文にし、`elements` の who / where / wants / obstacle に書いた各文字列を、
++   言い換えず一字一句そのままログラインに含める。
++2. 主題は対立する命題の形（A対B）にする。
++3. 類似作は 3 件以上挙げ、各 `axis` は `structure / character / world` のいずれかに限定し、
++   差分の説明は 10 字以上にする。
++4. 禁止条件には、後工程が判定できる確認方法を添える。
++5. 失敗の問いは「〜か？」の検証可能な形にする。
++
++## 出力
++JSON のみを返してください。前後に説明文やコードフェンスを付けないでください。
++
++{
++  "logline": "一文のログライン（20〜300字。elements の各文字列を一字一句そのまま含める）",
++  "premise": "前提の要約",
++  "theme": "主題を対立命題の形で（例: 務め対情）",
++  "elements": {"who": "誰", "where": "どこ", "wants": "望み", "obstacle": "妨げ"},
++  "similar": [
++    {"title": "類似作の題名", "axis": "structure / character / world のいずれか", "difference": "10字以上の差分"}
++  ],
++  "prohibitions": [
++    {"rule": "禁止条件", "check_ja": "後工程での確認方法"}
++  ],
++  "failure_questions": ["検証可能な問いの形（〜か？）"],
++  "genre": "ジャンル", "audience": "想定読者"
++}
++similar は 3 件以上。禁止条件には確認方法を添える。
++```
++
++タグは必ずこの 4 文字 **`CF27`** を使ってください（`ch01` やファイル名を使わないでください）。
++
++回答はこの形で返ってきます（そのまま貼り返してください）。
++
++```text
++<<<ANSWER CF27>>>
++…本文…
++<<<END CF27>>>
++```
+diff --git a/experiments/2026-10-realrun-b-t01/relay/sample-1/index.json b/experiments/2026-10-realrun-b-t01/relay/sample-1/index.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..d85663a265b8760adc45041053fe684e4972b358
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/relay/sample-1/index.json
+@@ -0,0 +1,11 @@
++{
++  "generated_at": "2026-10-26T16:34:59Z",
++  "pending": [
++    {
++      "tag": "CF27",
++      "key": "s1-t01-s0-design-brief-a1",
++      "purpose": "design:brief",
++      "prompt_hash": "3863c9fcf52ec3d0"
++    }
++  ]
++}
+diff --git a/experiments/2026-10-realrun-b-t01/relay/sample-1/outbox/request-01-CF27.md b/experiments/2026-10-realrun-b-t01/relay/sample-1/outbox/request-01-CF27.md
+new file mode 100644
+index 0000000000000000000000000000000000000000..b8c038d80a9ec855cd459c1f4bc89aba8889793d
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/relay/sample-1/outbox/request-01-CF27.md
+@@ -0,0 +1,207 @@
++# リクエスト 1/1（タグ `CF27`）
++
++```text
++あなたは短編小説の企画担当です。次の固定タスクと設定台帳から、企画核（brief）を作ってください。
++企画核は「検証可能な形の企画」であり、本文ではありません。
++
++## タスク
++- 題名: 灯台の鍵
++- ジャンル: fantasy
++- ログライン: 嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。
++- 本文に必ず含める語: 灯台、鍵、嵐
++- 使ってはいけない定型: 選ばれし者、古代の予言
++- 章数: 3 章
++
++## 設定台帳
++{
++  "characters": [
++    {
++      "id": "aria",
++      "name": "アリア",
++      "aliases": [
++        "灯守の娘"
++      ],
++      "status": "alive",
++      "location": "灯台",
++      "age_at_start": 24,
++      "knows": [
++        "F-01"
++      ]
++    },
++    {
++      "id": "boris",
++      "name": "ボリス",
++      "aliases": [
++        "鍵屋"
++      ],
++      "status": "alive",
++      "location": "王都",
++      "age_at_start": 51,
++      "knows": [
++        "F-02",
++        "F-03"
++      ]
++    },
++    {
++      "id": "celia",
++      "name": "セリア",
++      "aliases": [
++        "渡し守"
++      ],
++      "status": "alive",
++      "location": "港",
++      "age_at_start": 33,
++      "knows": []
++    },
++    {
++      "id": "johan",
++      "name": "ヨハン",
++      "aliases": [
++        "兄",
++        "帰らぬ兄"
++      ],
++      "status": "dead",
++      "location": "王都",
++      "age_at_start": null,
++      "knows": [
++        "F-04"
++      ]
++    }
++  ],
++  "facts": [
++    {
++      "id": "F-01",
++      "summary": "灯りを消してはいけない。霧が港町を呑む。",
++      "terms": [
++        "灯り"
++      ],
++      "setup": "ch01"
++    },
++    {
++      "id": "F-02",
++      "summary": "鍵は二本あり、予備は王都の鍵屋に預けられている。",
++      "terms": [
++        "予備の鍵"
++      ],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-03",
++      "summary": "三年前の嵐の夜の記録は、後から別の筆で書き換えられている。",
++      "terms": [
++        "書き換え",
++        "削られた頁"
++      ],
++      "setup": "ch02"
++    },
++    {
++      "id": "F-04",
++      "summary": "ヨハンは雷から港町を守るために灯りを落とし、その夜に死んだ。",
++      "terms": [
++        "雷",
++        "三年前"
++      ],
++      "setup": "ch03"
++    },
++    {
++      "id": "F-05",
++      "summary": "灯台から王都までは三日、戻りも三日である。",
++      "terms": [
++        "三日"
++      ],
++      "setup": "ch01"
++    }
++  ],
++  "locations": [
++    {
++      "id": "灯台",
++      "travel_days": {
++        "港": 1,
++        "王都": 3
++      }
++    },
++    {
++      "id": "港",
++      "travel_days": {
++        "灯台": 1,
++        "王都": 2
++      }
++    },
++    {
++      "id": "王都",
++      "travel_days": {
++        "灯台": 3,
++        "港": 2
++      }
++    }
++  ],
++  "chapters": [
++    {
++      "id": "ch01",
++      "day": 1,
++      "location": "灯台"
++    },
++    {
++      "id": "ch02",
++      "day": 4,
++      "location": "王都"
++    },
++    {
++      "id": "ch03",
++      "day": 7,
++      "location": "灯台"
++    }
++  ],
++  "foreshadowing": [
++    {
++      "id": "fs-001",
++      "description": "父が『鍵は二本ある』と言ったまま口を閉ざしたこと。",
++      "setup": "ch01",
++      "payoff": "ch03"
++    },
++    {
++      "id": "fs-002",
++      "description": "三年前の嵐の夜の記録が帳面から欠けていること。",
++      "setup": "ch01",
++      "payoff": "ch02"
++    },
++    {
++      "id": "fs-003",
++      "description": "潮札に書かれた『半灯』の刻み。",
++      "setup": "ch02",
++      "payoff": "ch03"
++    }
++  ]
++}
++
++## 先行する設計書
++（先行する設計書なし）
++
++## 守ること
++1. ログラインは一文にし、`elements` の who / where / wants / obstacle に書いた各文字列を、
++   言い換えず一字一句そのままログラインに含める。
++2. 主題は対立する命題の形（A対B）にする。
++3. 類似作は 3 件以上挙げ、各 `axis` は `structure / character / world` のいずれかに限定し、
++   差分の説明は 10 字以上にする。
++4. 禁止条件には、後工程が判定できる確認方法を添える。
++5. 失敗の問いは「〜か？」の検証可能な形にする。
++
++## 出力
++JSON のみを返してください。前後に説明文やコードフェンスを付けないでください。
++
++{
++  "logline": "一文のログライン（20〜300字。elements の各文字列を一字一句そのまま含める）",
++  "premise": "前提の要約",
++  "theme": "主題を対立命題の形で（例: 務め対情）",
++  "elements": {"who": "誰", "where": "どこ", "wants": "望み", "obstacle": "妨げ"},
++  "similar": [
++    {"title": "類似作の題名", "axis": "structure / character / world のいずれか", "difference": "10字以上の差分"}
++  ],
++  "prohibitions": [
++    {"rule": "禁止条件", "check_ja": "後工程での確認方法"}
++  ],
++  "failure_questions": ["検証可能な問いの形（〜か？）"],
++  "genre": "ジャンル", "audience": "想定読者"
++}
++similar は 3 件以上。禁止条件には確認方法を添える。
++```
+diff --git a/experiments/2026-10-realrun-b-t01/relay/sample-1/requests/s1-t01-s0-design-brief-a1.json b/experiments/2026-10-realrun-b-t01/relay/sample-1/requests/s1-t01-s0-design-brief-a1.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..8842061472b42422564dd23f26ff8effee38b412
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/relay/sample-1/requests/s1-t01-s0-design-brief-a1.json
+@@ -0,0 +1,13 @@
++{
++  "key": "s1-t01-s0-design-brief-a1",
++  "purpose": "design:brief",
++  "system": "s1",
++  "task_id": "t01",
++  "seed": 0,
++  "attempt": 1,
++  "prompt_hash": "3863c9fcf52ec3d0",
++  "temperature": 0.8,
++  "max_tokens": 2000,
++  "recorded_at": "2026-10-26T16:34:59Z",
++  "prompt": "あなたは短編小説の企画担当です。次の固定タスクと設定台帳から、企画核（brief）を作ってください。\n企画核は「検証可能な形の企画」であり、本文ではありません。\n\n## タスク\n- 題名: 灯台の鍵\n- ジャンル: fantasy\n- ログライン: 嵐の夜、灯台守の娘は、灯りを消すために貸した鍵が、三年前に死んだ人物の手に渡っていたことを知る。彼女は灯りを守るか、鍵の行方を追うかを選ばなければならない。\n- 本文に必ず含める語: 灯台、鍵、嵐\n- 使ってはいけない定型: 選ばれし者、古代の予言\n- 章数: 3 章\n\n## 設定台帳\n{\n  \"characters\": [\n    {\n      \"id\": \"aria\",\n      \"name\": \"アリア\",\n      \"aliases\": [\n        \"灯守の娘\"\n      ],\n      \"status\": \"alive\",\n      \"location\": \"灯台\",\n      \"age_at_start\": 24,\n      \"knows\": [\n        \"F-01\"\n      ]\n    },\n    {\n      \"id\": \"boris\",\n      \"name\": \"ボリス\",\n      \"aliases\": [\n        \"鍵屋\"\n      ],\n      \"status\": \"alive\",\n      \"location\": \"王都\",\n      \"age_at_start\": 51,\n      \"knows\": [\n        \"F-02\",\n        \"F-03\"\n      ]\n    },\n    {\n      \"id\": \"celia\",\n      \"name\": \"セリア\",\n      \"aliases\": [\n        \"渡し守\"\n      ],\n      \"status\": \"alive\",\n      \"location\": \"港\",\n      \"age_at_start\": 33,\n      \"knows\": []\n    },\n    {\n      \"id\": \"johan\",\n      \"name\": \"ヨハン\",\n      \"aliases\": [\n        \"兄\",\n        \"帰らぬ兄\"\n      ],\n      \"status\": \"dead\",\n      \"location\": \"王都\",\n      \"age_at_start\": null,\n      \"knows\": [\n        \"F-04\"\n      ]\n    }\n  ],\n  \"facts\": [\n    {\n      \"id\": \"F-01\",\n      \"summary\": \"灯りを消してはいけない。霧が港町を呑む。\",\n      \"terms\": [\n        \"灯り\"\n      ],\n      \"setup\": \"ch01\"\n    },\n    {\n      \"id\": \"F-02\",\n      \"summary\": \"鍵は二本あり、予備は王都の鍵屋に預けられている。\",\n      \"terms\": [\n        \"予備の鍵\"\n      ],\n      \"setup\": \"ch02\"\n    },\n    {\n      \"id\": \"F-03\",\n      \"summary\": \"三年前の嵐の夜の記録は、後から別の筆で書き換えられている。\",\n      \"terms\": [\n        \"書き換え\",\n        \"削られた頁\"\n      ],\n      \"setup\": \"ch02\"\n    },\n    {\n      \"id\": \"F-04\",\n      \"summary\": \"ヨハンは雷から港町を守るために灯りを落とし、その夜に死んだ。\",\n      \"terms\": [\n        \"雷\",\n        \"三年前\"\n      ],\n      \"setup\": \"ch03\"\n    },\n    {\n      \"id\": \"F-05\",\n      \"summary\": \"灯台から王都までは三日、戻りも三日である。\",\n      \"terms\": [\n        \"三日\"\n      ],\n      \"setup\": \"ch01\"\n    }\n  ],\n  \"locations\": [\n    {\n      \"id\": \"灯台\",\n      \"travel_days\": {\n        \"港\": 1,\n        \"王都\": 3\n      }\n    },\n    {\n      \"id\": \"港\",\n      \"travel_days\": {\n        \"灯台\": 1,\n        \"王都\": 2\n      }\n    },\n    {\n      \"id\": \"王都\",\n      \"travel_days\": {\n        \"灯台\": 3,\n        \"港\": 2\n      }\n    }\n  ],\n  \"chapters\": [\n    {\n      \"id\": \"ch01\",\n      \"day\": 1,\n      \"location\": \"灯台\"\n    },\n    {\n      \"id\": \"ch02\",\n      \"day\": 4,\n      \"location\": \"王都\"\n    },\n    {\n      \"id\": \"ch03\",\n      \"day\": 7,\n      \"location\": \"灯台\"\n    }\n  ],\n  \"foreshadowing\": [\n    {\n      \"id\": \"fs-001\",\n      \"description\": \"父が『鍵は二本ある』と言ったまま口を閉ざしたこと。\",\n      \"setup\": \"ch01\",\n      \"payoff\": \"ch03\"\n    },\n    {\n      \"id\": \"fs-002\",\n      \"description\": \"三年前の嵐の夜の記録が帳面から欠けていること。\",\n      \"setup\": \"ch01\",\n      \"payoff\": \"ch02\"\n    },\n    {\n      \"id\": \"fs-003\",\n      \"description\": \"潮札に書かれた『半灯』の刻み。\",\n      \"setup\": \"ch02\",\n      \"payoff\": \"ch03\"\n    }\n  ]\n}\n\n## 先行する設計書\n（先行する設計書なし）\n\n## 守ること\n1. ログラインは一文にし、`elements` の who / where / wants / obstacle に書いた各文字列を、\n   言い換えず一字一句そのままログラインに含める。\n2. 主題は対立する命題の形（A対B）にする。\n3. 類似作は 3 件以上挙げ、各 `axis` は `structure / character / world` のいずれかに限定し、\n   差分の説明は 10 字以上にする。\n4. 禁止条件には、後工程が判定できる確認方法を添える。\n5. 失敗の問いは「〜か？」の検証可能な形にする。\n\n## 出力\nJSON のみを返してください。前後に説明文やコードフェンスを付けないでください。\n\n{\n  \"logline\": \"一文のログライン（20〜300字。elements の各文字列を一字一句そのまま含める）\",\n  \"premise\": \"前提の要約\",\n  \"theme\": \"主題を対立命題の形で（例: 務め対情）\",\n  \"elements\": {\"who\": \"誰\", \"where\": \"どこ\", \"wants\": \"望み\", \"obstacle\": \"妨げ\"},\n  \"similar\": [\n    {\"title\": \"類似作の題名\", \"axis\": \"structure / character / world のいずれか\", \"difference\": \"10字以上の差分\"}\n  ],\n  \"prohibitions\": [\n    {\"rule\": \"禁止条件\", \"check_ja\": \"後工程での確認方法\"}\n  ],\n  \"failure_questions\": [\"検証可能な問いの形（〜か？）\"],\n  \"genre\": \"ジャンル\", \"audience\": \"想定読者\"\n}\nsimilar は 3 件以上。禁止条件には確認方法を添える。\n"
++}
+diff --git a/experiments/2026-10-realrun-b-t01/results.json b/experiments/2026-10-realrun-b-t01/results.json
+new file mode 100644
+index 0000000000000000000000000000000000000000..21f83867f23b77f6606806008acc0adadb34af3f
+--- /dev/null
++++ b/experiments/2026-10-realrun-b-t01/results.json
+@@ -0,0 +1,102 @@
++{
++  "schema": "realrun-b-v1",
++  "experiment": "2026-10-realrun-b-t01",
++  "preregistration": {
++    "path": "experiments/2026-10-realrun-b-t01/preregistration.json",
++    "sha256": "ecaccfe468b7ca926ff5fe5171d07f3a6ffb87348961b796dc67482f97701b2f"
++  },
++  "condition": {
++    "canon_tree_sha256": "eaaf14e6b960f7723284abd08bd11cfa035855e3a6831f56fddaa37ceb99aa71",
++    "canon_matches_registration": true,
++    "canon_files": {
++      "characters.json": "1aac59ad6a57065d2a21f8395162fc464843ff95e1d0aa57e9b6579821384f1f",
++      "facts.json": "66566d9fa9fc9b5cdd277be5c4337c2ad14e807dfa89499a65699d0e43056acc",
++      "foreshadowing.json": "60247ed947e97d8dfc285991274064ac4099a0726ce284ca512f71b444e8d3f0",
++      "locations.json": "7e07e5a9e62b3b8589395c10eb6a75acbfaefb66217b22a737ca3001b8c53e82",
++      "suppressions.json": "7c7e0fd5f968795ab1bee17caccf9ba6d78f465250be7ed059a825141deb070c",
++      "timeline.json": "4aebbe268d3ea1231367695cbb11bb6b73a1ed8554af7857de8734725bf4b14f"
++    },
++    "canon_source": "experiments/2026-10-realrun-b-t01/inputs/canon",
++    "prompt_hashes_match_registration": true,
++    "prompt_mismatches": [],
++    "provenance_origins": {},
++    "models": {},
++    "plan_requested": false
++  },
++  "samples": {},
++  "verdicts": {
++    "samples_present": 0,
++    "samples_planned": 1,
++    "samples_complete": [],
++    "B1_design_first_attempt": {
++      "verdict": "not_run",
++      "docs": [
++        "brief",
++        "world",
++        "history",
++        "character",
++        "relation",
++        "plot",
++        "scene",
++        "voice"
++      ],
++      "by_doc": {},
++      "first_attempt_findings_by_check": {},
++      "final_findings_by_check": {},
++      "unresolved": {}
++    },
++    "B2_length": {
++      "verdict": "not_run",
++      "chapters_in_band": {},
++      "needed_per_sample": 2,
++      "band": [
++        1000,
++        1400
++      ],
++      "out_of_band_causes": {}
++    },
++    "B3_recurring_failure": {
++      "verdict": {
++        "repair_erased_included": "not_run",
++        "final_only": "not_run"
++      },
++      "min_samples": 2,
++      "by_check": {
++        "repair_erased_included": {},
++        "final_only": {}
++      },
++      "structural_note": "verdict は repair_erased_included と final_only の両方について出す。N=1 では両方 not_evaluable_at_n1 になる見込みだが、所見の一覧は残す。"
++    },
++    "B4_must_include_exact": {
++      "verdict": "not_run",
++      "terms": [
++        "灯台",
++        "鍵",
++        "嵐"
++      ],
++      "missing_terms": {},
++      "rates": {}
++    },
++    "B5_marker_declaration": {
++      "verdict": "not_run",
++      "marker_mismatches": {},
++      "injected_markers": {}
++    }
++  },
++  "not_claimed": [
++    "L2/L3（意味の整合・質）は frozen_not_measured のまま",
++    "G3/G4 は未測定、G5（同一 seed で同一出力）は operator 方式では到達しない",
++    "面白さ・読みやすさの比較はしない",
++    "N=1 なので率・区間・有意差を出さない",
++    "バッチ A との差を『S1 と二段階方式の効果』と呼ばない（canon は同じでも、N=1・同一 operator・prompt が別物）",
++    "protocol-v1 の合格判定には使わない（探索的な参考値）",
++    "応答の独立性は保証されない（operator が同じエージェントである可能性がある）",
++    "『S1 全体』を測ったとは言わない（plan は固定）"
++  ],
++  "limits": [
++    "N=1: no rate, interval or significance claim is made from this batch.",
++    "The plan stage was pinned, not run: this measures S1's design -> draft, not S1 end to end.",
++    "The responder cannot be seeded, so the text is not reproducible (G5 stays unmet); provenance is recorded per response, not assumed fresh.",
++    "Length and marker counts are L1 quantities; they say nothing about whether the chapters are any good."
++  ]
++}
+diff --git a/scripts/measure_realrun_b.py b/scripts/measure_realrun_b.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..f93f4ddd44440d3d497598779a5e04dd2fdbd52e
+--- /dev/null
++++ b/scripts/measure_realrun_b.py
+@@ -0,0 +1,650 @@
++#!/usr/bin/env python3
++"""Measure batch B against the rules that were fixed before it ran.
++
++The registration lives in ``experiments/2026-10-realrun-b-t01/preregistration.json``
++and is hashed into the result, so the thresholds used here are the ones that were
++recorded, not ones chosen after seeing the text.
++
++What it reads: one ``sample-*/run`` directory per sample, written by
++``run_pipeline.py --task t01 --system s1 --stage all --canon <pinned>`` (design
++reports, ``draft.json``, ``text/``, ``audit.json``, ``manifest.json``,
++``responses.jsonl``). What it writes: per-document and per-chapter numbers, the
++two counting modes for findings, and a verdict for each pre-registered rule.
++
++Two rules of the registration shape the arithmetic:
++
++* **B3 is counted both ways.** ``repair_erased_included`` counts findings from the
++  first attempt (design) or from the rejected draft attempts, so a finding that a
++  repair erased still counts. ``final_only`` counts what the final report shows.
++  Both verdicts are written; neither is primary. This is the ambiguity batch A
++  left open (docs/two_stage_slice.md §21.1, §23).
++* **B2 judges the delivered text** and uses the first attempt only to say *where*
++  a chapter left the 1,000–1,400 band (written that way vs. lost in repair).
++
++A sample whose run stopped early (``DraftError`` after two rejected attempts) has
++no ``run-summary.json`` and no ``draft.json``. It is still discovered (by
++``manifest.json``), reported as ``complete: false``, and rules that need chapters
++return ``incomplete`` instead of inventing numbers. The registration says such a
++run is kept, not rewritten.
++
++    python3 scripts/measure_realrun_b.py
++    python3 scripts/measure_realrun_b.py --bundle experiments/2026-10-realrun-b-t01
++
++A sample's directory must be ``<bundle>/sample-N/run``; ``--sample NAME=PATH``
++overrides discovery, which is how the script is tested (against a scripted run,
++where it is a check of the arithmetic, not evidence about prose).
++"""
++from __future__ import annotations
++
++import argparse
++import hashlib
++import json
++import re
++import sys
++from pathlib import Path
++
++REPO_ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(REPO_ROOT / "src"))
++
++from asc.story.canon import load_canon  # noqa: E402
++from asc.story.text import parse_markers  # noqa: E402
++
++DEFAULT_BUNDLE = REPO_ROOT / "experiments" / "2026-10-realrun-b-t01"
++MARKER = re.compile(r"\{\{([^{}]+)\}\}")
++
++
++# -- small readers ---------------------------------------------------------
++
++def chars_without_markers(text: str) -> int:
++    """Characters the pipeline itself counts (markers and whitespace removed)."""
++    return len(re.sub(r"\s", "", MARKER.sub("", text)))
++
++
++def discover_samples(bundle: Path) -> list[tuple[str, Path]]:
++    found: list[tuple[str, Path]] = []
++    for path in sorted(bundle.glob("sample-*/run")):
++        if (path / "manifest.json").is_file() or (path / "run-summary.json").is_file():
++            found.append((path.parent.name, path))
++    return found
++
++
++def _read_json(path: Path):
++    try:
++        return json.loads(path.read_text(encoding="utf-8"))
++    except (OSError, json.JSONDecodeError):
++        return None
++
++
++def _finding_row(item: dict) -> dict:
++    return {"check": item.get("check"), "severity": item.get("severity")}
++
++
++def _issue_key(line: str) -> str:
++    """Give a rejected draft attempt's free-text problem a stable name."""
++    if line.startswith("too short"):
++        return "draft.too_short"
++    if line.startswith("uses a forbidden cliché"):
++        return "draft.forbidden_cliche"
++    return "draft.other"
++
++
++# -- one sample ------------------------------------------------------------
++
++def summarise_design(run_dir: Path, docs: list[str]) -> dict:
++    per_doc: dict[str, dict] = {}
++    for name in docs:
++        report = _read_json(run_dir / "design" / f"{name}.report.json")
++        if report is None:
++            per_doc[name] = {"present": False}
++            continue
++        first = (report.get("first_attempt") or {}).get("findings") or []
++        final = report.get("findings") or []
++        per_doc[name] = {
++            "present": True,
++            "status": report.get("status"),
++            "attempts": report.get("attempts"),
++            "repairs": report.get("repairs"),
++            "first_attempt_findings": [_finding_row(item) for item in first],
++            "findings": [_finding_row(item) for item in final],
++        }
++    first_checks: dict[str, int] = {}
++    final_checks: dict[str, int] = {}
++    for row in per_doc.values():
++        for item in row.get("first_attempt_findings", []):
++            first_checks[item["check"]] = first_checks.get(item["check"], 0) + 1
++        for item in row.get("findings", []):
++            final_checks[item["check"]] = final_checks.get(item["check"], 0) + 1
++    return {
++        "docs": per_doc,
++        "docs_present": sum(1 for row in per_doc.values() if row["present"]),
++        "unresolved": [name for name, row in per_doc.items()
++                        if row.get("status") in {"unresolved", "missing"}],
++        "docs_with_first_attempt_findings": [
++            name for name, row in per_doc.items() if row.get("first_attempt_findings")],
++        "docs_with_findings": [name for name, row in per_doc.items() if row.get("findings")],
++        "first_attempt_findings_by_check": first_checks,
++        "final_findings_by_check": final_checks,
++        "attempts": sum(row.get("attempts") or 0 for row in per_doc.values()),
++        "repairs": sum(row.get("repairs") or 0 for row in per_doc.values()),
++    }
++
++
++def _marker_values(text: str, chapter_id: str) -> dict:
++    days: list[str] = []
++    locations: list[str] = []
++    for marker in parse_markers(text, chapter_id):
++        if marker.kind == "time":
++            for arg in marker.args:
++                if arg.startswith("day="):
++                    days.append(arg.split("=", 1)[1].strip().rstrip("N"))
++                    break
++        elif marker.kind == "location":
++            locations.append(" ".join(marker.args).strip())
++    return {"days": days, "locations": locations}
++
++
++def summarise_chapter(run_dir: Path, chapter: dict, canon, band: tuple[int, int]) -> dict:
++    chapter_id = chapter["id"]
++    text_path = run_dir / "text" / f"{chapter_id}.md"
++    text = text_path.read_text(encoding="utf-8") if text_path.is_file() else ""
++    first_path = run_dir / "draft" / f"{chapter_id}-attempt-1.txt"
++    first_text = first_path.read_text(encoding="utf-8") if first_path.is_file() else None
++    attempt_texts = sorted((run_dir / "draft").glob(f"{chapter_id}-attempt-*.txt"))
++    issues: list[dict] = []
++    for path in sorted((run_dir / "draft").glob(f"{chapter_id}-attempt-*.issues.txt")):
++        attempt = path.name.split("-attempt-")[1].split(".")[0]
++        for line in path.read_text(encoding="utf-8").splitlines():
++            if line.strip():
++                issues.append({"attempt": int(attempt), "problem": line.strip(),
++                               "check": _issue_key(line.strip())})
++
++    chars = chapter.get("chars")
++    first_chars = chars_without_markers(first_text) if first_text is not None else None
++    in_band = bool(chars is not None and band[0] <= chars <= band[1])
++    first_in_band = (None if first_chars is None
++                     else bool(band[0] <= first_chars <= band[1]))
++    cause = None
++    if chars is not None and not in_band:
++        if first_in_band is None:
++            cause = "unknown"
++        elif first_in_band:
++            cause = "lost_in_repair"
++        else:
++            cause = "out_at_write"
++
++    canon_chapter = canon.chapters.get(chapter_id) if canon is not None else None
++    declared = _marker_values(text, chapter_id)
++    mismatches: list[dict] = []
++    expected_day = (None if canon_chapter is None or canon_chapter.day is None
++                    else str(canon_chapter.day))
++    expected_location = None if canon_chapter is None else canon_chapter.location
++    if expected_day is not None and declared["days"] and declared["days"][0] != expected_day:
++        mismatches.append({"kind": "time", "declared": declared["days"][0],
++                           "canon": expected_day})
++    if expected_location and declared["locations"] \
++            and declared["locations"][0] != expected_location:
++        mismatches.append({"kind": "location", "declared": declared["locations"][0],
++                           "canon": expected_location})
++
++    return {
++        "chars": chars,
++        "in_length_band": in_band,
++        "first_attempt_chars": first_chars,
++        "first_attempt_in_length_band": first_in_band,
++        "out_of_band_cause": cause,
++        "attempts": len(attempt_texts) or None,
++        "rejected_attempts": len(issues),
++        "issues": issues,
++        "day": chapter.get("day"),
++        "location": chapter.get("location"),
++        "injected": list(chapter.get("injected") or []),
++        "declared_markers": declared,
++        "marker_mismatches": mismatches,
++    }
++
++
++def _count_checks(items: list[dict]) -> dict[str, int]:
++    counts: dict[str, int] = {}
++    for item in items:
++        key = item.get("check") or "draft.other"
++        counts[key] = counts.get(key, 0) + 1
++    return counts
++
++
++def summarise_draft(run_dir: Path, canon, band: tuple[int, int], task_terms,
++                    avoid_terms) -> dict:
++    draft = _read_json(run_dir / "draft.json")
++    chapters: dict[str, dict] = {}
++    if draft is None:
++        # The run stopped before the draft was written; keep what the attempts left.
++        rejected: list[dict] = []
++        for path in sorted((run_dir / "draft").glob("*-attempt-*.issues.txt")):
++            chapter_id = path.name.split("-attempt-")[0]
++            attempt = path.name.split("-attempt-")[1].split(".")[0]
++            for line in path.read_text(encoding="utf-8").splitlines():
++                if line.strip():
++                    rejected.append({"chapter": chapter_id, "attempt": int(attempt),
++                                     "problem": line.strip(),
++                                     "check": _issue_key(line.strip())})
++        return {"draft_complete": False, "chapters": {}, "chapters_total": 0,
++                "chapters_in_length_band": 0, "chars_total": None,
++                "must_include": None, "avoid_hits": {},
++                "warnings_ja": [], "injected_total": 0,
++                "marker_mismatches": [], "rejected_attempts": rejected,
++                "issues_by_check": _count_checks(rejected)}
++
++    for chapter in draft.get("chapters") or []:
++        chapters[chapter["id"]] = summarise_chapter(run_dir, chapter, canon, band)
++
++    texts = [path.read_text(encoding="utf-8")
++             for path in sorted((run_dir / "text").glob("*.md"))]
++    joined = "\n\n".join(texts)
++    must_include = draft.get("must_include") or {}
++    hits = must_include.get("hits") or {}
++    return {
++        "draft_complete": True,
++        "chapters": chapters,
++        "chapters_total": len(chapters),
++        "chapters_in_length_band": sum(
++            1 for row in chapters.values() if row["in_length_band"]),
++        "chars_total": draft.get("chars"),
++        "must_include": {"hits": hits, "rate": must_include.get("rate"),
++                         "missing": [term for term in task_terms if not hits.get(term)]},
++        "avoid_hits": {term: joined.count(term) for term in avoid_terms
++                       if term in joined},
++        "warnings_ja": list(draft.get("warnings_ja") or []),
++        "injected_total": sum(len(row["injected"]) for row in chapters.values()),
++        "marker_mismatches": [
++            {"chapter": chapter_id, **item}
++            for chapter_id, row in chapters.items()
++            for item in row["marker_mismatches"]
++        ],
++        "rejected_attempts": [
++            {"chapter": chapter_id, **item}
++            for chapter_id, row in chapters.items() for item in row["issues"]
++        ],
++        "issues_by_check": _count_checks(
++            [item for row in chapters.values() for item in row["issues"]]),
++    }
++
++
++def summarise_audit(run_dir: Path) -> dict:
++    audit = _read_json(run_dir / "audit.json")
++    if audit is None:
++        return {"present": False}
++    summary = audit.get("summary") or {}
++    return {
++        "present": True,
++        "violations": summary.get("violations"),
++        "by_severity": summary.get("by_severity") or {},
++        "by_type": summary.get("by_type") or {},
++        "checks_run": summary.get("checks_run"),
++        "checks_skipped": summary.get("checks_skipped"),
++        "ced_per_10k_chars": summary.get("ced_per_10k_chars"),
++    }
++
++
++def summarise_provenance(run_dir: Path) -> dict:
++    journal = run_dir / "responses.jsonl"
++    origins: dict[str, int] = {}
++    models: dict[str, int] = {}
++    count = 0
++    if journal.is_file():
++        for line in journal.read_text(encoding="utf-8").splitlines():
++            if not line.strip():
++                continue
++            try:
++                entry = json.loads(line)
++            except json.JSONDecodeError:
++                continue
++            count += 1
++            response = entry.get("response") or {}
++            origin = (response.get("provenance") or {}).get("origin") or "unspecified"
++            origins[origin] = origins.get(origin, 0) + 1
++            label = (f"{response.get('model') or 'unknown'}"
++                     f" / {response.get('model_version') or 'unversioned'}")
++            models[label] = models.get(label, 0) + 1
++    return {"responses": count, "origins": origins, "models": models}
++
++
++def summarise_sample(name: str, run_dir: Path, canon, prereg: dict) -> dict:
++    summary = _read_json(run_dir / "run-summary.json")
++    manifest = _read_json(run_dir / "manifest.json") or {}
++    rules = prereg["rules"]
++    band = tuple(prereg["length_band"])
++    task_terms = rules["B4_must_include_exact"]["terms"]
++    avoid_terms = ["選ばれし者", "古代の予言"]
++    design = summarise_design(run_dir, rules["B1_design_first_attempt"]["docs"])
++    draft = summarise_draft(run_dir, canon, band, task_terms, avoid_terms)
++    return {
++        "run_dir": str(run_dir),
++        "complete": bool(summary and draft["draft_complete"]),
++        "status": (summary or {}).get("status"),
++        "gates": (summary or {}).get("gates") or {},
++        "design": design,
++        "draft": draft,
++        "audit": summarise_audit(run_dir),
++        "provenance": summarise_provenance(run_dir),
++        "prompt_hashes": manifest.get("prompt_hashes") or {},
++        "error": (summary or {}).get("error") or manifest.get("error"),
++    }
++
++
++# -- registered verdicts ---------------------------------------------------
++
++def _design_counts(samples: dict[str, dict], mode: str) -> dict[str, list[str]]:
++    """``check -> samples`` for one counting mode (see the registration)."""
++    hits: dict[str, list[str]] = {}
++    for name, sample in samples.items():
++        design = sample["design"]
++        key = ("first_attempt_findings_by_check" if mode == "repair_erased_included"
++               else "final_findings_by_check")
++        for check, count in (design.get(key) or {}).items():
++            if count:
++                hits.setdefault(f"design.{check}", []).append(name)
++    return hits
++
++
++def _draft_counts(samples: dict[str, dict], mode: str) -> dict[str, list[str]]:
++    hits: dict[str, list[str]] = {}
++    if mode != "repair_erased_included":
++        # The pipeline keeps a chapter only after it passes, so the final report
++        # of a delivered chapter carries no draft findings by construction.
++        return hits
++    for name, sample in samples.items():
++        for check, count in (sample["draft"].get("issues_by_check") or {}).items():
++            if count:
++                hits.setdefault(check, []).append(name)
++    return hits
++
++
++def _audit_counts(samples: dict[str, dict]) -> dict[str, list[str]]:
++    hits: dict[str, list[str]] = {}
++    for name, sample in samples.items():
++        for kind, count in (sample["audit"].get("by_type") or {}).items():
++            if count:
++                hits.setdefault(f"audit.{kind}", []).append(name)
++    return hits
++
++
++def verdicts(samples: dict[str, dict], prereg: dict) -> dict:
++    rules = prereg["rules"]
++    planned = prereg["samples_planned"]
++    present = len(samples)
++    complete = {name: row for name, row in samples.items()
++                if row["complete"] and row["draft"]["chapters_total"]}
++
++    # B1: design, first attempt.
++    if not samples:
++        design_verdict = "not_run"
++    elif not any(row["design"]["docs_present"] for row in samples.values()):
++        design_verdict = "incomplete"
++    else:
++        unresolved = {name: row["design"]["unresolved"] for name, row in samples.items()
++                      if row["design"]["unresolved"]}
++        repaired = {name: row["design"]["docs_with_first_attempt_findings"]
++                    for name, row in samples.items()
++                    if row["design"]["docs_with_first_attempt_findings"]}
++        if unresolved:
++            design_verdict = "design_unresolved"
++        elif repaired:
++            design_verdict = "design_repaired"
++        else:
++            design_verdict = "design_clean_first_attempt"
++
++    # B2: length of the delivered chapters, split by where they left the band.
++    need = rules["B2_length"]["min_chapters_in_band"]
++    if not complete:
++        length_verdict = "not_run" if not samples else "incomplete"
++        in_band: dict[str, int] = {}
++        causes: dict[str, str] = {}
++    else:
++        in_band = {name: row["draft"]["chapters_in_length_band"]
++                   for name, row in complete.items()}
++        causes = {}
++        for name, row in complete.items():
++            for chapter_id, chapter in row["draft"]["chapters"].items():
++                if chapter["out_of_band_cause"]:
++                    causes[f"{name}/{chapter_id}"] = chapter["out_of_band_cause"]
++        if all(count >= need for count in in_band.values()):
++            length_verdict = "length_ok"
++        elif not causes:
++            length_verdict = "length_ok"
++        elif set(causes.values()) == {"lost_in_repair"}:
++            length_verdict = "length_lost_in_repair"
++        elif set(causes.values()) == {"out_at_write"}:
++            length_verdict = "length_out_at_write"
++        elif set(causes.values()) == {"unknown"}:
++            length_verdict = "length_cause_unknown"
++        else:
++            length_verdict = "length_mixed_causes"
++
++    # B3: recurrence, counted both ways (the batch A ambiguity).
++    threshold = rules["B3_recurring_failure"]["min_samples"]
++    modes = rules["B3_recurring_failure"]["counting"]
++    by_mode: dict[str, dict[str, list[str]]] = {}
++    for mode in modes:
++        hits = _design_counts(samples, mode)
++        for check, names in _draft_counts(samples, mode).items():
++            hits.setdefault(check, []).extend(names)
++        for check, names in _audit_counts(samples).items():
++            hits.setdefault(check, []).extend(names)
++        by_mode[mode] = {check: sorted(set(names)) for check, names in hits.items()}
++    if not samples:
++        recurrence = {mode: "not_run" for mode in modes}
++    elif present < threshold:
++        recurrence = {mode: "not_evaluable_at_n1" if present == 1 else "not_enough_data"
++                      for mode in modes}
++    else:
++        recurrence = {}
++        for mode in modes:
++            recurring = [check for check, names in by_mode[mode].items()
++                         if len(names) >= threshold]
++            recurrence[mode] = "recurring" if recurring else "no_recurring_failure"
++
++    # B4: required words, exact match.
++    if not complete:
++        must_verdict = "not_run" if not samples else "incomplete"
++        missing_terms: dict[str, list[str]] = {}
++    else:
++        missing_terms = {name: row["draft"]["must_include"]["missing"]
++                         for name, row in complete.items()
++                         if row["draft"]["must_include"]["missing"]}
++        must_verdict = "exact_match_gap" if missing_terms else "exact_match_ok"
++
++    # B5: markers the text declared vs. the ones canon had to supply.
++    if not complete:
++        marker_verdict = "not_run" if not samples else "incomplete"
++        disagreements: dict[str, list[dict]] = {}
++        injected: dict[str, int] = {}
++    else:
++        disagreements = {name: row["draft"]["marker_mismatches"]
++                         for name, row in complete.items()
++                         if row["draft"]["marker_mismatches"]}
++        injected = {name: row["draft"]["injected_total"]
++                    for name, row in complete.items() if row["draft"]["injected_total"]}
++        if disagreements:
++            marker_verdict = "markers_disagree"
++        elif injected:
++            marker_verdict = "markers_repaired"
++        else:
++            marker_verdict = "markers_declared"
++
++    return {
++        "samples_present": present,
++        "samples_planned": planned,
++        "samples_complete": sorted(complete),
++        "B1_design_first_attempt": {
++            "verdict": design_verdict,
++            "docs": rules["B1_design_first_attempt"]["docs"],
++            "by_doc": {name: row["design"]["docs"] for name, row in samples.items()},
++            "first_attempt_findings_by_check": {
++                name: row["design"]["first_attempt_findings_by_check"]
++                for name, row in samples.items()},
++            "final_findings_by_check": {
++                name: row["design"]["final_findings_by_check"]
++                for name, row in samples.items()},
++            "unresolved": {name: row["design"]["unresolved"]
++                           for name, row in samples.items()
++                           if row["design"]["unresolved"]},
++        },
++        "B2_length": {
++            "verdict": length_verdict,
++            "chapters_in_band": in_band,
++            "needed_per_sample": need,
++            "band": list(prereg["length_band"]),
++            "out_of_band_causes": causes,
++        },
++        "B3_recurring_failure": {
++            "verdict": recurrence,
++            "min_samples": threshold,
++            "by_check": by_mode,
++            "structural_note": rules["B3_recurring_failure"]["notes"],
++        },
++        "B4_must_include_exact": {
++            "verdict": must_verdict,
++            "terms": rules["B4_must_include_exact"]["terms"],
++            "missing_terms": missing_terms,
++            "rates": {name: row["draft"]["must_include"]["rate"]
++                      for name, row in complete.items()},
++        },
++        "B5_marker_declaration": {
++            "verdict": marker_verdict,
++            "marker_mismatches": disagreements,
++            "injected_markers": injected,
++        },
++    }
++
++
++def condition_check(bundle: Path, canon_dir: Path, samples: dict[str, dict],
++                    prereg: dict) -> dict:
++    """Did the run keep the conditions that were registered?"""
++    condition = prereg["condition"]
++    digest = hashlib.sha256()
++    files: dict[str, str] = {}
++    for path in sorted(canon_dir.glob("*.json")):
++        files[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
++        digest.update(path.name.encode())
++        digest.update(path.read_bytes())
++    canon_ok = digest.hexdigest() == condition["canon_tree_sha256"]
++    registered = {name: spec["digest"] for name, spec in condition["prompts"].items()}
++    prompt_mismatches: list[dict] = []
++    for name, sample in samples.items():
++        actual = sample["prompt_hashes"]
++        for prompt, wanted in registered.items():
++            got = actual.get(prompt)
++            if got != wanted:
++                prompt_mismatches.append({"sample": name, "prompt": prompt,
++                                          "registered": wanted, "actual": got})
++    origins: dict[str, int] = {}
++    models: dict[str, int] = {}
++    for sample in samples.values():
++        for origin, count in sample["provenance"]["origins"].items():
++            origins[origin] = origins.get(origin, 0) + count
++        for label, count in sample["provenance"]["models"].items():
++            models[label] = models.get(label, 0) + count
++    resolved = canon_dir.resolve()
++    source = (str(resolved.relative_to(REPO_ROOT)) if REPO_ROOT in resolved.parents
++              else str(canon_dir))
++    return {
++        "canon_tree_sha256": digest.hexdigest(),
++        "canon_matches_registration": canon_ok,
++        "canon_files": files,
++        "canon_source": source,
++        "prompt_hashes_match_registration": not prompt_mismatches,
++        "prompt_mismatches": prompt_mismatches,
++        "provenance_origins": origins,
++        "models": models,
++        "plan_requested": condition["plan"]["requested"],
++    }
++
++
++def main(argv: list[str] | None = None) -> int:
++    parser = argparse.ArgumentParser(
++        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
++    parser.add_argument("--bundle", default=str(DEFAULT_BUNDLE))
++    parser.add_argument("--preregistration", default=None,
++                        help="default: <bundle>/preregistration.json")
++    parser.add_argument("--canon", default=None, help="default: <bundle>/inputs/canon")
++    parser.add_argument("--sample", action="append", default=None,
++                        metavar="NAME=RUN_DIR", help="override discovery (repeatable)")
++    parser.add_argument("--out", default=None, help="default: <bundle>/results.json")
++    args = parser.parse_args(argv)
++
++    bundle = Path(args.bundle)
++    prereg_path = Path(args.preregistration or bundle / "preregistration.json")
++    prereg_bytes = prereg_path.read_bytes()
++    prereg = json.loads(prereg_bytes.decode("utf-8"))
++    canon_dir = Path(args.canon or bundle / "inputs" / "canon")
++    canon = load_canon(canon_dir)
++
++    if args.sample:
++        pairs: list[tuple[str, Path]] = []
++        for entry in args.sample:
++            name, _, path = entry.partition("=")
++            if not name or not path:
++                raise SystemExit(f"--sample needs NAME=PATH, got {entry!r}")
++            pairs.append((name, Path(path)))
++    else:
++        pairs = discover_samples(bundle)
++
++    samples = {name: summarise_sample(name, path, canon, prereg)
++               for name, path in pairs}
++    result = {
++        "schema": "realrun-b-v1",
++        "experiment": prereg["experiment"],
++        "preregistration": {
++            "path": str(prereg_path.relative_to(REPO_ROOT))
++            if prereg_path.is_absolute() and REPO_ROOT in prereg_path.parents
++            else str(prereg_path),
++            "sha256": hashlib.sha256(prereg_bytes).hexdigest(),
++        },
++        "condition": condition_check(bundle, canon_dir, samples, prereg),
++        "samples": samples,
++        "verdicts": verdicts(samples, prereg),
++        "not_claimed": prereg["not_claimed"],
++        "limits": [
++            "N=1: no rate, interval or significance claim is made from this batch.",
++            "The plan stage was pinned, not run: this measures S1's design -> draft, "
++            "not S1 end to end.",
++            "The responder cannot be seeded, so the text is not reproducible (G5 stays "
++            "unmet); provenance is recorded per response, not assumed fresh.",
++            "Length and marker counts are L1 quantities; they say nothing about "
++            "whether the chapters are any good.",
++        ],
++    }
++
++    if not samples:
++        print("no samples yet: nothing measured "
++              f"(expected {prereg['samples_planned']} under {bundle})")
++    for name, row in samples.items():
++        draft = row["draft"]
++        print(f"## {name}: complete={row['complete']} status={row['status']} "
++              f"chars={draft['chars_total']} "
++              f"in_band={draft['chapters_in_length_band']}/{draft['chapters_total']} "
++              f"design_repairs={row['design']['repairs']} "
++              f"draft_issues={len(draft['rejected_attempts'])}")
++        for doc, doc_row in row["design"]["docs"].items():
++            first = [item["check"] for item in doc_row.get("first_attempt_findings", [])]
++            print(f"   design/{doc:9s} {str(doc_row.get('status')):10s} "
++                  f"attempts={doc_row.get('attempts')} first={first or '—'}")
++        for chapter_id, chapter in draft["chapters"].items():
++            print(f"   {chapter_id}: {chapter['chars']}字 "
++                  f"(attempt1 {chapter['first_attempt_chars']}字, "
++                  f"cause {chapter['out_of_band_cause'] or '—'}) "
++                  f"injected={chapter['injected'] or '—'} "
++                  f"issues={[item['check'] for item in chapter['issues']] or '—'}")
++    print("## verdicts")
++    for key, value in result["verdicts"].items():
++        if isinstance(value, dict) and "verdict" in value:
++            print(f"  {key}: {value['verdict']}")
++
++    out = Path(args.out or bundle / "results.json")
++    out.parent.mkdir(parents=True, exist_ok=True)
++    out.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n",
++                   encoding="utf-8")
++    return 0
++
++
++if __name__ == "__main__":
++    raise SystemExit(main())
+diff --git a/scripts/run_pipeline.py b/scripts/run_pipeline.py
+index a6324f0be739211701843190431c1543f4dcba65..6fc3e4c5fc4bbae9f0a1f61cf331d06555dd3b95 100644
+--- a/scripts/run_pipeline.py
++++ b/scripts/run_pipeline.py
+@@ -197,0 +198,21 @@ def main(argv: list[str] | None = None) -> int:
++    # A pinned canon is copied into the run for every stage, not only for
++    # --stage draft. The audit reads <run>/canon, so --stage all --canon used to
++    # fail with "canon directory not found" after the draft had been written
++    # (found while preparing experiments/2026-10-realrun-b-t01). Copying it also
++    # makes the run self-contained: the canon it was judged against is inside it.
++    if args.canon and args.stage != "draft":
++        source_canon = Path(args.canon)
++        try:
++            shutil.copytree(source_canon, ledger.path / "canon")
++        except (OSError, shutil.Error) as exc:
++            print(f"error: cannot copy the reused canon into the run: {exc}",
++                  file=sys.stderr)
++            return 2
++        copied = sorted(path.relative_to(source_canon).as_posix()
++                        for path in source_canon.rglob("*") if path.is_file())
++        ledger.track([f"canon/{name}" for name in copied])
++        summary["canon_source"] = {
++            "path": str(source_canon),
++            "files_sha256": _sha256_tree(source_canon),
++        }
++
+diff --git a/tests/test_measure_realrun_b.py b/tests/test_measure_realrun_b.py
+new file mode 100644
+index 0000000000000000000000000000000000000000..022ccd1fbd10990fa88c8e3aa77c7d0b535b6c27
+--- /dev/null
++++ b/tests/test_measure_realrun_b.py
+@@ -0,0 +1,329 @@
++"""Batch B's measurement: the two counting modes, the arithmetic, the empty state.
++
++The fixtures are (a) a scripted S1 run and (b) hand-built run directories. They
++check that the script reads a run and applies the registered rules — they are
++not evidence about prose, and none of them is a batch B sample.
++"""
++from __future__ import annotations
++
++import hashlib
++import json
++import subprocess
++import sys
++from pathlib import Path
++
++import pytest
++
++REPO_ROOT = Path(__file__).resolve().parents[1]
++sys.path.insert(0, str(REPO_ROOT / "src"))
++sys.path.insert(0, str(REPO_ROOT / "scripts"))
++
++import measure_realrun_b  # noqa: E402
++
++BUNDLE = REPO_ROOT / "experiments" / "2026-10-realrun-b-t01"
++DOCS = ["brief", "world", "history", "character", "relation", "plot", "scene", "voice"]
++
++
++def registered() -> dict:
++    return json.loads((BUNDLE / "preregistration.json").read_text(encoding="utf-8"))
++
++
++def measure(tmp_path: Path, *extra: str) -> dict:
++    out = tmp_path / "measured.json"
++    assert measure_realrun_b.main(["--bundle", str(BUNDLE), "--out", str(out),
++                                    *extra]) == 0
++    return json.loads(out.read_text(encoding="utf-8"))
++
++
++# -- hand-built runs -------------------------------------------------------
++
++def make_run(tmp_path: Path, name: str = "sample-1", *, chapters=None,
++             design_findings: dict | None = None) -> Path:
++    """A minimal S1 run directory with the artifacts the measurement reads."""
++    run = tmp_path / name / "run"
++    (run / "design").mkdir(parents=True)
++    (run / "draft").mkdir()
++    (run / "text").mkdir()
++
++    digests = {prompt: spec["digest"] for prompt, spec in
++               registered()["condition"]["prompts"].items()}
++    (run / "manifest.json").write_text(json.dumps({
++        "prompt_hashes": digests, "run_id": "run", "artifacts": [],
++    }), encoding="utf-8")
++
++    design_findings = design_findings or {}
++    for doc in DOCS:
++        first = design_findings.get(doc, [])
++        (run / "design" / f"{doc}.report.json").write_text(json.dumps({
++            "doc": doc, "status": "clean", "attempts": 2 if first else 1,
++            "repairs": 1 if first else 0,
++            "findings": [],
++            "first_attempt": {"findings": first, "checks_failed": len(first)},
++        }), encoding="utf-8")
++
++    chapters = chapters or [
++        {"id": "ch01", "chars": 1100, "day": 1, "location": "灯台",
++         "injected": [], "body": "灯台の嵐の夜。鍵を数えた。"},
++        {"id": "ch02", "chars": 1050, "day": 4, "location": "王都",
++         "injected": [], "body": "王都で鍵屋に会った。"},
++        {"id": "ch03", "chars": 1200, "day": 7, "location": "灯台",
++         "injected": [], "body": "灯台に戻り、嵐は去った。"},
++    ]
++    draft_chapters = []
++    hits = {"灯台": False, "鍵": False, "嵐": False}
++    for chapter in chapters:
++        body = chapter["body"]
++        for term in hits:
++            hits[term] = hits[term] or term in body
++        text = (f"{{{{time: day={chapter['day']}}}}}"
++                f"{{{{location: {chapter['location']}}}}}\n{body}\n")
++        (run / "text" / f"{chapter['id']}.md").write_text(text, encoding="utf-8")
++        (run / "draft" / f"{chapter['id']}-attempt-1.txt").write_text(
++            body, encoding="utf-8")
++        if chapter.get("attempt1_in_band") is False:
++            (run / "draft" / f"{chapter['id']}-attempt-1.txt").write_text(
++                "短い草稿。" * 300, encoding="utf-8")
++        draft_chapters.append({
++            "id": chapter["id"], "chars": chapter["chars"], "day": chapter["day"],
++            "location": chapter["location"], "injected": chapter["injected"],
++            "markers": 2,
++        })
++    (run / "draft.json").write_text(json.dumps({
++        "task": {"id": "t01"}, "chapters": draft_chapters,
++        "chars": sum(chapter["chars"] for chapter in chapters),
++        "must_include": {"hits": hits,
++                         "rate": round(sum(hits.values()) / len(hits), 3)},
++        "warnings_ja": [],
++    }), encoding="utf-8")
++    (run / "audit.json").write_text(json.dumps({
++        "summary": {"violations": 0, "by_severity": {}, "by_type": {},
++                    "checks_run": 6, "checks_skipped": 0,
++                    "ced_per_10k_chars": 0.0},
++    }), encoding="utf-8")
++    (run / "run-summary.json").write_text(json.dumps({
++        "status": "pass", "gates": {}, "error": None,
++    }), encoding="utf-8")
++    (run / "responses.jsonl").write_text(
++        json.dumps({"purpose": "draft:ch01",
++                    "response": {"model": "arena-agent-mode",
++                                 "model_version": "unversioned-test",
++                                 "provenance": {"origin": "fresh"}}}) + "\n",
++        encoding="utf-8")
++    return run
++
++
++# -- registration ----------------------------------------------------------
++
++def test_the_registration_is_fixed_and_hashed(tmp_path):
++    result = measure(tmp_path)
++    prereg_path = BUNDLE / "preregistration.json"
++    assert result["preregistration"]["sha256"] == \
++        hashlib.sha256(prereg_path.read_bytes()).hexdigest()
++    prereg = registered()
++    assert prereg["samples_planned"] == 1
++    assert prereg["registered_before_any_sample"] is True
++    assert set(prereg["rules"]) == {
++        "B1_design_first_attempt", "B2_length", "B3_recurring_failure",
++        "B4_must_include_exact", "B5_marker_declaration"}
++    # The batch A ambiguity is answered by counting both ways, not by one reading.
++    assert set(prereg["counting_rules"]["modes"]) == {
++        "repair_erased_included", "final_only"}
++    assert prereg["condition"]["plan"]["requested"] is False
++    # The operating model: the harness runs, the reader runs nothing.
++    assert prereg["operation"]["actors"]["reader"].startswith("人")
++    assert "端末" in prereg["operation"]["user_actions"]
++    assert result["condition"]["canon_matches_registration"] is True
++
++
++def test_an_empty_batch_says_not_run(tmp_path):
++    empty = tmp_path / "empty-bundle"
++    empty.mkdir()
++    (empty / "preregistration.json").write_text(
++        (BUNDLE / "preregistration.json").read_text(encoding="utf-8"),
++        encoding="utf-8")
++    out = tmp_path / "empty.json"
++    assert measure_realrun_b.main([
++        "--bundle", str(empty), "--out", str(out),
++        "--canon", str(BUNDLE / "inputs" / "canon")]) == 0
++    result = json.loads(out.read_text(encoding="utf-8"))
++    assert result["schema"] == "realrun-b-v1"
++    assert result["samples"] == {}
++    assert result["verdicts"]["B1_design_first_attempt"]["verdict"] == "not_run"
++    assert result["verdicts"]["B2_length"]["verdict"] == "not_run"
++    assert result["verdicts"]["B4_must_include_exact"]["verdict"] == "not_run"
++    assert result["verdicts"]["B5_marker_declaration"]["verdict"] == "not_run"
++    assert result["verdicts"]["B3_recurring_failure"]["verdict"] == {
++        "repair_erased_included": "not_run", "final_only": "not_run"}
++
++
++# -- the registered arithmetic ---------------------------------------------
++
++def test_a_scripted_run_is_read_and_the_registered_rules_applied(tmp_path):
++    completed = subprocess.run(
++        [sys.executable, str(REPO_ROOT / "scripts" / "run_pipeline.py"),
++         "--task", "t01", "--system", "s1", "--stage", "all",
++         "--canon", str(BUNDLE / "inputs" / "canon"),
++         "--out", str(tmp_path), "--run-id", "all", "--quiet", "--report-only"],
++        capture_output=True, text=True)
++    assert completed.returncode == 0, completed.stderr
++    run = tmp_path / "all"
++    assert (run / "canon" / "characters.json").is_file()
++
++    result = measure(tmp_path, "--sample", f"sample-1={run}")
++    sample = result["samples"]["sample-1"]
++    assert sample["complete"] is True
++    assert sample["design"]["docs_present"] == 8
++    assert sample["draft"]["chapters_total"] == 3
++    # The scripted fixture writes short chapters: out of band where it was written.
++    assert sample["draft"]["chapters_in_length_band"] == 0
++    assert {row["out_of_band_cause"]
++            for row in sample["draft"]["chapters"].values()} == {"out_at_write"}
++    verdicts = result["verdicts"]
++    assert verdicts["B2_length"]["verdict"] == "length_out_at_write"
++    assert verdicts["B1_design_first_attempt"]["verdict"] == \
++        "design_clean_first_attempt"
++    assert verdicts["B4_must_include_exact"]["verdict"] == "exact_match_ok"
++    # The registration's prompt digests must be the ones the pipeline used.
++    assert result["condition"]["prompt_hashes_match_registration"] is True
++    assert result["condition"]["provenance_origins"] == {"scripted": 11}
++
++
++def test_findings_are_counted_both_ways(tmp_path):
++    """Batch A's open question: does an erased finding count? Both are reported."""
++    finding = {"check": "act_coverage", "severity": "medium"}
++    for name in ("sample-1", "sample-2"):
++        make_run(tmp_path, name, design_findings={"plot": [finding]})
++    result = measure(tmp_path,
++                     "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}",
++                     "--sample", f"sample-2={tmp_path / 'sample-2' / 'run'}")
++    rule = result["verdicts"]["B3_recurring_failure"]
++    assert rule["verdict"]["repair_erased_included"] == "recurring"
++    assert rule["verdict"]["final_only"] == "no_recurring_failure"
++    assert rule["by_check"]["repair_erased_included"]["design.act_coverage"] == \
++        ["sample-1", "sample-2"]
++    assert "design.act_coverage" not in rule["by_check"]["final_only"]
++
++
++def test_one_sample_does_not_answer_the_recurrence_rule(tmp_path):
++    make_run(tmp_path)
++    result = measure(tmp_path, "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    assert result["verdicts"]["B3_recurring_failure"]["verdict"] == {
++        "repair_erased_included": "not_evaluable_at_n1",
++        "final_only": "not_evaluable_at_n1"}
++
++
++def test_a_chapter_that_lost_its_length_in_repair_is_named(tmp_path):
++    chapters = [
++        {"id": "ch01", "chars": 820, "day": 1, "location": "灯台", "injected": [],
++         "body": "灯台の嵐の夜。鍵を数えた。", "attempt1_in_band": True},
++        {"id": "ch02", "chars": 860, "day": 4, "location": "王都", "injected": [],
++         "body": "王都で鍵屋に会った。"},
++        {"id": "ch03", "chars": 1200, "day": 7, "location": "灯台", "injected": [],
++         "body": "灯台に戻り、嵐は去った。"},
++    ]
++    make_run(tmp_path, chapters=chapters)
++    # Both short chapters were in band on attempt 1 and lost the length in a
++    # repair: 1/3 of the delivered chapters is inside the band.
++    for chapter_id in ("ch01", "ch02"):
++        (tmp_path / "sample-1" / "run" / "draft" /
++         f"{chapter_id}-attempt-1.txt").write_text("鍵" * 1200, encoding="utf-8")
++    (tmp_path / "sample-1" / "run" / "draft" / "ch01-attempt-1.issues.txt").write_text(
++        "uses a forbidden cliché: 選ばれし者\n", encoding="utf-8")
++    result = measure(tmp_path, "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    chapter = result["samples"]["sample-1"]["draft"]["chapters"]["ch01"]
++    assert chapter["first_attempt_in_length_band"] is True
++    assert chapter["out_of_band_cause"] == "lost_in_repair"
++    assert result["verdicts"]["B2_length"]["verdict"] == "length_lost_in_repair"
++    # A rejected attempt is visible in the inclusive mode only.
++    assert result["verdicts"]["B3_recurring_failure"]["by_check"][
++        "repair_erased_included"]["draft.forbidden_cliche"] == ["sample-1"]
++
++
++def test_a_marker_that_disagrees_with_canon_is_reported(tmp_path):
++    chapters = [
++        {"id": "ch01", "chars": 1100, "day": 2, "location": "港", "injected": [],
++         "body": "灯台の嵐の夜。鍵を数えた。"},
++        {"id": "ch02", "chars": 1050, "day": 4, "location": "王都", "injected": [],
++         "body": "王都で鍵屋に会った。"},
++        {"id": "ch03", "chars": 1200, "day": 7, "location": "灯台", "injected": [],
++         "body": "灯台に戻り、嵐は去った。"},
++    ]
++    make_run(tmp_path, chapters=chapters)
++    result = measure(tmp_path, "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    rule = result["verdicts"]["B5_marker_declaration"]
++    assert rule["verdict"] == "markers_disagree"
++    assert rule["marker_mismatches"]["sample-1"][0] == {
++        "chapter": "ch01", "kind": "time", "declared": "2", "canon": "1"}
++
++
++def test_a_marker_supplied_from_canon_is_not_a_pass(tmp_path):
++    chapters = [
++        {"id": "ch01", "chars": 1100, "day": 1, "location": "灯台",
++         "injected": ["{{time: day=1}}"], "body": "嵐の夜。鍵を数えた。"},
++        {"id": "ch02", "chars": 1050, "day": 4, "location": "王都", "injected": [],
++         "body": "王都で鍵屋に会った。"},
++        {"id": "ch03", "chars": 1200, "day": 7, "location": "灯台", "injected": [],
++         "body": "灯台に戻り、嵐は去った。"},
++    ]
++    make_run(tmp_path, chapters=chapters)
++    result = measure(tmp_path, "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    assert result["verdicts"]["B5_marker_declaration"]["verdict"] == "markers_repaired"
++    assert result["verdicts"]["B5_marker_declaration"]["injected_markers"] == \
++        {"sample-1": 1}
++
++
++def test_a_run_that_stopped_early_is_incomplete_not_invented(tmp_path):
++    run = make_run(tmp_path)
++    (run / "draft.json").unlink()
++    (run / "run-summary.json").unlink()
++    (run / "draft" / "ch02-attempt-1.issues.txt").write_text(
++        "too short (120 chars, minimum 200)\n", encoding="utf-8")
++    (run / "draft" / "ch02-attempt-2.issues.txt").write_text(
++        "too short (140 chars, minimum 200)\n", encoding="utf-8")
++    result = measure(tmp_path, "--sample", f"sample-1={run}")
++    sample = result["samples"]["sample-1"]
++    assert sample["complete"] is False
++    assert result["verdicts"]["B2_length"]["verdict"] == "incomplete"
++    assert result["verdicts"]["B4_must_include_exact"]["verdict"] == "incomplete"
++    # The design stage still ran, so B1 is answerable.
++    assert result["verdicts"]["B1_design_first_attempt"]["verdict"] == \
++        "design_clean_first_attempt"
++
++
++def test_a_missing_required_word_is_a_gap(tmp_path):
++    chapters = [
++        {"id": "ch01", "chars": 1100, "day": 1, "location": "灯台", "injected": [],
++         "body": "灯台の夜。鍵を数えた。"},          # 嵐 is replaced by a synonym
++        {"id": "ch02", "chars": 1050, "day": 4, "location": "王都", "injected": [],
++         "body": "大風のなか王都で鍵屋に会った。"},
++        {"id": "ch03", "chars": 1200, "day": 7, "location": "灯台", "injected": [],
++         "body": "灯台に戻った。"},
++    ]
++    make_run(tmp_path, chapters=chapters)
++    result = measure(tmp_path, "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    rule = result["verdicts"]["B4_must_include_exact"]
++    assert rule["verdict"] == "exact_match_gap"
++    assert rule["missing_terms"] == {"sample-1": ["嵐"]}
++
++
++def test_a_stale_prompt_digest_is_reported(tmp_path):
++    run = make_run(tmp_path)
++    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
++    manifest["prompt_hashes"]["draft-chapter"] = "0000000000000000"
++    (run / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
++    result = measure(tmp_path, "--sample", f"sample-1={run}")
++    assert result["condition"]["prompt_hashes_match_registration"] is False
++    assert result["condition"]["prompt_mismatches"][0]["prompt"] == "draft-chapter"
++
++
++def test_a_changed_canon_is_detected(tmp_path):
++    canon = tmp_path / "canon"
++    canon.mkdir()
++    for path in (BUNDLE / "inputs" / "canon").glob("*.json"):
++        (canon / path.name).write_text(path.read_text(encoding="utf-8"),
++                                       encoding="utf-8")
++    (canon / "facts.json").write_text('{"facts": []}', encoding="utf-8")
++    make_run(tmp_path)
++    result = measure(tmp_path, "--canon", str(canon),
++                     "--sample", f"sample-1={tmp_path / 'sample-1' / 'run'}")
++    assert result["condition"]["canon_matches_registration"] is False
+diff --git a/tests/test_pipeline.py b/tests/test_pipeline.py
+index af0229dd369992fef1eba812ab26c897dd4169bd..251f32147f353eaf328883a84df8a974b310a5cb 100644
+--- a/tests/test_pipeline.py
++++ b/tests/test_pipeline.py
+@@ -7,0 +8 @@ from __future__ import annotations
++import hashlib
+@@ -330,0 +332,29 @@ def test_cli_runs_the_whole_s1_story_and_audits_it(tmp_path):
++def test_cli_runs_from_a_pinned_canon_and_copies_it_into_the_run(tmp_path):
++    """--stage all --canon used to fail at the audit: <run>/canon was never copied."""
++    planned = run_cli("--task", "t01", "--stage", "plan", "--out", str(tmp_path),
++                      "--run-id", "plan", "--quiet")
++    assert planned.returncode == 0, planned.stderr
++    source = tmp_path / "plan" / "canon"
++
++    completed = run_cli("--task", "t01", "--stage", "all", "--canon", str(source),
++                        "--out", str(tmp_path), "--run-id", "pinned", "--quiet")
++    assert completed.returncode == 1, completed.stderr   # the demo text is short
++    run = tmp_path / "pinned"
++    assert (run / "canon" / "characters.json").is_file()
++    summary = json.loads((run / "run-summary.json").read_text(encoding="utf-8"))
++    assert "plan" not in summary                        # the plan stage did not run
++    assert summary["audit"]["checks_skipped"] == 0       # the audit could read the canon
++    digest = hashlib.sha256(
++        (run / "canon" / "characters.json").read_bytes()).hexdigest()
++    assert summary["canon_source"]["files_sha256"]["characters.json"] == digest
++    manifest = json.loads((run / "manifest.json").read_text(encoding="utf-8"))
++    assert "canon/characters.json" in manifest["artifacts"]
++
++
++def test_cli_rejects_a_canon_that_cannot_be_copied(tmp_path):
++    completed = run_cli("--task", "t01", "--stage", "all",
++                        "--canon", str(tmp_path / "missing"), "--out", str(tmp_path))
++    assert completed.returncode == 2
++    assert "cannot copy the reused canon" in completed.stderr
++
++
