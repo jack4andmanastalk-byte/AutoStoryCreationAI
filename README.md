@@ -7,11 +7,13 @@
 Issue の OPEN 表示だけで作業状況を判断せず、関連 PR と併せて確認してください。
 
 **外部作品の本文について:** 本リポジトリは public です。無料公開されている本文でも
-再配布の許可とは別です。`datasets` と Actions 成果物には本文が残っています。
-なろう本文の Release 圧縮ファイル4件は非公開コピーの照合後に削除され、
-`dataset-refresh` は GitHub 上で手動停止されていますが、再有効化すると再公開し得ます。
-[保守状況](docs/maintenance_status.md) と[非公開研究資料の設計・注意書き](docs/private_research_design.md)
-を参照し、権利と残存する公開経路を確認してください。
+再配布の許可とは別です。2026-10-29 に、なろう・青空の本文を含む公開ファイル（Release の
+本文圧縮ファイル、`datasets` ブランチ、公開用ワークフロー `dataset-refresh.yml`、
+`samples/texts/` の本文サンプル）を削除し、書誌・ランキング等のメタデータのみを
+GitHub Release に残しています。Actions のアーティファクトに本文が残る対応（未削除の
+削除手順と失効時期）は [保守状況](docs/maintenance_status.md) を参照してください。
+[非公開研究資料の設計・注意書き](docs/private_research_design.md)
+と併せ、権利と残存する公開経路を確認してください。
 
 AI による自動創作活動（ストーリー・キャラクター・世界観・歴史など）のためのリポジトリです。
 AIが作品を作り続けられるよう、その基盤として **研究素材のデータセットアップ** を含み、
@@ -121,17 +123,19 @@ make report
 .venv/bin/python scripts/setup_dataset.py purge-pdfs
 ```
 
-事前ビルド済みの全 373 作品・全話（総合 Top 300 作品＋歴史・推理・現代・SF・ホラー 73 作品＝139,656 話 / 約 5.84 億文字 / 圧縮アーカイブ合計 0.54 GB、PDF 完全削除済）プレーンテキストセットを取得する場合:
+**本文テキストの配布は終了しました（2026-10-29）。** なろう・青空の本文圧縮ファイル、
+`datasets` ブランチ、公開ワークフローは著作権上の理由から削除済みで、GitHub Release に残るのは
+書誌・ランキング等のメタデータのみです。本文は自身の環境で `make data` を使い配信元から
+取得し直してください（取得先の利用条件は各自で確認）。
 
 ```bash
-# 方法 A: datasets ブランチから展開（プレーンテキスト＋JSONL のみ、PDF ゼロ）
+# メタデータ（JSONL・ランキング・manifest）のみ取得
 make pull-datasets
-
-# 方法 B: GitHub Release から圧縮テキストアーカイブ (*_texts.tar.gz) を直接取得
-gh release download datasets-narou-commercialized
+# または
+gh release download datasets-narou-commercialized --dir data/datasets
 ```
 
-**PDF と既存ファイルへの注意:** 通常の `make data` / `dataset-refresh` はテキスト形式を
+**PDF と既存ファイルへの注意:** 通常の `make data` はテキスト形式を
 使いますが、CLI の `--pdf` と旧 PDF の `purge-pdfs` は互換機能として残っています。
 `make data` は最後に `purge-pdfs` を実行し、対応するテキストを確認・抽出した後、
 設定の PDF ディレクトリ内の対象 PDF を削除します。実行前に必要なファイルをバックアップし、
@@ -169,9 +173,11 @@ gh release download datasets-narou-commercialized
   （ネットワーク無効でもメタデータ構築が可能）
 * `narou.local_text_dir` … 事前取得済みの本文（`<Nコード>/<話数>.txt`）を再利用
 
-`.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
-生成した JSONL・本文テキストを `datasets` ブランチおよび artifact として公開します
-（`make data` のネットワーク制約がある環境では `make pull-datasets` で即座に展開可能）。
+旧 `.github/workflows/dataset-refresh.yml` は同じパイプラインを GitHub Actions 上で実行し、
+生成した JSONL・本文テキストを `datasets` ブランチおよび artifact として公開していました。
+ワークフローと本文の公開は 2026-10-29 に終了し、本文は削除・メタデータは Release に残置
+しています。現在は `make pull-datasets` でメタデータのみ取得でき、本文は `make data` で
+自身の環境に生成できます（ネットワーク制約がある環境では取得可否を別途確認してください）。
 
 ## 4.  ディレクトリ構成
 
@@ -480,8 +486,7 @@ make two-stage       # 固定台本で Stage A → Stage B → 既存 continuity
 * CI: `.github/workflows/research-check.yml` が**全 push / 全 PR** でカタログ整合・全テスト・
   デモの監査と評価を実行します（ローカル 30〜60 秒）。実行枠の設計は
   [`docs/ci.md`](docs/ci.md) を参照してください
-* `dataset-refresh`（データ取得とテキスト公開）は別ワークフローで、**同時実行数を絞って**
-  CI の枠を空けます
+* データ公開ワークフロー（旧 `dataset-refresh`）は 2026-10-29 に削除済みです
 
 ## 6.  次フェーズ候補
 

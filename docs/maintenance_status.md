@@ -1,9 +1,45 @@
-# 保守状況と旧ブランチの整理（2026-10-28）
+# 保守状況と旧ブランチの整理（2026-10-29 更新）
 
 > Arena.ai の GitHub 接続では、この環境から Issue のコメント更新が許可されなかった。
 > **Issue の OPEN 表示だけでは最新状況を判断しない。** この文書と関連 PR を保守状況の
 > 追記先とする。Issue は自動で閉じたものと見なさない。権限が使える環境で更新する場合も、
 > 以下の未完項目と採否を区別する。
+
+## 公開本文の削除完了（2026-10-29）
+
+ユーザーの明示的な指示（なろう本文・青空本文を含む著作権上問題になるファイル類を削除、
+書誌・ランキング等のメタデータのみを保持して URL から再取得できる状態を維持、
+公開ワークフロー削除、`datasets` 分岐削除）に基づき実施した。削除直前にリモート先端・
+Release 資産一覧を再確認したうえでの操作である。**本節が最新**。下の 2026-10-28 節の
+「残っている」「変更していない」は当時の記録。
+
+| 対象 | 実施 | 検証 |
+| --- | --- | --- |
+| Release `datasets-narou-commercialized` の青空本文 `aozora_texts.tar.gz`（asset id `672208519`、133,878 B） | GitHub API で削除 | 削除後の資産一覧に不在。残資産は12件（`manifest.json`、なろう書誌 JSONL 6件、ランキング MD 5件）でメタデータのみ |
+| なろう本文圧縮ファイル4件（`narou_rank_*_texts.tar.gz` 等） | 2026-10-28 に削除（下節） | 同上の資産一覧で不在 |
+| `datasets` 分岐（先端 `5a9f9f1861d2da85b59faac41a75dec73a794043`。`raw/narou/texts` 373件・`raw/aozora/texts` 15件・書誌 JSONL・ランキング MD） | 参照ごと GitHub API で削除 | `git ls-remote --heads` に不在。main・旧 arena 2枝・タグ `datasets-narou-commercialized`（本文なし）には本文なしを確認 |
+| `.github/workflows/dataset-refresh.yml` | 本記録を含む PR で削除 | `tests/test_ci_workflows.py` がファイル不在と全ワークフローにスケジュール実行が無いことを検査 |
+| `samples/texts/` の青空本文サンプル4件（`058013.txt` / `058136.txt` / `059115.txt` / `059877.txt`、旧 PDF 由来） | 同上 | main ヘッドに不在（履歴残存は下記） |
+
+**保持したもの（メタデータ）:** Release の12資産（`text_url` 等により配信元 URL から本文を
+再取得できる情報を含む書誌・ランキング）、`docs/narou_*_ranking.md`、
+`data/datasets/manifest.json`、`samples/` の書誌 JSONL、main の `make pull-datasets` は
+Release のメタデータ取得に切替済み。
+
+**未完了・実行権限が無くて届かなかったもの:**
+
+| 対象 | 状態 | 次の手 |
+| --- | --- | --- |
+| Actions artifacts 243件（`narou-shard-*` / `prepared-bundle`。作成は 2026-10-22〜27 の `dataset-refresh` 実行分で、本文を含み得る） | 削除 API・保持期間変更ともに 403（現环境の連携トークンに Actions 書き込み／管理権限が無い） | 権限付きトークンまたは Web UI（Settings → Actions → Artifacts and logs）で削除。既定保持（90日）なら 2027-01-20 頃から自動失効見込み。API での一括削除例: `gh api "repos/<owner>/<repo>/actions/artifacts?per_page=100" --paginate --jq '.artifacts[].id' \| while read id; do gh api -X DELETE "repos/<owner>/<repo>/actions/artifacts/$id"; done` |
+| 「Debug Narou downloads」ワークフロー登録の disable | 403。ファイルは現存するどのブランチにも無く（`debug-narou.yml` 不在を確認）、最後の実行は 2026-10-22 | 起動経路は無し。登録の削除は権限のある環境で |
+
+**削除の限界（記録）:** `samples/texts/` は main のヘッドから削除したが、**過去コミットの
+履歴には blob が残る**（例: `f155b98`）。完全除去には main の履歴書き換えが必要で、
+参照切れ・再 clone への影響が伴うため今回実施していない（要別途明示的承認）。`datasets`
+分岐は参照ごと削除したが、Git バックエンドのオブジェクト除去・キャッシュ・第三者の複製の
+消去は保証できない。本文の再取得・独立ハッシュ計算は行っていない（メタデータのみ保持の
+方針に変更されたため、4圧縮ファイルの網羅性検証は対象外）。非公開保管先へはこの環境から
+アクセスできず（可視リポジトリは公開2件のみ）、保管先側の実物検証は未実施のまま。
 
 ## 公開データと非公開研究の設計（2026-10-28）
 

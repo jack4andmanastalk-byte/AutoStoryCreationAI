@@ -34,10 +34,9 @@ data-narou: ## Syosetsuka ni Narou: metadata, Top-300 + 5-genre supplement full-
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) narou-genre-supplement --per-genre 15 --min-per-genre 10
 	$(BIN)/python scripts/setup_dataset.py --config $(CONFIG) purge-pdfs
 
-pull-datasets: ## fetch prebuilt datasets and plain texts from the 'datasets' branch
-	git fetch origin +refs/heads/datasets:refs/remotes/origin/datasets
-	mkdir -p data
-	git archive origin/datasets | tar -x -C data
+pull-datasets: ## fetch dataset metadata (JSONL / ranking / manifest) from the GitHub Release
+	gh release download datasets-narou-commercialized --dir data/datasets \
+		--pattern '*.jsonl' --pattern '*_ranking.md' --pattern 'manifest.json' --clobber
 
 report: ## print statistics about the generated datasets
 	$(BIN)/python scripts/dataset_report.py --config $(CONFIG)
